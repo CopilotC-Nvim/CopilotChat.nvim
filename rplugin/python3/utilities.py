@@ -1,6 +1,8 @@
 import prompts
 import typings
 import random
+import os
+import json
 
 
 def random_hex(length: int = 65):
@@ -42,8 +44,36 @@ def generate_request(
     }
 
 
+def cache_token(user: str, token: str):
+    # ~/.config/github-copilot/hosts.json
+    home = os.path.expanduser("~")
+    config_dir = os.path.join(home, ".config", "github-copilot")
+    if not os.path.exists(config_dir):
+        os.makedirs(config_dir)
+    with open(os.path.join(config_dir, "hosts.json"), "w") as f:
+        f.write(json.dumps({
+            "github.com": {
+                "user": user,
+                "oauth_token": token,
+            }
+        }))
+
+
+def get_cached_token():
+    home = os.path.expanduser("~")
+    config_dir = os.path.join(home, ".config", "github-copilot")
+    hosts_file = os.path.join(config_dir, "hosts.json")
+    if not os.path.exists(hosts_file):
+        return None
+    with open(hosts_file, "r") as f:
+        hosts = json.loads(f.read())
+        if "github.com" in hosts:
+            return hosts["github.com"]["oauth_token"]
+        else:
+            return None
+
+
 if __name__ == "__main__":
-    import json
 
     print(
         json.dumps(

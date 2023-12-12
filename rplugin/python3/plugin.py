@@ -2,6 +2,7 @@ import pynvim
 import copilot
 import dotenv
 import os
+import time
 
 dotenv.load_dotenv()
 
@@ -11,14 +12,26 @@ class TestPlugin(object):
     def __init__(self, nvim: pynvim.Nvim):
         self.nvim = nvim
         self.copilot = copilot.Copilot(os.getenv("COPILOT_TOKEN"))
+        if self.copilot.github_token is None:
+            req = self.copilot.request_auth()
+            self.nvim.out_write(
+                f"Please visit {req['verification_uri']} and enter the code {req['user_code']}\n")
+            current_time = time.time()
+            wait_until = current_time + req['expires_in']
+            while self.copilot.github_token is None:
+                self.copilot.poll_auth(req['device_code'])
+                time.sleep(req['interval'])
+                if time.time() > wait_until:
+                    self.nvim.out_write("Timed out waiting for authentication\n")
+                    return
+            self.nvim.out_write("Successfully authenticated with Copilot\n")
         self.copilot.authenticate()
-
-    @pynvim.function("TestFunction")
-    def testFunction(self, args):
-        self.nvim.out_write(self.nvim.eval("getreg('\"')"))
 
     @pynvim.command("CopilotChat", nargs="1")
     def copilotChat(self, args: list[str]):
+        if self.copilot.github_token is None:
+            self.nvim.out_write("Please authenticate with Copilot first\n")
+            return
         prompt = " ".join(args)
 
         # Get code from the unnamed register
