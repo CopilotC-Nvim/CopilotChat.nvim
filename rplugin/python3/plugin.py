@@ -2,6 +2,7 @@ import pynvim
 import copilot
 import dotenv
 import os
+
 dotenv.load_dotenv()
 
 
@@ -39,5 +40,3 @@ class TestPlugin(object):
                 self.nvim.current.line += lines[i]
                 if i != len(lines) - 1:
                     self.nvim.command("normal o")
-
-

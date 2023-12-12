@@ -28,7 +28,7 @@ class Copilot:
             "authorization": f"token {self.github_token}",
             "editor-version": "vscode/1.80.1",
             "editor-plugin-version": "copilot-chat/0.4.1",
-            "user-agent": "GitHubCopilotChat/0.4.1"
+            "user-agent": "GitHubCopilotChat/0.4.1",
         }
 
         self.token = self.session.get(url, headers=headers).json()
@@ -50,7 +50,7 @@ class Copilot:
             "openai-organization": "github-copilot",
             "openai-intent": "conversation-panel",
             "content-type": "application/json",
-            "user-agent": "GitHubCopilotChat/0.4.1"
+            "user-agent": "GitHubCopilotChat/0.4.1",
         }
         self.chat_history.append(typings.Message(prompt, "user"))
         data = utilities.generate_request(self.chat_history, code, language)
