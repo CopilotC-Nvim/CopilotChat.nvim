@@ -1,5 +1,12 @@
 # Copilot Chat for Neovim
 
+## Authentication
+```
+export COPILOT_TOKEN="gho_..."
+```
+The process to obtain a COPILOT_TOKEN is still being investigated.
+
+
 ## Installation
 
 1. Put the files in the right place
