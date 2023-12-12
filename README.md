@@ -1,11 +1,8 @@
 # Copilot Chat for Neovim
 
 ## Authentication
-```
-export COPILOT_TOKEN="gho_..."
-```
-The process to obtain a COPILOT_TOKEN is still being investigated.
 
+It will prompt you with instructions on your first start. If you already have `Copilot.vim` or `Copilot.lua`, it will work automatically.
 
 ## Installation
 
