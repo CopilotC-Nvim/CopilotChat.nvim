@@ -10,7 +10,7 @@ dotenv.load_dotenv()
 class TestPlugin(object):
     def __init__(self, nvim: pynvim.Nvim):
         self.nvim = nvim
-        self.copilot = copilot.Copilot(os.getenv("GITHUB_TOKEN"))
+        self.copilot = copilot.Copilot(os.getenv("COPILOT_TOKEN"))
         self.copilot.authenticate()
 
     @pynvim.function("TestFunction")
