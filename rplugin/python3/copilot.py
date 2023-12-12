@@ -12,7 +12,9 @@ import typings
 
 
 class Copilot:
-    def __init__(self, token):
+    def __init__(self, token: str):
+        if token is None:
+            raise Exception("No GitHub token provided.")
         self.github_token = token
         self.token: dict[str, any] = None
         self.chat_history: list[typings.Message] = []
