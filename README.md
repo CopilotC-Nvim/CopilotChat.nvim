@@ -8,14 +8,16 @@ It will prompt you with instructions on your first start. If you already have `C
 
 ### Lazy.nvim
 
+1. `pip install python-dotenv requests pynvim prompt-toolkit`
+2. Put it in your lazy setup
 ```lua
 require('lazy').setup({
     'gptlang/CopilotChat.nvim',
     ...
 })
 ```
-
-`pip install python-dotenv requests pynvim prompt-toolkit`
+3. Run `:UpdateRemotePlugins`
+4. Restart `neovim`
 
 ### Manual
 
