@@ -1,0 +1,8 @@
+Neovim
+nvim
+quickfix
+setqflist
+lnum
+gptlang
+stdpath
+rplugin
