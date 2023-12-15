@@ -23,3 +23,10 @@ $ pip install -r requirements.txt
 
 1. Yank some code into the unnamed register (`y`)
 2. `:CopilotChat What does this code do?`
+
+
+## Roadmap
+- Translation to pure Lua
+- Support `lazy.nvim` installer
+- Tokenizer
+- Use vector encodings to automatically select code
