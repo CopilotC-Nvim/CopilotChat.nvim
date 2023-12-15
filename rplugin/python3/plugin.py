@@ -1,8 +1,9 @@
-import pynvim
-import copilot
-import dotenv
 import os
 import time
+
+import copilot
+import dotenv
+import pynvim
 
 dotenv.load_dotenv()
 
@@ -15,12 +16,13 @@ class TestPlugin(object):
         if self.copilot.github_token is None:
             req = self.copilot.request_auth()
             self.nvim.out_write(
-                f"Please visit {req['verification_uri']} and enter the code {req['user_code']}\n")
+                f"Please visit {req['verification_uri']} and enter the code {req['user_code']}\n"
+            )
             current_time = time.time()
-            wait_until = current_time + req['expires_in']
+            wait_until = current_time + req["expires_in"]
             while self.copilot.github_token is None:
-                self.copilot.poll_auth(req['device_code'])
-                time.sleep(req['interval'])
+                self.copilot.poll_auth(req["device_code"])
+                time.sleep(req["interval"])
                 if time.time() > wait_until:
                     self.nvim.out_write("Timed out waiting for authentication\n")
                     return
@@ -42,6 +44,9 @@ class TestPlugin(object):
             # Create a new scratch buffer to hold the chat
             self.nvim.command("enew")
             self.nvim.command("setlocal buftype=nofile bufhidden=hide noswapfile")
+            # Set filetype as markdown and wrap
+            self.nvim.command("setlocal filetype=markdown")
+            self.nvim.command("setlocal wrap")
         if self.nvim.current.line != "":
             self.nvim.command("normal o")
         for token in self.copilot.ask(prompt, code, language=file_type):
