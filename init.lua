@@ -3,7 +3,8 @@ local M = {}
 
 -- Set up the plugin
 M.setup = function(config)
-  print("WIP")
+	-- TODO: Use https://github.com/nvimdev/nvim-plugin-template for easy setup
+	print("WIP")
 end
 
 return M
