@@ -47,8 +47,16 @@ class TestPlugin(object):
             # Set filetype as markdown and wrap
             self.nvim.command("setlocal filetype=markdown")
             self.nvim.command("setlocal wrap")
+
         if self.nvim.current.line != "":
             self.nvim.command("normal o")
+        self.nvim.current.line += "### User"
+        self.nvim.command("normal o")
+        self.nvim.current.line += prompt
+        self.nvim.command("normal o")
+        self.nvim.current.line += "### Copilot"
+        self.nvim.command("normal o")
+
         for token in self.copilot.ask(prompt, code, language=file_type):
             if "\n" not in token:
                 self.nvim.current.line += token
@@ -58,3 +66,6 @@ class TestPlugin(object):
                 self.nvim.current.line += lines[i]
                 if i != len(lines) - 1:
                     self.nvim.command("normal o")
+
+        self.nvim.command("normal o")
+        self.nvim.current.line += "--- End of chat ---"
