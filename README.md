@@ -39,6 +39,5 @@ After installing, open quickfix and run `pip install -r requirements.txt` with t
 ## Roadmap
 
 - Translation to pure Lua
-- Support `lazy.nvim` installer
 - Tokenizer
 - Use vector encodings to automatically select code
