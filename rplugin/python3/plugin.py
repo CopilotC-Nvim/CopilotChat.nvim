@@ -68,4 +68,10 @@ class TestPlugin(object):
                     self.nvim.command("normal o")
 
         self.nvim.command("normal o")
-        self.nvim.current.line += "--- End of chat ---"
+        self.nvim.current.line += ""
+        self.nvim.command("normal o")
+        self.nvim.current.line += "---"
+        self.nvim.command("normal o")
+        self.nvim.current.line += (
+            "If you want to chat again, run :CopilotChat <prompt>."
+        )
