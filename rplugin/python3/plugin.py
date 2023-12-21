@@ -45,8 +45,7 @@ class TestPlugin(object):
             self.nvim.command("enew")
             self.nvim.command("setlocal buftype=nofile bufhidden=hide noswapfile")
             # Set filetype as markdown and wrap with linebreaks
-            self.nvim.command("setlocal filetype=markdown")
-            self.nvim.command("setlocal wrap linebreak")
+            self.nvim.command("setlocal filetype=markdown wrap linebreak")
 
         if self.nvim.current.line != "":
             self.nvim.command("normal o")
