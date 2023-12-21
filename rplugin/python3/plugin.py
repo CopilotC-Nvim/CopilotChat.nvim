@@ -44,9 +44,9 @@ class TestPlugin(object):
             # Create a new scratch buffer to hold the chat
             self.nvim.command("enew")
             self.nvim.command("setlocal buftype=nofile bufhidden=hide noswapfile")
-            # Set filetype as markdown and wrap
+            # Set filetype as markdown and wrap with linebreaks
             self.nvim.command("setlocal filetype=markdown")
-            self.nvim.command("setlocal wrap")
+            self.nvim.command("setlocal wrap linebreak")
 
         if self.nvim.current.line != "":
             self.nvim.command("normal o")
