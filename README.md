@@ -4,32 +4,39 @@
 
 It will prompt you with instructions on your first start. If you already have `Copilot.vim` or `Copilot.lua`, it will work automatically.
 
-## Installation with [lazy.nvim: 💤 A modern plugin manager for Neovim](https://github.com/folke/lazy.nvim)
+## Installation
 
+### Lazy.nvim
+
+1. `pip install python-dotenv requests pynvim prompt-toolkit`
+2. Put it in your lazy setup
 ```lua
---- Send reminder to quickfix list for manual steps
----@param line string
-local function send_to_quickfix(line)
-  vim.fn.setqflist({ { filename = "CopilotChat.nvim", lnum = 0, text = line } }, "a")
-end
+require('lazy').setup({
+    'gptlang/CopilotChat.nvim',
+    ...
+})
+```
+3. Run `:UpdateRemotePlugins`
+4. Restart `neovim`
 
-return {
-  {
-    "gptlang/CopilotChat.nvim",
-    build = function()
-      local copilot_chat_dir = vim.fn.stdpath("data") .. "/lazy/CopilotChat.nvim"
-      -- Copy remote plugin to config folder
-      vim.fn.system({ "cp", "-r", copilot_chat_dir .. "/rplugin", vim.fn.stdpath("config") })
+### Manual
 
-      -- Notify the user about manual steps
-      send_to_quickfix("Please run 'pip install -r " .. copilot_chat_dir .. "/requirements.txt'.")
-      send_to_quickfix("Afterwards, open Neovim and run ':UpdateRemotePlugins', then restart Neovim.")
-    end,
-  },
-}
+1. Put the files in the right place
+
+```
+$ git clone https://github.com/gptlang/CopilotChat.nvim
+$ cd CopilotChat.nvim
+$ cp -r --backup=nil rplugin ~/.config/nvim/
 ```
 
-After installing, open quickfix and run `pip install -r requirements.txt` with the `CopilotChat.nvim` directory. Afterwards, run `:UpdateRemotePlugins` and restart Neovim.
+2. Install dependencies
+
+```
+$ pip install -r requirements.txt
+```
+
+3. Open up Neovim and run `:UpdateRemotePlugins`
+4. Restart Neovim
 
 ## Usage
 
