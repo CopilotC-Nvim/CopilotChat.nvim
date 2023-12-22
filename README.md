@@ -46,6 +46,5 @@ $ pip install -r requirements.txt
 ## Roadmap
 
 - Translation to pure Lua
-- Support `lazy.nvim` installer
 - Tokenizer
 - Use vector encodings to automatically select code
