@@ -14,7 +14,7 @@ It will prompt you with instructions on your first start. If you already have `C
 ```lua
 require('lazy').setup({
   {
-    "jellydn/CopilotChat.nvim",
+    "gptlang/CopilotChat.nvim",
     opts = {},
     build = function()
       vim.cmd("UpdateRemotePlugins")
