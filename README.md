@@ -48,3 +48,4 @@ $ pip install -r requirements.txt
 - Translation to pure Lua
 - Tokenizer
 - Use vector encodings to automatically select code
+- Sub commands - See [issue #5](https://github.com/gptlang/CopilotChat.nvim/issues/5)
