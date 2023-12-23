@@ -9,7 +9,7 @@ dotenv.load_dotenv()
 
 
 @pynvim.plugin
-class TestPlugin(object):
+class CopilotChatPlugin(object):
     def __init__(self, nvim: pynvim.Nvim):
         self.nvim = nvim
         self.copilot = copilot.Copilot(os.getenv("COPILOT_TOKEN"))
@@ -29,7 +29,7 @@ class TestPlugin(object):
             self.nvim.out_write("Successfully authenticated with Copilot\n")
         self.copilot.authenticate()
 
-    @pynvim.command("CopilotChat", nargs="1")
+    @pynvim.command("CChat", nargs="1")
     def copilotChat(self, args: list[str]):
         if self.copilot.github_token is None:
             self.nvim.out_write("Please authenticate with Copilot first\n")
@@ -48,9 +48,11 @@ class TestPlugin(object):
             self.nvim.command("setlocal filetype=markdown wrap linebreak")
 
         if self.nvim.current.line != "":
-            self.nvim.command("normal o")
+            # Go to end of file and insert a new line
+            self.nvim.command("normal Go")
         self.nvim.current.line += "### User"
         self.nvim.command("normal o")
+        # TODO: How to handle the case with the large text in from neovim command
         self.nvim.current.line += prompt
         self.nvim.command("normal o")
         self.nvim.current.line += "### Copilot"

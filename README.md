@@ -12,7 +12,7 @@ It will prompt you with instructions on your first start. If you already have `C
 2. Put it in your lazy setup
 ```lua
 require('lazy').setup({
-    'gptlang/CopilotChat.nvim',
+    'jellydn/CopilotChat.nvim',
     ...
 })
 ```
@@ -24,7 +24,7 @@ require('lazy').setup({
 1. Put the files in the right place
 
 ```
-$ git clone https://github.com/gptlang/CopilotChat.nvim
+$ git clone https://github.com/jellydn/CopilotChat.nvim
 $ cd CopilotChat.nvim
 $ cp -r --backup=nil rplugin ~/.config/nvim/
 ```
@@ -41,7 +41,7 @@ $ pip install -r requirements.txt
 ## Usage
 
 1. Yank some code into the unnamed register (`y`)
-2. `:CopilotChat What does this code do?`
+2. `:CChat What does this code do?`
 
 ## Roadmap
 
