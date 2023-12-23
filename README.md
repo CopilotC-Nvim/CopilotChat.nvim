@@ -37,7 +37,7 @@ require('lazy').setup({
 1. Put the files in the right place
 
 ```
-$ git clone https://github.com/jellydn/CopilotChat.nvim
+$ git clone https://github.com/gptlang/CopilotChat.nvim
 $ cd CopilotChat.nvim
 $ cp -r --backup=nil rplugin ~/.config/nvim/
 ```
