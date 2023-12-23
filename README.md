@@ -10,12 +10,14 @@ It will prompt you with instructions on your first start. If you already have `C
 
 1. `pip install python-dotenv requests pynvim prompt-toolkit`
 2. Put it in your lazy setup
+
 ```lua
 require('lazy').setup({
     'jellydn/CopilotChat.nvim',
     ...
 })
 ```
+
 3. Run `:UpdateRemotePlugins`
 4. Restart `neovim`
 
@@ -42,6 +44,8 @@ $ pip install -r requirements.txt
 
 1. Yank some code into the unnamed register (`y`)
 2. `:CChat What does this code do?`
+
+[![Demo](https://i.gyazo.com/10fbd1543380d15551791c1a6dcbcd46.gif)](https://gyazo.com/10fbd1543380d15551791c1a6dcbcd46)
 
 ## Roadmap
 
