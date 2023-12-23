@@ -29,7 +29,13 @@ LAZY.NVIM ~
 
 >lua
     require('lazy').setup({
-        'jellydn/CopilotChat.nvim',
+      {
+        "jellydn/CopilotChat.nvim",
+        opts = {},
+        build = function()
+          vim.cmd("UpdateRemotePlugins")
+        end,
+      },
         ...
     })
 <
