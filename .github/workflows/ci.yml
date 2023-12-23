@@ -23,7 +23,7 @@ jobs:
       - name: panvimdoc
         uses: kdheepak/panvimdoc@main
         with:
-          vimdoc: nvim-plugin-template
+          vimdoc: CopilotChat
           treesitter: true
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
