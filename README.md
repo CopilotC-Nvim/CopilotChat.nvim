@@ -19,6 +19,11 @@ require('lazy').setup({
     build = function()
       vim.cmd("UpdateRemotePlugins")
     end,
+    event = "VeryLazy",
+    keys = {
+      { "<leader>cce", "<cmd>CChatExplain<cr>", desc = "CopilotChat - Explain code" },
+      { "<leader>cct", "<cmd>CChatTests<cr>", desc = "CopilotChat - Generate tests" },
+    },
   },
     ...
 })
