@@ -37,8 +37,8 @@ LAZY.NVIM ~
         end,
         event = "VeryLazy",
         keys = {
-          { "<leader>cce", "<cmd>CChatExplain<cr>", desc = "CopilotChat - Explain code" },
-          { "<leader>cct", "<cmd>CChatTests<cr>", desc = "CopilotChat - Generate tests" },
+          { "<leader>cce", "<cmd>CopilotChatExplain<cr>", desc = "CopilotChat - Explain code" },
+          { "<leader>cct", "<cmd>CopilotChatTests<cr>", desc = "CopilotChat - Generate tests" },
         },
       },
         ...
@@ -72,7 +72,7 @@ MANUAL ~
 USAGE                              *CopilotChat-copilot-chat-for-neovim-usage*
 
 1. Yank some code into the unnamed register (`y`)
-2. `:CChat What does this code do?`
+2. `:CopilotChat What does this code do?`
 
 <https://gyazo.com/10fbd1543380d15551791c1a6dcbcd46>
 

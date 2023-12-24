@@ -21,8 +21,8 @@ require('lazy').setup({
     end,
     event = "VeryLazy",
     keys = {
-      { "<leader>cce", "<cmd>CChatExplain<cr>", desc = "CopilotChat - Explain code" },
-      { "<leader>cct", "<cmd>CChatTests<cr>", desc = "CopilotChat - Generate tests" },
+      { "<leader>cce", "<cmd>CopilotChatExplain<cr>", desc = "CopilotChat - Explain code" },
+      { "<leader>cct", "<cmd>CopilotChatTests<cr>", desc = "CopilotChat - Generate tests" },
     },
   },
     ...
@@ -54,7 +54,7 @@ $ pip install -r requirements.txt
 ## Usage
 
 1. Yank some code into the unnamed register (`y`)
-2. `:CChat What does this code do?`
+2. `:CopilotChat What does this code do?`
 
 [![Demo](https://i.gyazo.com/10fbd1543380d15551791c1a6dcbcd46.gif)](https://gyazo.com/10fbd1543380d15551791c1a6dcbcd46)
 

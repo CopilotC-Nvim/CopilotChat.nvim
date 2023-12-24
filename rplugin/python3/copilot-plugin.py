@@ -29,7 +29,7 @@ class CopilotChatPlugin(object):
             self.nvim.out_write("Successfully authenticated with Copilot\n")
         self.copilot.authenticate()
 
-    @pynvim.command("CChat", nargs="1")
+    @pynvim.command("CopilotChat", nargs="1")
     def copilotChat(self, args: list[str]):
         if self.copilot.github_token is None:
             self.nvim.out_write("Please authenticate with Copilot first\n")
