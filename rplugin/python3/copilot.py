@@ -9,6 +9,7 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
 import utilities
 import typings
+import prompts
 
 LOGIN_HEADERS = {
     "accept": "application/json",
@@ -99,7 +100,14 @@ class Copilot:
             "user-agent": "GitHubCopilotChat/0.4.1",
         }
         self.chat_history.append(typings.Message(prompt, "user"))
-        data = utilities.generate_request(self.chat_history, code, language)
+        system_prompt = prompts.COPILOT_INSTRUCTIONS
+        if prompt == prompts.FIX_SHORTCUT:
+            system_prompt = prompts.COPILOT_FIX
+        elif prompt == prompts.TEST_SHORTCUT:
+            system_prompt = prompts.COPILOT_TESTS
+        elif prompt == prompts.EXPLAIN_SHORTCUT:
+            system_prompt = prompts.COPILOT_EXPLAIN
+        data = utilities.generate_request(self.chat_history, code, language, system_prompt=system_prompt)
 
         full_response = ""
 

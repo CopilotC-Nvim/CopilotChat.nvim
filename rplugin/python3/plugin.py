@@ -2,6 +2,7 @@ import os
 import time
 
 import copilot
+import prompts
 import dotenv
 import pynvim
 
@@ -9,7 +10,7 @@ dotenv.load_dotenv()
 
 
 @pynvim.plugin
-class TestPlugin(object):
+class CopilotChatPlugin(object):
     def __init__(self, nvim: pynvim.Nvim):
         self.nvim = nvim
         self.copilot = copilot.Copilot(os.getenv("COPILOT_TOKEN"))
@@ -36,6 +37,13 @@ class TestPlugin(object):
             return
         prompt = " ".join(args)
 
+        if prompt == "/fix":
+            prompt = prompts.FIX_SHORTCUT
+        elif prompt == "/test":
+            prompt = prompts.TEST_SHORTCUT
+        elif prompt == "/explain":
+            prompt = prompts.EXPLAIN_SHORTCUT
+
         # Get code from the unnamed register
         code = self.nvim.eval("getreg('\"')")
         file_type = self.nvim.eval("expand('%')").split(".")[-1]
@@ -47,8 +55,8 @@ class TestPlugin(object):
             # Set filetype as markdown and wrap with linebreaks
             self.nvim.command("setlocal filetype=markdown wrap linebreak")
 
-        if self.nvim.current.line != "":
-            self.nvim.command("normal o")
+        # if self.nvim.current.line != "":
+        self.nvim.command("normal Go")
         self.nvim.current.line += "### User"
         self.nvim.command("normal o")
         self.nvim.current.line += prompt

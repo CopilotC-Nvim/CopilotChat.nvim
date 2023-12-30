@@ -10,11 +10,11 @@ def random_hex(length: int = 65):
 
 
 def generate_request(
-    chat_history: list[typings.Message], code_excerpt: str, language: str = ""
+    chat_history: list[typings.Message], code_excerpt: str, language: str = "", system_prompt = prompts.COPILOT_INSTRUCTIONS
 ):
     messages = [
         {
-            "content": prompts.COPILOT_INSTRUCTIONS,
+            "content": system_prompt,
             "role": "system",
         }
     ]
