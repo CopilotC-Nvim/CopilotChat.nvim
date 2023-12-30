@@ -78,27 +78,15 @@ class Copilot:
         url = "https://api.github.com/copilot_internal/v2/token"
         headers = {
             "authorization": f"token {self.github_token}",
-            "editor-version": "vscode/1.80.1",
-            "editor-plugin-version": "copilot-chat/0.4.1",
-            "user-agent": "GitHubCopilotChat/0.4.1",
+            "editor-version": "vscode/1.85.1",
+            "editor-plugin-version": "copilot-chat/0.12.2023120701",
+            "user-agent": "GitHubCopilotChat/0.12.2023120701",
         }
 
         self.token = self.session.get(url, headers=headers).json()
 
     def ask(self, prompt: str, code: str, language: str = ""):
         url = "https://copilot-proxy.githubusercontent.com/v1/chat/completions"
-        headers = {
-            "authorization": f"Bearer {self.token['token']}",
-            "x-request-id": str(uuid.uuid4()),
-            "vscode-sessionid": self.vscode_sessionid,
-            "machineid": self.machineid,
-            "editor-version": "vscode/1.80.1",
-            "editor-plugin-version": "copilot-chat/0.4.1",
-            "openai-organization": "github-copilot",
-            "openai-intent": "conversation-panel",
-            "content-type": "application/json",
-            "user-agent": "GitHubCopilotChat/0.4.1",
-        }
         self.chat_history.append(typings.Message(prompt, "user"))
         system_prompt = prompts.COPILOT_INSTRUCTIONS
         if prompt == prompts.FIX_SHORTCUT:
@@ -111,7 +99,7 @@ class Copilot:
 
         full_response = ""
 
-        response = self.session.post(url, headers=headers, json=data, stream=True)
+        response = self.session.post(url, headers=self._headers(), json=data, stream=True)
         for line in response.iter_lines():
             line = line.decode("utf-8").replace("data: ", "").strip()
             if line.startswith("[DONE]"):
@@ -130,6 +118,21 @@ class Copilot:
                 continue
 
         self.chat_history.append(typings.Message(full_response, "system"))
+
+    def _headers(self):
+        return {
+            "authorization": f"Bearer {self.token['token']}",
+            "x-request-id": str(uuid.uuid4()),
+            "vscode-sessionid": self.vscode_sessionid,
+            "machineid": self.machineid,
+            "editor-version": "vscode/1.85.1",
+            "editor-plugin-version": "copilot-chat/0.12.2023120701",
+            "openai-organization": "github-copilot",
+            "openai-intent": "conversation-panel",
+            "content-type": "application/json",
+            "user-agent": "GitHubCopilotChat/0.12.2023120701",
+        }
+
 
 
 def get_input(session: PromptSession, text: str = ""):

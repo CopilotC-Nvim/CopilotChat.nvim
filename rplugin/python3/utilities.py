@@ -35,7 +35,7 @@ def generate_request(
         )
     return {
         "intent": True,
-        "model": "copilot-chat",
+        "model": "gpt-4",
         "n": 1,
         "stream": True,
         "temperature": 0.1,
@@ -43,6 +43,13 @@ def generate_request(
         "messages": messages,
     }
 
+def generate_embedding_request(inputs: list[typings.FileExtract]):
+    return {
+        "input": [
+            f"File: `{i.filepath}`\n```{i.filepath.split('.')[-1]}\n{i.code}```" for i in inputs
+        ],
+        "model": "copilot-text-embedding-ada-002"
+    }
 
 def cache_token(user: str, token: str):
     # ~/.config/github-copilot/hosts.json
