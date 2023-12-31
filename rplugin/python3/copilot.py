@@ -86,7 +86,7 @@ class Copilot:
         self.token = self.session.get(url, headers=headers).json()
 
     def ask(self, prompt: str, code: str, language: str = ""):
-        url = "https://copilot-proxy.githubusercontent.com/v1/chat/completions"
+        url = "https://api.githubcopilot.com/chat/completions"
         self.chat_history.append(typings.Message(prompt, "user"))
         system_prompt = prompts.COPILOT_INSTRUCTIONS
         if prompt == prompts.FIX_SHORTCUT:
@@ -108,6 +108,9 @@ class Copilot:
                 continue
             try:
                 line = json.loads(line)
+                if "choices" not in line:
+                    print("Error:", line)
+                    raise Exception(f"No choices on {line}")
                 content = line["choices"][0]["delta"]["content"]
                 if content is None:
                     continue
