@@ -50,7 +50,11 @@ class CopilotChatPlugin(object):
         # Check if we're already in a chat buffer
         if self.nvim.eval("getbufvar(bufnr(), '&buftype')") != "nofile":
             # Create a new scratch buffer to hold the chat
-            self.nvim.command("enew")
+            self.nvim.command("vnew")
+            # Set it to the left side of the screen
+            self.nvim.command("wincmd L")
+            self.nvim.command("vertical resize 50%")
+            # Set the buffer type to nofile and hide it when it's not active
             self.nvim.command("setlocal buftype=nofile bufhidden=hide noswapfile")
             # Set filetype as markdown and wrap with linebreaks
             self.nvim.command("setlocal filetype=markdown wrap linebreak")
