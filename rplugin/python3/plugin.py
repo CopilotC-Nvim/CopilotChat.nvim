@@ -45,7 +45,7 @@ class CopilotChatPlugin(object):
             prompt = prompts.EXPLAIN_SHORTCUT
 
         # Get code from the unnamed register
-        code = text = self.nvim.current.buffer[:]
+        code = self.nvim.current.buffer[:]
         file_type = self.nvim.eval("expand('%')").split(".")[-1]
         # Check if we're already in a chat buffer
         if self.nvim.eval("getbufvar(bufnr(), '&buftype')") != "nofile":
