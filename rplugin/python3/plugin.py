@@ -65,10 +65,7 @@ class CopilotChatPlugin(object):
 ### Copilot
 
 """
-        buffer_lines = self.nvim.api.buf_get_lines(buf, 0, -1, 0)
-        self.nvim.api.buf_set_lines(
-            0, len(buffer_lines), -1, False, start_separator.split("\n")
-        )
+        buf.append(start_separator.split("\n"), -1)
 
         # Add chat messages
         for token in self.copilot.ask(prompt, code, language=file_type):
@@ -87,7 +84,4 @@ class CopilotChatPlugin(object):
 
         # Add end separator
         end_separator = "\n---\n"
-        buffer_lines = self.nvim.api.buf_get_lines(buf, 0, -1, 0)
-        self.nvim.api.buf_set_lines(
-            buf, len(buffer_lines), -1, False, end_separator.split("\n")
-        )
+        buf.append(end_separator.split("\n"), -1)
