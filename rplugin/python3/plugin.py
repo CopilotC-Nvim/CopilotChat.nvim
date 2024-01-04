@@ -55,26 +55,33 @@ class CopilotChatPlugin(object):
             # Set filetype as markdown and wrap with linebreaks
             self.nvim.command("setlocal filetype=markdown wrap linebreak")
 
-        # if self.nvim.current.line != "":
-        self.nvim.command("normal Go")
-        self.nvim.current.line += "### User"
-        self.nvim.command("normal o")
-        self.nvim.current.line += prompt
-        self.nvim.command("normal o")
-        self.nvim.current.line += "### Copilot"
-        self.nvim.command("normal o")
+        # Get the current buffer
+        buf = self.nvim.current.buffer
 
+        # Add start separator
+        start_separator = f"""### User
+{prompt}
+
+### Copilot
+
+"""
+        buf.append(start_separator.split("\n"), -1)
+
+        # Add chat messages
         for token in self.copilot.ask(prompt, code, language=file_type):
-            if "\n" not in token:
-                self.nvim.current.line += token
-                continue
-            lines = token.split("\n")
-            for i in range(len(lines)):
-                self.nvim.current.line += lines[i]
-                if i != len(lines) - 1:
-                    self.nvim.command("normal o")
+            buffer_lines = self.nvim.api.buf_get_lines(buf, 0, -1, 0)
+            last_line_row = len(buffer_lines) - 1
+            last_line_col = len(buffer_lines[-1])
 
-        self.nvim.command("normal o")
-        self.nvim.current.line += ""
-        self.nvim.command("normal o")
-        self.nvim.current.line += "---"
+            self.nvim.api.buf_set_text(
+                buf,
+                last_line_row,
+                last_line_col,
+                last_line_row,
+                last_line_col,
+                token.split("\n"),
+            )
+
+        # Add end separator
+        end_separator = "\n---\n"
+        buf.append(end_separator.split("\n"), -1)
