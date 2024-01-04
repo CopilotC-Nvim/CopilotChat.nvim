@@ -95,7 +95,8 @@ class Copilot:
             system_prompt = prompts.COPILOT_TESTS
         elif prompt == prompts.EXPLAIN_SHORTCUT:
             system_prompt = prompts.COPILOT_EXPLAIN
-        data = utilities.generate_request(self.chat_history, code, language, system_prompt=system_prompt)
+        data = utilities.generate_request(
+            self.chat_history, code, language, system_prompt=system_prompt)
 
         full_response = ""
 
@@ -122,6 +123,24 @@ class Copilot:
 
         self.chat_history.append(typings.Message(full_response, "system"))
 
+    def _get_embeddings(self, inputs: list[typings.FileExtract]):
+        embeddings = []
+        url = "https://api.githubcopilot.com/embeddings"
+        # If we have more than 18 files, we need to split them into multiple requests
+        for i in range(0, len(inputs), 18):
+            if i + 18 > len(inputs):
+                data = utilities.generate_embedding_request(inputs[i:])
+            else:
+                data = utilities.generate_embedding_request(inputs[i:i + 18])
+            response = self.session.post(url, headers=self._headers(), json=data).json()
+            if "data" not in response:
+                raise Exception(f"Error fetching embeddings: {response}")
+            for embedding in response["data"]:
+                embeddings.append(embedding["embedding"])
+        return embeddings
+        
+
+
     def _headers(self):
         return {
             "authorization": f"Bearer {self.token['token']}",
@@ -135,7 +154,6 @@ class Copilot:
             "content-type": "application/json",
             "user-agent": "GitHubCopilotChat/0.12.2023120701",
         }
-
 
 
 def get_input(session: PromptSession, text: str = ""):
