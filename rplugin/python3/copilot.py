@@ -38,10 +38,9 @@ class Copilot:
         response = self.session.post(
             url,
             headers=LOGIN_HEADERS,
-            data=json.dumps({
-                "client_id": "Iv1.b507a08c87ecfe98",
-                "scope": "read:user"
-            })
+            data=json.dumps(
+                {"client_id": "Iv1.b507a08c87ecfe98", "scope": "read:user"}
+            ),
         ).json()
         return response
 
@@ -51,11 +50,13 @@ class Copilot:
         response = self.session.post(
             url,
             headers=LOGIN_HEADERS,
-            data=json.dumps({
-                "client_id": "Iv1.b507a08c87ecfe98",
-                "device_code": device_code,
-                "grant_type": "urn:ietf:params:oauth:grant-type:device_code"
-            })
+            data=json.dumps(
+                {
+                    "client_id": "Iv1.b507a08c87ecfe98",
+                    "device_code": device_code,
+                    "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                }
+            ),
         ).json()
         if "access_token" in response:
             access_token, token_type = response["access_token"], response["token_type"]
@@ -96,11 +97,14 @@ class Copilot:
         elif prompt == prompts.EXPLAIN_SHORTCUT:
             system_prompt = prompts.COPILOT_EXPLAIN
         data = utilities.generate_request(
-            self.chat_history, code, language, system_prompt=system_prompt)
+            self.chat_history, code, language, system_prompt=system_prompt
+        )
 
         full_response = ""
 
-        response = self.session.post(url, headers=self._headers(), json=data, stream=True)
+        response = self.session.post(
+            url, headers=self._headers(), json=data, stream=True
+        )
         for line in response.iter_lines():
             line = line.decode("utf-8").replace("data: ", "").strip()
             if line.startswith("[DONE]"):
@@ -131,15 +135,13 @@ class Copilot:
             if i + 18 > len(inputs):
                 data = utilities.generate_embedding_request(inputs[i:])
             else:
-                data = utilities.generate_embedding_request(inputs[i:i + 18])
+                data = utilities.generate_embedding_request(inputs[i : i + 18])
             response = self.session.post(url, headers=self._headers(), json=data).json()
             if "data" not in response:
                 raise Exception(f"Error fetching embeddings: {response}")
             for embedding in response["data"]:
                 embeddings.append(embedding["embedding"])
         return embeddings
-        
-
 
     def _headers(self):
         return {
