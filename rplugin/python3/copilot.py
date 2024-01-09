@@ -116,6 +116,8 @@ class Copilot:
                 if "choices" not in line:
                     print("Error:", line)
                     raise Exception(f"No choices on {line}")
+                if len(line["choices"]) == 0:
+                    continue
                 content = line["choices"][0]["delta"]["content"]
                 if content is None:
                     continue
