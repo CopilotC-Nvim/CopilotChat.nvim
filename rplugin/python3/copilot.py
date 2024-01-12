@@ -87,6 +87,9 @@ class Copilot:
         self.token = self.session.get(url, headers=headers).json()
 
     def ask(self, prompt: str, code: str, language: str = ""):
+        # If expired, reauthenticate
+        if self.token.get("expires_at") <= round(time.time()):
+            self.authenticate()
         url = "https://api.githubcopilot.com/chat/completions"
         self.chat_history.append(typings.Message(prompt, "user"))
         system_prompt = prompts.COPILOT_INSTRUCTIONS
