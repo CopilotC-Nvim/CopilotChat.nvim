@@ -12,11 +12,12 @@ It will prompt you with instructions on your first start. If you already have `C
 2. Put it in your lazy setup
 
 ```lua
-require('lazy').setup({
+return {
   {
     "jellydn/CopilotChat.nvim",
-    branch = "canary",
-    opts = {},
+    opts = {
+      mode = "split", -- newbuffer or split  , default: newbuffer
+    },
     build = function()
       vim.defer_fn(function()
         vim.cmd("UpdateRemotePlugins")
@@ -29,8 +30,7 @@ require('lazy').setup({
       { "<leader>cct", "<cmd>CopilotChatTests<cr>", desc = "CopilotChat - Generate tests" },
     },
   },
-    ...
-})
+}
 ```
 
 3. Run `:UpdateRemotePlugins`
