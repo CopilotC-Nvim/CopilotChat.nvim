@@ -3,6 +3,7 @@ import time
 
 import copilot
 import dotenv
+import prompts
 import pynvim
 
 dotenv.load_dotenv()
@@ -34,41 +35,69 @@ class CopilotChatPlugin(object):
         if self.copilot.github_token is None:
             self.nvim.out_write("Please authenticate with Copilot first\n")
             return
+
+        # Start the spinner
+        self.nvim.exec_lua('require("CopilotChat.spinner").show()')
+
         prompt = " ".join(args)
+        if prompt == "/fix":
+            prompt = prompts.FIX_SHORTCUT
+        elif prompt == "/test":
+            prompt = prompts.TEST_SHORTCUT
+        elif prompt == "/explain":
+            prompt = prompts.EXPLAIN_SHORTCUT
 
         # Get code from the unnamed register
         code = self.nvim.eval("getreg('\"')")
         file_type = self.nvim.eval("expand('%')").split(".")[-1]
+
+        # Get the view option from the command
+        view_option = self.nvim.eval("g:copilot_chat_view_option")
+
         # Check if we're already in a chat buffer
         if self.nvim.eval("getbufvar(bufnr(), '&buftype')") != "nofile":
             # Create a new scratch buffer to hold the chat
-            self.nvim.command("enew")
+            if view_option == "split":
+                self.nvim.command("vnew")
+            else:
+                self.nvim.command("enew")
+            # Set the buffer type to nofile and hide it when it's not active
             self.nvim.command("setlocal buftype=nofile bufhidden=hide noswapfile")
             # Set filetype as markdown and wrap with linebreaks
             self.nvim.command("setlocal filetype=markdown wrap linebreak")
 
-        if self.nvim.current.line != "":
-            # Go to end of file and insert a new line
-            self.nvim.command("normal Go")
-        self.nvim.current.line += "### User"
-        self.nvim.command("normal o")
-        # TODO: How to handle the case with the large text in from neovim command
-        self.nvim.current.line += prompt
-        self.nvim.command("normal o")
-        self.nvim.current.line += "### Copilot"
-        self.nvim.command("normal o")
+        # Get the current buffer
+        buf = self.nvim.current.buffer
+        self.nvim.api.buf_set_option(buf, "fileencoding", "utf-8")
 
+        # Add start separator
+        start_separator = f"""### User
+{prompt}
+
+### Copilot
+
+"""
+        buf.append(start_separator.split("\n"), -1)
+
+        # Add chat messages
         for token in self.copilot.ask(prompt, code, language=file_type):
-            if "\n" not in token:
-                self.nvim.current.line += token
-                continue
-            lines = token.split("\n")
-            for i in range(len(lines)):
-                self.nvim.current.line += lines[i]
-                if i != len(lines) - 1:
-                    self.nvim.command("normal o")
+            buffer_lines = self.nvim.api.buf_get_lines(buf, 0, -1, 0)
+            last_line_row = len(buffer_lines) - 1
+            last_line = buffer_lines[-1]
+            last_line_col = len(last_line.encode("utf-8"))
 
-        self.nvim.command("normal o")
-        self.nvim.current.line += ""
-        self.nvim.command("normal o")
-        self.nvim.current.line += "---"
+            self.nvim.api.buf_set_text(
+                buf,
+                last_line_row,
+                last_line_col,
+                last_line_row,
+                last_line_col,
+                token.split("\n"),
+            )
+
+        # Stop the spinner
+        self.nvim.exec_lua('require("CopilotChat.spinner").hide()')
+
+        # Add end separator
+        end_separator = "\n---\n"
+        buf.append(end_separator.split("\n"), -1)

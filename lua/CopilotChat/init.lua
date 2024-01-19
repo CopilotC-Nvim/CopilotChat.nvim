@@ -3,9 +3,13 @@ local utils = require('CopilotChat.utils')
 local M = {}
 
 -- Set up the plugin
-M.setup = function()
+---@param options (table | nil)
+--       - mode: ('newbuffer' | 'split') default: newbuffer.
+M.setup = function(options)
+  vim.g.copilot_chat_view_option = options and options.mode or 'newbuffer'
+
   -- Add new command to explain the selected text with CopilotChat
-  utils.create_cmd('CopilotChatExplain', function(opts)
+  utils.create_cmd('CopilotChatExplain', function()
     vim.cmd('CopilotChat Explain how it works')
   end, { nargs = '*', range = true })
 

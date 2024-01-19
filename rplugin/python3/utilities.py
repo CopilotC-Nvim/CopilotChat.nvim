@@ -1,8 +1,9 @@
+import json
+import os
+import random
+
 import prompts
 import typings
-import random
-import os
-import json
 
 
 def random_hex(length: int = 65):
@@ -10,11 +11,14 @@ def random_hex(length: int = 65):
 
 
 def generate_request(
-    chat_history: list[typings.Message], code_excerpt: str, language: str = ""
+    chat_history: list[typings.Message],
+    code_excerpt: str,
+    language: str = "",
+    system_prompt=prompts.COPILOT_INSTRUCTIONS,
 ):
     messages = [
         {
-            "content": prompts.COPILOT_INSTRUCTIONS,
+            "content": system_prompt,
             "role": "system",
         }
     ]
@@ -35,12 +39,22 @@ def generate_request(
         )
     return {
         "intent": True,
-        "model": "copilot-chat",
+        "model": "gpt-4",
         "n": 1,
         "stream": True,
         "temperature": 0.1,
         "top_p": 1,
         "messages": messages,
+    }
+
+
+def generate_embedding_request(inputs: list[typings.FileExtract]):
+    return {
+        "input": [
+            f"File: `{i.filepath}`\n```{i.filepath.split('.')[-1]}\n{i.code}```"
+            for i in inputs
+        ],
+        "model": "copilot-text-embedding-ada-002",
     }
 
 
@@ -51,12 +65,16 @@ def cache_token(user: str, token: str):
     if not os.path.exists(config_dir):
         os.makedirs(config_dir)
     with open(os.path.join(config_dir, "hosts.json"), "w") as f:
-        f.write(json.dumps({
-            "github.com": {
-                "user": user,
-                "oauth_token": token,
-            }
-        }))
+        f.write(
+            json.dumps(
+                {
+                    "github.com": {
+                        "user": user,
+                        "oauth_token": token,
+                    }
+                }
+            )
+        )
 
 
 def get_cached_token():
@@ -74,7 +92,6 @@ def get_cached_token():
 
 
 if __name__ == "__main__":
-
     print(
         json.dumps(
             generate_request(
