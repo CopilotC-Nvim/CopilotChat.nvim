@@ -1,5 +1,8 @@
 # Copilot Chat for Neovim
 
+> [!NOTE]
+> You might want to take a look at [this fork](https://github.com/jellydn/CopilotChat.nvim) which is more well maintained & is more configurable. I personally use it now as well.
+
 ## Authentication
 
 It will prompt you with instructions on your first start. If you already have `Copilot.vim` or `Copilot.lua`, it will work automatically.
