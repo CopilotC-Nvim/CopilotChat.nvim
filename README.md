@@ -57,10 +57,32 @@ $ pip install -r requirements.txt
 
 ## Usage
 
-1. Yank some code into the unnamed register (`y`)
-2. `:CopilotChat What does this code do?`
+### Chat
 
-[![Demo](https://i.gyazo.com/10fbd1543380d15551791c1a6dcbcd46.gif)](https://gyazo.com/10fbd1543380d15551791c1a6dcbcd46)
+To chat with Copilot, follow these steps:
+
+1. Copy some code into the unnamed register using the `y` command.
+2. Run the command `:CopilotChat` followed by your question. For example, `:CopilotChat What does this code do?`
+
+![Chat Demo](https://i.gyazo.com/10fbd1543380d15551791c1a6dcbcd46.gif)
+
+### Code Explanation
+
+To get an explanation of your code, follow these steps:
+
+1. Copy some code into the unnamed register using the `y` command.
+2. Run the command `:CopilotChatExplain`.
+
+![Explain Code Demo](https://i.gyazo.com/e5031f402536a1a9d6c82b2c38d469e3.gif)
+
+### Generate Tests
+
+To generate tests for your code, follow these steps:
+
+1. Copy some code into the unnamed register using the `y` command.
+2. Run the command `:CopilotChatTests`.
+
+[![Generate tests](https://i.gyazo.com/f285467d4b8d8f8fd36aa777305312ae.gif)](https://gyazo.com/f285467d4b8d8f8fd36aa777305312ae)
 
 ## Roadmap
 
