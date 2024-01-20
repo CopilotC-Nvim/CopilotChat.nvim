@@ -59,7 +59,7 @@ $ pip install -r requirements.txt
 
 ### Configuration
 
-You can customize the CopilotChat plugin using the following configuration options:
+You have the ability to tailor this plugin to your specific needs using the configuration options outlined below:
 
 ```lua
 {
@@ -71,7 +71,7 @@ You can customize the CopilotChat plugin using the following configuration optio
 }
 ```
 
-You can extend the prompts to generate more flexible commands:
+You have the capability to expand the prompts to create more versatile commands:
 
 ```lua
 return {
@@ -100,6 +100,8 @@ return {
     }
 }
 ```
+
+For further reference, you can view my [configuration](https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/copilot-chat.lua).
 
 ### Chat with Github Copilot
 
