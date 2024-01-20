@@ -57,9 +57,51 @@ $ pip install -r requirements.txt
 
 ## Usage
 
-### Chat
+### Configuration
 
-To chat with Copilot, follow these steps:
+You can customize the CopilotChat plugin using the following configuration options:
+
+```lua
+{
+  debug = false, -- Enable or disable debug mode
+  prompts = { -- Set dynamic prompts for CopilotChat commands
+    Explain = 'Explain how it works.',
+    Tests = 'Briefly explain how the selected code works, then generate unit tests.',
+  }
+}
+```
+
+You can extend the prompts to generate more flexible commands:
+
+```lua
+return {
+    "jellydn/CopilotChat.nvim",
+    opts = {
+      mode = "split",
+      prompts = {
+        Explain = "Explain how it works.",
+        Review = "Review the following code and provide concise suggestions.",
+        Tests = "Briefly explain how the selected code works, then generate unit tests.",
+        Refactor = "Refactor the code to improve clarity and readability.",
+      },
+    },
+    build = function()
+      vim.defer_fn(function()
+        vim.cmd("UpdateRemotePlugins")
+        vim.notify("CopilotChat - Updated remote plugins. Please restart Neovim.")
+      end, 3000)
+    end,
+    event = "VeryLazy",
+    keys = {
+      { "<leader>cce", "<cmd>CopilotChatExplain<cr>", desc = "CopilotChat - Explain code" },
+      { "<leader>cct", "<cmd>CopilotChatTests<cr>", desc = "CopilotChat - Generate tests" },
+      { "<leader>ccr", "<cmd>CopilotChatReview<cr>", desc = "CopilotChat - Review code" },
+      { "<leader>ccR", "<cmd>CopilotChatRefactor<cr>", desc = "CopilotChat - Refactor code" },
+    }
+}
+```
+
+### Chat with Github Copilot
 
 1. Copy some code into the unnamed register using the `y` command.
 2. Run the command `:CopilotChat` followed by your question. For example, `:CopilotChat What does this code do?`
@@ -68,16 +110,12 @@ To chat with Copilot, follow these steps:
 
 ### Code Explanation
 
-To get an explanation of your code, follow these steps:
-
 1. Copy some code into the unnamed register using the `y` command.
 2. Run the command `:CopilotChatExplain`.
 
 ![Explain Code Demo](https://i.gyazo.com/e5031f402536a1a9d6c82b2c38d469e3.gif)
 
 ### Generate Tests
-
-To generate tests for your code, follow these steps:
 
 1. Copy some code into the unnamed register using the `y` command.
 2. Run the command `:CopilotChatTests`.

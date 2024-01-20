@@ -4,7 +4,7 @@ local M = {}
 
 local default_prompts = {
   Explain = 'Explain how it works.',
-  Tests = 'Briefly how selected code works then generate unit tests for the code.',
+  Tests = 'Briefly how selected code works then generate unit tests.',
 }
 
 -- Set up the plugin
