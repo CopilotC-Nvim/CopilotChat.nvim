@@ -16,7 +16,7 @@
         "code",
         "doc"
       ]
-    }
+    },
     {
       "login": "jellydn",
       "name": "Dung Duc Huynh (Kaka)",
@@ -26,7 +26,16 @@
           "code",
           "doc"
       ]
-    }
+    },
+    {
+     "login": "qoobes",
+      "name": "Ahmed Haracic",
+      "avatar_url": "https://avatars.githubusercontent.com/u/58834655?v=4",
+      "profile": "https://qoobes.dev",
+      "contributions": [
+        "code"
+      ]
+     } 
   ],
   "contributorsPerLine": 7,
   "skipCi": true,
