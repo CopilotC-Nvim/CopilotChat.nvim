@@ -25,7 +25,7 @@ jobs:
         with:
           vimdoc: CopilotChat
           treesitter: true
-      - uses: stefanzweifel/git-auto-commit-action@v4
+      - uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore(doc): auto generate docs"
           commit_user_name: "github-actions[bot]"
