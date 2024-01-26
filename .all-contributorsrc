@@ -23,19 +23,28 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/870029?v=4",
       "profile": "https://productsway.com/",
       "contributions": [
-          "code",
-          "doc"
+        "code",
+        "doc"
       ]
     },
     {
-     "login": "qoobes",
+      "login": "qoobes",
       "name": "Ahmed Haracic",
       "avatar_url": "https://avatars.githubusercontent.com/u/58834655?v=4",
       "profile": "https://qoobes.dev",
       "contributions": [
         "code"
       ]
-     } 
+    },
+    {
+      "login": "ziontee113",
+      "name": "Trí Thiện Nguyễn",
+      "avatar_url": "https://avatars.githubusercontent.com/u/102876811?v=4",
+      "profile": "https://youtube.com/@ziontee113",
+      "contributions": [
+        "code"
+      ]
+    }
   ],
   "contributorsPerLine": 7,
   "skipCi": true,
