@@ -17,6 +17,16 @@
         "doc"
       ]
     }
+    {
+      "login": "jellydn",
+      "name": "Dung Duc Huynh (Kaka)",
+      "avatar_url": "https://avatars.githubusercontent.com/u/870029?v=4",
+      "profile": "https://productsway.com/",
+      "contributions": [
+          "code",
+          "doc"
+      ]
+    }
   ],
   "contributorsPerLine": 7,
   "skipCi": true,
