@@ -6,7 +6,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Stylua
         uses: JohnnyMorganz/stylua-action@v3
         with:
@@ -19,7 +19,7 @@ jobs:
     name: pandoc to vimdoc
     if: ${{ github.ref == 'refs/heads/main' }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: panvimdoc
         uses: kdheepak/panvimdoc@main
         with:
@@ -39,7 +39,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: rhysd/action-setup-vim@v1
         id: vim
         with:
