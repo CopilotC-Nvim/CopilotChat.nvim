@@ -1,0 +1,27 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "commitType": "docs",
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "gptlang",
+      "name": "gptlang",
+      "avatar_url": "https://avatars.githubusercontent.com/u/121417512?v=4",
+      "profile": "https://github.com/gptlang",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true,
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "projectName": "CopilotChat.nvim",
+  "projectOwner": "jellydn"
+}
