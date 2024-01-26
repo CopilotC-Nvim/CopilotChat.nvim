@@ -58,6 +58,11 @@ function M.show(position)
     0,
     100,
     vim.schedule_wrap(function()
+      if vim.fn.bufexists(spinner_buf) == 0 then
+        -- Hide the spinner if the buffer does not exist
+        M.hide()
+        return
+      end
       vim.api.nvim_buf_set_lines(
         spinner_buf,
         0,
