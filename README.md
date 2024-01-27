@@ -1,6 +1,9 @@
 # Copilot Chat for Neovim
+
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+
 [![All Contributors](https://img.shields.io/badge/all_contributors-4-orange.svg?style=flat-square)](#contributors-)
+
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 ## Authentication
@@ -12,7 +15,8 @@ It will prompt you with instructions on your first start. If you already have `C
 ### Lazy.nvim
 
 1. `pip install python-dotenv requests pynvim==0.5.0 prompt-toolkit`
-2. Put it in your lazy setup
+2. `pip install tiktoken` (optional for displaying prompt token counts)
+3. Put it in your lazy setup
 
 ```lua
 return {
@@ -31,6 +35,10 @@ return {
     keys = {
       { "<leader>cce", "<cmd>CopilotChatExplain<cr>", desc = "CopilotChat - Explain code" },
       { "<leader>cct", "<cmd>CopilotChatTests<cr>", desc = "CopilotChat - Generate tests" },
+
+      { "<leader>ccv", ":CopilotChatVsplit", mode = "n", desc = "CopilotChat - Open in vertical split in normal mode" },
+      { "<leader>ccv", ":CopilotChatVsplitVisual", mode = "x", desc = "CopilotChat - Open in vertical split in visual mode" },
+      { "<leader>ccx", "<cmd>CopilotChatInPlace", mode = "x", desc = "CopilotChat - Open in-place code replacement layout" },
     },
   },
 }

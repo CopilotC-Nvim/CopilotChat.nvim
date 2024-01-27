@@ -7,8 +7,8 @@ from tools.priority_matrix import PriorityMatrix
 
 from mycopilot.mycopilot import Copilot
 
-PLUGIN_MAPPING_CMD = "CopilotAgentMapping"
-PLUGIN_AUTOCMD_CMD = "CopilotAgentAutocmd"
+PLUGIN_MAPPING_CMD = "CopilotChatMapping"
+PLUGIN_AUTOCMD_CMD = "CopilotChatAutocmd"
 
 
 @pynvim.plugin
@@ -40,7 +40,7 @@ class CopilotAgentPlugin(object):
         if self.vsplit_chat_handler is None:
             self.vsplit_chat_handler = VSplitChatHandler(self.nvim)
 
-    @pynvim.command("CopilotAgent", nargs="1")
+    @pynvim.command("CopilotChatVsplit", nargs="1")
     def copilot_agent_cmd(self, args: list[str]):
         self.init_vsplit_chat_handler()
         if self.vsplit_chat_handler:
@@ -48,7 +48,7 @@ class CopilotAgentPlugin(object):
             self.vsplit_chat_handler.vsplit()
             self.vsplit_chat_handler.chat(args[0], file_type)
 
-    @pynvim.command("CopilotAgentVisual", nargs="1", range="")
+    @pynvim.command("CopilotChatVsplitVisual", nargs="1", range="")
     def copilot_agent_visual_cmd(self, args: list[str], range: list[int]):
         self.init_vsplit_chat_handler()
         if self.vsplit_chat_handler:
@@ -62,7 +62,7 @@ class CopilotAgentPlugin(object):
         if self.inplace_chat_handler is None:
             self.inplace_chat_handler = InPlaceChatHandler(self.nvim)
 
-    @pynvim.command("InplaceHandler", nargs="*", range="")
+    @pynvim.command("CopilotChatInPlace", nargs="*", range="")
     def inplace_cmd(self, args: list[str], range: list[int]):
         self.init_inplace_chat_handler()
         if self.inplace_chat_handler:
