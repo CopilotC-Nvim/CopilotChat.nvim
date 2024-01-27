@@ -22,6 +22,7 @@ It will prompt you with instructions on your first start. If you already have `C
 return {
   {
     "jellydn/CopilotChat.nvim",
+    branch = "canary", -- Will be merged to main branch when it's stable
     opts = {
       mode = "split", -- newbuffer or split  , default: newbuffer
     },
@@ -35,10 +36,10 @@ return {
     keys = {
       { "<leader>cce", "<cmd>CopilotChatExplain<cr>", desc = "CopilotChat - Explain code" },
       { "<leader>cct", "<cmd>CopilotChatTests<cr>", desc = "CopilotChat - Generate tests" },
-
+      -- Those are available only on canary branch
       { "<leader>ccv", ":CopilotChatVsplit", mode = "n", desc = "CopilotChat - Open in vertical split in normal mode" },
       { "<leader>ccv", ":CopilotChatVsplitVisual", mode = "x", desc = "CopilotChat - Open in vertical split in visual mode" },
-      { "<leader>ccx", "<cmd>CopilotChatInPlace", mode = "x", desc = "CopilotChat - Open in-place code replacement layout" },
+      { "<leader>ccx", "<cmd>CopilotChatInPlace<cr>", mode = "x", desc = "CopilotChat - Open in-place code replacement layout" },
     },
   },
 }
