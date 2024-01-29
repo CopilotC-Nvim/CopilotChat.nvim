@@ -136,6 +136,14 @@ For further reference, you can view my [configuration](https://github.com/jellyd
 
 [![Generate tests](https://i.gyazo.com/f285467d4b8d8f8fd36aa777305312ae.gif)](https://gyazo.com/f285467d4b8d8f8fd36aa777305312ae)
 
+### Token count & Fold Demo
+
+![Fold Demo](https://github.com/jellydn/CopilotChat.nvim/assets/102876811/949b39c7-e0ef-4839-acc5-7f2317865056)
+
+### In-place Chat Popup Demo
+
+![Inplace Demo](https://github.com/jellydn/CopilotChat.nvim/assets/102876811/84e82b23-66f6-4583-97e6-00d526034134)
+
 ## Roadmap
 
 - Translation to pure Lua
