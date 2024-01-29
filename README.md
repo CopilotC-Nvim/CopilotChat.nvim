@@ -37,9 +37,18 @@ return {
       { "<leader>cce", "<cmd>CopilotChatExplain<cr>", desc = "CopilotChat - Explain code" },
       { "<leader>cct", "<cmd>CopilotChatTests<cr>", desc = "CopilotChat - Generate tests" },
       -- Those are available only on canary branch
-      { "<leader>ccv", ":CopilotChatVsplit", mode = "n", desc = "CopilotChat - Open in vertical split in normal mode" },
-      { "<leader>ccv", ":CopilotChatVsplitVisual", mode = "x", desc = "CopilotChat - Open in vertical split in visual mode" },
-      { "<leader>ccx", "<cmd>CopilotChatInPlace<cr>", mode = "x", desc = "CopilotChat - Open in-place code replacement layout" },
+      {
+        "<leader>ccv",
+        ":CopilotChatVsplitVisual",
+        mode = "x",
+        desc = "CopilotChat - Open in vertical split",
+      },
+      {
+        "<leader>ccx",
+        "<cmd>CopilotChatInPlace<cr>",
+        mode = "x",
+        desc = "CopilotChat - Run in-place code",
+      },
     },
   },
 }
