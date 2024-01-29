@@ -18,6 +18,16 @@ class CopilotAgentPlugin(object):
         if self.vsplit_chat_handler is None:
             self.vsplit_chat_handler = VSplitChatHandler(self.nvim)
 
+    @pynvim.command("CopilotChatVsplit", nargs="1")
+    def copilot_agent_cmd(self, args: list[str]):
+        self.init_vsplit_chat_handler()
+        if self.vsplit_chat_handler:
+            file_type = self.nvim.current.buffer.options["filetype"]
+            self.vsplit_chat_handler.vsplit()
+            # Get code from the unnamed register
+            code = self.nvim.eval("getreg('\"')")
+            self.vsplit_chat_handler.chat(args[0], file_type, code)
+
     @pynvim.command("CopilotChatVsplitVisual", nargs="1", range="")
     def copilot_agent_visual_cmd(self, args: list[str], range: list[int]):
         self.init_vsplit_chat_handler()
