@@ -1,8 +1,9 @@
-from mypynvim.core.nvim import MyNvim
-from mypynvim.core.buffer import MyBuffer
-from mypynvim.ui_components.popup import PopUp
-from mypynvim.ui_components.layout import Layout, Box
 from handlers.chat_handler import ChatHandler
+from mypynvim.core.buffer import MyBuffer
+from mypynvim.core.nvim import MyNvim
+from mypynvim.ui_components.layout import Box, Layout
+from mypynvim.ui_components.popup import PopUp
+
 from . import prompts
 
 SYSTEM_PROMPT = """
@@ -14,6 +15,7 @@ You MUST add whitespace in the beginning of each line as needed to match the use
 """
 
 
+# This is not working yet! It's a work in progress.
 class InPlaceChatHandler:
     """This class handles in-place chat functionality."""
 
