@@ -42,6 +42,17 @@ class CopilotAgentPlugin(object):
         if self.inplace_chat_handler is None:
             self.inplace_chat_handler = InPlaceChatHandler(self.nvim)
 
+    # Those commands are used by the plugin, internal use only
+    @pynvim.command(PLUGIN_MAPPING_CMD, nargs="*")
+    def plugin_mapping_cmd(self, args):
+        bufnr, mapping = args
+        self.nvim.key_mapper.execute(bufnr, mapping)
+
+    @pynvim.command(PLUGIN_AUTOCMD_CMD, nargs="*")
+    def plugin_autocmd_cmd(self, args):
+        event, id, bufnr = args
+        self.nvim.autocmd_mapper.execute(event, id, bufnr)
+
     @pynvim.command("CopilotChatInPlace", nargs="*", range="")
     def inplace_cmd(self, args: list[str], range: list[int]):
         self.init_inplace_chat_handler()
