@@ -1,7 +1,9 @@
 # Copilot Chat for Neovim
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+
 [![All Contributors](https://img.shields.io/badge/all_contributors-5-orange.svg?style=flat-square)](#contributors-)
+
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 ## Authentication
@@ -61,7 +63,7 @@ return {
 1. Put the files in the right place
 
 ```
-$ git clone https://github.com/gptlang/CopilotChat.nvim
+$ git clone https://github.com/jellydn/CopilotChat.nvim
 $ cd CopilotChat.nvim
 $ cp -r --backup=nil rplugin ~/.config/nvim/
 ```
@@ -156,7 +158,7 @@ For further reference, you can view my [configuration](https://github.com/jellyd
 1. Select some code using visual mode.
 2. Run the command `:CopilotChatInPlace` and type your prompt. For example, `What does this code do?`
 3. Press `Enter` to send your question to Github Copilot.
-4. Press `q` to quit. There is help text at the bottom of the screen. You can also press `<C-h>` to toggle the help text.
+4. Press `q` to quit. There is help text at the bottom of the screen. You can also press `?` to toggle the help text.
 
 [![In-place Demo](https://i.gyazo.com/4a5badaa109cd483c1fc23d296325cb0.gif)](https://gyazo.com/4a5badaa109cd483c1fc23d296325cb0)
 
