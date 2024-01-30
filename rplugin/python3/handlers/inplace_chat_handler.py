@@ -6,6 +6,7 @@ from mypynvim.ui_components.popup import PopUp
 
 from . import prompts
 
+# TODO: Allow to change the system prompt if needed
 SYSTEM_PROMPT = """
 You're a 10x senior developer that is an expert in programming.
 Your job is to change the user's code according to their needs.
@@ -15,9 +16,8 @@ You MUST add whitespace in the beginning of each line as needed to match the use
 """
 
 
-# This is not working yet! It's a work in progress.
-# TODO: clear chat history
 # TODO: change the layout, e.g: move to right side of the screen
+# TODO: Abort request if the user closes the layout
 class InPlaceChatHandler:
     """This class handles in-place chat functionality."""
 
@@ -26,6 +26,10 @@ class InPlaceChatHandler:
         self.nvim: MyNvim = nvim
         self.diff_mode: bool = False
         self.model: str = "gpt-4"
+
+        # Add user prompts collection
+        self.user_prompts = self.nvim.eval("g:copilot_chat_user_prompts")
+        self.current_user_prompt = 0
 
         # Initialize popups
         self.original_popup = PopUp(nvim, title="Original")
@@ -57,7 +61,6 @@ class InPlaceChatHandler:
         self.chat_handler = ChatHandler(nvim, self.copilot_popup.buffer)
 
         # Set keymaps and help content
-
         self._set_keymaps()
         self._set_help_content()
 
@@ -176,6 +179,13 @@ class InPlaceChatHandler:
     def _set_prompt(self, prompt: str):
         self.prompt_popup.buffer.lines(prompt)
 
+    def _set_user_prompt(self):
+        self.current_user_prompt = (self.current_user_prompt + 1) % len(
+            self.user_prompts
+        )
+        prompt = list(self.user_prompts.keys())[self.current_user_prompt]
+        self.prompt_popup.buffer.lines(self.user_prompts[prompt])
+
     def _toggle_model(self):
         if self.model == "gpt-4":
             self.model = "gpt-3.5-turbo"
@@ -204,29 +214,57 @@ class InPlaceChatHandler:
             "i", "<C-s>", lambda: (self.nvim.feed("<Esc>"), self._chat())
         )
 
+        self.prompt_popup.map(
+            "n",
+            "<C-p>",
+            lambda: self._set_user_prompt(),
+        )
+
         for i, popup in enumerate(self.popups):
             popup.buffer.map("n", "q", lambda: self.layout.unmount())
-            popup.buffer.map("n", "<C-h>", lambda: self._toggle_help())
+            popup.buffer.map("n", "<C-l>", lambda: self._clear_chat_history())
+            popup.buffer.map("n", "?", lambda: self._toggle_help())
             popup.buffer.map(
                 "n",
                 "<Tab>",
                 lambda i=i: self.popups[(i + 1) % len(self.popups)].focus(),
             )
 
+    def _clear_chat_history(self):
+        """Clear the chat history in the copilot popup."""
+        self.copilot_popup.buffer.lines([])
+
     def _set_help_content(self):
         """Set the content for the help popup."""
         help_content = [
-            "<CR>: Start a chat session",
-            "<C-CR>: Replace the original code with the new code",
-            "<C-d>: Show the difference between the original code and the new code",
-            "<C-g>: Toggle the model",
-            "': Set the prompt to PROMPT_SIMPLE_DOCSTRING",
-            "s: Set the prompt to PROMPT_SEPARATE",
-            "<C-s>: Start a chat session in insert mode",
-            "<C-h>: Toggle the help popup",
-            "q: Close the layout",
-            "<Tab>: Switch focus between popups",
+            "Navigation:",
+            "  <Tab>: Switch focus between popups",
+            "  q: Close layout",
+            "  ?: Toggle help content",
+            "",
+            "Chat in Normal Mode:",
+            "  <CR>: Submit prompt to Copilot",
+            "  <C-CR>: Replace old code with new",
+            "  <C-d>: Show code differences",
+            "  <C-l>: Clear chat history",
+            "",
+            "Chat in Insert Mode:",
+            "  <C-s>: Start chat and submit prompt to Copilot",
+            "",
+            "Prompt Binding:",
+            "  ': Set prompt to SIMPLE_DOCSTRING",
+            "  s: Set prompt to SEPARATE",
+            "  <C-p>: Set prompt to next item in user prompts",
+            "",
+            "Model:",
+            "  <C-g>: Toggle model",
+            "",
+            "User prompts:",
         ]
+
+        for prompt in self.user_prompts:
+            help_content.append(f"  {prompt}: {self.user_prompts[prompt]}")
+
         self.help_popup.buffer.lines(help_content)
 
     def _toggle_help(self):

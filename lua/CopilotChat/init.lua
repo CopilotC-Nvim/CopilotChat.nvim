@@ -18,6 +18,7 @@ M.setup = function(options)
 
   -- Merge the provided prompts with the default prompts
   local prompts = vim.tbl_extend('force', default_prompts, options and options.prompts or {})
+  vim.g.copilot_chat_user_prompts = prompts
 
   --  Loop through merged table and generate commands based on keys.
   for key, value in pairs(prompts) do
