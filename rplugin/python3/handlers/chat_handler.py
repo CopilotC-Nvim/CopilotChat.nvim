@@ -1,9 +1,9 @@
 from typing import Optional, cast
 
 import mycopilot.prompts as prompts
-from mypynvim.core.nvim import MyNvim
-from mypynvim.core.buffer import MyBuffer
 from mycopilot.mycopilot import Copilot
+from mypynvim.core.buffer import MyBuffer
+from mypynvim.core.nvim import MyNvim
 
 
 def is_module_installed(name):
@@ -36,10 +36,16 @@ class ChatHandler:
         if system_prompt is None:
             system_prompt = self._construct_system_prompt(prompt)
 
+        # Start the spinner
+        self.nvim.exec_lua('require("CopilotChat.spinner").show()')
+
         if not disable_start_separator:
             self._add_start_separator(system_prompt, prompt, code, filetype, winnr)
 
         self._add_chat_messages(system_prompt, prompt, code, filetype, model=model)
+
+        # Stop the spinner
+        self.nvim.exec_lua('require("CopilotChat.spinner").hide()')
 
         if not disable_end_separator:
             self._add_end_separator()
