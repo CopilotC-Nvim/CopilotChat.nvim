@@ -1,7 +1,13 @@
 # Copilot Chat for Neovim
+
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+
 [![All Contributors](https://img.shields.io/badge/all_contributors-4-orange.svg?style=flat-square)](#contributors-)
+
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
+
+> [!NOTE]
+> There is a new command: `CopilotChatInPlace`, which functions similarly to ChatGPT plugin. You can find it in the [canary](https://github.com/jellydn/CopilotChat.nvim/tree/canary?tab=readme-ov-file#lazynvim) branch.
 
 ## Authentication
 

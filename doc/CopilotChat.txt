@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0         Last change: 2024 January 29
+*CopilotChat.txt*         For NVIM v0.8.0         Last change: 2024 January 30
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -15,6 +15,11 @@ Table of Contents                              *CopilotChat-table-of-contents*
 
 |CopilotChat-|
 
+
+  [!NOTE] There is a new command: `CopilotChatInPlace`, which functions similarly
+  to ChatGPT plugin. You can find it in in the canary
+  <https://github.com/jellydn/CopilotChat.nvim/tree/canary?tab=readme-ov-file#lazynvim>
+  branch.
 
 AUTHENTICATION            *CopilotChat-copilot-chat-for-neovim-authentication*
 
