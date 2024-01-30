@@ -45,7 +45,7 @@ return {
       },
       {
         "<leader>ccx",
-        "<cmd>CopilotChatInPlace<cr>",
+        ":CopilotChatInPlace<cr>",
         mode = "x",
         desc = "CopilotChat - Run in-place code",
       },
