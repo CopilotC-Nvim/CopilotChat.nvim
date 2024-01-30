@@ -147,7 +147,10 @@ For further reference, you can view my [configuration](https://github.com/jellyd
 
 ### Token count & Fold Demo
 
-![Fold Demo](https://github.com/jellydn/CopilotChat.nvim/assets/102876811/949b39c7-e0ef-4839-acc5-7f2317865056)
+1. Select some code using visual mode.
+2. Run the command `:CopilotChatVsplitVisual` with your question.
+
+[![Fold Demo](https://i.gyazo.com/766fb3b6ffeb697e650fc839882822a8.gif)](https://gyazo.com/766fb3b6ffeb697e650fc839882822a8)
 
 ### In-place Chat Popup Demo
 
