@@ -145,16 +145,21 @@ For further reference, you can view my [configuration](https://github.com/jellyd
 
 [![Generate tests](https://i.gyazo.com/f285467d4b8d8f8fd36aa777305312ae.gif)](https://gyazo.com/f285467d4b8d8f8fd36aa777305312ae)
 
-### Token count & Fold Demo
+### Token count & Fold
 
 1. Select some code using visual mode.
 2. Run the command `:CopilotChatVsplitVisual` with your question.
 
 [![Fold Demo](https://i.gyazo.com/766fb3b6ffeb697e650fc839882822a8.gif)](https://gyazo.com/766fb3b6ffeb697e650fc839882822a8)
 
-### In-place Chat Popup Demo
+### In-place Chat Popup
 
-![Inplace Demo](https://github.com/jellydn/CopilotChat.nvim/assets/102876811/84e82b23-66f6-4583-97e6-00d526034134)
+1. Select some code using visual mode.
+2. Run the command `:CopilotChatInPlace` and type your prompt. For example, `What does this code do?`
+3. Press `Enter` to send your question to Github Copilot.
+4. Press `q` to quit. There is help text at the bottom of the screen. You can also press `<C-h>` to toggle the help text.
+
+[![In-place Demo](https://i.gyazo.com/4a5badaa109cd483c1fc23d296325cb0.gif)](https://gyazo.com/4a5badaa109cd483c1fc23d296325cb0)
 
 ## Roadmap
 
