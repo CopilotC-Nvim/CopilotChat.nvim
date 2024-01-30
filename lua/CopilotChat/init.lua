@@ -10,9 +10,11 @@ local default_prompts = {
 -- Set up the plugin
 ---@param options (table | nil)
 --       - mode: ('newbuffer' | 'split') default: newbuffer.
+--       - show_help: ('yes' | 'no') default: 'yes'.
 --       - prompts: (table?) default: default_prompts.
 M.setup = function(options)
   vim.g.copilot_chat_view_option = options and options.mode or 'newbuffer'
+  vim.g.copilot_chat_show_help = options and options.show_help or 'yes'
 
   -- Merge the provided prompts with the default prompts
   local prompts = vim.tbl_extend('force', default_prompts, options and options.prompts or {})

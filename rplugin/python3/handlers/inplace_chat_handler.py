@@ -26,7 +26,6 @@ class InPlaceChatHandler:
         self.nvim: MyNvim = nvim
         self.diff_mode: bool = False
         self.model: str = "gpt-4"
-        self.help_popup_visible = True
 
         # Initialize popups
         self.original_popup = PopUp(nvim, title="Original")
@@ -44,16 +43,21 @@ class InPlaceChatHandler:
             self.original_popup,
             self.copilot_popup,
             self.prompt_popup,
-            self.help_popup,
         ]
 
-        # Initialize layout
-        self.layout = self._create_layout()
+        # Initialize layout base on help text option
+        self.help_popup_visible = self.nvim.eval("g:copilot_chat_show_help") == "yes"
+        if self.help_popup_visible:
+            self.layout = self._create_layout()
+            self.popups.append(self.help_popup)
+        else:
+            self.layout = self._create_layout_without_help()
 
         # Initialize chat handler
         self.chat_handler = ChatHandler(nvim, self.copilot_popup.buffer)
 
         # Set keymaps and help content
+
         self._set_keymaps()
         self._set_help_content()
 
