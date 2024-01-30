@@ -10,6 +10,7 @@ from prompt_toolkit.history import InMemoryHistory
 import utilities
 import typings
 import prompts
+from typing import List, Dict
 
 LOGIN_HEADERS = {
     "accept": "application/json",
@@ -25,8 +26,8 @@ class Copilot:
         if token is None:
             token = utilities.get_cached_token()
         self.github_token = token
-        self.token: dict[str, any] = None
-        self.chat_history: list[typings.Message] = []
+        self.token: Dict[str, any] = None
+        self.chat_history: List[typings.Message] = []
         self.vscode_sessionid: str = None
         self.machineid = utilities.random_hex()
 
@@ -140,7 +141,7 @@ class Copilot:
             if i + 18 > len(inputs):
                 data = utilities.generate_embedding_request(inputs[i:])
             else:
-                data = utilities.generate_embedding_request(inputs[i : i + 18])
+                data = utilities.generate_embedding_request(inputs[i: i + 18])
             response = self.session.post(url, headers=self._headers(), json=data).json()
             if "data" not in response:
                 raise Exception(f"Error fetching embeddings: {response}")
