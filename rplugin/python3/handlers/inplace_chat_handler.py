@@ -41,6 +41,8 @@ class InPlaceChatHandler:
         self.prompt_popup = PopUp(
             nvim, title="Prompt", enter=True, padding={"left": 1, "right": 1}
         )
+
+        self.help_popup_visible = True
         self.help_popup = PopUp(nvim, title="Help")
 
         self.popups = [
@@ -71,8 +73,8 @@ class InPlaceChatHandler:
                 size=["80%", "20%"],
                 direction="col",
             ),
-            width="75%",
-            height="50%",
+            width="80%",
+            height="60%",
             relative="editor",
             row="50%",
             col="50%",
@@ -166,6 +168,8 @@ class InPlaceChatHandler:
             "i", "<C-s>", lambda: (self.nvim.feed("<Esc>"), self._chat())
         )
 
+        self.prompt_popup.map("n", "<C-h>", lambda: self._toggle_help())
+
         for i, popup in enumerate(self.popups):
             popup.buffer.map("n", "q", lambda: self.layout.unmount())
             popup.buffer.map(
@@ -184,7 +188,71 @@ class InPlaceChatHandler:
             "': Set the prompt to PROMPT_SIMPLE_DOCSTRING",
             "s: Set the prompt to PROMPT_SEPARATE",
             "<C-s>: Start a chat session in insert mode",
+            "<C-h>: Toggle the help popup",
             "q: Close the layout",
             "<Tab>: Switch focus between popups",
         ]
         self.help_popup.buffer.lines(help_content)
+
+    def _toggle_help(self):
+        """Toggle the visibility of the help popup."""
+        self.layout.unmount()
+        if self.help_popup_visible:
+            self.layout = Layout(
+                self.nvim,
+                Box(
+                    [
+                        Box(
+                            [
+                                Box([self.original_popup]),
+                                Box([self.copilot_popup]),
+                            ],
+                            size=["50%", "50%"],
+                            direction="row",
+                        ),
+                        Box(
+                            [Box([self.prompt_popup])],
+                            size=["100%"],
+                            direction="row",
+                        ),
+                    ],
+                    size=["80%", "20%"],
+                    direction="col",
+                ),
+                width="80%",
+                height="60%",
+                relative="editor",
+                row="50%",
+                col="50%",
+            )
+        else:
+            self.layout = Layout(
+                self.nvim,
+                Box(
+                    [
+                        Box(
+                            [
+                                Box([self.original_popup]),
+                                Box([self.copilot_popup]),
+                            ],
+                            size=["50%", "50%"],
+                            direction="row",
+                        ),
+                        Box(
+                            [Box([self.prompt_popup]), Box([self.help_popup])],
+                            size=["50%", "50%"],
+                            direction="row",
+                        ),
+                    ],
+                    size=["80%", "20%"],
+                    direction="col",
+                ),
+                width="80%",
+                height="60%",
+                relative="editor",
+                row="50%",
+                col="50%",
+            )
+
+        self.help_popup_visible = not self.help_popup_visible
+        self.layout.mount()
