@@ -1,5 +1,6 @@
 import os
 import time
+from typing import List
 
 import copilot
 import dotenv
@@ -31,7 +32,7 @@ class CopilotChatPlugin(object):
         self.copilot.authenticate()
 
     @pynvim.command("CopilotChat", nargs="1")
-    def copilotChat(self, args: list[str]):
+    def copilotChat(self, args: List[str]):
         if self.copilot.github_token is None:
             self.nvim.out_write("Please authenticate with Copilot first\n")
             return
