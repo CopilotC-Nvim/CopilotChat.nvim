@@ -134,7 +134,7 @@ class Copilot:
 
         self.chat_history.append(typings.Message(full_response, "system"))
 
-    def _get_embeddings(self, inputs: list[typings.FileExtract]):
+    def _get_embeddings(self, inputs: List[typings.FileExtract]):
         embeddings = []
         url = "https://api.githubcopilot.com/embeddings"
         # If we have more than 18 files, we need to split them into multiple requests
