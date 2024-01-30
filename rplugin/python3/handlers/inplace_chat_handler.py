@@ -18,20 +18,17 @@ You MUST add whitespace in the beginning of each line as needed to match the use
 # This is not working yet! It's a work in progress.
 # TODO: clear chat history
 # TODO: change the layout, e.g: move to right side of the screen
-# TODO: toggle hide/show the help popup
 class InPlaceChatHandler:
     """This class handles in-place chat functionality."""
-
-    original_code: str = ""
-    filetype: str = ""
-    diff_mode: bool = False
-    range: list[int] = [0, -1]
-    model: str = "gpt-4"
 
     def __init__(self, nvim: MyNvim):
         """Initialize the InPlaceChatHandler with the given nvim instance."""
         self.nvim: MyNvim = nvim
+        self.diff_mode: bool = False
+        self.model: str = "gpt-4"
+        self.help_popup_visible = True
 
+        # Initialize popups
         self.original_popup = PopUp(nvim, title="Original")
         self.copilot_popup = PopUp(
             nvim,
@@ -41,8 +38,6 @@ class InPlaceChatHandler:
         self.prompt_popup = PopUp(
             nvim, title="Prompt", enter=True, padding={"left": 1, "right": 1}
         )
-
-        self.help_popup_visible = True
         self.help_popup = PopUp(nvim, title="Help")
 
         self.popups = [
@@ -52,8 +47,20 @@ class InPlaceChatHandler:
             self.help_popup,
         ]
 
-        self.layout = Layout(
-            nvim,
+        # Initialize layout
+        self.layout = self._create_layout()
+
+        # Initialize chat handler
+        self.chat_handler = ChatHandler(nvim, self.copilot_popup.buffer)
+
+        # Set keymaps and help content
+        self._set_keymaps()
+        self._set_help_content()
+
+    def _create_layout(self):
+        """Create the layout for the chat handler."""
+        return Layout(
+            self.nvim,
             Box(
                 [
                     Box(
@@ -80,10 +87,35 @@ class InPlaceChatHandler:
             col="50%",
         )
 
-        self.chat_handler = ChatHandler(nvim, self.copilot_popup.buffer)
-
-        self._set_keymaps()
-        self._set_help_content()
+    def _create_layout_without_help(self):
+        """Create the layout with help for the chat handler."""
+        return Layout(
+            self.nvim,
+            Box(
+                [
+                    Box(
+                        [
+                            Box([self.original_popup]),
+                            Box([self.copilot_popup]),
+                        ],
+                        size=["50%", "50%"],
+                        direction="row",
+                    ),
+                    Box(
+                        [Box([self.prompt_popup]), Box([])],
+                        size=["100%", "0%"],
+                        direction="row",
+                    ),
+                ],
+                size=["80%", "20%"],
+                direction="col",
+            ),
+            width="80%",
+            height="60%",
+            relative="editor",
+            row="50%",
+            col="50%",
+        )
 
     def mount(
         self, original_code: str, filetype: str, range: list[int], user_buffer: MyBuffer
@@ -168,10 +200,9 @@ class InPlaceChatHandler:
             "i", "<C-s>", lambda: (self.nvim.feed("<Esc>"), self._chat())
         )
 
-        self.prompt_popup.map("n", "<C-h>", lambda: self._toggle_help())
-
         for i, popup in enumerate(self.popups):
             popup.buffer.map("n", "q", lambda: self.layout.unmount())
+            popup.buffer.map("n", "<C-h>", lambda: self._toggle_help())
             popup.buffer.map(
                 "n",
                 "<Tab>",
@@ -198,61 +229,21 @@ class InPlaceChatHandler:
         """Toggle the visibility of the help popup."""
         self.layout.unmount()
         if self.help_popup_visible:
-            self.layout = Layout(
-                self.nvim,
-                Box(
-                    [
-                        Box(
-                            [
-                                Box([self.original_popup]),
-                                Box([self.copilot_popup]),
-                            ],
-                            size=["50%", "50%"],
-                            direction="row",
-                        ),
-                        Box(
-                            [Box([self.prompt_popup])],
-                            size=["100%"],
-                            direction="row",
-                        ),
-                    ],
-                    size=["80%", "20%"],
-                    direction="col",
-                ),
-                width="80%",
-                height="60%",
-                relative="editor",
-                row="50%",
-                col="50%",
-            )
+            self.popups = [
+                self.original_popup,
+                self.copilot_popup,
+                self.prompt_popup,
+            ]
+            self.layout = self._create_layout_without_help()
         else:
-            self.layout = Layout(
-                self.nvim,
-                Box(
-                    [
-                        Box(
-                            [
-                                Box([self.original_popup]),
-                                Box([self.copilot_popup]),
-                            ],
-                            size=["50%", "50%"],
-                            direction="row",
-                        ),
-                        Box(
-                            [Box([self.prompt_popup]), Box([self.help_popup])],
-                            size=["50%", "50%"],
-                            direction="row",
-                        ),
-                    ],
-                    size=["80%", "20%"],
-                    direction="col",
-                ),
-                width="80%",
-                height="60%",
-                relative="editor",
-                row="50%",
-                col="50%",
-            )
+            self.popups = [
+                self.original_popup,
+                self.copilot_popup,
+                self.prompt_popup,
+                self.help_popup,
+            ]
+            self.layout = self._create_layout()
 
         self.help_popup_visible = not self.help_popup_visible
+        self._set_keymaps()
         self.layout.mount()
