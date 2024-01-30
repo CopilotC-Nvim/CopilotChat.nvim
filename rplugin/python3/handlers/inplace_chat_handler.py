@@ -16,6 +16,9 @@ You MUST add whitespace in the beginning of each line as needed to match the use
 
 
 # This is not working yet! It's a work in progress.
+# TODO: clear chat history
+# TODO: change the layout, e.g: move to right side of the screen
+# TODO: toggle hide/show the help popup
 class InPlaceChatHandler:
     """This class handles in-place chat functionality."""
 
@@ -38,19 +41,31 @@ class InPlaceChatHandler:
         self.prompt_popup = PopUp(
             nvim, title="Prompt", enter=True, padding={"left": 1, "right": 1}
         )
-        self.popups = [self.original_popup, self.copilot_popup, self.prompt_popup]
+        self.help_popup = PopUp(nvim, title="Help")
+
+        self.popups = [
+            self.original_popup,
+            self.copilot_popup,
+            self.prompt_popup,
+            self.help_popup,
+        ]
 
         self.layout = Layout(
             nvim,
             Box(
                 [
                     Box(
-                        [Box([self.original_popup]), Box([self.copilot_popup])],
+                        [
+                            Box([self.original_popup]),
+                            Box([self.copilot_popup]),
+                        ],
                         size=["50%", "50%"],
                         direction="row",
                     ),
                     Box(
-                        [self.prompt_popup],
+                        [Box([self.prompt_popup]), Box([self.help_popup])],
+                        size=["50%", "50%"],
+                        direction="row",
                     ),
                 ],
                 size=["80%", "20%"],
@@ -66,6 +81,7 @@ class InPlaceChatHandler:
         self.chat_handler = ChatHandler(nvim, self.copilot_popup.buffer)
 
         self._set_keymaps()
+        self._set_help_content()
 
     def mount(
         self, original_code: str, filetype: str, range: list[int], user_buffer: MyBuffer
@@ -157,3 +173,18 @@ class InPlaceChatHandler:
                 "<Tab>",
                 lambda i=i: self.popups[(i + 1) % len(self.popups)].focus(),
             )
+
+    def _set_help_content(self):
+        """Set the content for the help popup."""
+        help_content = [
+            "<CR>: Start a chat session",
+            "<C-CR>: Replace the original code with the new code",
+            "<C-d>: Show the difference between the original code and the new code",
+            "<C-g>: Toggle the model",
+            "': Set the prompt to PROMPT_SIMPLE_DOCSTRING",
+            "s: Set the prompt to PROMPT_SEPARATE",
+            "<C-s>: Start a chat session in insert mode",
+            "q: Close the layout",
+            "<Tab>: Switch focus between popups",
+        ]
+        self.help_popup.buffer.lines(help_content)
