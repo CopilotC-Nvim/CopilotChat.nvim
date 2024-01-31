@@ -142,3 +142,11 @@ EXPLAIN_SHORTCUT = "Write a explanation for the code above as paragraphs of text
 FIX_SHORTCUT = (
     "There is a problem in this code. Rewrite the code to show it with the bug fixed."
 )
+
+SENIOR_DEVELOPER_PROMPT = """
+You're a 10x senior developer that is an expert in programming.
+Your job is to change the user's code according to their needs.
+Your job is only to change / edit the code.
+Your code output should keep the same level of indentation as the user's code.
+You MUST add whitespace in the beginning of each line as needed to match the user's code.
+"""

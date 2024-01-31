@@ -1,3 +1,4 @@
+import mycopilot.prompts as system_prompts
 from handlers.chat_handler import ChatHandler
 from mypynvim.core.buffer import MyBuffer
 from mypynvim.core.nvim import MyNvim
@@ -6,14 +7,9 @@ from mypynvim.ui_components.popup import PopUp
 
 from . import prompts
 
-# TODO: Allow to change the system prompt if needed
-SYSTEM_PROMPT = """
-You're a 10x senior developer that is an expert in programming.
-Your job is to change the user's code according to their needs.
-Your job is only to change / edit the code.
-Your code output should keep the same level of indentation as the user's code.
-You MUST add whitespace in the beginning of each line as needed to match the user's code.
-"""
+# Define constants for the models
+MODEL_GPT4 = "gpt-4"
+MODEL_GPT35_TURBO = "gpt-3.5-turbo"
 
 
 # TODO: change the layout, e.g: move to right side of the screen
@@ -25,7 +21,8 @@ class InPlaceChatHandler:
         """Initialize the InPlaceChatHandler with the given nvim instance."""
         self.nvim: MyNvim = nvim
         self.diff_mode: bool = False
-        self.model: str = "gpt-4"
+        self.model: str = MODEL_GPT4
+        self.system_prompt: str = "SENIOR_DEVELOPER_PROMPT"
 
         # Add user prompts collection
         self.user_prompts = self.nvim.eval("g:copilot_chat_user_prompts")
@@ -35,7 +32,7 @@ class InPlaceChatHandler:
         self.original_popup = PopUp(nvim, title="Original")
         self.copilot_popup = PopUp(
             nvim,
-            title=f"Copilot ({self.model})",
+            title=f"Copilot ({self.model}, {self.system_prompt})",
             opts={"wrap": True, "linebreak": True},
         )
         self.prompt_popup = PopUp(
@@ -170,7 +167,7 @@ class InPlaceChatHandler:
             self.filetype,
             self.original_code,
             self.copilot_popup.window.handle,
-            system_prompt=SYSTEM_PROMPT,
+            system_prompt=system_prompts.__dict__[self.system_prompt],
             disable_start_separator=True,
             disable_end_separator=True,
             model=self.model,
@@ -187,12 +184,46 @@ class InPlaceChatHandler:
         self.prompt_popup.buffer.lines(self.user_prompts[prompt])
 
     def _toggle_model(self):
-        if self.model == "gpt-4":
-            self.model = "gpt-3.5-turbo"
+        if self.model == MODEL_GPT4:
+            self.model = MODEL_GPT35_TURBO
         else:
-            self.model = "gpt-4"
-        self.copilot_popup.original_config.title = f"Copilot ({self.model})"
-        self.copilot_popup.config.title = f"Copilot ({self.model})"
+            self.model = MODEL_GPT4
+        self.copilot_popup.original_config.title = (
+            f"Copilot ({self.model}, {self.system_prompt})"
+        )
+        self.copilot_popup.config.title = (
+            f"Copilot ({self.model}, {self.system_prompt})"
+        )
+        self.copilot_popup.unmount()
+        self.copilot_popup.mount(controlled=True)
+
+    def _toggle_system_model(self):
+        # Create a list of all system prompts and add the current system prompt
+        system_prompts = [
+            "SENIOR_DEVELOPER_PROMPT",
+            "COPILOT_EXPLAIN",
+            "COPILOT_TESTS",
+            "COPILOT_FIX",
+            "COPILOT_WORKSPACE",
+            "TEST_SHORTCUT",
+            "EXPLAIN_SHORTCUT",
+            "FIX_SHORTCUT",
+        ]
+
+        # Get the index of the current system prompt
+        current_system_prompt_index = system_prompts.index(self.system_prompt)
+
+        # Set the next system prompt
+        self.system_prompt = system_prompts[
+            (current_system_prompt_index + 1) % len(system_prompts)
+        ]
+
+        self.copilot_popup.original_config.title = (
+            f"Copilot ({self.model}, {self.system_prompt})"
+        )
+        self.copilot_popup.config.title = (
+            f"Copilot ({self.model}, {self.system_prompt})"
+        )
         self.copilot_popup.unmount()
         self.copilot_popup.mount(controlled=True)
 
@@ -202,6 +233,7 @@ class InPlaceChatHandler:
         self.prompt_popup.map("n", "<C-CR>", lambda: self._replace_original_code())
         self.prompt_popup.map("n", "<C-d>", lambda: self._diff())
         self.prompt_popup.map("n", "<C-g>", lambda cb=self._toggle_model: cb())
+        self.prompt_popup.map("n", "<C-m>", lambda cb=self._toggle_system_model: cb())
 
         self.prompt_popup.map(
             "n", "'", lambda: self._set_prompt(prompts.PROMPT_SIMPLE_DOCSTRING)
@@ -257,7 +289,8 @@ class InPlaceChatHandler:
             "  <C-p>: Set prompt to next item in user prompts",
             "",
             "Model:",
-            "  <C-g>: Toggle model",
+            "  <C-g>: Toggle AI model",
+            "  <C-m>: Set system prompt to next item in system prompts",
             "",
             "User prompts:",
         ]
