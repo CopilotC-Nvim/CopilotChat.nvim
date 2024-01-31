@@ -33,7 +33,7 @@ M.setup = function(options)
     end, { nargs = '*', range = true })
   end
 
-  -- Toggle between newbuffer and vsplit
+  -- Toggle between newbuffer and split
   utils.create_cmd('CopilotChatToggleLayout', function()
     if vim.g.copilot_chat_view_option == 'newbuffer' then
       vim.g.copilot_chat_view_option = 'split'
