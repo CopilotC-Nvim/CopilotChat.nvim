@@ -21,6 +21,9 @@ M.setup = function(options)
   local debug = options and options.debug or false
   _COPILOT_CHAT_GLOBAL_CONFIG.debug = debug
 
+  local debug = options and options.debug or false
+  _COPILOT_CHAT_GLOBAL_CONFIG.debug = debug
+
   -- Merge the provided prompts with the default prompts
   local prompts = vim.tbl_extend('force', default_prompts, options and options.prompts or {})
   vim.g.copilot_chat_user_prompts = prompts
