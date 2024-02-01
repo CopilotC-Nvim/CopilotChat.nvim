@@ -84,8 +84,9 @@ class CopilotChatPlugin(object):
             'require("CopilotChat.utils").log_info(...)', f"Prompt: {prompt}"
         )
 
+        system_prompt = prompts.COPILOT_INSTRUCTIONS
         # Add chat messages
-        for token in self.copilot.ask(prompt, code, language=file_type):
+        for token in self.copilot.ask(system_prompt, prompt, code, language=file_type):
             self.nvim.exec_lua(
                 'require("CopilotChat.utils").log_info(...)', f"Token: {token}"
             )
