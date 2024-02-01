@@ -73,7 +73,7 @@ class CopilotChatPlugin(object):
             buffer_lines = self.nvim.api.buf_get_lines(buf, 0, -1, 0)
             last_line_row = len(buffer_lines) - 1
             last_line = buffer_lines[-1]
-            last_line_col = len(last_line.encode('utf-8'))
+            last_line_col = len(last_line.encode("utf-8"))
 
             self.nvim.api.buf_set_text(
                 buf,

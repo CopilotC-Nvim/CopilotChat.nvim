@@ -141,7 +141,7 @@ class Copilot:
             if i + 18 > len(inputs):
                 data = utilities.generate_embedding_request(inputs[i:])
             else:
-                data = utilities.generate_embedding_request(inputs[i: i + 18])
+                data = utilities.generate_embedding_request(inputs[i : i + 18])
             response = self.session.post(url, headers=self._headers(), json=data).json()
             if "data" not in response:
                 raise Exception(f"Error fetching embeddings: {response}")
