@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0         Last change: 2024 January 30
+*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 February 01
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -41,6 +41,7 @@ LAZY.NVIM ~
         "jellydn/CopilotChat.nvim",
         opts = {
           mode = "split", -- newbuffer or split  , default: newbuffer
+          debug = false, -- Enable or disable debug mode
         },
         build = function()
           vim.defer_fn(function()
@@ -167,14 +168,14 @@ CONTRIBUTORS ✨        *CopilotChat-copilot-chat-for-neovim-contributors-✨*
 Thanks goes to these wonderful people (emoji key
 <https://allcontributors.org/docs/en/emoji-key>):
 
-gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻This project follows the all-contributors
+gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻This project follows the all-contributors
 <https://github.com/all-contributors/all-contributors> specification.
 Contributions of any kind welcome!
 
 ==============================================================================
 2. Links                                                   *CopilotChat-links*
 
-1. *All Contributors*: https://img.shields.io/badge/all_contributors-4-orange.svg?style=flat-square
+1. *All Contributors*: https://img.shields.io/badge/all_contributors-5-orange.svg?style=flat-square
 2. *Chat Demo*: https://i.gyazo.com/10fbd1543380d15551791c1a6dcbcd46.gif
 3. *Explain Code Demo*: https://i.gyazo.com/e5031f402536a1a9d6c82b2c38d469e3.gif
 4. *Generate tests*: https://i.gyazo.com/f285467d4b8d8f8fd36aa777305312ae.gif
