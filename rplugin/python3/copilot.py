@@ -9,7 +9,6 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
 import utilities
 import typings
-import prompts
 from typing import List, Dict
 
 LOGIN_HEADERS = {
@@ -88,6 +87,8 @@ class Copilot:
         self.token = self.session.get(url, headers=headers).json()
 
     def ask(self, system_prompt: str, prompt: str, code: str, language: str = ""):
+        if not self.token:
+            self.authenticate()
         # If expired, reauthenticate
         if self.token.get("expires_at") <= round(time.time()):
             self.authenticate()

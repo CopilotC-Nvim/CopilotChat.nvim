@@ -33,7 +33,7 @@ class CopilotAgentPlugin(object):
         self.init_vsplit_chat_handler()
         if self.vsplit_chat_handler:
             file_type = self.nvim.current.buffer.options["filetype"]
-            code_lines = self.nvim.current.buffer[range[0] - 1 : range[1]]
+            code_lines = self.nvim.current.buffer[range[0] - 1: range[1]]
             code = "\n".join(code_lines)
             self.vsplit_chat_handler.vsplit()
             self.vsplit_chat_handler.chat(args[0], file_type, code)
@@ -58,7 +58,7 @@ class CopilotAgentPlugin(object):
         self.init_inplace_chat_handler()
         if self.inplace_chat_handler:
             file_type = self.nvim.current.buffer.options["filetype"]
-            code_lines = self.nvim.current.buffer[range[0] - 1 : range[1]]
+            code_lines = self.nvim.current.buffer[range[0] - 1: range[1]]
             code = "\n".join(code_lines)
             user_buffer = self.nvim.current.buffer
             self.inplace_chat_handler.mount(code, file_type, range, user_buffer)
