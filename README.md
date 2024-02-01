@@ -1,7 +1,9 @@
 # Copilot Chat for Neovim
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+
 [![All Contributors](https://img.shields.io/badge/all_contributors-5-orange.svg?style=flat-square)](#contributors-)
+
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 > [!NOTE]
@@ -24,6 +26,7 @@ return {
     "jellydn/CopilotChat.nvim",
     opts = {
       mode = "split", -- newbuffer or split  , default: newbuffer
+      debug = false, -- Enable or disable debug mode
     },
     build = function()
       vim.defer_fn(function()

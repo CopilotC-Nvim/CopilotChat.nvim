@@ -7,12 +7,18 @@ local default_prompts = {
   Tests = 'Briefly how selected code works then generate unit tests.',
 }
 
+_COPILOT_CHAT_GLOBAL_CONFIG = {}
+
 -- Set up the plugin
 ---@param options (table | nil)
 --       - mode: ('newbuffer' | 'split') default: newbuffer.
 --       - prompts: (table?) default: default_prompts.
+--       - debug: (boolean?) default: false.
 M.setup = function(options)
   vim.g.copilot_chat_view_option = options and options.mode or 'newbuffer'
+
+  local debug = options and options.debug or false
+  _COPILOT_CHAT_GLOBAL_CONFIG.debug = debug
 
   -- Merge the provided prompts with the default prompts
   local prompts = vim.tbl_extend('force', default_prompts, options and options.prompts or {})

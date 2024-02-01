@@ -80,8 +80,15 @@ class CopilotChatPlugin(object):
 """
         buf.append(start_separator.split("\n"), -1)
 
+        self.nvim.exec_lua(
+            'require("CopilotChat.utils").log_info(...)', f"Prompt: {prompt}"
+        )
+
         # Add chat messages
         for token in self.copilot.ask(prompt, code, language=file_type):
+            self.nvim.exec_lua(
+                'require("CopilotChat.utils").log_info(...)', f"Token: {token}"
+            )
             buffer_lines = self.nvim.api.buf_get_lines(buf, 0, -1, 0)
             last_line_row = len(buffer_lines) - 1
             last_line = buffer_lines[-1]
