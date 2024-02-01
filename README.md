@@ -7,7 +7,7 @@
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 > [!NOTE]
-> There is a new command: `CopilotChatInPlace`, which functions similarly to ChatGPT plugin. You can find it in the [canary](https://github.com/jellydn/CopilotChat.nvim/tree/canary?tab=readme-ov-file#lazynvim) branch.
+> A new command, `CopilotChatInPlace`, has been introduced. It functions like the ChatGPT plugin. You can find this feature in the [canary](https://github.com/jellydn/CopilotChat.nvim/tree/canary?tab=readme-ov-file#lazynvim) branch. To stay updated on our roadmap, please join our [Discord](https://discord.gg/vy6hJsTWaZ) community.
 
 ## Authentication
 
