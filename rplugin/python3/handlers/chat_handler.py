@@ -1,7 +1,7 @@
 from typing import Optional, cast
 
-import mycopilot.prompts as prompts
-from mycopilot.mycopilot import Copilot
+import prompts as prompts
+from copilot import Copilot
 from mypynvim.core.buffer import MyBuffer
 from mypynvim.core.nvim import MyNvim
 
@@ -99,7 +99,7 @@ class ChatHandler:
         code_height = len(code.split("\n"))
 
         start_separator = f"""### User
-                                        
+
 SYSTEM PROMPT:
 ```
 {system_prompt}
@@ -138,8 +138,8 @@ SYSTEM PROMPT:
         code_height = len(code.split("\n"))
 
         start_separator = f"""### User
-                                        
-SYSTEM PROMPT: {num_system_tokens} Tokens 
+
+SYSTEM PROMPT: {num_system_tokens} Tokens
 ```
 {system_prompt}
 ```
