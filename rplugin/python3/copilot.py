@@ -103,6 +103,8 @@ class Copilot:
         response = self.session.post(
             url, headers=self._headers(), json=data, stream=True
         )
+        if response.status_code != 200:
+            raise Exception(f"Error fetching response: {response}")
         for line in response.iter_lines():
             line = line.decode("utf-8").replace("data: ", "").strip()
             if line.startswith("[DONE]"):
