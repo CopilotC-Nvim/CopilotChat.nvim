@@ -31,7 +31,6 @@ class ChatHandler:
         system_prompt: Optional[str] = None,
         disable_start_separator: bool = False,
         disable_end_separator: bool = False,
-        model: str = "gpt-4",
     ):
         if system_prompt is None:
             system_prompt = self._construct_system_prompt(prompt)
@@ -40,13 +39,13 @@ class ChatHandler:
         self.nvim.exec_lua('require("CopilotChat.spinner").show()')
 
         self.nvim.exec_lua(
-            'require("CopilotChat.utils").log_info(...)', f"Chatting with {model} model"
+            'require("CopilotChat.utils").log_info(...)', "Chatting with gpt-4 model"
         )
 
         if not disable_start_separator:
             self._add_start_separator(system_prompt, prompt, code, filetype, winnr)
 
-        self._add_chat_messages(system_prompt, prompt, code, filetype, model=model)
+        self._add_chat_messages(system_prompt, prompt, code, filetype)
 
         # Stop the spinner
         self.nvim.exec_lua('require("CopilotChat.spinner").hide()')
@@ -180,13 +179,13 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
             self.nvim.command(full_command)
 
     def _add_chat_messages(
-        self, system_prompt: str, prompt: str, code: str, file_type: str, model: str
+        self, system_prompt: str, prompt: str, code: str, file_type: str
     ):
         if self.copilot is None:
             self.copilot = Copilot()
 
         for token in self.copilot.ask(
-            system_prompt, prompt, code, language=cast(str, file_type), model=model
+            system_prompt, prompt, code, language=cast(str, file_type)
         ):
             self.nvim.exec_lua(
                 'require("CopilotChat.utils").log_info(...)', f"Token: {token}"
