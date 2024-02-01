@@ -33,7 +33,7 @@ return {
       debug = false, -- Enable or disable debug mode, the log file will be in ~/.local/state/nvim/CopilotChat.nvim.log
     },
     build = function()
-      vim.notify("Please update the remote plugins by running 'UpdateRemotePlugins', then restart Neovim.")
+      vim.notify("Please update the remote plugins by running ':UpdateRemotePlugins', then restart Neovim.")
     end,
     event = "VeryLazy",
     keys = {
@@ -88,6 +88,7 @@ You have the ability to tailor this plugin to your specific needs using the conf
 ```lua
 {
   debug = false, -- Enable or disable debug mode
+  show_help = 'yes', -- Show help text for CopilotChatInPlace
   prompts = { -- Set dynamic prompts for CopilotChat commands
     Explain = 'Explain how it works.',
     Tests = 'Briefly explain how the selected code works, then generate unit tests.',
@@ -110,10 +111,7 @@ return {
       },
     },
     build = function()
-      vim.defer_fn(function()
-        vim.cmd("UpdateRemotePlugins")
-        vim.notify("CopilotChat - Updated remote plugins. Please restart Neovim.")
-      end, 3000)
+      vim.notify("Please update the remote plugins by running ':UpdateRemotePlugins', then restart Neovim.")
     end,
     event = "VeryLazy",
     keys = {
