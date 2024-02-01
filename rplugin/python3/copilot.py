@@ -105,7 +105,17 @@ class Copilot:
             url, headers=self._headers(), json=data, stream=True
         )
         if response.status_code != 200:
-            raise Exception(f"Error fetching response: {response}")
+            error_messages = {
+                401: "Unauthorized. Make sure you have access to Copilot Chat.",
+                500: "Internal server error. Please try again later.",
+                400: "The developer of this plugin has made a mistake. Please report this issue.",
+                419: "You have been rate limited. Please try again later.",
+            }
+            raise Exception(
+                error_messages.get(
+                    response.status_code, f"Unknown error: {response.status_code}"
+                )
+            )
         for line in response.iter_lines():
             line = line.decode("utf-8").replace("data: ", "").strip()
             if line.startswith("[DONE]"):
