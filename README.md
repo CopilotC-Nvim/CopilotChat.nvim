@@ -25,17 +25,15 @@ It will prompt you with instructions on your first start. If you already have `C
 return {
   {
     "jellydn/CopilotChat.nvim",
+    dependencies = { "zbirenbaum/copilot.lua" }, -- Or { "github/copilot.vim" }
     branch = "canary", -- Will be merged to main branch when it's stable
     opts = {
       mode = "split", -- newbuffer or split, default: newbuffer
       show_help = "yes", -- Show help text for CopilotChatInPlace, default: yes
-      debug = false, -- Enable or disable debug mode
+      debug = false, -- Enable or disable debug mode, the log file will be in ~/.local/state/nvim/CopilotChat.nvim.log
     },
     build = function()
-      vim.defer_fn(function()
-        vim.cmd("UpdateRemotePlugins")
-        vim.notify("CopilotChat - Updated remote plugins. Please restart Neovim.")
-      end, 3000)
+      vim.notify("Please update the remote plugins by running 'UpdateRemotePlugins', then restart Neovim.")
     end,
     event = "VeryLazy",
     keys = {
