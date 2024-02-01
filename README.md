@@ -24,9 +24,10 @@ It will prompt you with instructions on your first start. If you already have `C
 return {
   {
     "jellydn/CopilotChat.nvim",
+    dependencies = { "zbirenbaum/copilot.lua" }, -- Or { "github/copilot.vim" }
     opts = {
       mode = "split", -- newbuffer or split  , default: newbuffer
-      debug = false, -- Enable or disable debug mode
+      debug = false, -- Enable or disable debug mode, the log file will be in ~/.local/state/nvim/CopilotChat.nvim.log
     },
     build = function()
       vim.defer_fn(function()
