@@ -1,6 +1,5 @@
 # Copilot Chat for Neovim
 
-<<<<<<< HEAD
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 
 [![All Contributors](https://img.shields.io/badge/all_contributors-5-orange.svg?style=flat-square)](#contributors-)
@@ -8,11 +7,7 @@
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 > [!NOTE]
-> There is a new command: `CopilotChatInPlace`, which functions similarly to ChatGPT plugin. You can find it in the [canary](https://github.com/jellydn/CopilotChat.nvim/tree/canary?tab=readme-ov-file#lazynvim) branch.
-=======
-> [!NOTE]
-> You might want to take a look at [this fork](https://github.com/jellydn/CopilotChat.nvim) which is more well maintained & is more configurable. I personally use it now as well.
->>>>>>> main
+> There is a new command: `CopilotChatInPlace`, which functions similarly to ChatGPT plugin. You can find it in the [canary](https://github.com/gptlang/CopilotChat.nvim/tree/canary?tab=readme-ov-file#lazynvim) branch.
 
 ## Authentication
 
@@ -23,17 +18,12 @@ It will prompt you with instructions on your first start. If you already have `C
 ### Lazy.nvim
 
 1. `pip install python-dotenv requests pynvim==0.5.0 prompt-toolkit`
-<<<<<<< HEAD
 2. `pip install tiktoken` (optional for displaying prompt token counts)
 3. Put it in your lazy setup
-
-=======
-2. Put it in your lazy setup
->>>>>>> main
 ```lua
 return {
   {
-    "jellydn/CopilotChat.nvim",
+    "gptlang/CopilotChat.nvim",
     dependencies = { "zbirenbaum/copilot.lua" }, -- Or { "github/copilot.vim" }
     branch = "canary", -- Will be merged to main branch when it's stable
     opts = {
@@ -74,7 +64,7 @@ return {
 1. Put the files in the right place
 
 ```
-$ git clone https://github.com/jellydn/CopilotChat.nvim
+$ git clone https://github.com/gptlang/CopilotChat.nvim
 $ cd CopilotChat.nvim
 $ cp -r --backup=nil rplugin ~/.config/nvim/
 ```
@@ -109,7 +99,7 @@ You have the capability to expand the prompts to create more versatile commands:
 
 ```lua
 return {
-    "jellydn/CopilotChat.nvim",
+    "gptlang/CopilotChat.nvim",
     opts = {
       mode = "split",
       prompts = {
@@ -132,7 +122,7 @@ return {
 }
 ```
 
-For further reference, you can view my [configuration](https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/copilot-chat.lua).
+For further reference, you can view @jellydn's [configuration](https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/copilot-chat.lua).
 
 ### Chat with Github Copilot
 
