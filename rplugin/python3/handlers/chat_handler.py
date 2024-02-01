@@ -39,6 +39,10 @@ class ChatHandler:
         # Start the spinner
         self.nvim.exec_lua('require("CopilotChat.spinner").show()')
 
+        self.nvim.exec_lua(
+            'require("CopilotChat.utils").log_info(...)', f"Chatting with {model} model"
+        )
+
         if not disable_start_separator:
             self._add_start_separator(system_prompt, prompt, code, filetype, winnr)
 
@@ -184,6 +188,9 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
         for token in self.copilot.ask(
             system_prompt, prompt, code, language=cast(str, file_type), model=model
         ):
+            self.nvim.exec_lua(
+                'require("CopilotChat.utils").log_info(...)', f"Token: {token}"
+            )
             buffer_lines = cast(list[str], self.buffer.lines())
             last_line_row = len(buffer_lines) - 1
             last_line_col = len(buffer_lines[-1])

@@ -29,6 +29,7 @@ return {
     opts = {
       mode = "split", -- newbuffer or split, default: newbuffer
       show_help = "yes", -- Show help text for CopilotChatInPlace, default: yes
+      debug = false, -- Enable or disable debug mode
     },
     build = function()
       vim.defer_fn(function()
