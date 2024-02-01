@@ -1,5 +1,6 @@
 # Copilot Chat for Neovim
 
+<<<<<<< HEAD
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 
 [![All Contributors](https://img.shields.io/badge/all_contributors-5-orange.svg?style=flat-square)](#contributors-)
@@ -8,6 +9,10 @@
 
 > [!NOTE]
 > There is a new command: `CopilotChatInPlace`, which functions similarly to ChatGPT plugin. You can find it in the [canary](https://github.com/jellydn/CopilotChat.nvim/tree/canary?tab=readme-ov-file#lazynvim) branch.
+=======
+> [!NOTE]
+> You might want to take a look at [this fork](https://github.com/jellydn/CopilotChat.nvim) which is more well maintained & is more configurable. I personally use it now as well.
+>>>>>>> main
 
 ## Authentication
 
@@ -18,9 +23,13 @@ It will prompt you with instructions on your first start. If you already have `C
 ### Lazy.nvim
 
 1. `pip install python-dotenv requests pynvim==0.5.0 prompt-toolkit`
+<<<<<<< HEAD
 2. `pip install tiktoken` (optional for displaying prompt token counts)
 3. Put it in your lazy setup
 
+=======
+2. Put it in your lazy setup
+>>>>>>> main
 ```lua
 return {
   {

@@ -11,6 +11,13 @@ import typings
 import utilities
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
+<<<<<<< HEAD
+=======
+import utilities
+import typings
+import prompts
+from typing import List, Dict
+>>>>>>> main
 
 LOGIN_HEADERS = {
     "accept": "application/json",
@@ -91,7 +98,10 @@ class Copilot:
         # If expired, reauthenticate
         if self.token.get("expires_at") <= round(time.time()):
             self.authenticate()
+<<<<<<< HEAD
 
+=======
+>>>>>>> main
         url = "https://api.githubcopilot.com/chat/completions"
         self.chat_history.append(typings.Message(prompt, "user"))
         system_prompt = prompts.COPILOT_INSTRUCTIONS
@@ -134,7 +144,11 @@ class Copilot:
 
         self.chat_history.append(typings.Message(full_response, "system"))
 
+<<<<<<< HEAD
     def _get_embeddings(self, inputs: List[typings.FileExtract]):
+=======
+    def _get_embeddings(self, inputs: list[typings.FileExtract]):
+>>>>>>> main
         embeddings = []
         url = "https://api.githubcopilot.com/embeddings"
         # If we have more than 18 files, we need to split them into multiple requests
@@ -142,7 +156,11 @@ class Copilot:
             if i + 18 > len(inputs):
                 data = utilities.generate_embedding_request(inputs[i:])
             else:
+<<<<<<< HEAD
                 data = utilities.generate_embedding_request(inputs[i : i + 18])
+=======
+                data = utilities.generate_embedding_request(inputs[i: i + 18])
+>>>>>>> main
             response = self.session.post(url, headers=self._headers(), json=data).json()
             if "data" not in response:
                 raise Exception(f"Error fetching embeddings: {response}")
