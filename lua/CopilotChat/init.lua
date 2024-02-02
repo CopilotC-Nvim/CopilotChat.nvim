@@ -40,6 +40,11 @@ M.setup = function(options)
       vim.g.copilot_chat_view_option = 'newbuffer'
     end
   end, { nargs = '*', range = true })
+
+  utils.log_info(
+    'Execute the ":UpdateRemotePlugins" command and restart Neovim before starting a chat with Copilot.'
+  )
+  utils.log_info('If you encounter any issues, run ":healthcheck" and share the output.')
 end
 
 return M
