@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Dict, LiteralString, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Union
 
 from pynvim.api import Buffer
 
@@ -65,7 +65,7 @@ class MyBuffer(Buffer):
     def clear(self):
         self.nvim.api.buf_set_lines(self.buf.handle, 0, -1, True, [])
 
-    def append(self, lines: list[str] | list[LiteralString]):
+    def append(self, lines: list[str] | list[Any]):
         self.nvim.api.buf_set_lines(self.buf.handle, -1, -1, True, lines)
 
     # extmark methods

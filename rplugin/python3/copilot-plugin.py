@@ -8,7 +8,7 @@ PLUGIN_AUTOCMD_CMD = "CopilotChatAutocmd"
 
 
 @pynvim.plugin
-class CopilotAgentPlugin(object):
+class CopilotPlugin(object):
     def __init__(self, nvim: pynvim.Nvim):
         self.nvim: MyNvim = MyNvim(nvim, PLUGIN_MAPPING_CMD, PLUGIN_AUTOCMD_CMD)
         self.vsplit_chat_handler = None
