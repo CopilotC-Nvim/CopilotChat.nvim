@@ -55,8 +55,8 @@ return {
 }
 ```
 
-3. Run `:UpdateRemotePlugins`
-4. Restart `neovim`
+4. Run `:UpdateRemotePlugins`
+5. Restart `neovim`
 
 ### Manual
 
