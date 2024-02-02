@@ -1,7 +1,9 @@
 # Copilot Chat for Neovim
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+
 [![All Contributors](https://img.shields.io/badge/all_contributors-6-orange.svg?style=flat-square)](#contributors-)
+
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 > [!NOTE]
@@ -38,7 +40,7 @@ return {
       { "<leader>cct", "<cmd>CopilotChatTests<cr>", desc = "CopilotChat - Generate tests" },
       {
         "<leader>ccv",
-        ":CopilotChatVsplitVisual",
+        ":CopilotChatVisual",
         mode = "x",
         desc = "CopilotChat - Open in vertical split",
       },
@@ -61,7 +63,7 @@ return {
 1. Put the files in the right place
 
 ```
-$ git clone https://github.com/gptlang/CopilotChat.nvim
+$ git clone https://github.com/jellydn/CopilotChat.nvim
 $ cd CopilotChat.nvim
 $ cp -r --backup=nil rplugin ~/.config/nvim/
 ```
@@ -145,7 +147,7 @@ For further reference, you can view @jellydn's [configuration](https://github.co
 ### Token count & Fold
 
 1. Select some code using visual mode.
-2. Run the command `:CopilotChatVsplitVisual` with your question.
+2. Run the command `:CopilotChatVisual` with your question.
 
 [![Fold Demo](https://i.gyazo.com/766fb3b6ffeb697e650fc839882822a8.gif)](https://gyazo.com/766fb3b6ffeb697e650fc839882822a8)
 
