@@ -1,11 +1,73 @@
-ApplicationError: Unsupported NodeJS version (16.20.2); >=18 is required
-    at Module.run (file:///Users/huynhdung/.npm/_npx/b338be11c6678430/node_modules/cspell/dist/esm/app.mjs:17:15)
-    at file:///Users/huynhdung/.npm/_npx/b338be11c6678430/node_modules/cspell/bin.mjs:6:5
-    at ModuleJob.run (node:internal/modules/esm/module_job:193:25)
-    at async Promise.all (index 0)
-    at async ESMLoader.import (node:internal/modules/esm/loader:530:24)
-    at async loadESM (node:internal/process/esm_loader:91:5)
-    at async handleMainPromise (node:internal/modules/run_main:65:12) {
-  exitCode: 1,
-  cause: undefined
-}
+pynvim
+nvim
+newbuffer
+nargs
+Vsplit
+bufexists
+vlog
+vararg
+tjdevries
+neovim
+echohl
+stdpath
+outfile
+nameupper
+lineinfo
+currentline
+echom
+Neovim
+tiktoken
+jellydn
+zbirenbaum
+rplugin
+jellydn's
+gptlang
+Huynh
+Haracic
+Thiện
+Nguyễn
+Zhizhou
+Guruprakash
+Rajakkannu
+vsplit
+mypynvim
+Nvim
+AUTOCMD
+Autocmd
+getreg
+bufnr
+autocmd
+dotenv
+vnew
+nofile
+setlocal
+buftype
+bufhidden
+noswapfile
+linebreak
+funcs
+bufwinnr
+gotoid
+fileencoding
+machineid
+winnr
+Nightfly
+keymaps
+diffthis
+diffoff
+conceallevel
+concealcursor
+extmark
+virt
+Keymapper
+noremap
+autocmdmapper
+keymapper
+termcodes
+feedkeys
+mynvim
+autocmds
+shrinked
+zindex
+noautocmd
+roleplay
