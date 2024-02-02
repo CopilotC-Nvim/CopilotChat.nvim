@@ -5,6 +5,7 @@ import uuid
 from typing import Dict, List
 
 import dotenv
+import prompts
 import requests
 import typings
 import utilities

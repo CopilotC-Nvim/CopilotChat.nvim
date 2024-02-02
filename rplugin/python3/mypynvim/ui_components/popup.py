@@ -9,8 +9,6 @@ if TYPE_CHECKING:
 
     from .layout import Layout
 
-if TYPE_CHECKING:
-    from mypynvim.core.nvim import MyNvim
 
 from mypynvim.core.buffer import MyBuffer
 from mypynvim.core.window import MyWindow

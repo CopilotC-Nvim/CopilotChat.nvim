@@ -10,13 +10,6 @@
       "addWords": true
     }
   ],
-  "dictionaries": [
-    "cspell-tool"
-  ],
-  "ignorePaths": [
-    "node_modules",
-    "dist",
-    "build",
-    "/cspell-tool.txt"
-  ]
+  "dictionaries": ["cspell-tool"],
+  "ignorePaths": ["node_modules", "dist", "build", "/cspell-tool.txt"]
 }

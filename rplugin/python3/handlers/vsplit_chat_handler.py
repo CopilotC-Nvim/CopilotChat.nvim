@@ -21,7 +21,7 @@ class VSplitChatHandler(ChatHandler):
                 if window.vars[var_key]:
                     self.nvim.current.window = window
                     return
-            except:
+            except Exception:
                 pass
 
         self.buffer.vsplit(

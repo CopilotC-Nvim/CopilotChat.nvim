@@ -1,7 +1,5 @@
 {
-  "files": [
-    "README.md"
-  ],
+  "files": ["README.md"],
   "imageSize": 100,
   "commit": false,
   "commitType": "docs",
@@ -12,56 +10,42 @@
       "name": "gptlang",
       "avatar_url": "https://avatars.githubusercontent.com/u/121417512?v=4",
       "profile": "https://github.com/gptlang",
-      "contributions": [
-        "code",
-        "doc"
-      ]
+      "contributions": ["code", "doc"]
     },
     {
       "login": "jellydn",
       "name": "Dung Duc Huynh (Kaka)",
       "avatar_url": "https://avatars.githubusercontent.com/u/870029?v=4",
       "profile": "https://productsway.com/",
-      "contributions": [
-        "code",
-        "doc"
-      ]
+      "contributions": ["code", "doc"]
     },
     {
       "login": "qoobes",
       "name": "Ahmed Haracic",
       "avatar_url": "https://avatars.githubusercontent.com/u/58834655?v=4",
       "profile": "https://qoobes.dev",
-      "contributions": [
-        "code"
-      ]
+      "contributions": ["code"]
     },
     {
       "login": "ziontee113",
       "name": "Trí Thiện Nguyễn",
       "avatar_url": "https://avatars.githubusercontent.com/u/102876811?v=4",
       "profile": "https://youtube.com/@ziontee113",
-      "contributions": [
-        "code"
-      ]
+      "contributions": ["code"]
     },
     {
       "login": "Cassius0924",
       "name": "He Zhizhou",
       "avatar_url": "https://avatars.githubusercontent.com/u/62874592?v=4",
       "profile": "https://github.com/Cassius0924",
-      "contributions": [
-        "code"
-      ]
+      "contributions": ["code"]
     },
     {
       "login": "rguruprakash",
       "name": "Guruprakash Rajakkannu",
       "avatar_url": "https://avatars.githubusercontent.com/u/9963717?v=4",
       "profile": "https://www.linkedin.com/in/guruprakashrajakkannu/",
-      "contributions": [
-        "code"
-      ]
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
