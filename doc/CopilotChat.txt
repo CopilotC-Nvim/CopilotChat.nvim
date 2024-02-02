@@ -9,6 +9,7 @@ Table of Contents                              *CopilotChat-table-of-contents*
   - Usage                          |CopilotChat-copilot-chat-for-neovim-usage|
   - Receipts                    |CopilotChat-copilot-chat-for-neovim-receipts|
   - Roadmap                      |CopilotChat-copilot-chat-for-neovim-roadmap|
+  - Development              |CopilotChat-copilot-chat-for-neovim-development|
   - Contributors ✨    |CopilotChat-copilot-chat-for-neovim-contributors-✨|
 
 ==============================================================================
@@ -263,6 +264,21 @@ ROADMAP                          *CopilotChat-copilot-chat-for-neovim-roadmap*
 - Tokenizer
 - Use vector encodings to automatically select code
 - Sub commands - See issue #5 <https://github.com/gptlang/CopilotChat.nvim/issues/5>
+
+
+DEVELOPMENT                  *CopilotChat-copilot-chat-for-neovim-development*
+
+
+INSTALLING PRE-COMMIT TOOL ~
+
+For development, you can use the provided Makefile command to install the
+pre-commit tool:
+
+>bash
+    make install-pre-commit
+<
+
+This will install the pre-commit tool and the pre-commit hooks.
 
 
 CONTRIBUTORS ✨        *CopilotChat-copilot-chat-for-neovim-contributors-✨*
