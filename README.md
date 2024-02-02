@@ -236,6 +236,18 @@ Follow the example below to create a simple input for CopilotChat.
 - Use vector encodings to automatically select code
 - Sub commands - See [issue #5](https://github.com/gptlang/CopilotChat.nvim/issues/5)
 
+## Development
+
+### Installing Pre-commit Tool
+
+For development, you can use the provided Makefile command to install the pre-commit tool:
+
+```bash
+make install-pre-commit
+```
+
+This will install the pre-commit tool and the pre-commit hooks.
+
 ## Contributors ✨
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
