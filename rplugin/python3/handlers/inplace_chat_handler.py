@@ -176,8 +176,15 @@ class InPlaceChatHandler:
     def _set_prompt(self, prompt: str):
         self.prompt_popup.buffer.lines(prompt)
 
-    def _set_user_prompt(self):
+    def _set_next_user_prompt(self):
         self.current_user_prompt = (self.current_user_prompt + 1) % len(
+            self.user_prompts
+        )
+        prompt = list(self.user_prompts.keys())[self.current_user_prompt]
+        self.prompt_popup.buffer.lines(self.user_prompts[prompt])
+
+    def _set_previous_user_prompt(self):
+        self.current_user_prompt = (self.current_user_prompt - 1) % len(
             self.user_prompts
         )
         prompt = list(self.user_prompts.keys())[self.current_user_prompt]
@@ -248,8 +255,14 @@ class InPlaceChatHandler:
 
         self.prompt_popup.map(
             "n",
+            "<C-n>",
+            lambda: self._set_next_user_prompt(),
+        )
+
+        self.prompt_popup.map(
+            "n",
             "<C-p>",
-            lambda: self._set_user_prompt(),
+            lambda: self._set_previous_user_prompt(),
         )
 
         for i, popup in enumerate(self.popups):
@@ -286,7 +299,8 @@ class InPlaceChatHandler:
             "Prompt Binding:",
             "  ': Set prompt to SIMPLE_DOCSTRING",
             "  s: Set prompt to SEPARATE",
-            "  <C-p>: Set prompt to next item in user prompts",
+            "  <C-p>: Get the previous user prompt",
+            "  <C-n>: Set prompt to next item in user prompts",
             "",
             "Model:",
             "  <C-g>: Toggle AI model",
