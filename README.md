@@ -18,7 +18,8 @@ It will prompt you with instructions on your first start. If you already have `C
 ### Lazy.nvim
 
 1. `pip install python-dotenv requests pynvim==0.5.0 prompt-toolkit`
-2. Put it in your lazy setup
+2. `pip install tiktoken` (optional for displaying prompt token counts)
+3. Put it in your lazy setup
 
 ```lua
 return {
@@ -26,19 +27,29 @@ return {
     "jellydn/CopilotChat.nvim",
     dependencies = { "zbirenbaum/copilot.lua" }, -- Or { "github/copilot.vim" }
     opts = {
-      mode = "split", -- newbuffer or split  , default: newbuffer
+      mode = "split", -- newbuffer or split, default: newbuffer
+      show_help = "yes", -- Show help text for CopilotChatInPlace, default: yes
       debug = false, -- Enable or disable debug mode, the log file will be in ~/.local/state/nvim/CopilotChat.nvim.log
     },
     build = function()
-      vim.defer_fn(function()
-        vim.cmd("UpdateRemotePlugins")
-        vim.notify("CopilotChat - Updated remote plugins. Please restart Neovim.")
-      end, 3000)
+      vim.notify("Please update the remote plugins by running ':UpdateRemotePlugins', then restart Neovim.")
     end,
     event = "VeryLazy",
     keys = {
       { "<leader>cce", "<cmd>CopilotChatExplain<cr>", desc = "CopilotChat - Explain code" },
       { "<leader>cct", "<cmd>CopilotChatTests<cr>", desc = "CopilotChat - Generate tests" },
+      {
+        "<leader>ccv",
+        ":CopilotChatVsplitVisual",
+        mode = "x",
+        desc = "CopilotChat - Open in vertical split",
+      },
+      {
+        "<leader>ccx",
+        ":CopilotChatInPlace<cr>",
+        mode = "x",
+        desc = "CopilotChat - Run in-place code",
+      },
     },
   },
 }
@@ -75,6 +86,7 @@ You have the ability to tailor this plugin to your specific needs using the conf
 ```lua
 {
   debug = false, -- Enable or disable debug mode
+  show_help = 'yes', -- Show help text for CopilotChatInPlace
   prompts = { -- Set dynamic prompts for CopilotChat commands
     Explain = 'Explain how it works.',
     Tests = 'Briefly explain how the selected code works, then generate unit tests.',
@@ -97,10 +109,7 @@ return {
       },
     },
     build = function()
-      vim.defer_fn(function()
-        vim.cmd("UpdateRemotePlugins")
-        vim.notify("CopilotChat - Updated remote plugins. Please restart Neovim.")
-      end, 3000)
+      vim.notify("Please update the remote plugins by running ':UpdateRemotePlugins', then restart Neovim.")
     end,
     event = "VeryLazy",
     keys = {
@@ -112,7 +121,7 @@ return {
 }
 ```
 
-For further reference, you can view my [configuration](https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/copilot-chat.lua).
+For further reference, you can view @jellydn's [configuration](https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/copilot-chat.lua).
 
 ### Chat with Github Copilot
 
@@ -134,6 +143,22 @@ For further reference, you can view my [configuration](https://github.com/jellyd
 2. Run the command `:CopilotChatTests`.
 
 [![Generate tests](https://i.gyazo.com/f285467d4b8d8f8fd36aa777305312ae.gif)](https://gyazo.com/f285467d4b8d8f8fd36aa777305312ae)
+
+### Token count & Fold
+
+1. Select some code using visual mode.
+2. Run the command `:CopilotChatVsplitVisual` with your question.
+
+[![Fold Demo](https://i.gyazo.com/766fb3b6ffeb697e650fc839882822a8.gif)](https://gyazo.com/766fb3b6ffeb697e650fc839882822a8)
+
+### In-place Chat Popup
+
+1. Select some code using visual mode.
+2. Run the command `:CopilotChatInPlace` and type your prompt. For example, `What does this code do?`
+3. Press `Enter` to send your question to Github Copilot.
+4. Press `q` to quit. There is help text at the bottom of the screen. You can also press `?` to toggle the help text.
+
+[![In-place Demo](https://i.gyazo.com/4a5badaa109cd483c1fc23d296325cb0.gif)](https://gyazo.com/4a5badaa109cd483c1fc23d296325cb0)
 
 ## Roadmap
 

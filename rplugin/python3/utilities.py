@@ -1,7 +1,6 @@
 import json
 import os
 import random
-from typing import List
 
 import prompts
 import typings
@@ -12,10 +11,11 @@ def random_hex(length: int = 65):
 
 
 def generate_request(
-    chat_history: List[typings.Message],
+    chat_history: list[typings.Message],
     code_excerpt: str,
     language: str = "",
     system_prompt=prompts.COPILOT_INSTRUCTIONS,
+    model="gpt-4",
 ):
     messages = [
         {
@@ -40,7 +40,7 @@ def generate_request(
         )
     return {
         "intent": True,
-        "model": "gpt-4",
+        "model": model,
         "n": 1,
         "stream": True,
         "temperature": 0.1,
@@ -49,7 +49,7 @@ def generate_request(
     }
 
 
-def generate_embedding_request(inputs: List[typings.FileExtract]):
+def generate_embedding_request(inputs: list[typings.FileExtract]):
     return {
         "input": [
             f"File: `{i.filepath}`\n```{i.filepath.split('.')[-1]}\n{i.code}```"

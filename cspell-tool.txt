@@ -1,24 +1,11 @@
-newbuffer
-nargs
-nvim
-Neovim
-pynvim
-jellydn
-neovim
-rplugin
-dotenv
-Nvim
-getreg
-getbufvar
-bufnr
-buftype
-nofile
-vnew
-enew
-setlocal
-bufhidden
-noswapfile
-linebreak
-fileencoding
-machineid
-roleplay
+ApplicationError: Unsupported NodeJS version (16.20.2); >=18 is required
+    at Module.run (file:///Users/huynhdung/.npm/_npx/b338be11c6678430/node_modules/cspell/dist/esm/app.mjs:17:15)
+    at file:///Users/huynhdung/.npm/_npx/b338be11c6678430/node_modules/cspell/bin.mjs:6:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:193:25)
+    at async Promise.all (index 0)
+    at async ESMLoader.import (node:internal/modules/esm/loader:530:24)
+    at async loadESM (node:internal/process/esm_loader:91:5)
+    at async handleMainPromise (node:internal/modules/run_main:65:12) {
+  exitCode: 1,
+  cause: undefined
+}

@@ -12,21 +12,29 @@ _COPILOT_CHAT_GLOBAL_CONFIG = {}
 -- Set up the plugin
 ---@param options (table | nil)
 --       - mode: ('newbuffer' | 'split') default: newbuffer.
+--       - show_help: ('yes' | 'no') default: 'yes'.
 --       - prompts: (table?) default: default_prompts.
 --       - debug: (boolean?) default: false.
 M.setup = function(options)
   vim.g.copilot_chat_view_option = options and options.mode or 'newbuffer'
-
+  vim.g.copilot_chat_show_help = options and options.show_help or 'yes'
   local debug = options and options.debug or false
   _COPILOT_CHAT_GLOBAL_CONFIG.debug = debug
 
   -- Merge the provided prompts with the default prompts
   local prompts = vim.tbl_extend('force', default_prompts, options and options.prompts or {})
+  vim.g.copilot_chat_user_prompts = prompts
 
   --  Loop through merged table and generate commands based on keys.
   for key, value in pairs(prompts) do
     utils.create_cmd('CopilotChat' .. key, function()
       vim.cmd('CopilotChat ' .. value)
+    end, { nargs = '*', range = true })
+  end
+
+  for key, value in pairs(prompts) do
+    utils.create_cmd('CC' .. key, function()
+      vim.cmd('CopilotChatVsplit ' .. value)
     end, { nargs = '*', range = true })
   end
 

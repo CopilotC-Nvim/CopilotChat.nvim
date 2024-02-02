@@ -5,6 +5,7 @@ import uuid
 from typing import Dict, List
 
 import dotenv
+import prompts
 import requests
 import typings
 import utilities
@@ -86,17 +87,26 @@ class Copilot:
 
         self.token = self.session.get(url, headers=headers).json()
 
-    def ask(self, system_prompt: str, prompt: str, code: str, language: str = ""):
+    def ask(
+        self,
+        system_prompt: str,
+        prompt: str,
+        code: str,
+        language: str = "",
+        model: str = "gpt-4",
+    ):
         if not self.token:
             self.authenticate()
         # If expired, reauthenticate
         if self.token.get("expires_at") <= round(time.time()):
             self.authenticate()
 
+        if not system_prompt:
+            system_prompt = prompts.COPILOT_INSTRUCTIONS
         url = "https://api.githubcopilot.com/chat/completions"
         self.chat_history.append(typings.Message(prompt, "user"))
         data = utilities.generate_request(
-            self.chat_history, code, language, system_prompt=system_prompt
+            self.chat_history, code, language, system_prompt=system_prompt, model=model
         )
 
         full_response = ""
@@ -140,7 +150,7 @@ class Copilot:
 
         self.chat_history.append(typings.Message(full_response, "system"))
 
-    def _get_embeddings(self, inputs: List[typings.FileExtract]):
+    def _get_embeddings(self, inputs: list[typings.FileExtract]):
         embeddings = []
         url = "https://api.githubcopilot.com/embeddings"
         # If we have more than 18 files, we need to split them into multiple requests
@@ -195,7 +205,7 @@ def main():
         code = get_input(session, "\n\nCode: \n")
 
         print("\n\nAI Response:")
-        for response in copilot.ask(user_prompt, code):
+        for response in copilot.ask(None, user_prompt, code):
             print(response, end="", flush=True)
 
 

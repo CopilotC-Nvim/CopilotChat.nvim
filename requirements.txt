@@ -2,3 +2,4 @@ python-dotenv
 requests
 pynvim==0.5.0
 prompt-toolkit
+tiktoken
