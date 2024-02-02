@@ -99,7 +99,8 @@ You have the capability to expand the prompts to create more versatile commands:
 return {
     "jellydn/CopilotChat.nvim",
     opts = {
-      mode = "split",
+      debug = true,
+      show_help = "yes",
       prompts = {
         Explain = "Explain how it works.",
         Review = "Review the following code and provide concise suggestions.",
@@ -143,7 +144,7 @@ For further reference, you can view @jellydn's [configuration](https://github.co
 
 [![Generate tests](https://i.gyazo.com/f285467d4b8d8f8fd36aa777305312ae.gif)](https://gyazo.com/f285467d4b8d8f8fd36aa777305312ae)
 
-### Token count & Fold
+### Token count & Fold with visual mode
 
 1. Select some code using visual mode.
 2. Run the command `:CopilotChatVisual` with your question.
@@ -158,6 +159,75 @@ For further reference, you can view @jellydn's [configuration](https://github.co
 4. Press `q` to quit. There is help text at the bottom of the screen. You can also press `?` to toggle the help text.
 
 [![In-place Demo](https://i.gyazo.com/4a5badaa109cd483c1fc23d296325cb0.gif)](https://gyazo.com/4a5badaa109cd483c1fc23d296325cb0)
+
+## Receipts
+
+### How to setup with `which-key.nvim`
+
+A special thanks to @ecosse3 for the configuration of [which-key](https://github.com/jellydn/CopilotChat.nvim/issues/30).
+
+```lua
+  {
+    "jellydn/CopilotChat.nvim",
+    event = "VeryLazy",
+    opts = {
+      prompts = {
+        Explain = "Explain how it works.",
+        Review = "Review the following code and provide concise suggestions.",
+        Tests = "Briefly explain how the selected code works, then generate unit tests.",
+        Refactor = "Refactor the code to improve clarity and readability.",
+      },
+    },
+    build = function()
+      vim.notify("Please update the remote plugins by running ':UpdateRemotePlugins', then restart Neovim.")
+    end,
+    config = function()
+      local present, wk = pcall(require, "which-key")
+      if not present then
+        return
+      end
+
+      wk.register({
+        c = {
+          c = {
+            name = "Copilot Chat",
+          }
+        }
+      }, {
+        mode = "n",
+        prefix = "<leader>",
+        silent = true,
+        noremap = true,
+        nowait = false,
+      })
+    end,
+    keys = {
+      { "<leader>ccc", ":CopilotChat ",                desc = "CopilotChat - Prompt" },
+      { "<leader>cce", ":CopilotChatExplain ",         desc = "CopilotChat - Explain code" },
+      { "<leader>cct", "<cmd>CopilotChatTests<cr>",    desc = "CopilotChat - Generate tests" },
+      { "<leader>ccr", "<cmd>CopilotChatReview<cr>",   desc = "CopilotChat - Review code" },
+      { "<leader>ccR", "<cmd>CopilotChatRefactor<cr>", desc = "CopilotChat - Refactor code" },
+    }
+  },
+```
+
+### Create a simple input for CopilotChat
+
+Follow the example below to create a simple input for CopilotChat.
+
+```lua
+-- Create input for CopilotChat
+  {
+    "<leader>cci",
+    function()
+      local input = vim.fn.input("Ask Copilot: ")
+      if input ~= "" then
+        vim.cmd("CopilotChat " .. input)
+      end
+    end,
+    desc = "CopilotChat - Ask input",
+  },
+```
 
 ## Roadmap
 
