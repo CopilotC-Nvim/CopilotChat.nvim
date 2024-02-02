@@ -56,7 +56,7 @@ LAZY.NVIM ~
           { "<leader>cct", "<cmd>CopilotChatTests<cr>", desc = "CopilotChat - Generate tests" },
           {
             "<leader>ccv",
-            ":CopilotChatVsplitVisual",
+            ":CopilotChatVisual",
             mode = "x",
             desc = "CopilotChat - Open in vertical split",
           },
@@ -80,7 +80,7 @@ MANUAL ~
 1. Put the files in the right place
 
 >
-    $ git clone https://github.com/gptlang/CopilotChat.nvim
+    $ git clone https://github.com/jellydn/CopilotChat.nvim
     $ cd CopilotChat.nvim
     $ cp -r --backup=nil rplugin ~/.config/nvim/
 <
@@ -169,7 +169,7 @@ GENERATE TESTS ~
 TOKEN COUNT & FOLD ~
 
 1. Select some code using visual mode.
-2. Run the command `:CopilotChatVsplitVisual` with your question.
+2. Run the command `:CopilotChatVisual` with your question.
 
 <https://gyazo.com/766fb3b6ffeb697e650fc839882822a8>
 
