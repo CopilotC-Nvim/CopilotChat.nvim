@@ -11,12 +11,10 @@ _COPILOT_CHAT_GLOBAL_CONFIG = {}
 
 -- Set up the plugin
 ---@param options (table | nil)
---       - mode: ('newbuffer' | 'split') default: newbuffer.
 --       - show_help: ('yes' | 'no') default: 'yes'.
 --       - prompts: (table?) default: default_prompts.
 --       - debug: (boolean?) default: false.
 M.setup = function(options)
-  vim.g.copilot_chat_view_option = options and options.mode or 'newbuffer'
   vim.g.copilot_chat_show_help = options and options.show_help or 'yes'
   local debug = options and options.debug or false
   _COPILOT_CHAT_GLOBAL_CONFIG.debug = debug
@@ -32,19 +30,10 @@ M.setup = function(options)
     end, { nargs = '*', range = true })
   end
 
-  -- Toggle between newbuffer and split
-  utils.create_cmd('CopilotChatToggleLayout', function()
-    if vim.g.copilot_chat_view_option == 'newbuffer' then
-      vim.g.copilot_chat_view_option = 'split'
-    else
-      vim.g.copilot_chat_view_option = 'newbuffer'
-    end
-  end, { nargs = '*', range = true })
-
   utils.log_info(
-    'Execute the ":UpdateRemotePlugins" command and restart Neovim before starting a chat with Copilot.'
+    'Execute ":UpdateRemotePlugins" and restart Neovim before starting a chat with Copilot.'
   )
-  utils.log_info('If you encounter any issues, run ":healthcheck" and share the output.')
+  utils.log_info('If issues arise, run ":healthcheck" and share the output.')
 end
 
 return M
