@@ -54,7 +54,21 @@ return {
 }
 ```
 
-4. Run `:UpdateRemotePlugins`
+4. Run command `:UpdateRemotePlugins`, then inspect the file `~/.local/share/nvim/rplugin.vim` for additional details. You will notice that the commands have been registered.
+
+For example:
+
+```vim
+" python3 plugins
+call remote#host#RegisterPlugin('python3', '/Users/huynhdung/.local/share/nvim/lazy/CopilotChat.nvim/rplugin/python3/copilot-plugin.py', [
+      \ {'sync': v:false, 'name': 'CopilotChat', 'type': 'command', 'opts': {'nargs': '1'}},
+      \ {'sync': v:false, 'name': 'CopilotChatVisual', 'type': 'command', 'opts': {'nargs': '1', 'range': ''}},
+      \ {'sync': v:false, 'name': 'CopilotChatInPlace', 'type': 'command', 'opts': {'nargs': '*', 'range': ''}},
+      \ {'sync': v:false, 'name': 'CopilotChatAutocmd', 'type': 'command', 'opts': {'nargs': '*'}},
+      \ {'sync': v:false, 'name': 'CopilotChatMapping', 'type': 'command', 'opts': {'nargs': '*'}},
+     \ ])
+```
+
 5. Restart `neovim`
 
 ### Manual
