@@ -2,6 +2,25 @@ local M = {}
 
 local log = require('CopilotChat.vlog')
 
+--- Get the log file path
+---@return string
+M.get_log_file_path = function()
+  return log.get_log_file()
+end
+
+-- The CopilotChat.nvim is built using remote plugins.
+-- This is the path to the rplugin.vim file.
+-- Refer https://neovim.io/doc/user/remote_plugin.html#%3AUpdateRemotePlugins
+-- @return string
+M.get_remote_plugins_path = function()
+  local os = vim.loop.os_uname().sysname
+  if os == 'Linux' or os == 'Darwin' then
+    return '~/.local/share/nvim/rplugin.vim'
+  elseif os == 'Windows' then
+    return '~/AppData/Local/nvim/rplugin.vim'
+  end
+end
+
 --- Create custom command
 ---@param cmd string The command name
 ---@param func function The function to execute

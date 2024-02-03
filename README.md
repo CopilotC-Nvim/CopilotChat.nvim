@@ -176,6 +176,12 @@ For further reference, you can view @jellydn's [configuration](https://github.co
 
 ## Receipts
 
+### Debugging with `:messages` and `:CopilotChatDebugInfo`
+
+If you encounter any issues, you can run the command `:messages` to inspect the log. You can also run the command `:CopilotChatDebugInfo` to inspect the debug information.
+
+[![Debug Info](https://i.gyazo.com/bf00e700bcee1b77bcbf7b516b552521.gif)](https://gyazo.com/bf00e700bcee1b77bcbf7b516b552521)
+
 ### How to setup with `which-key.nvim`
 
 A special thanks to @ecosse3 for the configuration of [which-key](https://github.com/jellydn/CopilotChat.nvim/issues/30).

@@ -66,3 +66,5 @@ roleplay
 vusted
 luarocks
 isort
+checkhealth
+sysname
