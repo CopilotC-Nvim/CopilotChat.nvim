@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Union, Unpack
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Union
 
 if TYPE_CHECKING:
     from mypynvim.core.nvim import MyNvim
@@ -14,7 +14,7 @@ from mypynvim.core.buffer import MyBuffer
 from mypynvim.core.window import MyWindow
 
 from .calculator import Calculator
-from .types import PaddingKeys, PopUpArgs, PopUpConfiguration, Relative
+from .types import PaddingKeys, PopUpConfiguration, Relative
 
 
 @dataclass
@@ -33,7 +33,7 @@ class PopUp:
         padding: PaddingKeys = {},
         enter: bool = False,
         opts={},
-        **kwargs: Unpack[PopUpArgs],
+        **kwargs,
     ):
         self.nvim: MyNvim = nvim
         self.calculator: Calculator = Calculator(self.nvim)

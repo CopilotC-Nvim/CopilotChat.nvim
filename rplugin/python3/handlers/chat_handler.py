@@ -35,9 +35,9 @@ class ChatHandler:
         disable_end_separator: bool = False,
         model: str = "gpt-4",
     ):
+        no_annoyance = self.nvim.eval("g:copilot_chat_disable_separators") == "yes"
         if system_prompt is None:
             system_prompt = self._construct_system_prompt(prompt)
-
         # Start the spinner
         self.nvim.exec_lua('require("CopilotChat.spinner").show()')
 
@@ -46,7 +46,9 @@ class ChatHandler:
         )
 
         if not disable_start_separator:
-            self._add_start_separator(system_prompt, prompt, code, filetype, winnr)
+            self._add_start_separator(
+                system_prompt, prompt, code, filetype, winnr, no_annoyance
+            )
 
         self._add_chat_messages(system_prompt, prompt, code, filetype, model)
 
@@ -54,7 +56,7 @@ class ChatHandler:
         self.nvim.exec_lua('require("CopilotChat.spinner").hide()')
 
         if not disable_end_separator:
-            self._add_end_separator(model)
+            self._add_end_separator(model, no_annoyance)
 
     # private
 
@@ -75,14 +77,15 @@ class ChatHandler:
         code: str,
         file_type: str,
         winnr: int,
+        no_annoyance: bool = False,
     ):
-        if is_module_installed("tiktoken"):
+        if is_module_installed("tiktoken") and not no_annoyance:
             self._add_start_separator_with_token_count(
                 system_prompt, prompt, code, file_type, winnr
             )
         else:
             self._add_regular_start_separator(
-                system_prompt, prompt, code, file_type, winnr
+                system_prompt, prompt, code, file_type, winnr, no_annoyance
             )
 
     def _add_regular_start_separator(
@@ -92,15 +95,17 @@ class ChatHandler:
         code: str,
         file_type: str,
         winnr: int,
+        no_annoyance: bool = False,
     ):
-        if code:
+        if code and not no_annoyance:
             code = f"\n        \nCODE:\n```{file_type}\n{code}\n```"
 
         last_row_before = len(self.buffer.lines())
         system_prompt_height = len(system_prompt.split("\n"))
         code_height = len(code.split("\n"))
 
-        start_separator = f"""### User
+        start_separator = (
+            f"""### User
 
 SYSTEM PROMPT:
 ```
@@ -111,8 +116,13 @@ SYSTEM PROMPT:
 ### Copilot
 
 """
+            if not no_annoyance
+            else f"### User\n{prompt}\n\n### Copilot\n\n"
+        )
         self.buffer.append(start_separator.split("\n"))
 
+        if no_annoyance:
+            return
         self._add_folds(code, code_height, last_row_before, system_prompt_height, winnr)
 
     def _add_start_separator_with_token_count(
@@ -222,13 +232,17 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
                 token.split("\n"),
             )
 
-    def _add_end_separator(self, model: str):
+    def _add_end_separator(self, model: str, no_annoyance: bool = False):
         current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         model_info = f"\n#### Answer provided by Copilot (Model: `{model}`) on {current_datetime}."
         additional_instructions = (
             "\n> For additional queries, please use the `CopilotChat` command."
         )
-        disclaimer = "\n> Please be aware that the AI's output may not always be accurate. Always cross-verify the output.\n---\n"
+        disclaimer = "\n> Please be aware that the AI's output may not always be accurate. Always cross-verify the output."
 
         end_message = model_info + additional_instructions + disclaimer
+
+        if no_annoyance:
+            end_message = "\n" + current_datetime + "\n---\n"
+
         self.buffer.append(end_message.split("\n"))
