@@ -167,6 +167,7 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
         system_prompt_height: int,
         winnr: int,
     ):
+        self.nvim.command("set foldmethod=manual")
         system_fold_start = last_row_before + 2
         system_fold_end = system_fold_start + system_prompt_height + 3
         main_command = f"{system_fold_start}, {system_fold_end} fold | normal! Gzz"
