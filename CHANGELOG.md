@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/jellydn/CopilotChat.nvim/compare/v1.0.0...v1.1.0) (2024-02-04)
+
+
+### Features
+
+* add CopilotChatDebugInfo command ([#51](https://github.com/jellydn/CopilotChat.nvim/issues/51)) ([89b6276](https://github.com/jellydn/CopilotChat.nvim/commit/89b6276e995de2e05ea391a9d1045676737c93bd))
+
 ## 1.0.0 (2024-02-03)
 
 
