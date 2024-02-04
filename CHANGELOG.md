@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/jellydn/CopilotChat.nvim/compare/v1.1.0...v1.2.0) (2024-02-04)
+
+
+### Features
+
+* show date time and additional information on end separator ([#53](https://github.com/jellydn/CopilotChat.nvim/issues/53)) ([b8d0a9d](https://github.com/jellydn/CopilotChat.nvim/commit/b8d0a9d0e0824ff3b643a2652202be2a51b37dbc))
+
+
+### Bug Fixes
+
+* handle get remote plugin path on Windows ([0b917f6](https://github.com/jellydn/CopilotChat.nvim/commit/0b917f633eaef621d293f344965e9e0545be9a80))
+
 ## [1.1.0](https://github.com/jellydn/CopilotChat.nvim/compare/v1.0.0...v1.1.0) (2024-02-04)
 
 
