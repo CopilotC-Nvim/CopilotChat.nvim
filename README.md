@@ -174,7 +174,7 @@ For further reference, you can view @jellydn's [configuration](https://github.co
 
 [![In-place Demo](https://i.gyazo.com/4a5badaa109cd483c1fc23d296325cb0.gif)](https://gyazo.com/4a5badaa109cd483c1fc23d296325cb0)
 
-## Receipts
+## Tips
 
 ### Debugging with `:messages` and `:CopilotChatDebugInfo`
 
