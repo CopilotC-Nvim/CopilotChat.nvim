@@ -7,7 +7,7 @@ Table of Contents                              *CopilotChat-table-of-contents*
   - Authentication        |CopilotChat-copilot-chat-for-neovim-authentication|
   - Installation            |CopilotChat-copilot-chat-for-neovim-installation|
   - Usage                          |CopilotChat-copilot-chat-for-neovim-usage|
-  - Receipts                    |CopilotChat-copilot-chat-for-neovim-receipts|
+  - Tips                            |CopilotChat-copilot-chat-for-neovim-tips|
   - Roadmap                      |CopilotChat-copilot-chat-for-neovim-roadmap|
   - Development              |CopilotChat-copilot-chat-for-neovim-development|
   - Contributors ✨    |CopilotChat-copilot-chat-for-neovim-contributors-✨|
@@ -199,7 +199,7 @@ IN-PLACE CHAT POPUP ~
 <https://gyazo.com/4a5badaa109cd483c1fc23d296325cb0>
 
 
-RECEIPTS                        *CopilotChat-copilot-chat-for-neovim-receipts*
+TIPS                                *CopilotChat-copilot-chat-for-neovim-tips*
 
 
 DEBUGGING WITH :MESSAGES AND :COPILOTCHATDEBUGINFO ~
