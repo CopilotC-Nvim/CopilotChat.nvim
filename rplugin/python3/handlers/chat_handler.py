@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 from typing import Optional, cast
 
@@ -18,7 +19,7 @@ def is_module_installed(name):
 class ChatHandler:
     def __init__(self, nvim: MyNvim, buffer: MyBuffer):
         self.nvim: MyNvim = nvim
-        self.copilot = None
+        self.copilot: Copilot = None
         self.buffer: MyBuffer = buffer
 
     # public
@@ -186,6 +187,21 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
     ):
         if self.copilot is None:
             self.copilot = Copilot()
+            if self.copilot.github_token is None:
+                req = self.copilot.request_auth()
+                self.nvim.out_write(
+                    f"Please visit {req['verification_uri']} and enter the code {req['user_code']}\n"
+                )
+                current_time = time.time()
+                wait_until = current_time + req["expires_in"]
+                while self.copilot.github_token is None:
+                    self.copilot.poll_auth(req["device_code"])
+                    time.sleep(req["interval"])
+                    if time.time() > wait_until:
+                        self.nvim.out_write("Timed out waiting for authentication\n")
+                        return
+                self.nvim.out_write("Successfully authenticated with Copilot\n")
+            self.copilot.authenticate()
 
         for token in self.copilot.ask(
             system_prompt, prompt, code, language=cast(str, file_type), model=model
