@@ -28,7 +28,6 @@ It will prompt you with instructions on your first start. If you already have `C
 return {
   {
     "jellydn/CopilotChat.nvim",
-    dependencies = { "zbirenbaum/copilot.lua" }, -- Or { "github/copilot.vim" }
     opts = {
       show_help = "yes", -- Show help text for CopilotChatInPlace, default: yes
       debug = false, -- Enable or disable debug mode, the log file will be in ~/.local/state/nvim/CopilotChat.nvim.log
