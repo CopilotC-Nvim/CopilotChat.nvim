@@ -5,6 +5,9 @@
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 > [!NOTE]
+> You might want to take a look at [this fork](https://github.com/jellydn/CopilotChat.nvim) which is more well maintained & is more configurable. I personally use it now as well.
+
+> [!NOTE]
 > A new command, `CopilotChatInPlace` has been introduced. It functions like the ChatGPT plugin. Please run ":UpdateRemotePlugins" command and restart Neovim before starting a chat with Copilot. To stay updated on our roadmap, please join our [Discord](https://discord.gg/vy6hJsTWaZ) community.
 
 ## Authentication
