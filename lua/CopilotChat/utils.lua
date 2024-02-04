@@ -16,7 +16,7 @@ M.get_remote_plugins_path = function()
   local os = vim.loop.os_uname().sysname
   if os == 'Linux' or os == 'Darwin' then
     return '~/.local/share/nvim/rplugin.vim'
-  elseif os == 'Windows' then
+  else
     return '~/AppData/Local/nvim/rplugin.vim'
   end
 end
