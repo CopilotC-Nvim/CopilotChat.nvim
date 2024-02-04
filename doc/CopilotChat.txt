@@ -18,6 +18,10 @@ Table of Contents                              *CopilotChat-table-of-contents*
 |CopilotChat-|
 
 
+  [!NOTE] You might want to take a look at this fork
+  <https://github.com/jellydn/CopilotChat.nvim> which is more well maintained &
+  is more configurable. I personally use it now as well.
+
   [!NOTE] A new command, `CopilotChatInPlace` has been introduced. It functions
   like the ChatGPT plugin. Please run ":UpdateRemotePlugins" command and restart
   Neovim before starting a chat with Copilot. To stay updated on our roadmap,
@@ -309,14 +313,14 @@ CONTRIBUTORS ✨        *CopilotChat-copilot-chat-for-neovim-contributors-✨*
 Thanks goes to these wonderful people (emoji key
 <https://allcontributors.org/docs/en/emoji-key>):
 
-gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻This project follows the all-contributors
+gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻This project follows the all-contributors
 <https://github.com/all-contributors/all-contributors> specification.
 Contributions of any kind welcome!
 
 ==============================================================================
 2. Links                                                   *CopilotChat-links*
 
-1. *All Contributors*: https://img.shields.io/badge/all_contributors-6-orange.svg?style=flat-square
+1. *All Contributors*: https://img.shields.io/badge/all_contributors-7-orange.svg?style=flat-square
 2. *@jellydn*: 
 3. *Chat Demo*: https://i.gyazo.com/10fbd1543380d15551791c1a6dcbcd46.gif
 4. *Explain Code Demo*: https://i.gyazo.com/e5031f402536a1a9d6c82b2c38d469e3.gif
