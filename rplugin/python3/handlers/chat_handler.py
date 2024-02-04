@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import Optional, cast
 
-import prompts as prompts
+import prompts as system_prompts
 from copilot import Copilot
 from mypynvim.core.buffer import MyBuffer
 from mypynvim.core.nvim import MyNvim
@@ -52,18 +53,18 @@ class ChatHandler:
         self.nvim.exec_lua('require("CopilotChat.spinner").hide()')
 
         if not disable_end_separator:
-            self._add_end_separator()
+            self._add_end_separator(model)
 
     # private
 
     def _construct_system_prompt(self, prompt: str):
-        system_prompt = prompts.COPILOT_INSTRUCTIONS
-        if prompt == prompts.FIX_SHORTCUT:
-            system_prompt = prompts.COPILOT_FIX
-        elif prompt == prompts.TEST_SHORTCUT:
-            system_prompt = prompts.COPILOT_TESTS
-        elif prompt == prompts.EXPLAIN_SHORTCUT:
-            system_prompt = prompts.COPILOT_EXPLAIN
+        system_prompt = system_prompts.COPILOT_INSTRUCTIONS
+        if prompt == system_prompts.FIX_SHORTCUT:
+            system_prompt = system_prompts.COPILOT_FIX
+        elif prompt == system_prompts.TEST_SHORTCUT:
+            system_prompt = system_prompts.COPILOT_TESTS
+        elif prompt == system_prompts.EXPLAIN_SHORTCUT:
+            system_prompt = system_prompts.COPILOT_EXPLAIN
         return system_prompt
 
     def _add_start_separator(
@@ -204,6 +205,13 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
                 token.split("\n"),
             )
 
-    def _add_end_separator(self):
-        end_separator = "\n---\n"
-        self.buffer.append(end_separator.split("\n"))
+    def _add_end_separator(self, model: str):
+        current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        model_info = f"\n#### Answer provided by Copilot (Model: `{model}`) on {current_datetime}."
+        additional_instructions = (
+            "\n> For additional queries, please use the `CopilotChat` command."
+        )
+        disclaimer = "\n> Please be aware that the AI's output may not always be accurate. Always cross-verify the output.\n---\n"
+
+        end_message = model_info + additional_instructions + disclaimer
+        self.buffer.append(end_message.split("\n"))

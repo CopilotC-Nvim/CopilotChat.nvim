@@ -247,3 +247,5 @@ Your job is only to change / edit the code.
 Your code output should keep the same level of indentation as the user's code.
 You MUST add whitespace in the beginning of each line as needed to match the user's code.
 """
+PROMPT_SIMPLE_DOCSTRING = "add simple docstring to this code"
+PROMPT_SEPARATE = "add comments separating the code into sections"

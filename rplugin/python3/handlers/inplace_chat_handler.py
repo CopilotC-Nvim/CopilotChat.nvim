@@ -5,8 +5,6 @@ from mypynvim.core.nvim import MyNvim
 from mypynvim.ui_components.layout import Box, Layout
 from mypynvim.ui_components.popup import PopUp
 
-from . import prompts
-
 # Define constants for the models
 MODEL_GPT4 = "gpt-4"
 MODEL_GPT35_TURBO = "gpt-3.5-turbo"
@@ -243,10 +241,10 @@ class InPlaceChatHandler:
         self.prompt_popup.map("n", "<C-m>", lambda cb=self._toggle_system_model: cb())
 
         self.prompt_popup.map(
-            "n", "'", lambda: self._set_prompt(prompts.PROMPT_SIMPLE_DOCSTRING)
+            "n", "'", lambda: self._set_prompt(system_prompts.PROMPT_SIMPLE_DOCSTRING)
         )
         self.prompt_popup.map(
-            "n", "s", lambda: self._set_prompt(prompts.PROMPT_SEPARATE)
+            "n", "s", lambda: self._set_prompt(system_prompts.PROMPT_SEPARATE)
         )
 
         self.prompt_popup.map(
