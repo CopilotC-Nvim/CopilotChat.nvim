@@ -31,6 +31,7 @@ return {
     opts = {
       show_help = "yes", -- Show help text for CopilotChatInPlace, default: yes
       debug = false, -- Enable or disable debug mode, the log file will be in ~/.local/state/nvim/CopilotChat.nvim.log
+      disable_extra_info = 'no', -- Disable extra information (e.g: system prompt) in the response.
     },
     build = function()
       vim.notify("Please update the remote plugins by running ':UpdateRemotePlugins', then restart Neovim.")
