@@ -285,6 +285,37 @@ Follow the example below to create a simple input for CopilotChat.
 <
 
 
+ADD SAME KEYBINDS IN BOTH VISUAL AND NORMAL MODE ~
+
+>lua
+        {
+          "jellydn/CopilotChat.nvim",
+          keys =
+                    function()
+                        local keybinds={
+                            --add your custom keybinds here
+                        }
+                        -- change prompt and keybinds as per your need
+                        local my_prompts = {
+                            {prompt = "In Neovim.",desc = "Neovim",key = "n"},
+                            {prompt = "Help with this",desc = "Help",key = "h"},
+                            {prompt = "Simplify and imporve readablilty",desc = "Simplify",key = "s"},
+                            {prompt = "Optimize the code to improve perfomance and readablilty.",desc = "Optimize",key = "o"},
+                            {prompt = "Find possible errors and fix them for me",desc = "Fix",key = "f"},
+                            {prompt = "Explain in detail",desc = "Explain",key = "e"},
+                            {prompt = "Write a shell scirpt",desc = "Shell",key = "S"},
+                        }
+                        -- you can change <leader>cc to your desired keybind prefix
+                        for _,v in pairs(my_prompts) do
+                            table.insert(keybinds,{ "<leader>cc"..v.key, ":CopilotChatVisual "..v.prompt.."<cr>", mode = "x", desc = "CopilotChat - "..v.desc })
+                            table.insert(keybinds,{ "<leader>cc"..v.key, "<cmd>CopilotChat "..v.prompt.."<cr>", desc = "CopilotChat - "..v.desc })
+                        end
+                        return keybinds
+                    end,
+        },
+<
+
+
 ROADMAP                          *CopilotChat-copilot-chat-for-neovim-roadmap*
 
 - Translation to pure Lua
