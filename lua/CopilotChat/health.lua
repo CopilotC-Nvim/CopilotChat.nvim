@@ -38,8 +38,8 @@ function M.check()
   end
 
   local major, minor = string.match(python_version, 'Python (%d+)%.(%d+)')
-  if not (major and minor and tonumber(major) >= 3 and tonumber(minor) >= 7) then
-    warn('Python version 3.7 or higher is required')
+  if not (major and minor and tonumber(major) >= 3 and tonumber(minor) >= 10) then
+    warn('Python version 3.10 or higher is required')
   else
     ok('Python version ' .. major .. '.' .. minor .. ' is supported')
   end
