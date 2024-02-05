@@ -11,7 +11,6 @@ MODEL_GPT35_TURBO = "gpt-3.5-turbo"
 
 
 # TODO: change the layout, e.g: move to right side of the screen
-# TODO: Abort request if the user closes the layout
 class InPlaceChatHandler:
     """This class handles in-place chat functionality."""
 

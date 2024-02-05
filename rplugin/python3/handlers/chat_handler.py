@@ -16,6 +16,7 @@ def is_module_installed(name):
         return False
 
 
+# TODO: Abort request if the user closes the layout
 class ChatHandler:
     def __init__(self, nvim: MyNvim, buffer: MyBuffer):
         self.nvim: MyNvim = nvim
@@ -35,7 +36,9 @@ class ChatHandler:
         disable_end_separator: bool = False,
         model: str = "gpt-4",
     ):
-        no_annoyance = self.nvim.eval("g:copilot_chat_disable_separators") == "yes"
+        disable_separators = (
+            self.nvim.eval("g:copilot_chat_disable_separators") == "yes"
+        )
         if system_prompt is None:
             system_prompt = self._construct_system_prompt(prompt)
         # Start the spinner
@@ -47,7 +50,7 @@ class ChatHandler:
 
         if not disable_start_separator:
             self._add_start_separator(
-                system_prompt, prompt, code, filetype, winnr, no_annoyance
+                system_prompt, prompt, code, filetype, winnr, disable_separators
             )
 
         self._add_chat_messages(system_prompt, prompt, code, filetype, model)
@@ -56,7 +59,7 @@ class ChatHandler:
         self.nvim.exec_lua('require("CopilotChat.spinner").hide()')
 
         if not disable_end_separator:
-            self._add_end_separator(model, no_annoyance)
+            self._add_end_separator(model, disable_separators)
 
     # private
 
@@ -232,7 +235,7 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
                 token.split("\n"),
             )
 
-    def _add_end_separator(self, model: str, no_annoyance: bool = False):
+    def _add_end_separator(self, model: str, disable_separators: bool = False):
         current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         model_info = f"\n#### Answer provided by Copilot (Model: `{model}`) on {current_datetime}."
         additional_instructions = (
@@ -242,7 +245,7 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
 
         end_message = model_info + additional_instructions + disclaimer
 
-        if no_annoyance:
-            end_message = "\n" + current_datetime + "\n---\n"
+        if disable_separators:
+            end_message = "\n" + current_datetime + "\n\n---\n"
 
         self.buffer.append(end_message.split("\n"))
