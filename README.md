@@ -1,9 +1,7 @@
 # Copilot Chat for Neovim
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-
-[![All Contributors](https://img.shields.io/badge/all_contributors-7-orange.svg?style=flat-square)](#contributors-)
-
+[![All Contributors](https://img.shields.io/badge/all_contributors-8-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 > [!NOTE]
@@ -252,6 +250,36 @@ Follow the example below to create a simple input for CopilotChat.
   },
 ```
 
+### Add same keybinds in both visual and normal mode
+
+```lua
+    {
+      "jellydn/CopilotChat.nvim",
+      keys =
+				function()
+					local keybinds={
+						--add your custom keybinds here
+					}
+					-- change prompt and keybinds as per your need
+					local my_prompts = {
+						{prompt = "In Neovim.",desc = "Neovim",key = "n"},
+						{prompt = "Help with this",desc = "Help",key = "h"},
+						{prompt = "Simplify and imporve readablilty",desc = "Simplify",key = "s"},
+						{prompt = "Optimize the code to improve perfomance and readablilty.",desc = "Optimize",key = "o"},
+						{prompt = "Find possible errors and fix them for me",desc = "Fix",key = "f"},
+						{prompt = "Explain in detail",desc = "Explain",key = "e"},
+						{prompt = "Write a shell scirpt",desc = "Shell",key = "S"},
+					}
+					-- you can change <leader>cc to your desired keybind prefix
+					for _,v in pairs(my_prompts) do
+						table.insert(keybinds,{ "<leader>cc"..v.key, ":CopilotChatVisual "..v.prompt.."<cr>", mode = "x", desc = "CopilotChat - "..v.desc })
+						table.insert(keybinds,{ "<leader>cc"..v.key, "<cmd>CopilotChat "..v.prompt.."<cr>", desc = "CopilotChat - "..v.desc })
+					end
+					return keybinds
+				end,
+    },
+```
+
 ## Roadmap
 
 - Translation to pure Lua
@@ -288,6 +316,9 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Cassius0924"><img src="https://avatars.githubusercontent.com/u/62874592?v=4?s=100" width="100px;" alt="He Zhizhou"/><br /><sub><b>He Zhizhou</b></sub></a><br /><a href="https://github.com/jellydn/CopilotChat.nvim/commits?author=Cassius0924" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://www.linkedin.com/in/guruprakashrajakkannu/"><img src="https://avatars.githubusercontent.com/u/9963717?v=4?s=100" width="100px;" alt="Guruprakash Rajakkannu"/><br /><sub><b>Guruprakash Rajakkannu</b></sub></a><br /><a href="https://github.com/jellydn/CopilotChat.nvim/commits?author=rguruprakash" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/kristofka"><img src="https://avatars.githubusercontent.com/u/140354?v=4?s=100" width="100px;" alt="kristofka"/><br /><sub><b>kristofka</b></sub></a><br /><a href="https://github.com/jellydn/CopilotChat.nvim/commits?author=kristofka" title="Code">💻</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/PostCyberPunk"><img src="https://avatars.githubusercontent.com/u/134976996?v=4?s=100" width="100px;" alt="PostCyberPunk"/><br /><sub><b>PostCyberPunk</b></sub></a><br /><a href="https://github.com/jellydn/CopilotChat.nvim/commits?author=PostCyberPunk" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>
