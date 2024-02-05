@@ -5,9 +5,6 @@
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 > [!NOTE]
-> You might want to take a look at [this fork](https://github.com/jellydn/CopilotChat.nvim) which is more well maintained & is more configurable. I personally use it now as well.
-
-> [!NOTE]
 > A new command, `CopilotChatInPlace` has been introduced. It functions like the ChatGPT plugin. Please run ":UpdateRemotePlugins" command and restart Neovim before starting a chat with Copilot. To stay updated on our roadmap, please join our [Discord](https://discord.gg/vy6hJsTWaZ) community.
 
 ## Authentication
@@ -25,7 +22,7 @@ It will prompt you with instructions on your first start. If you already have `C
 ```lua
 return {
   {
-    "jellydn/CopilotChat.nvim",
+    "CopilotC-Nvim/CopilotChat.nvim",
     opts = {
       show_help = "yes", -- Show help text for CopilotChatInPlace, default: yes
       debug = false, -- Enable or disable debug mode, the log file will be in ~/.local/state/nvim/CopilotChat.nvim.log
@@ -77,7 +74,7 @@ call remote#host#RegisterPlugin('python3', '/Users/huynhdung/.local/share/nvim/l
 1. Put the files in the right place
 
 ```
-$ git clone https://github.com/jellydn/CopilotChat.nvim
+$ git clone https://github.com/CopilotC-Nvim/CopilotChat.nvim
 $ cd CopilotChat.nvim
 $ cp -r --backup=nil rplugin ~/.config/nvim/
 ```
@@ -112,7 +109,7 @@ You have the capability to expand the prompts to create more versatile commands:
 
 ```lua
 return {
-    "jellydn/CopilotChat.nvim",
+    "CopilotC-Nvim/CopilotChat.nvim",
     opts = {
       debug = true,
       show_help = "yes",
@@ -189,7 +186,7 @@ A special thanks to @ecosse3 for the configuration of [which-key](https://github
 
 ```lua
   {
-    "jellydn/CopilotChat.nvim",
+    "CopilotC-Nvim/CopilotChat.nvim",
     event = "VeryLazy",
     opts = {
       prompts = {
@@ -254,7 +251,7 @@ Follow the example below to create a simple input for CopilotChat.
 
 ```lua
     {
-      "jellydn/CopilotChat.nvim",
+      "CopilotC-Nvim/CopilotChat.nvim",
       keys =
 				function()
 					local keybinds={
