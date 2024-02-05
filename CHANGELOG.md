@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/jellydn/CopilotChat.nvim/compare/v1.2.0...v1.2.1) (2024-02-05)
+
+
+### Reverts
+
+* **ci:** add release workflow back ([81a9d81](https://github.com/jellydn/CopilotChat.nvim/commit/81a9d818b1369d41108c46da477e4ea5cec0a525))
+
 ## [1.2.0](https://github.com/jellydn/CopilotChat.nvim/compare/v1.1.0...v1.2.0) (2024-02-04)
 
 ### Features
