@@ -1,9 +1,10 @@
-*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 February 05
+*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 February 06
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
 
 1. Copilot Chat for Neovim               |CopilotChat-copilot-chat-for-neovim|
+  - Prerequisites          |CopilotChat-copilot-chat-for-neovim-prerequisites|
   - Authentication        |CopilotChat-copilot-chat-for-neovim-authentication|
   - Installation            |CopilotChat-copilot-chat-for-neovim-installation|
   - Usage                          |CopilotChat-copilot-chat-for-neovim-usage|
@@ -18,14 +19,17 @@ Table of Contents                              *CopilotChat-table-of-contents*
 |CopilotChat-|
 
 
-  [!NOTE] You might want to take a look at this fork
-  <https://github.com/jellydn/CopilotChat.nvim> which is more well maintained &
-  is more configurable. I personally use it now as well.
-
   [!NOTE] A new command, `CopilotChatInPlace` has been introduced. It functions
   like the ChatGPT plugin. Please run ":UpdateRemotePlugins" command and restart
   Neovim before starting a chat with Copilot. To stay updated on our roadmap,
   please join our Discord <https://discord.gg/vy6hJsTWaZ> community.
+
+PREREQUISITES              *CopilotChat-copilot-chat-for-neovim-prerequisites*
+
+Ensure you have the following installed:
+
+- Python 3.10 or later
+
 
 AUTHENTICATION            *CopilotChat-copilot-chat-for-neovim-authentication*
 
@@ -45,7 +49,7 @@ LAZY.NVIM ~
 >lua
     return {
       {
-        "jellydn/CopilotChat.nvim",
+        "CopilotC-Nvim/CopilotChat.nvim",
         opts = {
           show_help = "yes", -- Show help text for CopilotChatInPlace, default: yes
           debug = false, -- Enable or disable debug mode, the log file will be in ~/.local/state/nvim/CopilotChat.nvim.log
@@ -98,7 +102,7 @@ MANUAL ~
 1. Put the files in the right place
 
 >
-    $ git clone https://github.com/jellydn/CopilotChat.nvim
+    $ git clone https://github.com/CopilotC-Nvim/CopilotChat.nvim
     $ cd CopilotChat.nvim
     $ cp -r --backup=nil rplugin ~/.config/nvim/
 <
@@ -137,7 +141,7 @@ commands:
 
 >lua
     return {
-        "jellydn/CopilotChat.nvim",
+        "CopilotC-Nvim/CopilotChat.nvim",
         opts = {
           debug = true,
           show_help = "yes",
@@ -222,7 +226,7 @@ A special thanks to @ecosse3 for the configuration of which-key
 
 >lua
       {
-        "jellydn/CopilotChat.nvim",
+        "CopilotC-Nvim/CopilotChat.nvim",
         event = "VeryLazy",
         opts = {
           prompts = {
@@ -289,7 +293,7 @@ ADD SAME KEYBINDS IN BOTH VISUAL AND NORMAL MODE ~
 
 >lua
         {
-          "jellydn/CopilotChat.nvim",
+          "CopilotC-Nvim/CopilotChat.nvim",
           keys =
                     function()
                         local keybinds={
