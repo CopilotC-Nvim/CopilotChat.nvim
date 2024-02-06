@@ -33,22 +33,3 @@
 * Close spinner if the buffer does not exist ([#11](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/11)) ([0ea238d](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/0ea238d7be9c7872dd9932a56d3521531b2297db))
 * handle get remote plugin path on Windows ([0b917f6](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/0b917f633eaef621d293f344965e9e0545be9a80))
 * remove LiteralString, use Any for fixing issue on Python 3.10 ([b68c352](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/b68c3522d03c8ac9a332169c56e725b69a43b07c)), closes [#45](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/45)
-
-
-### Reverts
-
-* change back to CopilotChat command ([e304f79](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/e304f792a5fbba412c2a5a1f717ec7e2ab12e5b0))
-* **ci:** add release workflow back ([81a9d81](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/81a9d818b1369d41108c46da477e4ea5cec0a525))
-
-
-### Code Refactoring
-
-* disable extra info as default ([5c4c22d](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/5c4c22d1bb13d1d927c3301840d2a0699df2b732))
-* drop new buffer mode ([0a30b7c](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/0a30b7cfbd8b52bf8a9e4cd96dcade4995e6eb3a))
-
-## [1.2.1](https://github.com/jellydn/CopilotChat.nvim/compare/v1.2.0...v1.2.1) (2024-02-05)
-
-
-### Reverts
-
-* **ci:** add release workflow back ([81a9d81](https://github.com/jellydn/CopilotChat.nvim/commit/81a9d818b1369d41108c46da477e4ea5cec0a525))
