@@ -216,6 +216,7 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
                 self.nvim.out_write("Successfully authenticated with Copilot\n")
             self.copilot.authenticate()
 
+        last_line_col = 0
         for token in self.copilot.ask(
             system_prompt, prompt, code, language=cast(str, file_type), model=model
         ):
@@ -224,8 +225,6 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
             )
             buffer_lines = cast(list[str], self.buffer.lines())
             last_line_row = len(buffer_lines) - 1
-            last_line_col = len(buffer_lines[-1])
-
             self.nvim.api.buf_set_text(
                 self.buffer.number,
                 last_line_row,
@@ -234,6 +233,9 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
                 last_line_col,
                 token.split("\n"),
             )
+            last_line_col += len(token.encode("utf-8"))
+            if "\n" in token:
+                last_line_col = 0
 
     def _add_end_separator(self, model: str, disable_separators: bool = False):
         current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
