@@ -203,8 +203,7 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
             if self.copilot.github_token is None:
                 req = self.copilot.request_auth()
                 self.nvim.out_write(
-                    f"Please visit {req['verification_uri']
-                                    } and enter the code {req['user_code']}\n"
+                    f"Please visit {req['verification_uri']} and enter the code {req['user_code']}\n"
                 )
                 current_time = time.time()
                 wait_until = current_time + req["expires_in"]
@@ -244,7 +243,7 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
                 last_line_col,
                 last_line_row,
                 last_line_col,
-                [tok.encode('utf-8') for tok in token.split("\n")],
+                [tok.encode("utf-8") for tok in token.split("\n")],
             )
 
     def _add_end_separator(self, model: str, disable_separators: bool = False):
