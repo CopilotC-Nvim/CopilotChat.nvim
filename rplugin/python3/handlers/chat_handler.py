@@ -18,6 +18,8 @@ def is_module_installed(name):
 
 # TODO: Abort request if the user closes the layout
 class ChatHandler:
+    has_show_extra_info = False
+
     def __init__(self, nvim: MyNvim, buffer: MyBuffer):
         self.nvim: MyNvim = nvim
         self.copilot: Copilot = None
@@ -247,7 +249,11 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
 
         end_message = model_info + additional_instructions + disclaimer
 
-        if disable_separators:
+        show_extra = disable_separators or ChatHandler.has_show_extra_info
+
+        if show_extra:
             end_message = "\n" + current_datetime + "\n\n---\n"
+
+        ChatHandler.has_show_extra_info = True
 
         self.buffer.append(end_message.split("\n"))
