@@ -127,10 +127,11 @@ class Copilot:
                 )
             )
         for line in response.iter_lines():
-            line = line.decode("utf-8").replace("data: ", "").strip()
-            if line.startswith("[DONE]"):
+            line: bytes = line
+            line = line.replace(b"data: ", b"")
+            if line.startswith(b"[DONE]"):
                 break
-            elif line == "":
+            elif line == b"":
                 continue
             try:
                 line = json.loads(line)
