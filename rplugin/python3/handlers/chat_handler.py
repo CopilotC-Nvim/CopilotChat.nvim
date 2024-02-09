@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 from typing import Optional, cast
+import os
 
 import prompts as system_prompts
 from copilot import Copilot
@@ -24,7 +25,7 @@ class ChatHandler:
         self.nvim: MyNvim = nvim
         self.copilot: Copilot = None
         self.buffer: MyBuffer = buffer
-        self.proxy: str = None
+        self.proxy: str = os.getenv("HTTPS_PROXY") or os.getenv("ALL_PROXY") or ""
 
     # public
 
