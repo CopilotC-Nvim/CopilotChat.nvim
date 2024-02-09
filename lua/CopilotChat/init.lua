@@ -18,6 +18,7 @@ _COPILOT_CHAT_GLOBAL_CONFIG = {}
 M.setup = function(options)
   vim.g.copilot_chat_show_help = options and options.show_help or 'yes'
   vim.g.copilot_chat_disable_separators = options and options.disable_extra_info or 'yes'
+  vim.g.copilot_chat_proxy = options and options.proxy or ''
   local debug = options and options.debug or false
   _COPILOT_CHAT_GLOBAL_CONFIG.debug = debug
 
