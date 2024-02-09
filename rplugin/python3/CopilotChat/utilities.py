@@ -2,8 +2,8 @@ import json
 import os
 import random
 
-import prompts
-import typings
+from .prompts import *
+from .typings import *
 
 
 def random_hex(length: int = 65):
@@ -11,10 +11,10 @@ def random_hex(length: int = 65):
 
 
 def generate_request(
-    chat_history: list[typings.Message],
+    chat_history: list[Message],
     code_excerpt: str,
     language: str = "",
-    system_prompt=prompts.COPILOT_INSTRUCTIONS,
+    system_prompt=COPILOT_INSTRUCTIONS,
     model="gpt-4",
 ):
     messages = [
@@ -49,7 +49,7 @@ def generate_request(
     }
 
 
-def generate_embedding_request(inputs: list[typings.FileExtract]):
+def generate_embedding_request(inputs: list[FileExtract]):
     return {
         "input": [
             f"File: `{i.filepath}`\n```{i.filepath.split('.')[-1]}\n{i.code}```"
@@ -97,11 +97,11 @@ if __name__ == "__main__":
         json.dumps(
             generate_request(
                 [
-                    typings.Message("Hello, Copilot!", "user"),
-                    typings.Message("Hello, World!", "system"),
-                    typings.Message("How are you?", "user"),
-                    typings.Message("I am fine, thanks.", "system"),
-                    typings.Message("What does this code do?", "user"),
+                    Message("Hello, Copilot!", "user"),
+                    Message("Hello, World!", "system"),
+                    Message("How are you?", "user"),
+                    Message("I am fine, thanks.", "system"),
+                    Message("What does this code do?", "user"),
                 ],
                 "print('Hello, World!')",
                 "python",

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, Union
 
-from mypynvim.core.nvim import MyNvim
+from ..core.nvim import MyNvim
 
 if TYPE_CHECKING:
     from .popup import PopUpConfiguration

@@ -5,10 +5,10 @@ import uuid
 from typing import Dict, List
 
 import dotenv
-import prompts
+from .prompts import *
 import requests
-import typings
-import utilities
+from .typings import *
+from .utilities import *
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
 
@@ -20,16 +20,15 @@ LOGIN_HEADERS = {
     "user-agent": "GithubCopilot/1.133.0",
 }
 
-
 class Copilot:
     def __init__(self, token: str = None):
         if token is None:
-            token = utilities.get_cached_token()
+            token = get_cached_token()
         self.github_token = token
         self.token: Dict[str, any] = None
-        self.chat_history: List[typings.Message] = []
+        self.chat_history: List[Message] = []
         self.vscode_sessionid: str = None
-        self.machineid = utilities.random_hex()
+        self.machineid = random_hex()
 
         self.session = requests.Session()
 
@@ -68,7 +67,7 @@ class Copilot:
                 "accept": "application/json",
             }
             response = self.session.get(url, headers=headers).json()
-            utilities.cache_token(response["login"], access_token)
+            cache_token(response["login"], access_token)
             self.github_token = access_token
             return True
         return False
@@ -104,8 +103,8 @@ class Copilot:
         if not system_prompt:
             system_prompt = prompts.COPILOT_INSTRUCTIONS
         url = "https://api.githubcopilot.com/chat/completions"
-        self.chat_history.append(typings.Message(prompt, "user"))
-        data = utilities.generate_request(
+        self.chat_history.append(Message(prompt, "user"))
+        data = generate_request(
             self.chat_history, code, language, system_prompt=system_prompt, model=model
         )
 
@@ -149,17 +148,17 @@ class Copilot:
                 print("Error:", line)
                 continue
 
-        self.chat_history.append(typings.Message(full_response, "system"))
+        self.chat_history.append(Message(full_response, "system"))
 
-    def _get_embeddings(self, inputs: list[typings.FileExtract]):
+    def _get_embeddings(self, inputs: list[FileExtract]):
         embeddings = []
         url = "https://api.githubcopilot.com/embeddings"
         # If we have more than 18 files, we need to split them into multiple requests
         for i in range(0, len(inputs), 18):
             if i + 18 > len(inputs):
-                data = utilities.generate_embedding_request(inputs[i:])
+                data = generate_embedding_request(inputs[i:])
             else:
-                data = utilities.generate_embedding_request(inputs[i : i + 18])
+                data = generate_embedding_request(inputs[i : i + 18])
             response = self.session.post(url, headers=self._headers(), json=data).json()
             if "data" not in response:
                 raise Exception(f"Error fetching embeddings: {response}")

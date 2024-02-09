@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable, Literal, Optional, Union, cast
 
-from mypynvim.core.nvim import MyNvim
+from ..core.nvim import MyNvim
 
 from .calculator import Calculator
 from .popup import PopUp

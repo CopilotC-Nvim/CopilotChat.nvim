@@ -5,13 +5,13 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Union
 
 if TYPE_CHECKING:
-    from mypynvim.core.nvim import MyNvim
+    from ..core.nvim import MyNvim
 
     from .layout import Layout
 
 
-from mypynvim.core.buffer import MyBuffer
-from mypynvim.core.window import MyWindow
+from ..core.buffer import MyBuffer
+from ..core.window import MyWindow
 
 from .calculator import Calculator
 from .types import PaddingKeys, PopUpConfiguration, Relative

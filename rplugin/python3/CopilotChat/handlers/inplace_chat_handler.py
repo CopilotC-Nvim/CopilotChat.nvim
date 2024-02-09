@@ -1,9 +1,9 @@
-import prompts as system_prompts
-from handlers.chat_handler import ChatHandler
-from mypynvim.core.buffer import MyBuffer
-from mypynvim.core.nvim import MyNvim
-from mypynvim.ui_components.layout import Box, Layout
-from mypynvim.ui_components.popup import PopUp
+from ..prompts import *
+from .chat_handler import ChatHandler
+from ..mypynvim.core.buffer import MyBuffer
+from ..mypynvim.core.nvim import MyNvim
+from ..mypynvim.ui_components.layout import Box, Layout
+from ..mypynvim.ui_components.popup import PopUp
 
 # Define constants for the models
 MODEL_GPT4 = "gpt-4"
@@ -164,7 +164,7 @@ class InPlaceChatHandler:
             self.filetype,
             self.original_code,
             self.copilot_popup.window.handle,
-            system_prompt=system_prompts.__dict__[self.system_prompt],
+            system_prompt=prompts.__dict__[self.system_prompt],
             disable_start_separator=True,
             disable_end_separator=True,
             model=self.model,
@@ -203,7 +203,7 @@ class InPlaceChatHandler:
 
     def _toggle_system_model(self):
         # Create a list of all system prompts and add the current system prompt
-        system_prompts = [
+        prompts = [
             "SENIOR_DEVELOPER_PROMPT",
             "COPILOT_EXPLAIN",
             "COPILOT_TESTS",
@@ -215,11 +215,11 @@ class InPlaceChatHandler:
         ]
 
         # Get the index of the current system prompt
-        current_system_prompt_index = system_prompts.index(self.system_prompt)
+        current_system_prompt_index = prompts.index(self.system_prompt)
 
         # Set the next system prompt
-        self.system_prompt = system_prompts[
-            (current_system_prompt_index + 1) % len(system_prompts)
+        self.system_prompt = prompts[
+            (current_system_prompt_index + 1) % len(prompts)
         ]
 
         self.copilot_popup.original_config.title = (
@@ -240,10 +240,10 @@ class InPlaceChatHandler:
         self.prompt_popup.map("n", "<C-m>", lambda cb=self._toggle_system_model: cb())
 
         self.prompt_popup.map(
-            "n", "'", lambda: self._set_prompt(system_prompts.PROMPT_SIMPLE_DOCSTRING)
+            "n", "'", lambda: self._set_prompt(PROMPT_SIMPLE_DOCSTRING)
         )
         self.prompt_popup.map(
-            "n", "s", lambda: self._set_prompt(system_prompts.PROMPT_SEPARATE)
+            "n", "s", lambda: self._set_prompt(PROMPT_SEPARATE)
         )
 
         self.prompt_popup.map(

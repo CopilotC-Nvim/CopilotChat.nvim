@@ -1,7 +1,7 @@
 import pynvim
-from handlers.inplace_chat_handler import InPlaceChatHandler
-from handlers.vsplit_chat_handler import VSplitChatHandler
-from mypynvim.core.nvim import MyNvim
+from .handlers.inplace_chat_handler import InPlaceChatHandler
+from .handlers.vsplit_chat_handler import VSplitChatHandler
+from .mypynvim.core.nvim import MyNvim
 
 PLUGIN_MAPPING_CMD = "CopilotChatMapping"
 PLUGIN_AUTOCMD_CMD = "CopilotChatAutocmd"
