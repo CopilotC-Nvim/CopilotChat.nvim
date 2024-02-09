@@ -22,7 +22,7 @@ LOGIN_HEADERS = {
 
 
 class Copilot:
-    def __init__(self, token: str = None):
+    def __init__(self, token: str = None, proxy: str = None):
         if token is None:
             token = utilities.get_cached_token()
         self.github_token = token
@@ -32,6 +32,9 @@ class Copilot:
         self.machineid = utilities.random_hex()
 
         self.session = requests.Session()
+
+        if proxy:
+            self.session.proxies = {"https": proxy}
 
     def request_auth(self):
         url = "https://github.com/login/device/code"
