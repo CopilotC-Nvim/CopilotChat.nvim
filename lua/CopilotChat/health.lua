@@ -24,7 +24,7 @@ end
 --- Run a python command and handle potential errors
 ---@param command string
 local function run_python_command(command)
-  return run_command_on_executable('python3', command)
+  return run_command_on_executable(vim.g.python3_host_prog, command)
 end
 
 -- Add health check for python3 and pynvim
@@ -52,7 +52,7 @@ function M.check()
     return
   end
 
-  file:write('import pynvim; print(pynvim.__version__)')
+  file:write('import pynvim; v = pynvim.VERSION; print("{0}.{1}.{2}".format(v.major, v.minor, v.patch))')
   file:close()
 
   -- Run the temporary Python script and capture the output
@@ -66,7 +66,7 @@ function M.check()
   -- Delete the temporary Python script
   os.remove(temp_file)
 
-  if pynvim_version ~= '0.5.0' then
+  if vim.version.lt(pynvim_version, "0.4.3") then
     warn('pynvim version ' .. pynvim_version .. ' is not supported')
   else
     ok('pynvim version ' .. pynvim_version .. ' is supported')
