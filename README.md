@@ -286,12 +286,11 @@ Follow the example below to create a simple input for CopilotChat.
     },
 ```
 
-## Roadmap
+## Roadmap (Wishlist)
 
-- Translation to pure Lua
-- Tokenizer
 - Use vector encodings to automatically select code
-- Sub commands - See [issue #5](https://github.com/gptlang/CopilotChat.nvim/issues/5)
+- Treesitter integration for function definitions
+- General QOL improvements
 
 ## Development
 
