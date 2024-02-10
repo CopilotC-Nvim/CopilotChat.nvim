@@ -9,7 +9,7 @@ Table of Contents                              *CopilotChat-table-of-contents*
   - Installation            |CopilotChat-copilot-chat-for-neovim-installation|
   - Usage                          |CopilotChat-copilot-chat-for-neovim-usage|
   - Tips                            |CopilotChat-copilot-chat-for-neovim-tips|
-  - Roadmap                      |CopilotChat-copilot-chat-for-neovim-roadmap|
+  - Roadmap (Wishlist)|CopilotChat-copilot-chat-for-neovim-roadmap-(wishlist)|
   - Development              |CopilotChat-copilot-chat-for-neovim-development|
   - Contributors ✨    |CopilotChat-copilot-chat-for-neovim-contributors-✨|
 
@@ -321,12 +321,11 @@ ADD SAME KEYBINDS IN BOTH VISUAL AND NORMAL MODE ~
 <
 
 
-ROADMAP                          *CopilotChat-copilot-chat-for-neovim-roadmap*
+ROADMAP (WISHLIST)    *CopilotChat-copilot-chat-for-neovim-roadmap-(wishlist)*
 
-- Translation to pure Lua
-- Tokenizer
 - Use vector encodings to automatically select code
-- Sub commands - See issue #5 <https://github.com/gptlang/CopilotChat.nvim/issues/5>
+- Treesitter integration for function definitions
+- General QOL improvements
 
 
 DEVELOPMENT                  *CopilotChat-copilot-chat-for-neovim-development*
