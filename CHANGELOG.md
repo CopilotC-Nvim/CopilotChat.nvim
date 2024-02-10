@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.0.1...v1.1.0) (2024-02-10)
+
+
+### Features
+
+* **chat_handler:** show extra info only once ([589a453](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/589a4538d648c8723d839ca963a47a6176be3c78))
+* Environment variables for proxy (HTTPS_PROXY and ALL_PROXY) ([043e731](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/043e731005278649dbdf1d5866c6e3c7719f1202))
+* Proxy support ([19a8088](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/19a8088c171cb956fd553200b77c8dbbe76707b6))
+
+
+### Bug Fixes
+
+* Wacky indentation in readme ([c5bf963](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/c5bf963f4702a8a94aa97de2e6205796cb381ae5))
+
 ## [1.0.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.0.0...v1.0.1) (2024-02-08)
 
 ### Bug Fixes
