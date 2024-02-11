@@ -4,10 +4,10 @@ from typing import TYPE_CHECKING
 
 from pynvim.api import Window
 
-from .buffer import MyBuffer
+from CopilotChat.mypynvim.core.buffer import MyBuffer
 
 if TYPE_CHECKING:
-    from .nvim import MyNvim
+    from CopilotChat.mypynvim.core.nvim import MyNvim
 
 
 class MyWindow(Window):

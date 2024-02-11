@@ -2,10 +2,10 @@ import time
 from datetime import datetime
 from typing import Optional, cast
 
-from ..prompts import *
-from ..copilot import Copilot
-from ..mypynvim.core.buffer import MyBuffer
-from ..mypynvim.core.nvim import MyNvim
+import CopilotChat.prompts as system_prompts
+from CopilotChat.copilot import Copilot
+from CopilotChat.mypynvim.core.buffer import MyBuffer
+from CopilotChat.mypynvim.core.nvim import MyNvim
 
 
 def is_module_installed(name):
@@ -66,13 +66,13 @@ class ChatHandler:
     # private
 
     def _construct_system_prompt(self, prompt: str):
-        system_prompt = COPILOT_INSTRUCTIONS
-        if prompt == FIX_SHORTCUT:
-            system_prompt = COPILOT_FIX
-        elif prompt == TEST_SHORTCUT:
-            system_prompt = COPILOT_TESTS
-        elif prompt == EXPLAIN_SHORTCUT:
-            system_prompt = COPILOT_EXPLAIN
+        system_prompt = system_prompts.COPILOT_INSTRUCTIONS
+        if prompt == system_prompts.FIX_SHORTCUT:
+            system_prompt = system_prompts.COPILOT_FIX
+        elif prompt == system_prompts.TEST_SHORTCUT:
+            system_prompt = system_prompts.COPILOT_TESTS
+        elif prompt == system_prompts.EXPLAIN_SHORTCUT:
+            system_prompt = system_prompts.COPILOT_EXPLAIN
         return system_prompt
 
     def _add_start_separator(

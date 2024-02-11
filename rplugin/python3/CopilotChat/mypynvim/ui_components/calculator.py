@@ -3,10 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, Union
 
-from ..core.nvim import MyNvim
+from CopilotChat.mypynvim.core.nvim import MyNvim
 
 if TYPE_CHECKING:
-    from .popup import PopUpConfiguration
+    from CopilotChat.mypynvim.ui_components.popup import PopUpConfiguration
 
 
 @dataclass

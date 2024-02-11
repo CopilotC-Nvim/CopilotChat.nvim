@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Union
 
 if TYPE_CHECKING:
-    from .nvim import MyNvim
+    from CopilotChat.mypynvim.core.nvim import MyNvim
 
 
 class AutocmdMapper:
