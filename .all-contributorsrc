@@ -60,6 +60,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/134976996?v=4",
       "profile": "https://github.com/PostCyberPunk",
       "contributions": ["doc"]
+    },
+    {
+      "login": "ktns",
+      "name": "Katsuhiko Nishimra",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1302759?v=4",
+      "profile": "https://github.com/ktns",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
