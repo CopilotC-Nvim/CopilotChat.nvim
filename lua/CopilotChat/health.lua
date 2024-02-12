@@ -24,7 +24,8 @@ end
 --- Run a python command and handle potential errors
 ---@param command string
 local function run_python_command(command)
-  return run_command_on_executable(vim.g.python3_host_prog, command)
+  local python3_host_prog = vim.g['python3_host_prog']
+  return run_command_on_executable(python3_host_prog or 'python3', command)
 end
 
 -- Add health check for python3 and pynvim

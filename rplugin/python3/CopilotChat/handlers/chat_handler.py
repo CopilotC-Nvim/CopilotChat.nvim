@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 from typing import Optional, cast
+import os
 
 import CopilotChat.prompts as system_prompts
 from CopilotChat.copilot import Copilot
@@ -24,6 +25,7 @@ class ChatHandler:
         self.nvim: MyNvim = nvim
         self.copilot: Copilot = None
         self.buffer: MyBuffer = buffer
+        self.proxy: str = os.getenv("HTTPS_PROXY") or os.getenv("ALL_PROXY") or ""
 
     # public
 
@@ -41,6 +43,10 @@ class ChatHandler:
         disable_separators = (
             self.nvim.eval("g:copilot_chat_disable_separators") == "yes"
         )
+        self.proxy = self.nvim.eval("g:copilot_chat_proxy")
+        if "://" not in self.proxy:
+            self.proxy = None
+
         if system_prompt is None:
             system_prompt = self._construct_system_prompt(prompt)
         # Start the spinner
@@ -201,7 +207,7 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
         self, system_prompt: str, prompt: str, code: str, file_type: str, model: str
     ):
         if self.copilot is None:
-            self.copilot = Copilot()
+            self.copilot = Copilot(proxy=self.proxy)
             if self.copilot.github_token is None:
                 req = self.copilot.request_auth()
                 self.nvim.out_write(

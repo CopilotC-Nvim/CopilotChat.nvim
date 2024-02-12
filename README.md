@@ -2,7 +2,7 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 
-[![All Contributors](https://img.shields.io/badge/all_contributors-8-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-9-orange.svg?style=flat-square)](#contributors-)
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
@@ -35,6 +35,7 @@ return {
       show_help = "yes", -- Show help text for CopilotChatInPlace, default: yes
       debug = false, -- Enable or disable debug mode, the log file will be in ~/.local/state/nvim/CopilotChat.nvim.log
       disable_extra_info = 'no', -- Disable extra information (e.g: system prompt) in the response.
+      -- proxy = "socks5://127.0.0.1:3000", -- Proxies requests via https or socks.
     },
     build = function()
       vim.notify("Please update the remote plugins by running ':UpdateRemotePlugins', then restart Neovim.")
@@ -261,36 +262,35 @@ Follow the example below to create a simple input for CopilotChat.
     {
       "CopilotC-Nvim/CopilotChat.nvim",
       keys =
-				function()
-					local keybinds={
-						--add your custom keybinds here
-					}
-					-- change prompt and keybinds as per your need
-					local my_prompts = {
-						{prompt = "In Neovim.",desc = "Neovim",key = "n"},
-						{prompt = "Help with this",desc = "Help",key = "h"},
-						{prompt = "Simplify and imporve readablilty",desc = "Simplify",key = "s"},
-						{prompt = "Optimize the code to improve perfomance and readablilty.",desc = "Optimize",key = "o"},
-						{prompt = "Find possible errors and fix them for me",desc = "Fix",key = "f"},
-						{prompt = "Explain in detail",desc = "Explain",key = "e"},
-						{prompt = "Write a shell scirpt",desc = "Shell",key = "S"},
-					}
-					-- you can change <leader>cc to your desired keybind prefix
-					for _,v in pairs(my_prompts) do
-						table.insert(keybinds,{ "<leader>cc"..v.key, ":CopilotChatVisual "..v.prompt.."<cr>", mode = "x", desc = "CopilotChat - "..v.desc })
-						table.insert(keybinds,{ "<leader>cc"..v.key, "<cmd>CopilotChat "..v.prompt.."<cr>", desc = "CopilotChat - "..v.desc })
-					end
-					return keybinds
-				end,
+	function()
+		local keybinds={
+			--add your custom keybinds here
+		}
+		-- change prompt and keybinds as per your need
+		local my_prompts = {
+			{prompt = "In Neovim.",desc = "Neovim",key = "n"},
+			{prompt = "Help with this",desc = "Help",key = "h"},
+			{prompt = "Simplify and imporve readablilty",desc = "Simplify",key = "s"},
+			{prompt = "Optimize the code to improve perfomance and readablilty.",desc = "Optimize",key = "o"},
+			{prompt = "Find possible errors and fix them for me",desc = "Fix",key = "f"},
+			{prompt = "Explain in detail",desc = "Explain",key = "e"},
+			{prompt = "Write a shell scirpt",desc = "Shell",key = "S"},
+		}
+		-- you can change <leader>cc to your desired keybind prefix
+		for _,v in pairs(my_prompts) do
+			table.insert(keybinds,{ "<leader>cc"..v.key, ":CopilotChatVisual "..v.prompt.."<cr>", mode = "x", desc = "CopilotChat - "..v.desc })
+			table.insert(keybinds,{ "<leader>cc"..v.key, "<cmd>CopilotChat "..v.prompt.."<cr>", desc = "CopilotChat - "..v.desc })
+		end
+		return keybinds
+	end,
     },
 ```
 
-## Roadmap
+## Roadmap (Wishlist)
 
-- Translation to pure Lua
-- Tokenizer
 - Use vector encodings to automatically select code
-- Sub commands - See [issue #5](https://github.com/gptlang/CopilotChat.nvim/issues/5)
+- Treesitter integration for function definitions
+- General QOL improvements
 
 ## Development
 
@@ -324,6 +324,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/PostCyberPunk"><img src="https://avatars.githubusercontent.com/u/134976996?v=4?s=100" width="100px;" alt="PostCyberPunk"/><br /><sub><b>PostCyberPunk</b></sub></a><br /><a href="https://github.com/jellydn/CopilotChat.nvim/commits?author=PostCyberPunk" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/ktns"><img src="https://avatars.githubusercontent.com/u/1302759?v=4?s=100" width="100px;" alt="Katsuhiko Nishimra"/><br /><sub><b>Katsuhiko Nishimra</b></sub></a><br /><a href="https://github.com/jellydn/CopilotChat.nvim/commits?author=ktns" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
