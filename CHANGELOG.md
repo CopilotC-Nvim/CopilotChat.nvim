@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.1.0...v1.2.0) (2024-02-13)
+
+
+### Features
+
+* restructure for pynvim 0.4.3 backwards compatibility ([#45](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/45)) ([52350c7](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/52350c78dbcfcb3acabf3478276ad9a87ebbfd26))
+
 ## [1.1.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.0.1...v1.1.0) (2024-02-10)
 
 
