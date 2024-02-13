@@ -67,6 +67,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/1302759?v=4",
       "profile": "https://github.com/ktns",
       "contributions": ["code"]
+    },
+    {
+      "login": "errnoh",
+      "name": "Erno Hopearuoho",
+      "avatar_url": "https://avatars.githubusercontent.com/u/373946?v=4",
+      "profile": "https://github.com/errnoh",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
