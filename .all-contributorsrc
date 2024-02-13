@@ -67,6 +67,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/1302759?v=4",
       "profile": "https://github.com/ktns",
       "contributions": ["code"]
+    },
+    {
+      "login": "shaungarwood",
+      "name": "Shaun Garwood",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4156525?v=4",
+      "profile": "https://github.com/shaungarwood",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
