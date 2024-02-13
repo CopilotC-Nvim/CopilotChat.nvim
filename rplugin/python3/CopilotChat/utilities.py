@@ -2,8 +2,8 @@ import json
 import os
 import random
 
-import prompts
-import typings
+import CopilotChat.prompts as prompts
+import CopilotChat.typings as typings
 
 
 def random_hex(length: int = 65):

@@ -3,10 +3,10 @@ from typing import Iterable, Union
 from pynvim import Nvim
 from pynvim.api.nvim import Current
 
-from .autocmdmapper import AutocmdMapper
-from .buffer import MyBuffer
-from .keymapper import Keymapper
-from .window import MyWindow
+from CopilotChat.mypynvim.core.autocmdmapper import AutocmdMapper
+from CopilotChat.mypynvim.core.buffer import MyBuffer
+from CopilotChat.mypynvim.core.keymapper import Keymapper
+from CopilotChat.mypynvim.core.window import MyWindow
 
 
 class MyNvim(Nvim):
