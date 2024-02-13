@@ -4,7 +4,7 @@ local M = {}
 
 local default_prompts = {
   Explain = 'Explain how it works.',
-  Tests = 'Briefly how selected code works then generate unit tests.',
+  Tests = 'Briefly explain how selected code works then generate unit tests.',
 }
 
 _COPILOT_CHAT_GLOBAL_CONFIG = {}
