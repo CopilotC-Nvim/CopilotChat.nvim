@@ -1,9 +1,9 @@
-import prompts as system_prompts
-from handlers.chat_handler import ChatHandler
-from mypynvim.core.buffer import MyBuffer
-from mypynvim.core.nvim import MyNvim
-from mypynvim.ui_components.layout import Box, Layout
-from mypynvim.ui_components.popup import PopUp
+import CopilotChat.prompts as system_prompts
+from CopilotChat.handlers.chat_handler import ChatHandler
+from CopilotChat.mypynvim.core.buffer import MyBuffer
+from CopilotChat.mypynvim.core.nvim import MyNvim
+from CopilotChat.mypynvim.ui_components.layout import Box, Layout
+from CopilotChat.mypynvim.ui_components.popup import PopUp
 
 # Define constants for the models
 MODEL_GPT4 = "gpt-4"

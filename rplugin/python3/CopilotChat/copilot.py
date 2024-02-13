@@ -5,10 +5,10 @@ import uuid
 from typing import Dict, List
 
 import dotenv
-import prompts
+import CopilotChat.prompts as prompts
 import requests
-import typings
-import utilities
+import CopilotChat.typings as typings
+import CopilotChat.utilities as utilities
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
 

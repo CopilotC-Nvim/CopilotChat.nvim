@@ -5,16 +5,16 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Union
 
 if TYPE_CHECKING:
-    from mypynvim.core.nvim import MyNvim
+    from CopilotChat.mypynvim.core.nvim import MyNvim
 
-    from .layout import Layout
+    from CopilotChat.mypynvim.ui_components.layout import Layout
 
 
-from mypynvim.core.buffer import MyBuffer
-from mypynvim.core.window import MyWindow
+from CopilotChat.mypynvim.core.buffer import MyBuffer
+from CopilotChat.mypynvim.core.window import MyWindow
 
-from .calculator import Calculator
-from .types import PaddingKeys, PopUpConfiguration, Relative
+from CopilotChat.mypynvim.ui_components.calculator import Calculator
+from CopilotChat.mypynvim.ui_components.types import PaddingKeys, PopUpConfiguration, Relative
 
 
 @dataclass

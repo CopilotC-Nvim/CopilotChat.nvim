@@ -3,10 +3,10 @@ from datetime import datetime
 from typing import Optional, cast
 import os
 
-import prompts as system_prompts
-from copilot import Copilot
-from mypynvim.core.buffer import MyBuffer
-from mypynvim.core.nvim import MyNvim
+import CopilotChat.prompts as system_prompts
+from CopilotChat.copilot import Copilot
+from CopilotChat.mypynvim.core.buffer import MyBuffer
+from CopilotChat.mypynvim.core.nvim import MyNvim
 
 
 def is_module_installed(name):

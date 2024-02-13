@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Union
 from pynvim.api import Buffer
 
 if TYPE_CHECKING:
-    from .nvim import MyNvim
+    from Copilotchat.mypynvim.core.nvim import MyNvim
 
 
 class MyBuffer(Buffer):
