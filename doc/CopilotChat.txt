@@ -360,7 +360,7 @@ STARGAZERS OVER TIME ~
 ==============================================================================
 2. Links                                                   *CopilotChat-links*
 
-1. *All Contributors*: https://img.shields.io/badge/all_contributors-10-orange.svg?style=flat-square
+1. *All Contributors*: https://img.shields.io/badge/all_contributors-11-orange.svg?style=flat-square
 2. *@jellydn*: 
 3. *Chat Demo*: https://i.gyazo.com/10fbd1543380d15551791c1a6dcbcd46.gif
 4. *Explain Code Demo*: https://i.gyazo.com/e5031f402536a1a9d6c82b2c38d469e3.gif
