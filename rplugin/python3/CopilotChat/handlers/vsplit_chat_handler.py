@@ -37,3 +37,7 @@ class VSplitChatHandler(ChatHandler):
 
     def chat(self, prompt: str, filetype: str, code: str = ""):
         super().chat(prompt, filetype, code, self.nvim.current.window.handle)
+
+    def reset_buffer(self):
+        """Reset the chat buffer."""
+        self.buffer.clear()

@@ -32,6 +32,7 @@ class CopilotPlugin(object):
     def copilot_agent_reset_cmd(self):
         if self.vsplit_chat_handler:
             self.vsplit_chat_handler.copilot.reset()
+            self.vsplit_chat_handler.reset_buffer()
 
     @pynvim.command("CopilotChatVisual", nargs="1", range="")
     def copilot_agent_visual_cmd(self, args: list[str], range: list[int]):
