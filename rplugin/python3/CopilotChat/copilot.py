@@ -127,6 +127,11 @@ class Copilot:
                 400: "The developer of this plugin has made a mistake. Please report this issue.",
                 419: "You have been rate limited. Please try again later.",
             }
+            # Log error to /tmp/copilot.log
+            with open("/tmp/copilot.log", "a") as f:
+                f.write(f"Error: {response.status_code}\n")
+                f.write(f"Request: {data}\n")
+                f.write(f"Response: {response.text}\n")
             raise Exception(
                 error_messages.get(
                     response.status_code, f"Unknown error: {response.status_code}"
