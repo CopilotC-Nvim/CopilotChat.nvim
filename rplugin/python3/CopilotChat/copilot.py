@@ -124,7 +124,7 @@ class Copilot:
             error_messages = {
                 401: "Unauthorized. Make sure you have access to Copilot Chat.",
                 500: "Internal server error. Please try again later.",
-                400: "The developer of this plugin has made a mistake. Please report this issue.",
+                400: "Your prompt has been rejected by Microsoft.",
                 419: "You have been rate limited. Please try again later.",
             }
             # Log error to /tmp/copilot.log
@@ -132,6 +132,13 @@ class Copilot:
                 f.write(f"Error: {response.status_code}\n")
                 f.write(f"Request: {data}\n")
                 f.write(f"Response: {response.text}\n")
+
+            error_code = response.json().get("error", {}).get("code")
+            if error_code and error_messages.get(response.status_code):
+                error_messages[
+                    response.status_code
+                ] = f"{error_messages[response.status_code]}: {error_code}"
+
             raise Exception(
                 error_messages.get(
                     response.status_code, f"Unknown error: {response.status_code}"
