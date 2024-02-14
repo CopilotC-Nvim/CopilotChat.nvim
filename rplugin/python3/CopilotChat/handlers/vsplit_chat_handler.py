@@ -1,3 +1,4 @@
+from CopilotChat.copilot import Copilot
 from CopilotChat.handlers.chat_handler import ChatHandler
 from CopilotChat.mypynvim.core.buffer import MyBuffer
 from CopilotChat.mypynvim.core.nvim import MyNvim
@@ -6,7 +7,7 @@ from CopilotChat.mypynvim.core.nvim import MyNvim
 class VSplitChatHandler(ChatHandler):
     def __init__(self, nvim: MyNvim):
         self.nvim: MyNvim = nvim
-        self.copilot = None
+        self.copilot: Copilot = None
         self.buffer: MyBuffer = MyBuffer.new(
             self.nvim,
             {

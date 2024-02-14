@@ -4,11 +4,11 @@ import time
 import uuid
 from typing import Dict, List
 
-import dotenv
 import CopilotChat.prompts as prompts
-import requests
 import CopilotChat.typings as typings
 import CopilotChat.utilities as utilities
+import dotenv
+import requests
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
 
@@ -89,6 +89,9 @@ class Copilot:
         }
 
         self.token = self.session.get(url, headers=headers).json()
+
+    def reset(self):
+        self.chat_history = []
 
     def ask(
         self,

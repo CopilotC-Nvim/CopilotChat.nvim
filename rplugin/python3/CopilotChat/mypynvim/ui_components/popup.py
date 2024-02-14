@@ -9,12 +9,14 @@ if TYPE_CHECKING:
 
     from CopilotChat.mypynvim.ui_components.layout import Layout
 
-
 from CopilotChat.mypynvim.core.buffer import MyBuffer
 from CopilotChat.mypynvim.core.window import MyWindow
-
 from CopilotChat.mypynvim.ui_components.calculator import Calculator
-from CopilotChat.mypynvim.ui_components.types import PaddingKeys, PopUpConfiguration, Relative
+from CopilotChat.mypynvim.ui_components.types import (
+    PaddingKeys,
+    PopUpConfiguration,
+    Relative,
+)
 
 
 @dataclass

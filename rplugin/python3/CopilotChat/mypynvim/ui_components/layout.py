@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import Callable, Literal, Optional, Union, cast
 
 from CopilotChat.mypynvim.core.nvim import MyNvim
-
 from CopilotChat.mypynvim.ui_components.calculator import Calculator
 from CopilotChat.mypynvim.ui_components.popup import PopUp
 from CopilotChat.mypynvim.ui_components.types import PopUpConfiguration, Relative

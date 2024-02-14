@@ -28,6 +28,11 @@ class CopilotPlugin(object):
             code = self.nvim.eval("getreg('\"')")
             self.vsplit_chat_handler.chat(args[0], file_type, code)
 
+    @pynvim.command("CopilotChatReset")
+    def copilot_agent_reset_cmd(self):
+        if self.vsplit_chat_handler:
+            self.vsplit_chat_handler.copilot.reset()
+
     @pynvim.command("CopilotChatVisual", nargs="1", range="")
     def copilot_agent_visual_cmd(self, args: list[str], range: list[int]):
         self.init_vsplit_chat_handler()

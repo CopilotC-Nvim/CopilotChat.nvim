@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pynvim.api import Window
-
 from CopilotChat.mypynvim.core.buffer import MyBuffer
+from pynvim.api import Window
 
 if TYPE_CHECKING:
     from CopilotChat.mypynvim.core.nvim import MyNvim

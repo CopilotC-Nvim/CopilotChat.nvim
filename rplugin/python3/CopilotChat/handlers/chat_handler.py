@@ -1,7 +1,7 @@
+import os
 import time
 from datetime import datetime
 from typing import Optional, cast
-import os
 
 import CopilotChat.prompts as system_prompts
 from CopilotChat.copilot import Copilot
