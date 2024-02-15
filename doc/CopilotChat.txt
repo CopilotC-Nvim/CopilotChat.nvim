@@ -75,6 +75,16 @@ LAZY.NVIM ~
             mode = "x",
             desc = "CopilotChat - Run in-place code",
           },
+          {
+            "<leader>ccf",
+            "<cmd>CopilotChatFixDiagnostic<cr>", -- Get a fix for the diagnostic message under the cursor.
+            desc = "CopilotChat - Fix diagnostic",
+          },
+          {
+            "<leader>ccr",
+            "<cmd>CopilotChatReset<cr>", -- Reset chat history and clear buffer.
+            desc = "CopilotChat - Reset chat history and clear buffer",
+          }
         },
       },
     }
