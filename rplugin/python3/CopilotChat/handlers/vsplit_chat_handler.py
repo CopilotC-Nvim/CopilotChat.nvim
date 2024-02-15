@@ -11,11 +11,12 @@ class VSplitChatHandler(ChatHandler):
         self.buffer: MyBuffer = MyBuffer.new(
             self.nvim,
             {
-                "filetype": "markdown",
+                "filetype": "copilot-chat",
             },
         )
 
     def vsplit(self):
+        self.buffer.option("filetype", "copilot-chat")
         var_key = "copilot_chat"
         for window in self.nvim.windows:
             try:
@@ -36,6 +37,7 @@ class VSplitChatHandler(ChatHandler):
         self.nvim.current.window.vars[var_key] = True
 
     def chat(self, prompt: str, filetype: str, code: str = ""):
+        self.buffer.option("filetype", "markdown")
         super().chat(prompt, filetype, code, self.nvim.current.window.handle)
 
     def reset_buffer(self):
