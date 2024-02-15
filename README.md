@@ -175,6 +175,13 @@ For further reference, you can view @jellydn's [configuration](https://github.co
 
 [![Generate tests](https://i.gyazo.com/f285467d4b8d8f8fd36aa777305312ae.gif)](https://gyazo.com/f285467d4b8d8f8fd36aa777305312ae)
 
+### Troubleshoot and Fix Diagnostic
+
+1. Place your cursor on the line with the diagnostic message.
+2. Run the command `:CopilotChatFixDiagnostic`.
+
+[![Fix diagnostic](https://i.gyazo.com/4aff3fdbc5c3eee59cb68939546fa2be.gif)](https://gyazo.com/4aff3fdbc5c3eee59cb68939546fa2be)
+
 ### Token count & Fold with visual mode
 
 1. Select some code using visual mode.
