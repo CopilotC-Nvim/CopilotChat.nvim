@@ -52,4 +52,26 @@ M.log_error = function(...)
   log.error(...)
 end
 
+--- Get diagnostics for the current line
+--- It uses the built-in LSP client in Neovim to get the diagnostics.
+--- @return string
+M.get_diagnostics = function()
+  local buffer_number = vim.api.nvim_get_current_buf()
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local line_diagnostics = vim.lsp.diagnostic.get_line_diagnostics(buffer_number, cursor[1] - 1)
+
+  if #line_diagnostics == 0 then
+    return 'No diagnostics available'
+  end
+
+  local diagnostics = {}
+  for _, diagnostic in ipairs(line_diagnostics) do
+    table.insert(diagnostics, diagnostic.message)
+  end
+
+  local result = table.concat(diagnostics, '. ')
+  result = result:gsub('^%s*(.-)%s*$', '%1'):gsub('\n', ' ')
+  return result
+end
+
 return M

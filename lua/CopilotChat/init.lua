@@ -33,6 +33,23 @@ M.setup = function(options)
     end, { nargs = '*', range = true })
   end
 
+  -- Troubleshoot and fix the diagnostic issue at the current cursor position.
+  utils.create_cmd('CopilotChatFixDiagnostic', function()
+    local diagnostic = utils.get_diagnostics()
+    local file_name = vim.fn.expand('%:t')
+    local line_number = vim.fn.line('.')
+    -- Copy all the lines from current buffer to unnamed register
+    vim.cmd('normal! ggVG"*y')
+    vim.cmd(
+      'CopilotChat Please assist with the following diagnostic issue in file: "'
+        .. file_name
+        .. ':'
+        .. line_number
+        .. '". '
+        .. diagnostic
+    )
+  end, { nargs = '*', range = true })
+
   -- Show debug info
   utils.create_cmd('CopilotChatDebugInfo', function()
     -- Get the log file path
