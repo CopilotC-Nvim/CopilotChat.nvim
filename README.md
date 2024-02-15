@@ -56,6 +56,16 @@ return {
         mode = "x",
         desc = "CopilotChat - Run in-place code",
       },
+      {
+        "<leader>ccf",
+        "<cmd>CopilotChatFixDiagnostic<cr>", -- Get a fix for the diagnostic message under the cursor.
+        desc = "CopilotChat - Fix diagnostic",
+      },
+      {
+        "<leader>ccr",
+        "<cmd>CopilotChatReset<cr>", -- Reset chat history and clear buffer.
+        desc = "CopilotChat - Reset chat history and clear buffer",
+      }
     },
   },
 }
@@ -183,7 +193,7 @@ For further reference, you can view @jellydn's [configuration](https://github.co
 
 ## Tips
 
-### integration with `edgy.nvim`
+### Integration with `edgy.nvim`
 
 Consider integrating this plugin with [`edgy.nvim`](https://github.com/folke/edgy.nvim). This will allow you to create a chat window on the right side of your screen, occupying 40% of the width, as illustrated below.
 
