@@ -183,6 +183,29 @@ For further reference, you can view @jellydn's [configuration](https://github.co
 
 ## Tips
 
+### integration with `edgy.nvim`
+
+Consider integrating this plugin with [`edgy.nvim`](https://github.com/folke/edgy.nvim). This will allow you to create a chat window on the right side of your screen, occupying 40% of the width, as illustrated below.
+
+```lua
+{
+  "folke/edgy.nvim",
+  event = "VeryLazy",
+  opts = {
+    -- Refer to my configuration here https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/edgy.lua
+    right = {
+      {
+        title = "CopilotChat.nvim", -- Title of the window
+        ft = "copilot-chat", -- This is custom file type from CopilotChat.nvim
+        size = { width = 0.4 }, -- Width of the window
+      },
+    },
+  },
+}
+```
+
+[![Layout](https://i.gyazo.com/550daf6cbb729027ca9bd703c21af53e.png)](https://gyazo.com/550daf6cbb729027ca9bd703c21af53e)
+
 ### Debugging with `:messages` and `:CopilotChatDebugInfo`
 
 If you encounter any issues, you can run the command `:messages` to inspect the log. You can also run the command `:CopilotChatDebugInfo` to inspect the debug information.
@@ -270,11 +293,11 @@ Follow the example below to create a simple input for CopilotChat.
 		local my_prompts = {
 			{prompt = "In Neovim.",desc = "Neovim",key = "n"},
 			{prompt = "Help with this",desc = "Help",key = "h"},
-			{prompt = "Simplify and imporve readablilty",desc = "Simplify",key = "s"},
-			{prompt = "Optimize the code to improve perfomance and readablilty.",desc = "Optimize",key = "o"},
+			{prompt = "Simplify and improve readablilty",desc = "Simplify",key = "s"},
+			{prompt = "Optimize the code to improve performance and readablilty.",desc = "Optimize",key = "o"},
 			{prompt = "Find possible errors and fix them for me",desc = "Fix",key = "f"},
 			{prompt = "Explain in detail",desc = "Explain",key = "e"},
-			{prompt = "Write a shell scirpt",desc = "Shell",key = "S"},
+			{prompt = "Write a shell script",desc = "Shell",key = "S"},
 		}
 		-- you can change <leader>cc to your desired keybind prefix
 		for _,v in pairs(my_prompts) do
