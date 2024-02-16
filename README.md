@@ -14,6 +14,7 @@
 Ensure you have the following installed:
 
 - Python 3.10 or later
+- Enable `python3 provider` in Neovim. Testing by run `:echo has('python3')` in Neovim. If it returns `1`, then `python3 provider` is enabled.
 
 ## Authentication
 
