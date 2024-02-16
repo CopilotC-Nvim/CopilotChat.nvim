@@ -205,6 +205,10 @@ For further reference, you can view @jellydn's [configuration](https://github.co
 
 [![In-place Demo](https://i.gyazo.com/4a5badaa109cd483c1fc23d296325cb0.gif)](https://gyazo.com/4a5badaa109cd483c1fc23d296325cb0)
 
+### Toggle Vertical Split with `:CopilotChatVsplitToggle`
+
+[![Toggle](https://i.gyazo.com/db5af9e5d88cd2fd09f58968914fa521.gif)](https://gyazo.com/db5af9e5d88cd2fd09f58968914fa521)
+
 ## Tips
 
 ### Integration with `edgy.nvim`
