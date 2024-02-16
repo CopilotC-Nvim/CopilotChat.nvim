@@ -108,6 +108,13 @@ class ChatHandler:
         winnr: int,
         no_annoyance: bool = False,
     ):
+        hide_system_prompt = (
+            self.nvim.eval("g:copilot_chat_hide_system_prompt") == "yes"
+        )
+
+        if hide_system_prompt:
+            system_prompt = "...System prompt hidden..."
+
         if code and not no_annoyance:
             code = f"\n        \nCODE:\n```{file_type}\n{code}\n```"
 
@@ -148,10 +155,16 @@ SYSTEM PROMPT:
 
         encoding = tiktoken.encoding_for_model("gpt-4")
 
+        hide_system_prompt = (
+            self.nvim.eval("g:copilot_chat_hide_system_prompt") == "yes"
+        )
         num_total_tokens = len(encoding.encode(f"{system_prompt}\n{prompt}\n{code}"))
         num_system_tokens = len(encoding.encode(system_prompt))
         num_prompt_tokens = len(encoding.encode(prompt))
         num_code_tokens = len(encoding.encode(code))
+
+        if hide_system_prompt:
+            system_prompt = "... System prompt hidden ..."
 
         if code:
             code = f"\n        \nCODE: {num_code_tokens} Tokens \n```{file_type}\n{code}\n```"
