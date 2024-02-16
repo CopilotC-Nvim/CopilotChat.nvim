@@ -36,6 +36,19 @@ class VSplitChatHandler(ChatHandler):
         )
         self.nvim.current.window.vars[var_key] = True
 
+    def toggle_vsplit(self):
+        """Toggle vsplit chat window."""
+        var_key = "copilot_chat"
+        for window in self.nvim.windows:
+            try:
+                if window.vars[var_key]:
+                    self.nvim.command("close")
+                    return
+            except Exception:
+                pass
+
+        self.vsplit()
+
     def chat(self, prompt: str, filetype: str, code: str = ""):
         self.buffer.option("filetype", "markdown")
         super().chat(prompt, filetype, code, self.nvim.current.window.handle)

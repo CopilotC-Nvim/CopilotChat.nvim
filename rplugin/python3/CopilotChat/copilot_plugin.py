@@ -18,6 +18,12 @@ class CopilotPlugin(object):
         if self.vsplit_chat_handler is None:
             self.vsplit_chat_handler = VSplitChatHandler(self.nvim)
 
+    @pynvim.command("CopilotChatVsplitToggle")
+    def copilot_chat_toggle_cmd(self):
+        self.init_vsplit_chat_handler()
+        if self.vsplit_chat_handler:
+            self.vsplit_chat_handler.toggle_vsplit()
+
     @pynvim.command("CopilotChat", nargs="1")
     def copilot_agent_cmd(self, args: list[str]):
         self.init_vsplit_chat_handler()
