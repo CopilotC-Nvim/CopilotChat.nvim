@@ -236,13 +236,23 @@ To integrate CopilotChat with Telescope, you can add the following configuration
         end,
         desc = "CopilotChat - Help actions",
       },
+      -- Show prompts actions with telescope
+      {
+        "<leader>ccp",
+        function()
+          require("CopilotChat.code_actions").show_prompt_actions()
+        end,
+        desc = "CopilotChat - Help actions",
+      },
     }
   }
 ```
 
-In this configuration, the `CopilotChat.code_actions.show_help_actions()` function is mapped to the `<leader>cch` key combination. When you press these keys, Telescope will display a list of help actions provided by CopilotChat as below.
+1. Select help actions base the diagnostic message under the cursor.
+   [![Help action with Copilot Chat](https://i.gyazo.com/146dc35368592ba9f5de047ddc4728ad.gif)](https://gyazo.com/146dc35368592ba9f5de047ddc4728ad)
 
-[![Help action with Copilot Chat](https://i.gyazo.com/146dc35368592ba9f5de047ddc4728ad.gif)](https://gyazo.com/146dc35368592ba9f5de047ddc4728ad)
+2. Select action base on user prompts.
+   [![Select action base on user prompts](https://i.gyazo.com/a9c41e6398591c2f1d1d872fd58a2c63.gif)](https://gyazo.com/a9c41e6398591c2f1d1d872fd58a2c63)
 
 ### Integration with `edgy.nvim`
 
