@@ -39,6 +39,11 @@ M.setup = function(options)
   -- Troubleshoot and fix the diagnostic issue at the current cursor position.
   utils.create_cmd('CopilotChatFixDiagnostic', function()
     local diagnostic = utils.get_diagnostics()
+    if diagnostic == 'No diagnostics available' then
+      vim.notify('No diagnostic issue found at the current cursor position.', vim.log.levels.INFO)
+      return
+    end
+
     local file_name = vim.fn.expand('%:t')
     local line_number = vim.fn.line('.')
     -- Copy all the lines from current buffer to unnamed register
