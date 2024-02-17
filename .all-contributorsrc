@@ -81,6 +81,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/4156525?v=4",
       "profile": "https://github.com/shaungarwood",
       "contributions": ["code"]
+    },
+    {
+      "login": "neutrinoA4",
+      "name": "neutrinoA4",
+      "avatar_url": "https://avatars.githubusercontent.com/u/122616073?v=4",
+      "profile": "https://github.com/neutrinoA4",
+      "contributions": ["code", "doc"]
     }
   ],
   "contributorsPerLine": 7,
