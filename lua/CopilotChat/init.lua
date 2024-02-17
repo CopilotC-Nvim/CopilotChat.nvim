@@ -15,6 +15,7 @@ _COPILOT_CHAT_GLOBAL_CONFIG = {}
 --       - disable_extra_info: ('yes' | 'no') default: 'yes'.
 --       - hide_system_prompt: ('yes' | 'no') default: 'yes'.
 --       - proxy: (string?) default: ''.
+--       - language: (string?) default: ''.
 --       - prompts: (table?) default: default_prompts.
 --       - debug: (boolean?) default: false.
 M.setup = function(options)
