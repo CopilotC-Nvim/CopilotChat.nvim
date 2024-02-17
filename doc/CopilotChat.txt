@@ -460,7 +460,7 @@ CONTRIBUTORS ✨        *CopilotChat-copilot-chat-for-neovim-contributors-✨*
 Thanks goes to these wonderful people (emoji key
 <https://allcontributors.org/docs/en/emoji-key>):
 
-gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻This project follows the all-contributors
+gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻neutrinoA4💻 📖This project follows the all-contributors
 <https://github.com/all-contributors/all-contributors> specification.
 Contributions of any kind are welcome!
 
@@ -472,7 +472,7 @@ STARGAZERS OVER TIME ~
 ==============================================================================
 2. Links                                                   *CopilotChat-links*
 
-1. *All Contributors*: https://img.shields.io/badge/all_contributors-11-orange.svg?style=flat-square
+1. *All Contributors*: https://img.shields.io/badge/all_contributors-12-orange.svg?style=flat-square
 2. *@jellydn*: 
 3. *Chat Demo*: https://i.gyazo.com/10fbd1543380d15551791c1a6dcbcd46.gif
 4. *Explain Code Demo*: https://i.gyazo.com/e5031f402536a1a9d6c82b2c38d469e3.gif
