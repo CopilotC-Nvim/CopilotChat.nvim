@@ -215,6 +215,35 @@ For further reference, you can view @jellydn's [configuration](https://github.co
 
 ## Tips
 
+### Integration with `telescope.nvim`
+
+To integrate CopilotChat with Telescope, you can add the following configuration to your keymap:
+
+```lua
+  {
+    "CopilotC-Nvim/CopilotChat.nvim",
+    event = "VeryLazy",
+    dependencies = {
+      { "nvim-telescope/telescope.nvim" }, -- Use telescope for help actions
+      { "nvim-lua/plenary.nvim" },
+    },
+    keys = {
+     -- Show help actions with telescope
+      {
+        "<leader>cch",
+        function()
+          require("CopilotChat.code_actions").show_help_actions()
+        end,
+        desc = "CopilotChat - Help actions",
+      },
+    }
+  }
+```
+
+In this configuration, the `CopilotChat.code_actions.show_help_actions()` function is mapped to the `<leader>cch` key combination. When you press these keys, Telescope will display a list of help actions provided by CopilotChat as below.
+
+[![Help action with Copilot Chat](https://i.gyazo.com/146dc35368592ba9f5de047ddc4728ad.gif)](https://gyazo.com/146dc35368592ba9f5de047ddc4728ad)
+
 ### Integration with `edgy.nvim`
 
 Consider integrating this plugin with [`edgy.nvim`](https://github.com/folke/edgy.nvim). This will allow you to create a chat window on the right side of your screen, occupying 40% of the width, as illustrated below.
