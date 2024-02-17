@@ -20,6 +20,7 @@ class InPlaceChatHandler:
         self.diff_mode: bool = False
         self.model: str = MODEL_GPT4
         self.system_prompt: str = "SENIOR_DEVELOPER_PROMPT"
+        self.language = self.nvim.eval("g:copilot_chat_language")
 
         # Add user prompts collection
         self.user_prompts = self.nvim.eval("g:copilot_chat_user_prompts")

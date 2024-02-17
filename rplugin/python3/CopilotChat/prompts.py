@@ -1,3 +1,5 @@
+from string import Template
+
 # pylint: disable=locally-disabled, multiple-statements, fixme, line-too-long
 COPILOT_INSTRUCTIONS = """You are an AI programming assistant.
 When asked for you name, you must respond with "GitHub Copilot".
@@ -249,3 +251,4 @@ You MUST add whitespace in the beginning of each line as needed to match the use
 """
 PROMPT_SIMPLE_DOCSTRING = "add simple docstring to this code"
 PROMPT_SEPARATE = "add comments separating the code into sections"
+PROMPT_ANSWER_LANGUAGE_TEMPLATE = Template("Please answer in ${language}")

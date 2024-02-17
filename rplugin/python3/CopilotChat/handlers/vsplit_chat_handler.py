@@ -14,6 +14,7 @@ class VSplitChatHandler(ChatHandler):
                 "filetype": "copilot-chat",
             },
         )
+        self.language = self.nvim.eval("g:copilot_chat_language")
 
     def vsplit(self):
         self.buffer.option("filetype", "copilot-chat")
