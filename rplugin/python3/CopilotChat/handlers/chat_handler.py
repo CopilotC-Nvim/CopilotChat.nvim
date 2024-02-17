@@ -26,6 +26,7 @@ class ChatHandler:
         self.copilot: Copilot = None
         self.buffer: MyBuffer = buffer
         self.proxy: str = os.getenv("HTTPS_PROXY") or os.getenv("ALL_PROXY") or ""
+        self.language = self.nvim.eval("g:copilot_chat_language")
 
     # public
 
@@ -79,6 +80,8 @@ class ChatHandler:
             system_prompt = system_prompts.COPILOT_TESTS
         elif prompt == system_prompts.EXPLAIN_SHORTCUT:
             system_prompt = system_prompts.COPILOT_EXPLAIN
+        if self.language != "":
+            system_prompt = system_prompts.PROMPT_ANSWER_LANGUAGE_TEMPLATE.substitute(language=self.language)
         return system_prompt
 
     def _add_start_separator(
