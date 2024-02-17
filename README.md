@@ -244,6 +244,12 @@ To integrate CopilotChat with Telescope, you can add the following configuration
         end,
         desc = "CopilotChat - Help actions",
       },
+      {
+        "<leader>ccp",
+        ":lua require('CopilotChat.code_actions').show_prompt_actions(true)<CR>",
+        mode = "x",
+        desc = "CopilotChat - Prompt actions",
+      },
     }
   }
 ```

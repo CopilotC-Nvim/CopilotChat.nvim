@@ -7,9 +7,9 @@ local conf = require('telescope.config').values
 local utils = require('CopilotChat.utils')
 
 local help_actions = {}
-local prompt_actions = {}
+local user_prompt_actions = {}
 
-local function fix_diagnostic()
+local function generate_fix_diagnostic_prompt()
   local diagnostic = utils.get_diagnostics()
   local file_name = vim.fn.expand('%:t')
   local line_number = vim.fn.line('.')
@@ -21,7 +21,7 @@ local function fix_diagnostic()
     .. diagnostic
 end
 
-local function explain_diagnostic()
+local function generate_explain_diagnostic_prompt()
   local diagnostic = utils.get_diagnostics()
   local file_name = vim.fn.expand('%:t')
   local line_number = vim.fn.line('.')
@@ -37,7 +37,7 @@ end
 --- This will copy all the lines in the buffer to the unnamed register
 --- Then will send the diagnostic to copilot chat
 ---@param prefix string
-local function help_command(prefix)
+local function diagnostic_help_command(prefix)
   if prefix == nil then
     prefix = ''
   else
@@ -71,7 +71,7 @@ end
 --- This will show all the user prompts in the telescope picker
 --- Then will execute the command selected by the user
 ---@param prefix string
-local function prompt_command(prefix)
+local function generate_prompt_command(prefix)
   if prefix == nil then
     prefix = ''
   else
@@ -85,7 +85,7 @@ local function prompt_command(prefix)
 
       -- Get value from the prompt_actions and execute the command
       local value = ''
-      for _, action in pairs(prompt_actions) do
+      for _, action in pairs(user_prompt_actions) do
         if action.name == selection[1] then
           value = action.label
           break
@@ -101,11 +101,11 @@ end
 local function show_help_actions()
   help_actions = {
     {
-      label = fix_diagnostic(),
+      label = generate_fix_diagnostic_prompt(),
       name = 'Fix diagnostic',
     },
     {
-      label = explain_diagnostic(),
+      label = generate_explain_diagnostic_prompt(),
       name = 'Explain diagnostic',
     },
   }
@@ -117,44 +117,52 @@ local function show_help_actions()
 
   -- Show the menu with telescope pickers
   local opts = themes.get_dropdown({})
-  local picker_names = {}
+  local action_names = {}
   for _, value in pairs(help_actions) do
-    table.insert(picker_names, value.name)
+    table.insert(action_names, value.name)
   end
   telescope_pickers
     .new(opts, {
       prompt_title = 'Copilot Chat Help Actions',
       finder = finders.new_table({
-        results = picker_names,
+        results = action_names,
       }),
       sorter = conf.generic_sorter(opts),
-      attach_mappings = help_command('CopilotChat'),
+      attach_mappings = diagnostic_help_command('CopilotChat'),
     })
     :find()
 end
 
-local function show_prompt_actions()
+--- Show prompt actions
+---@param is_in_visual_mode boolean?
+local function show_prompt_actions(is_in_visual_mode)
   -- Convert user prompts to a table of actions
-  prompt_actions = {}
+  user_prompt_actions = {}
 
   for key, prompt in pairs(vim.g.copilot_chat_user_prompts) do
-    table.insert(prompt_actions, { name = key, label = prompt })
+    table.insert(user_prompt_actions, { name = key, label = prompt })
+  end
+
+  local cmd = 'CopilotChat'
+
+  if is_in_visual_mode then
+    cmd = "'<,'>CopilotChatVisual"
   end
 
   -- Show the menu with telescope pickers
   local opts = themes.get_dropdown({})
-  local picker_names = {}
-  for _, value in pairs(prompt_actions) do
-    table.insert(picker_names, value.name)
+  local action_names = {}
+  for _, value in pairs(user_prompt_actions) do
+    table.insert(action_names, value.name)
   end
   telescope_pickers
     .new(opts, {
       prompt_title = 'Copilot Chat Actions',
       finder = finders.new_table({
-        results = picker_names,
+        results = action_names,
       }),
       sorter = conf.generic_sorter(opts),
-      attach_mappings = prompt_command('CopilotChat'),
+      attach_mappings = generate_prompt_command(cmd),
     })
     :find()
 end
