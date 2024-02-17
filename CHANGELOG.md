@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.4.0...v1.5.0) (2024-02-17)
+
+
+### Features
+
+* add options to hide system prompts ([98a6191](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/98a61913f4cd798fb042f4b21f6a3e1a457c3959))
+* add prompt actions support in Telescope integration ([f124645](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/f124645d4b48df59790c9763687b94cf7dd3f5bf))
+* integrate CopilotChat with telescope.nvim for code actions ([0cabac6](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/0cabac6af8c838d4984b766f5d985a04259d3a4d))
+
 ## [1.4.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.3.0...v1.4.0) (2024-02-16)
 
 
