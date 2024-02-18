@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.6.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.5.0...v1.6.0) (2024-02-18)
+
+
+### Features
+
+* add language settings for copilot answers ([8e40e41](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/8e40e41c5bdabe675b2e54c80347dd85f1a9d550))
+* add support for visual mode in show_prompt_actions function ([13dfbba](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/13dfbba39e2202ad6bae5b4806ce7e42f75c94a0))
+* disable vim diagnostics on chat buffer for vsplit handler ([fe1808e](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/fe1808e51760c2fa71ca4176551161c73b2f2f73))
+
+
+### Bug Fixes
+
+* add validation before call FixDiagnostic command ([81c5060](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/81c506027e6a638973e3187dd98fc70cae024719))
+* reorder system prompt and language prompt ([0d474a1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/0d474a14b3bf67469946aa639e3de1a42b016373))
+
 ## [1.5.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.4.0...v1.5.0) (2024-02-17)
 
 
