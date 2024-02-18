@@ -232,6 +232,7 @@ class InPlaceChatHandler:
         self.copilot_popup.unmount()
         self.copilot_popup.mount(controlled=True)
 
+    # TODO: Add custom keymaps for in-place chat as suggestion here https://discord.com/channels/1200633211236122665/1200633212041449606/1208065809285382164
     def _set_keymaps(self):
         """Set the keymaps for the chat handler."""
         self.prompt_popup.map("n", "<CR>", lambda: self._chat())

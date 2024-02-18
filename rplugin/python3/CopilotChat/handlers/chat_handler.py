@@ -18,7 +18,6 @@ def is_module_installed(name):
 
 
 # TODO: Support Custom Instructions when this issue has been resolved https://github.com/microsoft/vscode-copilot-release/issues/563
-# TODO: Abort request if the user closes the layout
 class ChatHandler:
     has_show_extra_info = False
 
@@ -267,6 +266,7 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
         self.nvim.exec_lua(
             'require("CopilotChat.utils").log_info(...)', "Asking Copilot"
         )
+        # TODO: Abort request if the user closes the layout
         for token in self.copilot.ask(
             system_prompt, prompt, code, language=cast(str, file_type), model=model
         ):
