@@ -247,6 +247,25 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
             self.copilot.authenticate()
 
         last_line_col = 0
+        self.nvim.exec_lua(
+            'require("CopilotChat.utils").log_info(...)',
+            f"System prompt: {system_prompt}",
+        )
+        self.nvim.exec_lua(
+            'require("CopilotChat.utils").log_info(...)', f"Prompt: {prompt}"
+        )
+        self.nvim.exec_lua(
+            'require("CopilotChat.utils").log_info(...)', f"Code: {code}"
+        )
+        self.nvim.exec_lua(
+            'require("CopilotChat.utils").log_info(...)', f"File type: {file_type}"
+        )
+        self.nvim.exec_lua(
+            'require("CopilotChat.utils").log_info(...)', f"Model: {model}"
+        )
+        self.nvim.exec_lua(
+            'require("CopilotChat.utils").log_info(...)', "Asking Copilot"
+        )
         for token in self.copilot.ask(
             system_prompt, prompt, code, language=cast(str, file_type), model=model
         ):
@@ -266,6 +285,9 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
             last_line_col += len(token.encode("utf-8"))
             if "\n" in token:
                 last_line_col = 0
+        self.nvim.exec_lua(
+            'require("CopilotChat.utils").log_info(...)', "Copilot answered"
+        )
 
     def _add_end_separator(self, model: str, disable_separators: bool = False):
         current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
