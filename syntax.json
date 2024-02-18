@@ -1,0 +1,736 @@
+[
+  {
+    "language": "Python",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "#"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "'''",
+          "end": "'''"
+        }
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "\"\"\"",
+          "end": "\"\"\""
+        }
+      }
+    ]
+  },
+  {
+    "language": "Elixir",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "#"
+      }
+    ]
+  },
+  {
+    "language": "YAML",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "#"
+      }
+    ]
+  },
+  {
+    "language": "Ruby",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "#"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "=begin",
+          "end": "=end"
+        }
+      }
+    ]
+  },
+  {
+    "language": "PHP",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "line",
+        "pattern": "#"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "<!--",
+          "end": "-->"
+        }
+      }
+    ]
+  },
+  {
+    "language": "C",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "C++",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "C#",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "Java",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "JavaScript",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "JSON with Comments",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "JSON5",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      }
+    ]
+  },
+  {
+    "language": "Julia",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "#"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "#=",
+          "end": "=#"
+        }
+      }
+    ]
+  },
+  {
+    "language": "Starlark",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "#"
+      }
+    ]
+  },
+  {
+    "language": "TypeScript",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "TSX",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "Dart",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "Kotlin",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "Scala",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "Objective-C",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "Sass",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "Less",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "Swift",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "Haskell",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "--"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "{-",
+          "end": "-}"
+        }
+      }
+    ]
+  },
+  {
+    "language": "HTML",
+    "markers": [
+      {
+        "type": "block",
+        "pattern": {
+          "start": "<!--",
+          "end": "-->"
+        }
+      }
+    ]
+  },
+  {
+    "language": "CSS",
+    "markers": [
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "AutoHotkey",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": ";"
+      }
+    ]
+  },
+  {
+    "language": "Markdown",
+    "markers": [
+      {
+        "type": "block",
+        "pattern": {
+          "start": "<!--",
+          "end": "-->"
+        }
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "{/\\*",
+          "end": "\\*/}"
+        }
+      },
+      {
+        "type": "line",
+        "pattern": "- \\[ \\]"
+      }
+    ]
+  },
+  {
+    "language": "RMarkdown",
+    "markers": [
+      {
+        "type": "block",
+        "pattern": {
+          "start": "<!--",
+          "end": "-->"
+        }
+      }
+    ]
+  },
+  {
+    "language": "Shell",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "#"
+      }
+    ]
+  },
+  {
+    "language": "Handlebars",
+    "markers": [
+      {
+        "type": "block",
+        "pattern": {
+          "start": "<!--",
+          "end": "-->"
+        }
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "{{!",
+          "end": "}}"
+        }
+      }
+    ]
+  },
+  {
+    "language": "Org",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "#"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "#\\+begin_comment",
+          "end": "#\\+end_comment"
+        }
+      }
+    ]
+  },
+  {
+    "language": "TeX",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "%"
+      },
+      {
+        "type": "line",
+        "pattern": "\\\\todo{"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "\\\\begin{comment}",
+          "end": "\\\\end{comment}"
+        }
+      }
+    ]
+  },
+  {
+    "language": "SQL",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "--"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "HTML+Razor",
+    "markers": [
+      {
+        "type": "block",
+        "pattern": {
+          "start": "<!--",
+          "end": "-->"
+        }
+      },
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "Rust",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "Vue",
+    "markers": [
+      {
+        "type": "block",
+        "pattern": {
+          "start": "<!--",
+          "end": "-->"
+        }
+      },
+      {
+        "type": "line",
+        "pattern": "//"
+      }
+    ]
+  },
+  {
+    "language": "ABAP",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "\""
+      },
+      {
+        "type": "line",
+        "pattern": "\\*"
+      }
+    ]
+  },
+  {
+    "language": "ABAP CDS",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "GDScript",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "#"
+      }
+    ]
+  },
+  {
+    "language": "Go",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "HCL",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "#"
+      },
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "SCSS",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "//"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "Twig",
+    "markers": [
+      {
+        "type": "block",
+        "pattern": {
+          "start": "{#",
+          "end": "#}"
+        }
+      }
+    ]
+  },
+  {
+    "language": "Crystal",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "#"
+      }
+    ]
+  },
+  {
+    "language": "R",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "#"
+      }
+    ]
+  },
+  {
+    "language": "Clojure",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": ";;"
+      }
+    ]
+  },
+  {
+    "language": "Nix",
+    "markers": [
+      {
+        "type": "line",
+        "pattern": "#"
+      },
+      {
+        "type": "block",
+        "pattern": {
+          "start": "/\\*",
+          "end": "\\*/"
+        }
+      }
+    ]
+  },
+  {
+    "language": "XML",
+    "markers": [
+      {
+        "type": "block",
+        "pattern": {
+          "start": "<!--",
+          "end": "-->"
+        }
+      }
+    ]
+  }
+]

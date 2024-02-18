@@ -17,6 +17,7 @@ def is_module_installed(name):
         return False
 
 
+# TODO: Support Custom Instructions when this issue has been resolved https://github.com/microsoft/vscode-copilot-release/issues/563
 # TODO: Abort request if the user closes the layout
 class ChatHandler:
     has_show_extra_info = False
