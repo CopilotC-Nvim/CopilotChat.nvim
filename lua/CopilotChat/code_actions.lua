@@ -11,6 +11,10 @@ local user_prompt_actions = {}
 
 local function generate_fix_diagnostic_prompt()
   local diagnostic = utils.get_diagnostics()
+  if diagnostic == 'No diagnostics available' then
+    return diagnostic
+  end
+
   local file_name = vim.fn.expand('%:t')
   local line_number = vim.fn.line('.')
   return 'Please assist with fixing the following diagnostic issue in file: "'
@@ -23,6 +27,10 @@ end
 
 local function generate_explain_diagnostic_prompt()
   local diagnostic = utils.get_diagnostics()
+  if diagnostic == 'No diagnostics available' then
+    return diagnostic
+  end
+
   local file_name = vim.fn.expand('%:t')
   local line_number = vim.fn.line('.')
   return 'Please explain the following diagnostic issue in file: "'
