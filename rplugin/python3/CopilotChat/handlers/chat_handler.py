@@ -81,7 +81,13 @@ class ChatHandler:
         elif prompt == system_prompts.EXPLAIN_SHORTCUT:
             system_prompt = system_prompts.COPILOT_EXPLAIN
         if self.language != "":
-            system_prompt = system_prompt + "\n" + system_prompts.PROMPT_ANSWER_LANGUAGE_TEMPLATE.substitute(language=self.language)
+            system_prompt = (
+                system_prompts.PROMPT_ANSWER_LANGUAGE_TEMPLATE.substitute(
+                    language=self.language
+                )
+                + "\n"
+                + system_prompt
+            )
         return system_prompt
 
     def _add_start_separator(
