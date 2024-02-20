@@ -296,6 +296,9 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
             'require("CopilotChat.utils").log_info(...)', f"Model: {model}"
         )
         self.nvim.exec_lua(
+            'require("CopilotChat.utils").log_info(...)', f"Temperature: {temperature}"
+        )
+        self.nvim.exec_lua(
             'require("CopilotChat.utils").log_info(...)', "Asking Copilot"
         )
         # TODO: Abort request if the user closes the layout
