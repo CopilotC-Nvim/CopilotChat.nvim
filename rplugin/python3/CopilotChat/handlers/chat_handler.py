@@ -17,6 +17,9 @@ def is_module_installed(name):
         return False
 
 
+DEFAULT_TEMPERATURE = 0.1
+
+
 # TODO: Support Custom Instructions when this issue has been resolved https://github.com/microsoft/vscode-copilot-release/issues/563
 class ChatHandler:
     has_show_extra_info = False
@@ -44,14 +47,12 @@ class ChatHandler:
         disable_separators = (
             self.nvim.eval("g:copilot_chat_disable_separators") == "yes"
         )
-        temperature = self.nvim.eval("g:copilot_chat_temperature")
-        if temperature is None or temperature == "":
-            temperature = 0.1
-        else:
-            temperature = float(temperature)
-        self.proxy = self.nvim.eval("g:copilot_chat_proxy")
-        if "://" not in self.proxy:
-            self.proxy = None
+
+        # Validate and set temperature
+        temperature = self._get_temperature()
+
+        # Set proxy
+        self._set_proxy()
 
         if system_prompt is None:
             system_prompt = self._construct_system_prompt(prompt)
@@ -78,6 +79,24 @@ class ChatHandler:
             self._add_end_separator(model, disable_separators)
 
     # private
+    def _set_proxy(self):
+        self.proxy = self.nvim.eval("g:copilot_chat_proxy")
+        if "://" not in self.proxy:
+            self.proxy = None
+
+    def _get_temperature(self):
+        temperature = self.nvim.eval("g:copilot_chat_temperature")
+        try:
+            temperature = float(temperature)
+            if not 0 <= temperature <= 1:
+                raise ValueError
+        except ValueError:
+            self.nvim.exec_lua(
+                'require("CopilotChat.utils").log_error(...)',
+                "Invalid temperature value. Please provide a numeric value between 0 and 1.",
+            )
+            temperature = DEFAULT_TEMPERATURE
+        return temperature
 
     def _construct_system_prompt(self, prompt: str):
         system_prompt = system_prompts.COPILOT_INSTRUCTIONS
@@ -239,7 +258,7 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
         code: str,
         file_type: str,
         model: str,
-        temperature: float = 0.1,
+        temperature: float = DEFAULT_TEMPERATURE,
     ):
         if self.copilot is None:
             self.copilot = Copilot(proxy=self.proxy)

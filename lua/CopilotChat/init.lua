@@ -16,7 +16,7 @@ _COPILOT_CHAT_GLOBAL_CONFIG = {}
 --       - hide_system_prompt: ('yes' | 'no') default: 'yes'.
 --       - proxy: (string?) default: ''.
 --       - language: (string?) default: ''.
---       - temperature: (string?) default: ''.
+--       - temperature: (string?) default: '0.1'. Value between 0.0 and 1.0.
 --       - prompts: (table?) default: default_prompts.
 --       - debug: (boolean?) default: false.
 M.setup = function(options)
@@ -25,7 +25,7 @@ M.setup = function(options)
   vim.g.copilot_chat_hide_system_prompt = options and options.hide_system_prompt or 'yes'
   vim.g.copilot_chat_proxy = options and options.proxy or ''
   vim.g.copilot_chat_language = options and options.language or ''
-  vim.g.copilot_chat_temperature = options and options.temperature or ''
+  vim.g.copilot_chat_temperature = options and options.temperature or '0.1'
   local debug = options and options.debug or false
   _COPILOT_CHAT_GLOBAL_CONFIG.debug = debug
 
