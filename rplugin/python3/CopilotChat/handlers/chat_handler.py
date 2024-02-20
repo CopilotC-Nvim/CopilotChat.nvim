@@ -45,7 +45,7 @@ class ChatHandler:
             self.nvim.eval("g:copilot_chat_disable_separators") == "yes"
         )
         temperature = self.nvim.eval("g:copilot_chat_temperature")
-        if temperature is None:
+        if temperature is None or temperature == "":
             temperature = 0.1
         else:
             temperature = float(temperature)
