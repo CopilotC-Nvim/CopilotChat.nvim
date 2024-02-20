@@ -88,6 +88,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/122616073?v=4",
       "profile": "https://github.com/neutrinoA4",
       "contributions": ["code", "doc"]
+    },
+    {
+      "login": "banjocat",
+      "name": "Jack Muratore",
+      "avatar_url": "https://avatars.githubusercontent.com/u/3247309?v=4",
+      "profile": "https://github.com/banjocat",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
