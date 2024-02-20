@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.7.0...v1.7.1) (2024-02-20)
+
+
+### Bug Fixes
+
+* set default temperature and validate temperature value ([8ff6db6](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/8ff6db68eb00f739546db9954e8910f9c6c683e7))
+
 ## [1.7.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.6.2...v1.7.0) (2024-02-20)
 
 
