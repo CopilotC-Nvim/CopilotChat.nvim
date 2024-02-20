@@ -100,6 +100,7 @@ class Copilot:
         code: str,
         language: str = "",
         model: str = "gpt-4",
+        temperature: float = 0.1,
     ):
         if not self.token:
             self.authenticate()
@@ -112,7 +113,7 @@ class Copilot:
         url = "https://api.githubcopilot.com/chat/completions"
         self.chat_history.append(typings.Message(prompt, "user"))
         data = utilities.generate_request(
-            self.chat_history, code, language, system_prompt=system_prompt, model=model
+            self.chat_history, code, language, system_prompt=system_prompt, model=model, temperature=temperature
         )
 
         full_response = ""

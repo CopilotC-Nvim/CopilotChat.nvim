@@ -24,6 +24,7 @@ M.setup = function(options)
   vim.g.copilot_chat_hide_system_prompt = options and options.hide_system_prompt or 'yes'
   vim.g.copilot_chat_proxy = options and options.proxy or ''
   vim.g.copilot_chat_language = options and options.language or ''
+  vim.g.copilot_chat_temperature = options and options.temperature or ''
   local debug = options and options.debug or false
   _COPILOT_CHAT_GLOBAL_CONFIG.debug = debug
 
