@@ -52,6 +52,7 @@ class VSplitChatHandler(ChatHandler):
                 pass
 
         self.vsplit()
+        self.buffer.option("filetype", "markdown")
 
     def chat(self, prompt: str, filetype: str, code: str = ""):
         self.buffer.option("filetype", "markdown")
