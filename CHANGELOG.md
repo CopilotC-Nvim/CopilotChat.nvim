@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.7.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.6.2...v1.7.0) (2024-02-20)
+
+
+### Features
+
+* add temperature option ([b5db053](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/b5db053ca74ea36d38212d5a67ffae3cfc4e8b7a))
+
+
+### Bug Fixes
+
+* add check for temperature if empty string ([#60](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/60)) ([b38a4e9](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/b38a4e9af74afb13f54cd346c7fd147018c38f02))
+
 ## [1.6.2](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.6.1...v1.6.2) (2024-02-20)
 
 ### Bug Fixes
