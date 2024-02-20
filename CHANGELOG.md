@@ -2,63 +2,55 @@
 
 ## [1.6.2](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.6.1...v1.6.2) (2024-02-20)
 
-
 ### Bug Fixes
 
-* set filetype to markdown for toggle vsplit buffer ([1e250ff](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/1e250ff1d751fc187e220ac596eb745f09e805aa))
+- set filetype to markdown for toggle vsplit buffer ([1e250ff](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/1e250ff1d751fc187e220ac596eb745f09e805aa))
 
 ## [1.6.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.6.0...v1.6.1) (2024-02-18)
 
-
 ### Bug Fixes
 
-* **code_actions:** Add check for 'No diagnostics available' in diagnostic prompts ([e46fa23](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/e46fa23fe7c43a29c849fb9b6a1d565d2e0b83f1))
+- **code_actions:** Add check for 'No diagnostics available' in diagnostic prompts ([e46fa23](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/e46fa23fe7c43a29c849fb9b6a1d565d2e0b83f1))
 
 ## [1.6.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.5.0...v1.6.0) (2024-02-18)
 
-
 ### Features
 
-* add language settings for copilot answers ([8e40e41](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/8e40e41c5bdabe675b2e54c80347dd85f1a9d550))
-* add support for visual mode in show_prompt_actions function ([13dfbba](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/13dfbba39e2202ad6bae5b4806ce7e42f75c94a0))
-* disable vim diagnostics on chat buffer for vsplit handler ([fe1808e](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/fe1808e51760c2fa71ca4176551161c73b2f2f73))
-
+- add language settings for copilot answers ([8e40e41](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/8e40e41c5bdabe675b2e54c80347dd85f1a9d550))
+- add support for visual mode in show_prompt_actions function ([13dfbba](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/13dfbba39e2202ad6bae5b4806ce7e42f75c94a0))
+- disable vim diagnostics on chat buffer for vsplit handler ([fe1808e](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/fe1808e51760c2fa71ca4176551161c73b2f2f73))
 
 ### Bug Fixes
 
-* add validation before call FixDiagnostic command ([81c5060](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/81c506027e6a638973e3187dd98fc70cae024719))
-* reorder system prompt and language prompt ([0d474a1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/0d474a14b3bf67469946aa639e3de1a42b016373))
+- add validation before call FixDiagnostic command ([81c5060](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/81c506027e6a638973e3187dd98fc70cae024719))
+- reorder system prompt and language prompt ([0d474a1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/0d474a14b3bf67469946aa639e3de1a42b016373))
 
 ## [1.5.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.4.0...v1.5.0) (2024-02-17)
 
-
 ### Features
 
-* add options to hide system prompts ([98a6191](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/98a61913f4cd798fb042f4b21f6a3e1a457c3959))
-* add prompt actions support in Telescope integration ([f124645](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/f124645d4b48df59790c9763687b94cf7dd3f5bf))
-* integrate CopilotChat with telescope.nvim for code actions ([0cabac6](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/0cabac6af8c838d4984b766f5d985a04259d3a4d))
+- add options to hide system prompts ([98a6191](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/98a61913f4cd798fb042f4b21f6a3e1a457c3959))
+- add prompt actions support in Telescope integration ([f124645](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/f124645d4b48df59790c9763687b94cf7dd3f5bf))
+- integrate CopilotChat with telescope.nvim for code actions ([0cabac6](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/0cabac6af8c838d4984b766f5d985a04259d3a4d))
 
 ## [1.4.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.3.0...v1.4.0) (2024-02-16)
 
-
 ### Features
 
-* add diagnostic troubleshooting command ([0e5eced](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/0e5ecedda4d7a9cc6eeef1424889d8d9550bf4f3))
-* add toggle command for vertical split in CopilotChat ([48209d6](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/48209d6b98cb50c9dae59da70ebda351282cf8f7))
-* **integration:** set filetype to 'copilot-chat' for support edgy.nvim ([60718ed](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/60718ed6e806fa86fd78cb3bf55a05f1a74b257e))
+- add diagnostic troubleshooting command ([0e5eced](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/0e5ecedda4d7a9cc6eeef1424889d8d9550bf4f3))
+- add toggle command for vertical split in CopilotChat ([48209d6](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/48209d6b98cb50c9dae59da70ebda351282cf8f7))
+- **integration:** set filetype to 'copilot-chat' for support edgy.nvim ([60718ed](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/60718ed6e806fa86fd78cb3bf55a05f1a74b257e))
 
 ## [1.3.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.2.0...v1.3.0) (2024-02-14)
 
-
 ### Features
 
-* add reset buffer for CopilotChatReset command ([bf6d29f](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/bf6d29f3bde05c8a2b0f127737af13cc6df73b9a))
-* CopilotChatReset command ([528e6b4](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/528e6b4b33737e4863fccdb7ed2c6d7aec4f2029))
-
+- add reset buffer for CopilotChatReset command ([bf6d29f](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/bf6d29f3bde05c8a2b0f127737af13cc6df73b9a))
+- CopilotChatReset command ([528e6b4](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/528e6b4b33737e4863fccdb7ed2c6d7aec4f2029))
 
 ### Bug Fixes
 
-* Include more info about refusal reason ([46bdf01](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/46bdf018069072a8a43c468ee1cede45536909a3))
+- Include more info about refusal reason ([46bdf01](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/46bdf018069072a8a43c468ee1cede45536909a3))
 
 ## [1.2.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.1.0...v1.2.0) (2024-02-13)
 

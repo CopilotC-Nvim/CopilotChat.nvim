@@ -113,7 +113,12 @@ class Copilot:
         url = "https://api.githubcopilot.com/chat/completions"
         self.chat_history.append(typings.Message(prompt, "user"))
         data = utilities.generate_request(
-            self.chat_history, code, language, system_prompt=system_prompt, model=model, temperature=temperature
+            self.chat_history,
+            code,
+            language,
+            system_prompt=system_prompt,
+            model=model,
+            temperature=temperature,
         )
 
         full_response = ""

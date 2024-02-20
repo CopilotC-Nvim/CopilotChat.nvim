@@ -67,7 +67,9 @@ class ChatHandler:
                 system_prompt, prompt, code, filetype, winnr, disable_separators
             )
 
-        self._add_chat_messages(system_prompt, prompt, code, filetype, model,temperature=temperature)
+        self._add_chat_messages(
+            system_prompt, prompt, code, filetype, model, temperature=temperature
+        )
 
         # Stop the spinner
         self.nvim.exec_lua('require("CopilotChat.spinner").hide()')
@@ -231,7 +233,13 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
             self.nvim.command(full_command)
 
     def _add_chat_messages(
-        self, system_prompt: str, prompt: str, code: str, file_type: str, model: str, temperature: float = 0.1
+        self,
+        system_prompt: str,
+        prompt: str,
+        code: str,
+        file_type: str,
+        model: str,
+        temperature: float = 0.1,
     ):
         if self.copilot is None:
             self.copilot = Copilot(proxy=self.proxy)
@@ -273,7 +281,12 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
         )
         # TODO: Abort request if the user closes the layout
         for token in self.copilot.ask(
-            system_prompt, prompt, code, language=cast(str, file_type), model=model, temperature=temperature
+            system_prompt,
+            prompt,
+            code,
+            language=cast(str, file_type),
+            model=model,
+            temperature=temperature,
         ):
             self.nvim.exec_lua(
                 'require("CopilotChat.utils").log_info(...)', f"Token: {token}"
