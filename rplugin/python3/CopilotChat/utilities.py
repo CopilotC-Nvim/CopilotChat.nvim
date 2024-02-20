@@ -43,7 +43,7 @@ def generate_request(
         "model": model,
         "n": 1,
         "stream": True,
-        "temperature": 0.1,
+        "temperature": 0.1,  # TODO: add temperature setting, refer the suggestion from user https://discord.com/channels/1200633211236122665/1209114805147926538/1209189717791477870
         "top_p": 1,
         "messages": messages,
     }
