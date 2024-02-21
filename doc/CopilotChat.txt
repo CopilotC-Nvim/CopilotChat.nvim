@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 February 20
+*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 February 21
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -166,6 +166,22 @@ MANUAL ~
 
 >
     $ pip install -r requirements.txt
+<
+
+1. Add to you configuration
+
+>lua
+    local copilot_chat = require("CopilotChat")
+    
+    -- REQUIRED
+    copilot_chat:setup({})
+    -- REQUIRED
+    
+    -- Setup keymap
+    nnoremap <leader>cce <cmd>CopilotChatExplain<cr>
+    nnoremap <leader>cct <cmd>CopilotChatTests<cr>
+    xnoremap <leader>ccv :CopilotChatVisual<cr>
+    xnoremap <leader>ccx :CopilotChatInPlace<cr>
 <
 
 1. Open up Neovim and run `:UpdateRemotePlugins`
