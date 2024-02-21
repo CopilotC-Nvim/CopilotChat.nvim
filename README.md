@@ -146,8 +146,24 @@ $ cp -r --backup=nil rplugin ~/.config/nvim/
 $ pip install -r requirements.txt
 ```
 
-3. Open up Neovim and run `:UpdateRemotePlugins`
-4. Restart Neovim
+3. Add to you configuration
+
+```lua
+local copilot_chat = require("CopilotChat")
+
+-- REQUIRED
+copilot_chat:setup({})
+-- REQUIRED
+
+-- Setup keymap
+nnoremap <leader>cce <cmd>CopilotChatExplain<cr>
+nnoremap <leader>cct <cmd>CopilotChatTests<cr>
+xnoremap <leader>ccv :CopilotChatVisual<cr>
+xnoremap <leader>ccx :CopilotChatInPlace<cr>
+```
+
+4. Open up Neovim and run `:UpdateRemotePlugins`
+5. Restart Neovim
 
 ## Usage
 
