@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 February 21
+*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 February 22
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -28,8 +28,9 @@ PREREQUISITES              *CopilotChat-copilot-chat-for-neovim-prerequisites*
 
 Ensure you have the following installed:
 
-- Python 3.10 or later
-- Enable `python3 provider` in Neovim. Testing by run `:echo has('python3')` in Neovim. If it returns `1`, then `python3 provider` is enabled.
+- **Python 3.10 or later**.
+- **Python3 provider**: You can check if it’s enabled by running `:echo has('python3')` in Neovim. If it returns `1`, then the Python3 provider is enabled.
+- **rplugin**: This plugin uses the |remote plugin| system of Neovim. Make sure you have it enabled.
 
 
 AUTHENTICATION            *CopilotChat-copilot-chat-for-neovim-authentication*
