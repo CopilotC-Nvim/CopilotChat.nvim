@@ -280,6 +280,24 @@ For further reference, you can view @jellydn's [configuration](https://github.co
 
 ## Tips
 
+### Quick chat with your buffer
+
+To chat with Copilot using the entire content of the buffer, you can add the following configuration to your keymap:
+
+```lua
+    -- Quick chat with Copilot
+      {
+        "<leader>ccq",
+        function()
+          local input = vim.fn.input("Quick Chat: ")
+          if input ~= "" then
+            vim.cmd("CopilotChatBuffer " .. input)
+          end
+        end,
+        desc = "CopilotChat - Quick chat",
+      },
+```
+
 ### Integration with `telescope.nvim`
 
 To integrate CopilotChat with Telescope, you can add the following configuration to your keymap:
