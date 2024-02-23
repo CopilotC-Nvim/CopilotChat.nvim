@@ -7,6 +7,9 @@
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 > [!NOTE]
+> A new command, `CopilotChatBuffer` has been added. It allows you to chat with Copilot using the entire content of the buffer.
+
+> [!NOTE]
 > A new command, `CopilotChatInPlace` has been introduced. It functions like the ChatGPT plugin. Please run ":UpdateRemotePlugins" command and restart Neovim before starting a chat with Copilot. To stay updated on our roadmap, please join our [Discord](https://discord.gg/vy6hJsTWaZ) community.
 
 ## Prerequisites
@@ -46,6 +49,7 @@ return {
     end,
     event = "VeryLazy",
     keys = {
+      { "<leader>ccb", "<cmd>CopilotChatBuffer<cr>", desc = "CopilotChat - Chat with current buffer" },
       { "<leader>cce", "<cmd>CopilotChatExplain<cr>", desc = "CopilotChat - Explain code" },
       { "<leader>cct", "<cmd>CopilotChatTests<cr>", desc = "CopilotChat - Generate tests" },
       {
@@ -124,6 +128,7 @@ copilot_chat.setup({
   event = "VeryLazy",
 })
 
+nnoremap <leader>ccb <cmd>CopilotChatBuffer<cr>
 nnoremap <leader>cce <cmd>CopilotChatExplain<cr>
 nnoremap <leader>cct <cmd>CopilotChatTests<cr>
 xnoremap <leader>ccv :CopilotChatVisual<cr>
@@ -158,6 +163,7 @@ copilot_chat:setup({})
 -- REQUIRED
 
 -- Setup keymap
+nnoremap <leader>ccb <cmd>CopilotChatBuffer<cr>
 nnoremap <leader>cce <cmd>CopilotChatExplain<cr>
 nnoremap <leader>cct <cmd>CopilotChatTests<cr>
 xnoremap <leader>ccv :CopilotChatVisual<cr>
@@ -207,6 +213,7 @@ return {
     end,
     event = "VeryLazy",
     keys = {
+      { "<leader>ccb", "<cmd>CopilotChatBuffer<cr>", desc = "CopilotChat - Chat with current buffer" },
       { "<leader>cce", "<cmd>CopilotChatExplain<cr>", desc = "CopilotChat - Explain code" },
       { "<leader>cct", "<cmd>CopilotChatTests<cr>", desc = "CopilotChat - Generate tests" },
       { "<leader>ccr", "<cmd>CopilotChatReview<cr>", desc = "CopilotChat - Review code" },
