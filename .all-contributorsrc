@@ -95,6 +95,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/3247309?v=4",
       "profile": "https://github.com/banjocat",
       "contributions": ["code"]
+    },
+    {
+      "login": "AdrielVelazquez",
+      "name": "Adriel Velazquez",
+      "avatar_url": "https://avatars.githubusercontent.com/u/3443378?v=4",
+      "profile": "https://github.com/AdrielVelazquez",
+      "contributions": ["code", "doc"]
     }
   ],
   "contributorsPerLine": 7,
