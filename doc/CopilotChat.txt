@@ -16,7 +16,7 @@ Table of Contents                              *CopilotChat-table-of-contents*
 ==============================================================================
 1. Copilot Chat for Neovim               *CopilotChat-copilot-chat-for-neovim*
 
-<http://next-swagger-doc.productsway.com/>
+<https://copilotc-nvim.github.io/CopilotChat.nvim/>
 <https://results.pre-commit.ci/latest/github/CopilotC-Nvim/CopilotChat.nvim/main>
 |CopilotChat-|
 
