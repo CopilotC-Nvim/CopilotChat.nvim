@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.7.1...v1.8.0) (2024-02-23)
+
+
+### Features
+
+* New Command so that CopilotChat reads from current in-focus buffer when answering questions ([#67](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/67)) ([57226f2](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/57226f29ddd7912cd2bdaa3e4b019c920b2f72b6))
+
 ## [1.7.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.7.0...v1.7.1) (2024-02-20)
 
 
