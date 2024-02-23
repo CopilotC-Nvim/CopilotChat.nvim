@@ -10,7 +10,8 @@ PLUGIN_AUTOCMD_CMD = "CopilotChatAutocmd"
 @pynvim.plugin
 class CopilotPlugin(object):
     def __init__(self, nvim: pynvim.Nvim):
-        self.nvim: MyNvim = MyNvim(nvim, PLUGIN_MAPPING_CMD, PLUGIN_AUTOCMD_CMD)
+        self.nvim: MyNvim = MyNvim(
+            nvim, PLUGIN_MAPPING_CMD, PLUGIN_AUTOCMD_CMD)
         self.vsplit_chat_handler = None
         self.inplace_chat_handler = None
 
@@ -23,6 +24,18 @@ class CopilotPlugin(object):
         self.init_vsplit_chat_handler()
         if self.vsplit_chat_handler:
             self.vsplit_chat_handler.toggle_vsplit()
+
+    @pynvim.command("CopilotChatBuffer", nargs="1")
+    def copilot_agent_buffer_cmd(self, args: list[str]):
+        self.init_vsplit_chat_handler()
+        current_buffer = self.nvim.current.buffer
+        lines = current_buffer[:]
+        # Get code from the current infocus buffer
+        code = "\n".join(lines)
+        if self.vsplit_chat_handler:
+            file_type = self.nvim.current.buffer.options["filetype"]
+            self.vsplit_chat_handler.vsplit()
+            self.vsplit_chat_handler.chat(args[0], file_type, code)
 
     @pynvim.command("CopilotChat", nargs="1")
     def copilot_agent_cmd(self, args: list[str]):
@@ -45,7 +58,7 @@ class CopilotPlugin(object):
         self.init_vsplit_chat_handler()
         if self.vsplit_chat_handler:
             file_type = self.nvim.current.buffer.options["filetype"]
-            code_lines = self.nvim.current.buffer[range[0] - 1 : range[1]]
+            code_lines = self.nvim.current.buffer[range[0] - 1: range[1]]
             code = "\n".join(code_lines)
             self.vsplit_chat_handler.vsplit()
             self.vsplit_chat_handler.chat(args[0], file_type, code)
@@ -70,7 +83,8 @@ class CopilotPlugin(object):
         self.init_inplace_chat_handler()
         if self.inplace_chat_handler:
             file_type = self.nvim.current.buffer.options["filetype"]
-            code_lines = self.nvim.current.buffer[range[0] - 1 : range[1]]
+            code_lines = self.nvim.current.buffer[range[0] - 1: range[1]]
             code = "\n".join(code_lines)
             user_buffer = self.nvim.current.buffer
-            self.inplace_chat_handler.mount(code, file_type, range, user_buffer)
+            self.inplace_chat_handler.mount(
+                code, file_type, range, user_buffer)
