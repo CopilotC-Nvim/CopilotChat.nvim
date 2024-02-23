@@ -313,6 +313,26 @@ CHAT WITH COPILOT WITH ALL CONTENTS OF INFOCUS BUFFER ~
 TIPS                                *CopilotChat-copilot-chat-for-neovim-tips*
 
 
+QUICK CHAT WITH YOUR BUFFER ~
+
+To chat with Copilot using the entire content of the buffer, you can add the
+following configuration to your keymap:
+
+>lua
+        -- Quick chat with Copilot
+          {
+            "<leader>ccq",
+            function()
+              local input = vim.fn.input("Quick Chat: ")
+              if input ~= "" then
+                vim.cmd("CopilotChatBuffer " .. input)
+              end
+            end,
+            desc = "CopilotChat - Quick chat",
+          },
+<
+
+
 INTEGRATION WITH TELESCOPE.NVIM ~
 
 To integrate CopilotChat with Telescope, you can add the following
