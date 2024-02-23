@@ -298,6 +298,8 @@ To chat with Copilot using the entire content of the buffer, you can add the fol
       },
 ```
 
+[![Chat with buffer](https://i.gyazo.com/9b8cbf1d78a19f326282a6520bc9aab0.gif)](https://gyazo.com/9b8cbf1d78a19f326282a6520bc9aab0)
+
 ### Integration with `telescope.nvim`
 
 To integrate CopilotChat with Telescope, you can add the following configuration to your keymap:
