@@ -10,8 +10,7 @@ PLUGIN_AUTOCMD_CMD = "CopilotChatAutocmd"
 @pynvim.plugin
 class CopilotPlugin(object):
     def __init__(self, nvim: pynvim.Nvim):
-        self.nvim: MyNvim = MyNvim(
-            nvim, PLUGIN_MAPPING_CMD, PLUGIN_AUTOCMD_CMD)
+        self.nvim: MyNvim = MyNvim(nvim, PLUGIN_MAPPING_CMD, PLUGIN_AUTOCMD_CMD)
         self.vsplit_chat_handler = None
         self.inplace_chat_handler = None
 
@@ -30,7 +29,7 @@ class CopilotPlugin(object):
         self.init_vsplit_chat_handler()
         current_buffer = self.nvim.current.buffer
         lines = current_buffer[:]
-        # Get code from the current infocus buffer
+        # Get code from the current in focus buffer
         code = "\n".join(lines)
         if self.vsplit_chat_handler:
             file_type = self.nvim.current.buffer.options["filetype"]
@@ -58,7 +57,7 @@ class CopilotPlugin(object):
         self.init_vsplit_chat_handler()
         if self.vsplit_chat_handler:
             file_type = self.nvim.current.buffer.options["filetype"]
-            code_lines = self.nvim.current.buffer[range[0] - 1: range[1]]
+            code_lines = self.nvim.current.buffer[range[0] - 1 : range[1]]
             code = "\n".join(code_lines)
             self.vsplit_chat_handler.vsplit()
             self.vsplit_chat_handler.chat(args[0], file_type, code)
@@ -83,8 +82,7 @@ class CopilotPlugin(object):
         self.init_inplace_chat_handler()
         if self.inplace_chat_handler:
             file_type = self.nvim.current.buffer.options["filetype"]
-            code_lines = self.nvim.current.buffer[range[0] - 1: range[1]]
+            code_lines = self.nvim.current.buffer[range[0] - 1 : range[1]]
             code = "\n".join(code_lines)
             user_buffer = self.nvim.current.buffer
-            self.inplace_chat_handler.mount(
-                code, file_type, range, user_buffer)
+            self.inplace_chat_handler.mount(code, file_type, range, user_buffer)
