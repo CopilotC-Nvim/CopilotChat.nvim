@@ -44,6 +44,9 @@ class ChatHandler:
         disable_end_separator: bool = False,
         model: str = "gpt-4",
     ):
+        """Disable vim diagnostics on the chat buffer"""
+        self.nvim.command(":lua vim.diagnostic.disable()")
+
         disable_separators = (
             self.nvim.eval("g:copilot_chat_disable_separators") == "yes"
         )
@@ -329,6 +332,9 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
         self.nvim.exec_lua(
             'require("CopilotChat.utils").log_info(...)', "Copilot answered"
         )
+
+        """ Enable vim diagnostics on the chat buffer after the chat is complete """
+        self.nvim.command(":lua vim.diagnostic.enable()")
 
     def _add_end_separator(self, model: str, disable_separators: bool = False):
         current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

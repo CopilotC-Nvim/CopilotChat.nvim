@@ -37,9 +37,6 @@ class VSplitChatHandler(ChatHandler):
         )
         self.nvim.current.window.vars[var_key] = True
 
-        """ Disable vim diagnostics on the chat buffer """
-        self.nvim.command(":lua vim.diagnostic.disable()")
-
     def toggle_vsplit(self):
         """Toggle vsplit chat window."""
         var_key = "copilot_chat"
