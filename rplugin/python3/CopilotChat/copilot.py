@@ -79,7 +79,8 @@ class Copilot:
     def authenticate(self):
         if self.github_token is None:
             raise Exception("No token found")
-        self.vscode_sessionid = str(uuid.uuid4()) + str(round(time.time() * 1000))
+        self.vscode_sessionid = str(
+            uuid.uuid4()) + str(round(time.time() * 1000))
         url = "https://api.github.com/copilot_internal/v2/token"
         headers = {
             "authorization": f"token {self.github_token}",
@@ -105,7 +106,7 @@ class Copilot:
         if not self.token:
             self.authenticate()
         # If expired, reauthenticate
-        if self.token.get("expires_at") <= round(time.time()):
+        if self.token.get("expires_at", 0) <= round(time.time()):
             self.authenticate()
 
         if not system_prompt:
@@ -147,7 +148,8 @@ class Copilot:
 
             raise Exception(
                 error_messages.get(
-                    response.status_code, f"Unknown error: {response.status_code}"
+                    response.status_code, f"Unknown error: {
+                        response.status_code}"
                 )
             )
         for line in response.iter_lines():
@@ -183,8 +185,9 @@ class Copilot:
             if i + 18 > len(inputs):
                 data = utilities.generate_embedding_request(inputs[i:])
             else:
-                data = utilities.generate_embedding_request(inputs[i : i + 18])
-            response = self.session.post(url, headers=self._headers(), json=data).json()
+                data = utilities.generate_embedding_request(inputs[i: i + 18])
+            response = self.session.post(
+                url, headers=self._headers(), json=data).json()
             if "data" not in response:
                 raise Exception(f"Error fetching embeddings: {response}")
             for embedding in response["data"]:
@@ -217,7 +220,8 @@ def main():
     copilot = Copilot(token)
     if copilot.github_token is None:
         req = copilot.request_auth()
-        print("Please visit", req["verification_uri"], "and enter", req["user_code"])
+        print("Please visit", req["verification_uri"],
+              "and enter", req["user_code"])
         while not copilot.poll_auth(req["device_code"]):
             time.sleep(req["interval"])
         print("Successfully authenticated")
