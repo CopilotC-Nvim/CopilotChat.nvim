@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 February 22
+*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 February 23
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -293,6 +293,13 @@ IN-PLACE CHAT POPUP ~
 TOGGLE VERTICAL SPLIT WITH :COPILOTCHATVSPLITTOGGLE ~
 
 <https://gyazo.com/db5af9e5d88cd2fd09f58968914fa521>
+
+
+CHAT WITH COPILOT WITH ALL CONTENTS OF INFOCUS BUFFER ~
+
+1. Run the command `:CopilotChatBuffer` and type your prompt. For example, `What does this code do?`
+2. Press `Enter` to send your question to Github Copilot.
+3. Copilot will pull the content of the infocus buffer and chat with you.
 
 
 TIPS                                *CopilotChat-copilot-chat-for-neovim-tips*
