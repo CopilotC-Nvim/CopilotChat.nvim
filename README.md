@@ -262,13 +262,13 @@ For further reference, you can view @jellydn's [configuration](https://github.co
 
 ### Toggle Vertical Split with `:CopilotChatVsplitToggle`
 
+[![Toggle](https://i.gyazo.com/db5af9e5d88cd2fd09f58968914fa521.gif)](https://gyazo.com/db5af9e5d88cd2fd09f58968914fa521)
+
 ### Chat with Copilot with all contents of InFocus buffer
 
 1. Run the command `:CopilotChatBuffer` and type your prompt. For example, `What does this code do?`
 2. Press `Enter` to send your question to Github Copilot.
 3. Copilot will pull the content of the infocus buffer and chat with you.
-
-[![Toggle](https://i.gyazo.com/db5af9e5d88cd2fd09f58968914fa521.gif)](https://gyazo.com/db5af9e5d88cd2fd09f58968914fa521)
 
 ## Tips
 
