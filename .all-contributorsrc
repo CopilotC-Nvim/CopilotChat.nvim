@@ -102,6 +102,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/3443378?v=4",
       "profile": "https://github.com/AdrielVelazquez",
       "contributions": ["code", "doc"]
+    },
+    {
+      "login": "deathbeam",
+      "name": "Tomas Slusny",
+      "avatar_url": "https://avatars.githubusercontent.com/u/5115805?v=4",
+      "profile": "https://github.com/deathbeam",
+      "contributions": ["code", "doc"]
     }
   ],
   "contributorsPerLine": 7,
