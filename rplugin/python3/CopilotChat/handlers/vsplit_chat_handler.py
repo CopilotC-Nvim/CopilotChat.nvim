@@ -15,9 +15,9 @@ class VSplitChatHandler(ChatHandler):
             },
         )
         self.language = self.nvim.eval("g:copilot_chat_language")
-        self.clear_chat_on_new_prompt = self.nvim.eval(
-            "g:copilot_chat_clear_chat_on_new_prompt"
-        ) == "yes"
+        self.clear_chat_on_new_prompt = (
+            self.nvim.eval("g:copilot_chat_clear_chat_on_new_prompt") == "yes"
+        )
 
     def vsplit(self):
         self.buffer.option("filetype", "copilot-chat")
