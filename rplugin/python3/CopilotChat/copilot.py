@@ -141,9 +141,9 @@ class Copilot:
 
             error_code = response.json().get("error", {}).get("code")
             if error_code and error_messages.get(response.status_code):
-                error_messages[
-                    response.status_code
-                ] = f"{error_messages[response.status_code]}: {error_code}"
+                error_messages[response.status_code] = (
+                    f"{error_messages[response.status_code]}: {error_code}"
+                )
 
             raise Exception(
                 error_messages.get(
