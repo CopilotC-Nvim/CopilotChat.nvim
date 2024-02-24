@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.9.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.8.0...v1.9.0) (2024-02-24)
+
+
+### Features
+
+* Add support for clear_chat_on_new_prompt config option ([7dc8771](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/7dc877196296d1f2515ea1c24d0e7d3d4cb8d3b4))
+
+
+### Bug Fixes
+
+* enable vim diagnostics after finish the conversation ([a0a5a2a](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/a0a5a2a9ae0edf79cdf05620fcead7d59575d306)), closes [#72](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/72)
+
+
+### Reverts
+
+* add CopilotPlugin back ([713ca00](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/713ca00ef29a56c4c132809f07ea49a63ca8d492))
+
 ## [1.8.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.7.1...v1.8.0) (2024-02-23)
 
 
