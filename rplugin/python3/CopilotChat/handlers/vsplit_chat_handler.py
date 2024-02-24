@@ -61,6 +61,7 @@ class VSplitChatHandler(ChatHandler):
         self.buffer.option("filetype", "markdown")
         super().chat(prompt, filetype, code, self.nvim.current.window.handle)
 
+    # TODO:Clear the token count on reset
     def reset_buffer(self):
         """Reset the chat buffer."""
         if self.copilot:
