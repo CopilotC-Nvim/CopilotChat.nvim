@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 February 23
+*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 February 24
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -212,6 +212,7 @@ configuration options outlined below:
       show_help = 'yes', -- Show help text for CopilotChatInPlace
       disable_extra_info = 'no', -- Disable extra information in the response
       hide_system_prompt = 'yes', -- Hide system prompts in the response
+      clear_chat_on_new_prompt = 'no', -- If yes then clear chat history on new prompt
       proxy = '', -- Proxies requests via https or socks
       prompts = { -- Set dynamic prompts for CopilotChat commands
         Explain = 'Explain how it works.',
