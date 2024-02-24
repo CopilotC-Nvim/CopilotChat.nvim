@@ -14,6 +14,7 @@ _COPILOT_CHAT_GLOBAL_CONFIG = {}
 --       - show_help: ('yes' | 'no') default: 'yes'.
 --       - disable_extra_info: ('yes' | 'no') default: 'yes'.
 --       - hide_system_prompt: ('yes' | 'no') default: 'yes'.
+--       - clear_chat_on_new_prompt: ('yes' | 'no') default: 'no'.
 --       - proxy: (string?) default: ''.
 --       - language: (string?) default: ''.
 --       - temperature: (string?) default: '0.1'. Value between 0.0 and 1.0.
@@ -23,6 +24,7 @@ M.setup = function(options)
   vim.g.copilot_chat_show_help = options and options.show_help or 'yes'
   vim.g.copilot_chat_disable_separators = options and options.disable_extra_info or 'yes'
   vim.g.copilot_chat_hide_system_prompt = options and options.hide_system_prompt or 'yes'
+  vim.g.copilot_chat_clear_chat_on_new_prompt = options and options.clear_chat_on_new_prompt or 'no'
   vim.g.copilot_chat_proxy = options and options.proxy or ''
   vim.g.copilot_chat_language = options and options.language or ''
   vim.g.copilot_chat_temperature = options and options.temperature or '0.1'

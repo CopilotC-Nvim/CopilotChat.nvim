@@ -188,6 +188,7 @@ You have the ability to tailor this plugin to your specific needs using the conf
   show_help = 'yes', -- Show help text for CopilotChatInPlace
   disable_extra_info = 'no', -- Disable extra information in the response
   hide_system_prompt = 'yes', -- Hide system prompts in the response
+  clear_chat_on_new_prompt = 'no', -- If yes then clear chat history on new prompt
   proxy = '', -- Proxies requests via https or socks
   prompts = { -- Set dynamic prompts for CopilotChat commands
     Explain = 'Explain how it works.',

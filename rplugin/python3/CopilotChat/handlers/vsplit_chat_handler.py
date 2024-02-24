@@ -15,6 +15,9 @@ class VSplitChatHandler(ChatHandler):
             },
         )
         self.language = self.nvim.eval("g:copilot_chat_language")
+        self.clear_chat_on_new_prompt = self.nvim.eval(
+            "g:copilot_chat_clear_chat_on_new_prompt"
+        ) == "yes"
 
     def vsplit(self):
         self.buffer.option("filetype", "copilot-chat")
@@ -52,9 +55,14 @@ class VSplitChatHandler(ChatHandler):
         self.buffer.option("filetype", "markdown")
 
     def chat(self, prompt: str, filetype: str, code: str = ""):
+        if self.clear_chat_on_new_prompt:
+            self.reset_buffer()
+
         self.buffer.option("filetype", "markdown")
         super().chat(prompt, filetype, code, self.nvim.current.window.handle)
 
     def reset_buffer(self):
         """Reset the chat buffer."""
+        if self.copilot:
+            self.copilot.reset()
         self.buffer.clear()
