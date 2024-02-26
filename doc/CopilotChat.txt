@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 February 26
+*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 February 27
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -553,7 +553,7 @@ CONTRIBUTORS ✨        *CopilotChat-copilot-chat-for-neovim-contributors-✨*
 Thanks goes to these wonderful people (emoji key
 <https://allcontributors.org/docs/en/emoji-key>):
 
-gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻neutrinoA4💻 📖Jack Muratore💻Adriel Velazquez💻 📖Tomas Slusny💻 📖This project follows the all-contributors
+gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻neutrinoA4💻 📖Jack Muratore💻Adriel Velazquez💻 📖Tomas Slusny💻 📖Nisal📖This project follows the all-contributors
 <https://github.com/all-contributors/all-contributors> specification.
 Contributions of any kind are welcome!
 
@@ -568,7 +568,7 @@ STARGAZERS OVER TIME ~
 1. *Prerequisite*: https://img.shields.io/badge/python-%3E%3D3.10-blue.svg
 2. *Documentation*: https://img.shields.io/badge/documentation-yes-brightgreen.svg
 3. *pre-commit.ci status*: https://results.pre-commit.ci/badge/github/CopilotC-Nvim/CopilotChat.nvim/main.svg
-4. *All Contributors*: https://img.shields.io/badge/all_contributors-15-orange.svg?style=flat-square
+4. *All Contributors*: https://img.shields.io/badge/all_contributors-16-orange.svg?style=flat-square
 5. *@treyhunner*: 
 6. *@nekowasabi*: 
 7. *@jellydn*: 
