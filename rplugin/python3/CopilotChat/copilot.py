@@ -89,6 +89,8 @@ class Copilot:
         }
 
         self.token = self.session.get(url, headers=headers).json()
+        if not self.token.get("token"):
+            raise Exception(f"Failed to authenticate: {self.token}")
 
     def reset(self):
         self.chat_history = []
