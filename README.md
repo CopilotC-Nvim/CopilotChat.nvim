@@ -53,7 +53,7 @@ return {
     end,
     event = "VeryLazy",
     keys = {
-      { "<leader>ccb", "<cmd>CopilotChatBuffer<cr>", desc = "CopilotChat - Chat with current buffer" },
+      { "<leader>ccb", "<cmd>CopilotChatBuffer ", desc = "CopilotChat - Chat with current buffer" },
       { "<leader>cce", "<cmd>CopilotChatExplain<cr>", desc = "CopilotChat - Explain code" },
       { "<leader>cct", "<cmd>CopilotChatTests<cr>", desc = "CopilotChat - Generate tests" },
       {
@@ -63,7 +63,7 @@ return {
       },
       {
         "<leader>ccv",
-        ":CopilotChatVisual",
+        ":CopilotChatVisual ",
         mode = "x",
         desc = "CopilotChat - Open in vertical split",
       },
