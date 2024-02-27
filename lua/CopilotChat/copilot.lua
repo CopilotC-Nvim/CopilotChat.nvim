@@ -106,6 +106,7 @@ local Copilot = class(function(self, show_extra_info)
   self.sessionid = nil
   self.machineid = machine_id()
   self.current_job = nil
+  self.current_job_on_cancel = nil
 end)
 
 --- Ask a question to Copilot
@@ -164,9 +165,6 @@ function Copilot:ask(prompt, opts)
   -- If we already have running job, cancel it and notify the user
   if self.current_job then
     self:stop()
-    if on_done then
-      on_done('job cancelled')
-    end
   end
 
   -- Notify the user about current prompt
@@ -187,6 +185,8 @@ function Copilot:ask(prompt, opts)
     generate_request(self.history, selection, filetype, system_prompt, model, temperature)
 
   local full_response = ''
+
+  self.current_job_on_cancel = on_done
   self.current_job = curl
     .post(url, {
       headers = headers,
@@ -261,6 +261,10 @@ function Copilot:stop()
   if self.current_job then
     self.current_job:shutdown()
     self.current_job = nil
+    if self.current_job_on_cancel then
+      self.current_job_on_cancel('job cancelled')
+      self.current_job_on_cancel = nil
+    end
   end
 end
 
