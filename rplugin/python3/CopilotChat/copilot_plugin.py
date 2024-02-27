@@ -7,7 +7,7 @@ PLUGIN_MAPPING_CMD = "CopilotChatMapping"
 PLUGIN_AUTOCMD_CMD = "CopilotChatAutocmd"
 
 
-@pynvim.plugin
+# @pynvim.plugin
 class CopilotPlugin(object):
     def __init__(self, nvim: pynvim.Nvim):
         self.nvim: MyNvim = MyNvim(nvim, PLUGIN_MAPPING_CMD, PLUGIN_AUTOCMD_CMD)
