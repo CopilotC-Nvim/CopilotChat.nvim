@@ -69,7 +69,7 @@ local function update_prompts(prompt)
       if found.kind == 'user' then
         return found.prompt
       elseif found.kind == 'system' then
-        system_prompt = match
+        system_prompt = found.prompt
       end
     end
 

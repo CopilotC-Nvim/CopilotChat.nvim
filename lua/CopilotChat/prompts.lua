@@ -144,10 +144,10 @@ Response:
 To read a file, you can use a [`FileReader`](src/fs/fileReader.ts) class from [src/fs/fileReader.ts](src/fs/fileReader.ts).
 ]]
 
-M.USER_TEST = 'Write a set of detailed unit test functions for the code above.'
 M.USER_EXPLAIN = 'Write a explanation for the code above as paragraphs of text.'
+M.USER_TESTS = 'Write a set of detailed unit test functions for the code above.'
 M.USER_FIX = 'There is a problem in this code. Rewrite the code to show it with the bug fixed.'
-M.USER_DOC = [[Write documentation for the selected code.
+M.USER_DOCS = [[Write documentation for the selected code.
 The reply should be a codeblock containing the original code with the documentation added as comments.
 Use the most appropriate documentation style for the programming language used (e.g. JSDoc for JavaScript, docstrings for Python etc.)
 ]]
