@@ -314,6 +314,16 @@ function M.close()
   state.copilot:stop()
 end
 
+--- Toggle the chat window.
+---@param config (table | nil)
+function M.toggle(config)
+  if state.window.id and vim.api.nvim_win_is_valid(state.window.id) then
+    M.close()
+  else
+    M.open(config)
+  end
+end
+
 --- Ask a question to the Copilot model.
 ---@param prompt (string)
 ---@param config (table | nil)
@@ -460,6 +470,10 @@ function M.setup(config)
     force = true,
     range = true,
   })
+
+  vim.api.nvim_create_user_command('CopilotChatOpen', M.open, { force = true })
+  vim.api.nvim_create_user_command('CopilotChatClose', M.close, { force = true })
+  vim.api.nvim_create_user_command('CopilotChatToggle', M.toggle, { force = true })
 end
 
 return M
