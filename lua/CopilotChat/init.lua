@@ -457,6 +457,12 @@ function M.setup(config)
       range = true,
       desc = prompt.description or ('CopilotChat.nvim ' .. name),
     })
+
+    if prompt.mapping then
+      vim.keymap.set({ 'n', 'v' }, prompt.mapping, function()
+        M.ask(prompt.prompt, prompt)
+      end, { desc = prompt.description or ('CopilotChat.nvim ' .. name) })
+    end
   end
 
   vim.api.nvim_create_user_command('CopilotChat', function(args)
