@@ -1,18 +1,31 @@
+local log = require('plenary.log')
 local M = {}
 
-local log = require('CopilotChat.vlog')
+--- Create class
+--- @param fn function The class constructor
+--- @return table
+function M.class(fn)
+  local out = {}
+  out.__index = out
+  setmetatable(out, {
+    __call = function(cls, ...)
+      return cls.new(...)
+    end,
+  })
 
---- Get the log file path
----@return string
-M.get_log_file_path = function()
-  return log.get_log_file()
+  function out.new(...)
+    local self = setmetatable({}, out)
+    fn(self, ...)
+    return self
+  end
+  return out
 end
 
 -- The CopilotChat.nvim is built using remote plugins.
 -- This is the path to the rplugin.vim file.
 -- Refer https://neovim.io/doc/user/remote_plugin.html#%3AUpdateRemotePlugins
 -- @return string
-M.get_remote_plugins_path = function()
+function M.get_remote_plugins_path()
   local os = vim.loop.os_uname().sysname
   if os == 'Linux' or os == 'Darwin' then
     return '~/.local/share/nvim/rplugin.vim'
@@ -21,57 +34,10 @@ M.get_remote_plugins_path = function()
   end
 end
 
---- Create custom command
----@param cmd string The command name
----@param func function The function to execute
----@param opt table The options
-M.create_cmd = function(cmd, func, opt)
-  opt = vim.tbl_extend('force', { desc = 'CopilotChat.nvim ' .. cmd }, opt or {})
-  vim.api.nvim_create_user_command(cmd, func, opt)
-end
-
---- Log info
----@vararg any
-M.log_info = function(...)
-  -- Only save log when debug is on
-  if not _COPILOT_CHAT_GLOBAL_CONFIG.debug then
-    return
-  end
-
-  log.info(...)
-end
-
---- Log error
----@vararg any
-M.log_error = function(...)
-  -- Only save log when debug is on
-  if not _COPILOT_CHAT_GLOBAL_CONFIG.debug then
-    return
-  end
-
-  log.error(...)
-end
-
---- Get diagnostics for the current line
---- It uses the built-in LSP client in Neovim to get the diagnostics.
---- @return string
-M.get_diagnostics = function()
-  local buffer_number = vim.api.nvim_get_current_buf()
-  local cursor = vim.api.nvim_win_get_cursor(0)
-  local line_diagnostics = vim.lsp.diagnostic.get_line_diagnostics(buffer_number, cursor[1] - 1)
-
-  if #line_diagnostics == 0 then
-    return 'No diagnostics available'
-  end
-
-  local diagnostics = {}
-  for _, diagnostic in ipairs(line_diagnostics) do
-    table.insert(diagnostics, diagnostic.message)
-  end
-
-  local result = table.concat(diagnostics, '. ')
-  result = result:gsub('^%s*(.-)%s*$', '%1'):gsub('\n', ' ')
-  return result
+--- Get the log file path
+---@return string
+function M.get_log_file_path()
+  return log.logfile
 end
 
 return M

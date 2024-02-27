@@ -1,100 +1,73 @@
--- spinner.lua
---
--- This library is free software; you can redistribute it and/or modify it
--- under the terms of the MIT license. See LICENSE for details.
+local class = require('CopilotChat.utils').class
 
-local M = {}
-
--- User configuration section
-local config = {
-  -- Show notification when done.
-  -- Set to false to disable.
-  show_notification = true,
-  -- Name of the plugin.
-  plugin = 'CopilotChat.nvim',
-  -- Spinner frames.
-  spinner_frames = {
-    '⠋',
-    '⠙',
-    '⠹',
-    '⠸',
-    '⠼',
-    '⠴',
-    '⠦',
-    '⠧',
-    '⠇',
-    '⠏',
-  },
+local spinner_frames = {
+  '⠋',
+  '⠙',
+  '⠹',
+  '⠸',
+  '⠼',
+  '⠴',
+  '⠦',
+  '⠧',
+  '⠇',
+  '⠏',
 }
 
--- {{{ NO NEED TO CHANGE
+local Spinner = class(function(self, bufnr, title)
+  self.ns = vim.api.nvim_create_namespace('copilot-spinner')
+  self.bufnr = bufnr
+  self.title = title
+  self.timer = nil
+  self.index = 1
+end)
 
-local spinner_index = 1
-local spinner_timer = nil
-local spinner_buf = nil
-local spinner_win = nil
+function Spinner:set(text, offset)
+  offset = offset or 0
 
---- Show a spinner at the specified position.
----@param position? table
-function M.show(position)
-  -- Default position: the top right corner
-  local default_position = {
-    relative = 'editor',
-    width = 1,
-    height = 1,
-    col = vim.o.columns - 1,
-    row = 0,
-  }
-  local options = position or default_position
-  options.style = 'minimal'
+  vim.schedule(function()
+    if not vim.api.nvim_buf_is_valid(self.bufnr) then
+      self:finish()
+      return
+    end
 
-  -- Create buffer and window for the spinner
-  spinner_buf = vim.api.nvim_create_buf(false, true)
-  spinner_win = vim.api.nvim_open_win(spinner_buf, false, options)
+    local line = vim.api.nvim_buf_line_count(self.bufnr) - 1 + offset
+    line = math.max(0, line)
 
-  -- Set up timer and update spinner
-  spinner_timer = vim.loop.new_timer()
-  spinner_timer:start(
-    0,
-    100,
-    vim.schedule_wrap(function()
-      if vim.fn.bufexists(spinner_buf) == 0 then
-        -- Hide the spinner if the buffer does not exist
-        M.hide()
-        return
-      end
-      vim.api.nvim_buf_set_lines(
-        spinner_buf,
-        0,
-        -1,
-        false,
-        { config.spinner_frames[spinner_index] }
-      )
-      spinner_index = spinner_index % #config.spinner_frames + 1
-    end)
-  )
+    vim.api.nvim_buf_set_extmark(self.bufnr, self.ns, line, 0, {
+      id = self.ns,
+      hl_mode = 'combine',
+      priority = 100,
+      virt_text_pos = offset ~= 0 and 'inline' or 'eol',
+      virt_text = vim.tbl_map(function(t)
+        return { t, 'Comment' }
+      end, vim.split(text, '\n')),
+    })
+  end)
 end
 
---- Hide the spinner.
----@param show_msg? boolean
-function M.hide(show_msg)
-  if spinner_timer then
-    spinner_timer:stop()
-    spinner_timer:close()
-    spinner_timer = nil
-    if spinner_win then
-      vim.api.nvim_win_close(spinner_win, true)
-    end
-    if spinner_buf then
-      vim.api.nvim_buf_delete(spinner_buf, { force = true })
-    end
+function Spinner:start()
+  self.timer = vim.loop.new_timer()
+  self.timer:start(0, 100, function()
+    self:set(spinner_frames[self.index])
+    self.index = self.index % #spinner_frames + 1
+  end)
+end
 
-    if config.show_notification or show_msg then
-      vim.notify('Done!', vim.log.levels.INFO, { title = config.plugin })
-    end
+function Spinner:finish()
+  if self.timer then
+    self.timer:stop()
+    self.timer:close()
+    self.timer = nil
+
+    vim.schedule(function()
+      if not vim.api.nvim_buf_is_valid(self.bufnr) then
+        return
+      end
+
+      vim.api.nvim_buf_del_extmark(self.bufnr, self.ns, self.ns)
+      vim.notify('Done!', vim.log.levels.INFO, { title = self.title })
+    end)
   end
 end
 
--- }}}
-
-return M
+return Spinner
