@@ -11,6 +11,9 @@
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 > [!NOTE]
+> Plugin was rewritten to Lua from Python. Please check the [migration guide](/MIGRATION.md) for more information.
+
+> [!NOTE]
 > A new command, `CopilotChatBuffer` has been added. It allows you to chat with Copilot using the entire content of the buffer.
 
 > [!NOTE]
