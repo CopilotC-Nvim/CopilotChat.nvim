@@ -16,7 +16,6 @@ local state = {
 
 function CopilotChatFoldExpr(lnum, separator)
   local line = vim.fn.getline(lnum)
-  vim.print(line)
   if string.match(line, separator .. '$') then
     return '>1'
   end
@@ -53,10 +52,8 @@ local function find_lines_between_separator_at_cursor(bufnr, separator)
   return vim.trim(table.concat(result, '\n')), last_separator_line, next_separator_line, line_count
 end
 
-local function update_prompts(prompt)
+local function update_prompts(prompt, system_prompt)
   local prompts_to_use = M.get_prompts()
-
-  local system_prompt = nil
   local result = string.gsub(prompt, [[/[%w_]+]], function(match)
     match = string.sub(match, 2)
     local found = prompts_to_use[match]
@@ -71,6 +68,10 @@ local function update_prompts(prompt)
 
     return ''
   end)
+
+  if string.match(result, [[/[%w_]+]]) then
+    return update_prompts(result, system_prompt)
+  end
 
   return system_prompt, result
 end
@@ -330,10 +331,7 @@ function M.ask(prompt, config)
 
   config = vim.tbl_deep_extend('force', M.config, config or {})
 
-  local system_prompt, updated_prompt = update_prompts(prompt)
-  if not system_prompt then
-    system_prompt = config.system_prompt
-  end
+  local system_prompt, updated_prompt = update_prompts(prompt, config.system_prompt)
 
   if vim.trim(prompt) == '' then
     return
@@ -352,7 +350,12 @@ function M.ask(prompt, config)
     finish = true
     append(' **System prompt** ---\n```\n' .. system_prompt .. '```\n')
   end
-  if config.show_user_selection and state.selection and state.selection.lines ~= '' then
+  if
+    config.show_user_selection
+    and state.selection
+    and state.selection.lines
+    and state.selection.lines ~= ''
+  then
     finish = true
     append(
       ' **Selection** ---\n```'
@@ -396,6 +399,19 @@ function M.reset()
     append('\n')
     show_help()
   end
+end
+
+--- Enables/disables debug
+---@param debug (boolean)
+function M.set_debug(debug)
+  M.config.debug = debug
+  local logfile = string.format('%s/%s.log', vim.fn.stdpath('state'), plugin_name)
+  log.new({
+    plugin = plugin_name,
+    level = debug and 'trace' or 'warn',
+    outfile = logfile,
+  }, true)
+  log.logfile = logfile
 end
 
 M.config = {
@@ -458,14 +474,7 @@ function M.setup(config)
   M.config = vim.tbl_deep_extend('force', M.config, config or {})
   state.copilot = Copilot()
   debuginfo.setup()
-
-  local logfile = string.format('%s/%s.log', vim.fn.stdpath('state'), plugin_name)
-  log.new({
-    plugin = plugin_name,
-    level = M.config.debug and 'trace' or 'warn',
-    outfile = logfile,
-  }, true)
-  log.logfile = logfile
+  M.set_debug(M.config.debug)
 
   for name, prompt in pairs(M.get_prompts(true)) do
     vim.api.nvim_create_user_command('CopilotChat' .. name, function(args)

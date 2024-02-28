@@ -242,7 +242,7 @@ function Copilot:ask(prompt, opts)
         })
 
         if not ok then
-          log.error('Failed parse response: ' .. tostring(err))
+          log.error('Failed parse response: ' .. tostring(content))
           if on_error then
             on_error(content)
           end

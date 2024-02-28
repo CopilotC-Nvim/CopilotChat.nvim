@@ -55,22 +55,28 @@ end
 --- @return table|nil
 function M.visual()
   local mode = vim.fn.mode()
-  if mode ~= 'v' and mode ~= 'V' and mode ~= '\22' then
-    return nil
-  end
-
   local start = vim.fn.getpos('v')
   local finish = vim.fn.getpos('.')
 
-  -- Exit visual mode
-  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<esc>', true, false, true), 'x', true)
+  if start[2] == finish[2] and start[3] == finish[3] then
+    start = vim.fn.getpos("'<")
+    finish = vim.fn.getpos("'>")
+    mode = finish[3] == vim.v.maxcol and 'V' or 'v'
+  else
+    -- Exit visual mode
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<esc>', true, false, true), 'x', true)
+  end
 
   local lines, start_row, start_col, end_row, end_col = get_selection_lines(start, finish, mode)
+  local lines_content = table.concat(lines, '\n')
+  if vim.trim(lines_content) == '' then
+    return nil
+  end
 
   return {
     buffer = vim.api.nvim_get_current_buf(),
     filetype = vim.bo.filetype,
-    lines = table.concat(lines, '\n'),
+    lines = lines_content,
     start_row = start_row,
     start_col = start_col,
     end_row = end_row,
