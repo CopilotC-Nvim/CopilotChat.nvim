@@ -499,6 +499,7 @@ function M.setup(config)
   vim.api.nvim_create_user_command('CopilotChatOpen', M.open, { force = true })
   vim.api.nvim_create_user_command('CopilotChatClose', M.close, { force = true })
   vim.api.nvim_create_user_command('CopilotChatToggle', M.toggle, { force = true })
+  vim.api.nvim_create_user_command('CopilotChatReset', M.reset, { force = true })
 end
 
 return M
