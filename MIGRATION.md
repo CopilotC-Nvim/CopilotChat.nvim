@@ -27,6 +27,7 @@ Removed or changed params that you pass to `setup`:
 - `CopilotChatBuffer` was removed (now exists as `select.buffer` selector for `selection`)
 - `CopilotChatInPlace` was removed (parts of it were merged to default chat interface, and floating window now exists as `float` config for `window.layout`)
 - `CopilotChat` now functions as `CopilotChatVisual`, the unnamed register selection now exists as `select.unnamed` selector
+- `CopilotChatVsplitToggle` was renamed to `CopilotChatToggle`
 
 ## How to restore legacy behaviour
 
@@ -35,7 +36,8 @@ local chat = require('CopilotChat')
 local select = require('CopilotChat.select')
 
 chat.setup {
-    selection = select.unnamed, -- Restore the behaviour for CopilotChat to use unnamed register by default
+    -- Restore the behaviour for CopilotChat to use unnamed register by default
+    selection = select.unnamed,
 }
 
 -- Restore CopilotChatVisual
@@ -52,6 +54,9 @@ end, { nargs = '*', range = true })
 vim.api.nvim_create_user_command('CopilotChatBuffer', function(args)
     chat.ask(args.args, { selection = select.buffer })
 end, { nargs = '*', range = true })
+
+-- Restore CopilotChatVsplitToggle
+vim.api.nvim_create_user_command('CopilotChatVsplitToggle', chat.toggle, {})
 ```
 
 ## TODO
@@ -63,4 +68,4 @@ end, { nargs = '*', range = true })
 - [ ] As said in changes part, finish rewriting the authentication request if needed
 - [x] Properly get token file path, atm it only supports Linux (easy fix)
 - [ ] Update README and stuff
-- [ ] Add token count support to extra_info, something like this called from lua:
+- [ ] Add token count from tiktoken support to extra_info
