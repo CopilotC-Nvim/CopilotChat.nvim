@@ -64,6 +64,11 @@ function M.visual()
   if start[2] == finish[2] and start[3] == finish[3] then
     start = vim.fn.getpos("'<")
     finish = vim.fn.getpos("'>")
+
+    if start[2] == finish[2] and start[3] == finish[3] then
+      return nil
+    end
+
     mode = 'v'
   else
     -- Exit visual mode
