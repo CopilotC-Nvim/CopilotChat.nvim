@@ -3,10 +3,6 @@ on:
   push:
     branches:
       - release
-  pull_request:
-    branches:
-      - main
-      - release
 
 permissions:
   contents: write
@@ -21,7 +17,6 @@ jobs:
         id: release
         with:
           release-type: simple
-          package-name: CopilotChat.nvim
           token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v3
       - name: tag stable versions
