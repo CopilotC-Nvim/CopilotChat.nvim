@@ -39,16 +39,27 @@ chat.setup {
 
 -- Restore CopilotChatVisual
 vim.api.nvim_create_user_command('CopilotChatVisual', function(args)
-    M.ask(args.args, { selection = select.visual })
+    chat.ask(args.args, { selection = select.visual })
 end, { nargs = '*', range = true })
 
 -- Restore CopilotChatInPlace (sort of)
 vim.api.nvim_create_user_command('CopilotChatInPlace', function(args)
-    M.ask(args.args, { selection = select.visual, window = { layout = 'float' } })
+    chat.ask(args.args, { selection = select.visual, window = { layout = 'float' } })
 end, { nargs = '*', range = true })
 
 -- Restore CopilotChatBuffer
 vim.api.nvim_create_user_command('CopilotChatBuffer', function(args)
-    M.ask(args.args, { selection = select.buffer })
+    chat.ask(args.args, { selection = select.buffer })
 end, { nargs = '*', range = true })
 ```
+
+## TODO
+
+- [ ] For proxy support, this is needed: https://github.com/nvim-lua/plenary.nvim/pull/559
+- [ ] Delete rest of the python code? Or finish rewriting in place then delete
+- [ ] Check for curl availability with health check
+- [ ] Add folds logic from python, maybe? Not sure if this is even needed
+- [ ] As said in changes part, finish rewriting the authentication request if needed
+- [ ] Properly get token file path, atm it only supports Linux (easy fix)
+- [ ] Update README and stuff
+- [ ] Add token count support to extra_info, something like this called from lua:
