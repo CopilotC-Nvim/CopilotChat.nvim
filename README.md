@@ -229,6 +229,24 @@ To chat with Copilot using the entire content of the buffer, you can add the fol
 
 [![Chat with buffer](https://i.gyazo.com/9b8cbf1d78a19f326282a6520bc9aab0.gif)](https://gyazo.com/9b8cbf1d78a19f326282a6520bc9aab0)
 
+## Inline Chat
+
+Change the window layout to `float` to enable inline chat. This will allow you to chat with Copilot without opening a new window.
+
+```lua
+chat.setup({
+    window = {
+        layout = 'float',
+        relative = 'cursor',
+        width = 1,
+        height = 0.4,
+        row = 1
+    }
+})
+```
+
+![inline-chat](https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/608e3c9b-8569-408d-a5d1-2213325fc93c)
+
 ### Integration with `telescope.nvim`
 
 To integrate CopilotChat with Telescope, you can add the following configuration to your keymap:
