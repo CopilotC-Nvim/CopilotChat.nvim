@@ -407,7 +407,6 @@ M.config = {
   show_system_prompt = false, -- Shows system prompt in chat
   show_folds = true, -- Shows folds for sections in chat
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
-  name = 'Copilot',
   separator = '---',
   prompts = {
     Explain = 'Explain how it works.',
