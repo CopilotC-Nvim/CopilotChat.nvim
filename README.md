@@ -32,6 +32,10 @@ return {
   {
     "CopilotC-Nvim/CopilotChat.nvim",
     branch = "canary",
+    dependencies = {
+      { "nvim-telescope/telescope.nvim" }, -- Use telescope for help actions
+      { "nvim-lua/plenary.nvim" }, -- for curl, log wrapper
+    },
     opts = {
       debug = true, -- Enable or disable debug mode, the log file will be in ~/.local/state/nvim/CopilotChat.nvim.log
     },
@@ -89,6 +93,8 @@ Similar to the lazy setup, you can use the following configuration:
 
 ```lua
 Plug 'CopilotC-Nvim/CopilotChat.nvim'
+Plug 'nvim-telescope/telescope.nvim'
+Plug 'nvim-lua/plenary.nvim'
 call plug#end()
 
 local copilot_chat = require("CopilotChat")
