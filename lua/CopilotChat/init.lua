@@ -49,7 +49,7 @@ local function find_lines_between_separator_at_cursor(bufnr, separator)
     table.insert(result, lines[i])
   end
 
-  return vim.trim(table.concat(result, '\n')), last_separator_line, next_separator_line, line_count
+  return table.concat(result, '\n'), last_separator_line, next_separator_line, line_count
 end
 
 local function update_prompts(prompt, system_prompt)
@@ -206,7 +206,8 @@ function M.open(config)
       vim.keymap.set('n', config.mappings.submit_prompt, function()
         local input, start_line, end_line, line_count =
           find_lines_between_separator_at_cursor(state.chat.bufnr, config.separator)
-        if input ~= '' and not vim.startswith(vim.trim(input), '**' .. config.name .. ':**') then
+        input = vim.trim(input)
+        if input ~= '' then
           -- If we are entering the input at the end, replace it
           if line_count == end_line then
             vim.api.nvim_buf_set_lines(state.chat.bufnr, start_line, end_line, false, { '' })
@@ -233,7 +234,7 @@ function M.open(config)
           vim.api.nvim_buf_set_text(
             state.selection.buffer,
             state.selection.start_row - 1,
-            state.selection.start_col,
+            state.selection.start_col - 1,
             state.selection.end_row - 1,
             state.selection.end_col,
             vim.split(input, '\n')

@@ -10,11 +10,14 @@ local function get_selection_lines(start, finish, mode)
   if start_col > finish_col then
     start_col, finish_col = finish_col, start_col
   end
+  if finish_col == vim.v.maxcol or mode == 'V' then
+    finish_col = #vim.api.nvim_buf_get_lines(0, finish_line - 1, finish_line, false)[1]
+  end
 
   if mode == 'V' then
     return vim.api.nvim_buf_get_lines(0, start_line - 1, finish_line, false),
       start_line,
-      start_col,
+      1,
       finish_line,
       finish_col
   end
@@ -61,7 +64,7 @@ function M.visual()
   if start[2] == finish[2] and start[3] == finish[3] then
     start = vim.fn.getpos("'<")
     finish = vim.fn.getpos("'>")
-    mode = finish[3] == vim.v.maxcol and 'V' or 'v'
+    mode = 'v'
   else
     -- Exit visual mode
     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<esc>', true, false, true), 'x', true)
