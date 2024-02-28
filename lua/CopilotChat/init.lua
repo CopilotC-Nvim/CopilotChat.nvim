@@ -6,12 +6,23 @@ local select = require('CopilotChat.select')
 local debuginfo = require('CopilotChat.debuginfo')
 
 local M = {}
+local plugin_name = 'CopilotChat.nvim'
 local state = {
   copilot = nil,
   chat = nil,
   selection = nil,
   window = nil,
 }
+
+function CopilotChatFoldExpr(lnum, separator)
+  local line = vim.fn.getline(lnum)
+  vim.print(line)
+  if string.match(line, separator .. '$') then
+    return '>1'
+  end
+
+  return '='
+end
 
 local function find_lines_between_separator_at_cursor(bufnr, separator)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
@@ -175,7 +186,7 @@ function M.open(config)
   local just_created = false
 
   if not state.chat or not state.chat:valid() then
-    state.chat = Chat(M.config.name)
+    state.chat = Chat(plugin_name)
     just_created = true
 
     if config.mappings.complete then
@@ -193,8 +204,8 @@ function M.open(config)
     if config.mappings.submit_prompt then
       vim.keymap.set('n', config.mappings.submit_prompt, function()
         local input, start_line, end_line, line_count =
-          find_lines_between_separator_at_cursor(state.chat.bufnr, M.config.separator)
-        if input ~= '' and not vim.startswith(vim.trim(input), '**' .. M.config.name .. ':**') then
+          find_lines_between_separator_at_cursor(state.chat.bufnr, config.separator)
+        if input ~= '' and not vim.startswith(vim.trim(input), '**' .. config.name .. ':**') then
           -- If we are entering the input at the end, replace it
           if line_count == end_line then
             vim.api.nvim_buf_set_lines(state.chat.bufnr, start_line, end_line, false, { '' })
@@ -265,6 +276,15 @@ function M.open(config)
     vim.wo[state.window].cursorline = true
     vim.wo[state.window].conceallevel = 2
     vim.wo[state.window].concealcursor = 'niv'
+    if config.show_folds then
+      vim.wo[state.window].foldcolumn = '1'
+      vim.wo[state.window].foldmethod = 'expr'
+      vim.wo[state.window].foldexpr = "v:lua.CopilotChatFoldExpr(v:lnum, '"
+        .. config.separator
+        .. "')"
+    else
+      vim.wo[state.window].foldcolumn = '0'
+    end
 
     if just_created then
       M.reset()
@@ -327,7 +347,26 @@ function M.ask(prompt, config)
     updated_prompt = updated_prompt .. ' ' .. state.selection.prompt_extra
   end
 
-  local just_started = true
+  local finish = false
+  if config.show_system_prompt then
+    finish = true
+    append(' **System prompt** ---\n```\n' .. system_prompt .. '```\n')
+  end
+  if config.show_user_selection and state.selection and state.selection.lines ~= '' then
+    finish = true
+    append(
+      ' **Selection** ---\n```'
+        .. (state.selection.filetype or '')
+        .. '\n'
+        .. state.selection.lines
+        .. '\n```'
+    )
+  end
+  if finish then
+    append('\n' .. config.separator .. '\n\n')
+  end
+
+  append(updated_prompt)
 
   return state.copilot:ask(updated_prompt, {
     selection = state.selection.lines,
@@ -336,21 +375,14 @@ function M.ask(prompt, config)
     model = config.model,
     temperature = config.temperature,
     on_start = function()
+      append('\n\n **' .. config.name .. '** ' .. config.separator .. '\n\n')
       state.chat.spinner:start()
-      append('**' .. M.config.name .. ':** ')
-      just_started = true
     end,
     on_done = function()
-      append('\n\n' .. M.config.separator .. '\n\n')
+      append('\n\n' .. config.separator .. '\n\n')
       show_help()
     end,
     on_progress = function(token)
-      -- Add a newline if the token is not a word and we just started (for example code block)
-      if just_started and not token:match('^%w') then
-        token = '\n' .. token
-      end
-
-      just_started = false
       append(token)
     end,
   })
@@ -370,9 +402,11 @@ M.config = {
   system_prompt = prompts.COPILOT_INSTRUCTIONS,
   model = 'gpt-4',
   temperature = 0.1,
-  debug = false,
-  clear_chat_on_new_prompt = false,
-  disable_extra_info = true,
+  debug = false, -- Enable debug logging
+  show_user_selection = true, -- Shows user selection in chat
+  show_system_prompt = false, -- Shows system prompt in chat
+  show_folds = true, -- Shows folds for sections in chat
+  clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
   name = 'CopilotChat',
   separator = '---',
   prompts = {
@@ -422,12 +456,12 @@ M.config = {
 --       - mappings: (table?).
 function M.setup(config)
   M.config = vim.tbl_deep_extend('force', M.config, config or {})
-  state.copilot = Copilot(not M.config.disable_extra_info)
+  state.copilot = Copilot()
   debuginfo.setup()
 
-  local logfile = string.format('%s/%s.log', vim.fn.stdpath('state'), 'CopilotChat.nvim')
+  local logfile = string.format('%s/%s.log', vim.fn.stdpath('state'), plugin_name)
   log.new({
-    plugin = M.config.name,
+    plugin = plugin_name,
     level = M.config.debug and 'trace' or 'warn',
     outfile = logfile,
   }, true)
@@ -444,13 +478,13 @@ function M.setup(config)
       nargs = '*',
       force = true,
       range = true,
-      desc = prompt.description or ('CopilotChat.nvim ' .. name),
+      desc = prompt.description or (plugin_name .. ' ' .. name),
     })
 
     if prompt.mapping then
       vim.keymap.set({ 'n', 'v' }, prompt.mapping, function()
         M.ask(prompt.prompt, prompt)
-      end, { desc = prompt.description or ('CopilotChat.nvim ' .. name) })
+      end, { desc = prompt.description or (plugin_name .. ' ' .. name) })
     end
   end
 

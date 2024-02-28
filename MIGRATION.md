@@ -17,7 +17,8 @@ Also make sure to run `:UpdateRemotePlugins` to cleanup the old python commands.
 Removed or changed params that you pass to `setup`:
 
 - `show_help` was removed (the help is now always shown as virtual text, and not intrusive)
-- `hide_system_prompt` was removed (it is part of `disable_extra_info`)
+- `disable_extra_info` was renamed to `show_user_selection`
+- `hide_system_prompt` was renamed to `show_system_prompt`
 - `proxy` does not work at the moment (waiting for change in plenary.nvim), if you are behind corporate proxy you can look at something like [vpn-slice](https://github.com/dlenski/vpn-slice)
 - `language` was removed and is now part of `selection` as `selection.filetype`
 
@@ -58,8 +59,8 @@ end, { nargs = '*', range = true })
 - [ ] For proxy support, this is needed: https://github.com/nvim-lua/plenary.nvim/pull/559
 - [ ] Delete rest of the python code? Or finish rewriting in place then delete
 - [ ] Check for curl availability with health check
-- [ ] Add folds logic from python, maybe? Not sure if this is even needed
+- [x] Add folds logic from python, maybe? Not sure if this is even needed
 - [ ] As said in changes part, finish rewriting the authentication request if needed
-- [ ] Properly get token file path, atm it only supports Linux (easy fix)
+- [x] Properly get token file path, atm it only supports Linux (easy fix)
 - [ ] Update README and stuff
 - [ ] Add token count support to extra_info, something like this called from lua:

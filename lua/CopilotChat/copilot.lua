@@ -122,9 +122,8 @@ local function authenticate(github_token)
   return sessionid, token, nil
 end
 
-local Copilot = class(function(self, show_extra_info)
+local Copilot = class(function(self)
   self.github_token = get_cached_token()
-  self.show_extra_info = show_extra_info or false
   self.history = {}
   self.token = nil
   self.sessionid = nil
@@ -182,16 +181,6 @@ function Copilot:ask(prompt, opts)
   log.debug('Model: ' .. model)
   log.debug('Temperature: ' .. temperature)
 
-  if self.show_extra_info and on_progress then
-    on_progress('SYSTEM PROMPT:\n```\n' .. system_prompt .. '```\n')
-
-    if selection ~= '' then
-      on_progress('CODE:\n```' .. filetype .. '\n' .. selection .. '\n```')
-    end
-
-    on_done('')
-  end
-
   table.insert(self.history, {
     content = prompt,
     role = 'user',
@@ -200,14 +189,6 @@ function Copilot:ask(prompt, opts)
   -- If we already have running job, cancel it and notify the user
   if self.current_job then
     self:stop()
-  end
-
-  -- Notify the user about current prompt
-  if on_progress then
-    on_progress(prompt)
-  end
-  if on_done then
-    on_done(prompt)
   end
 
   if on_start then
@@ -262,7 +243,9 @@ function Copilot:ask(prompt, opts)
 
         if not ok then
           log.error('Failed parse response: ' .. tostring(err))
-          on_error(content)
+          if on_error then
+            on_error(content)
+          end
           return
         end
 
