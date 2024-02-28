@@ -195,7 +195,7 @@ function M.open(config)
         local input, start_line, end_line, line_count =
           find_lines_between_separator_at_cursor(state.chat.bufnr, M.config.separator)
         if
-          input ~= '' and not not vim.startswith(vim.trim(input), '**' .. M.config.name .. ':** ')
+          input ~= '' and not vim.startswith(vim.trim(input), '**' .. M.config.name .. ':**')
         then
           -- If we are entering the input at the end, replace it
           if line_count == end_line then
