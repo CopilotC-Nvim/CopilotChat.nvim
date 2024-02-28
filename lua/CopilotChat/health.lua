@@ -31,6 +31,11 @@ end
 -- Add health check for python3 and pynvim
 function M.check()
   start('CopilotChat.nvim health check')
+  if vim.g.loaded_python3_provider == 0 then
+    warn('Python 3 provider is disabled. Please enable it to use CopilotChat.nvim')
+    return
+  end
+
   local python_version = run_python_command('--version')
 
   if python_version == false then
