@@ -194,9 +194,7 @@ function M.open(config)
       vim.keymap.set('n', config.mappings.submit_prompt, function()
         local input, start_line, end_line, line_count =
           find_lines_between_separator_at_cursor(state.chat.bufnr, M.config.separator)
-        if
-          input ~= '' and not vim.startswith(vim.trim(input), '**' .. M.config.name .. ':**')
-        then
+        if input ~= '' and not vim.startswith(vim.trim(input), '**' .. M.config.name .. ':**') then
           -- If we are entering the input at the end, replace it
           if line_count == end_line then
             vim.api.nvim_buf_set_lines(state.chat.bufnr, start_line, end_line, false, { '' })
@@ -327,6 +325,8 @@ function M.ask(prompt, config)
     updated_prompt = updated_prompt .. ' ' .. state.selection.prompt_extra
   end
 
+  local just_started = true
+
   return state.copilot:ask(updated_prompt, {
     selection = state.selection.lines,
     filetype = state.selection.filetype,
@@ -341,7 +341,15 @@ function M.ask(prompt, config)
       append('\n\n' .. M.config.separator .. '\n\n')
       show_help()
     end,
-    on_progress = append,
+    on_progress = function(token)
+      -- Add a newline if the token is not a word and we just started (for example code block)
+      if just_started and not token:match('^%w') then
+        token = '\n' .. token
+      end
+
+      just_started = false
+      append(token)
+    end,
   })
 end
 
