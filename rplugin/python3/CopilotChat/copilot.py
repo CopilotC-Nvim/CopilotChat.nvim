@@ -142,7 +142,7 @@ class Copilot:
                 f.write(f"Response: {response.text}\n")
             try:
                 error_code = response.json().get("error", {}).get("code")
-            except json.decoder.JSONDecodeError:
+            except requests.exceptions.JSONDecodeError:
                 error_code = 0
                 error_messages[error_code] = response.text
             if error_code and error_messages.get(response.status_code):
