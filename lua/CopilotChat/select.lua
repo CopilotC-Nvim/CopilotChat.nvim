@@ -10,11 +10,14 @@ local function get_selection_lines(start, finish, mode)
   if start_col > finish_col then
     start_col, finish_col = finish_col, start_col
   end
+  if finish_col == vim.v.maxcol or mode == 'V' then
+    finish_col = #vim.api.nvim_buf_get_lines(0, finish_line - 1, finish_line, false)[1]
+  end
 
   if mode == 'V' then
     return vim.api.nvim_buf_get_lines(0, start_line - 1, finish_line, false),
       start_line,
-      start_col,
+      1,
       finish_line,
       finish_col
   end
@@ -55,22 +58,28 @@ end
 --- @return table|nil
 function M.visual()
   local mode = vim.fn.mode()
-  if mode ~= 'v' and mode ~= 'V' and mode ~= '\22' then
-    return nil
-  end
-
   local start = vim.fn.getpos('v')
   local finish = vim.fn.getpos('.')
 
-  -- Exit visual mode
-  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<esc>', true, false, true), 'x', true)
+  if start[2] == finish[2] and start[3] == finish[3] then
+    start = vim.fn.getpos("'<")
+    finish = vim.fn.getpos("'>")
+    mode = 'v'
+  else
+    -- Exit visual mode
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<esc>', true, false, true), 'x', true)
+  end
 
   local lines, start_row, start_col, end_row, end_col = get_selection_lines(start, finish, mode)
+  local lines_content = table.concat(lines, '\n')
+  if vim.trim(lines_content) == '' then
+    return nil
+  end
 
   return {
     buffer = vim.api.nvim_get_current_buf(),
     filetype = vim.bo.filetype,
-    lines = table.concat(lines, '\n'),
+    lines = lines_content,
     start_row = start_row,
     start_col = start_col,
     end_row = end_row,
