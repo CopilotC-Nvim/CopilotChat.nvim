@@ -300,11 +300,12 @@ end
 ---@param prompt (string)
 ---@param config (table | nil)
 function M.ask(prompt, config)
-  if not prompt then
+  M.open(config)
+
+  if not prompt or prompt == '' then
     return
   end
 
-  M.open(config)
   config = vim.tbl_deep_extend('force', M.config, config or {})
 
   local system_prompt, updated_prompt = update_prompts(prompt)
@@ -447,11 +448,7 @@ function M.setup(config)
   end
 
   vim.api.nvim_create_user_command('CopilotChat', function(args)
-    local input = ''
-    if args.args and vim.trim(args.args) ~= '' then
-      input = input .. ' ' .. args.args
-    end
-    M.ask(input)
+    M.ask(args.args)
   end, {
     nargs = '*',
     force = true,
