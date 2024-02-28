@@ -19,10 +19,6 @@ Ensure you have the following installed:
 
 - **Neovim stable (0.9.5) or nightly**.
 
-## Authentication
-
-It will prompt you with instructions on your first start. If you already have `Copilot.vim` or `Copilot.lua`, it will work automatically.
-
 ## Installation
 
 ### Lazy.nvim
@@ -33,6 +29,7 @@ return {
     "CopilotC-Nvim/CopilotChat.nvim",
     branch = "canary",
     dependencies = {
+      "zbirenbaum/copilot.lua", -- or github/copilot.vim
       { "nvim-telescope/telescope.nvim" }, -- Use telescope for help actions
       { "nvim-lua/plenary.nvim" }, -- for curl, log wrapper
     },
