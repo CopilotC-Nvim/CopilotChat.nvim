@@ -1,50 +1,76 @@
 local M = {}
 
-local function get_selection_lines(start, finish, full_lines)
+local function get_selection_lines(start, finish, mode)
   local start_line, start_col = start[2], start[3]
   local finish_line, finish_col = finish[2], finish[3]
 
-  if start_line > finish_line or (start_line == finish_line and start_col > finish_col) then
-    start_line, start_col, finish_line, finish_col = finish_line, finish_col, start_line, start_col
+  if start_line > finish_line then
+    start_line, finish_line = finish_line, start_line
+  end
+  if start_col > finish_col then
+    start_col, finish_col = finish_col, start_col
   end
 
-  local lines = vim.api.nvim_buf_get_lines(0, start_line - 1, finish_line, false)
-  if #lines == 0 then
-    return nil, 0, 0, 0, 0
+  if mode == 'V' then
+    return vim.api.nvim_buf_get_lines(0, start_line - 1, finish_line, false),
+      start_line,
+      start_col,
+      finish_line,
+      finish_col
   end
 
-  if full_lines then
-    start_col = 0
-    finish_col = #lines[#lines]
-  else
-    lines[#lines] = string.sub(lines[#lines], 1, finish_col)
-    lines[1] = string.sub(lines[1], start_col)
+  if mode == '\22' then
+    local lines = {}
+    for i = start_line, finish_line do
+      table.insert(
+        lines,
+        vim.api.nvim_buf_get_text(
+          0,
+          i - 1,
+          math.min(start_col - 1, finish_col),
+          i - 1,
+          math.max(start_col - 1, finish_col),
+          {}
+        )[1]
+      )
+    end
+    return lines, start_line, start_col, finish_line, finish_col
   end
 
-  return table.concat(lines, '\n'), start_line, start_col, finish_line, finish_col
+  return vim.api.nvim_buf_get_text(
+    0,
+    start_line - 1,
+    start_col - 1,
+    finish_line - 1,
+    finish_col,
+    {}
+  ),
+    start_line,
+    start_col,
+    finish_line,
+    finish_col
 end
 
 --- Select and process current visual selection
 --- @return table|nil
 function M.visual()
   local mode = vim.fn.mode()
-  if mode:lower() ~= 'v' then
+  if mode ~= 'v' and mode ~= 'V' and mode ~= '\22' then
     return nil
   end
 
   local start = vim.fn.getpos('v')
   local finish = vim.fn.getpos('.')
 
-  -- Switch to vim normal mode from visual mode
-  vim.api.nvim_feedkeys('<Esc>', 'n', true)
+  -- Exit visual mode
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<esc>', true, false, true), 'x', true)
 
-  local lines, start_row, start_col, end_row, end_col =
-    get_selection_lines(start, finish, mode == 'V')
+  local lines, start_row, start_col, end_row, end_col = get_selection_lines(start, finish, mode)
 
   return {
     buffer = vim.api.nvim_get_current_buf(),
     filetype = vim.bo.filetype,
-    lines = lines,
+    lines = table.concat(lines, '\n'),
     start_row = start_row,
     start_col = start_col,
     end_row = end_row,

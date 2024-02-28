@@ -174,7 +174,7 @@ function M.open(config)
 
   local just_created = false
 
-  if not state.chat then
+  if not state.chat or not state.chat:valid() then
     state.chat = Chat(M.config.name)
     just_created = true
 
@@ -300,7 +300,9 @@ end
 ---@param prompt (string)
 ---@param config (table | nil)
 function M.ask(prompt, config)
-  if not prompt then
+  M.open(config)
+
+  if not prompt or prompt == '' then
     return
   end
 
@@ -314,8 +316,6 @@ function M.ask(prompt, config)
   if vim.trim(prompt) == '' then
     return
   end
-
-  M.open(config)
 
   if config.clear_chat_on_new_prompt then
     M.reset()
@@ -336,6 +336,7 @@ function M.ask(prompt, config)
     on_start = function()
       state.chat.spinner:start()
       append('**' .. M.config.name .. ':** ')
+      just_started = true
     end,
     on_done = function()
       append('\n\n' .. M.config.separator .. '\n\n')
@@ -447,11 +448,7 @@ function M.setup(config)
   end
 
   vim.api.nvim_create_user_command('CopilotChat', function(args)
-    local input = ''
-    if args.args and vim.trim(args.args) ~= '' then
-      input = input .. ' ' .. args.args
-    end
-    M.ask(input)
+    M.ask(args.args)
   end, {
     nargs = '*',
     force = true,
