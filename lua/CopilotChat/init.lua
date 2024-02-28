@@ -174,7 +174,7 @@ function M.open(config)
 
   local just_created = false
 
-  if not state.chat then
+  if not state.chat or not state.chat:valid() then
     state.chat = Chat(M.config.name)
     just_created = true
 
@@ -304,6 +304,7 @@ function M.ask(prompt, config)
     return
   end
 
+  M.open(config)
   config = vim.tbl_deep_extend('force', M.config, config or {})
 
   local system_prompt, updated_prompt = update_prompts(prompt)
@@ -314,8 +315,6 @@ function M.ask(prompt, config)
   if vim.trim(prompt) == '' then
     return
   end
-
-  M.open(config)
 
   if config.clear_chat_on_new_prompt then
     M.reset()
@@ -336,6 +335,7 @@ function M.ask(prompt, config)
     on_start = function()
       state.chat.spinner:start()
       append('**' .. M.config.name .. ':** ')
+      just_started = true
     end,
     on_done = function()
       append('\n\n' .. M.config.separator .. '\n\n')

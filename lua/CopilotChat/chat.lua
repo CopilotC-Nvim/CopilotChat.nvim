@@ -14,15 +14,14 @@ local Chat = class(function(self, name)
   self.spinner = Spinner(self.bufnr, name)
 end)
 
-function Chat:validate()
-  if not vim.api.nvim_buf_is_valid(self.bufnr) then
-    self.bufnr = create_buf()
-    self.spinner.bufnr = self.bufnr
-  end
+function Chat:valid()
+  return vim.api.nvim_buf_is_valid(self.bufnr)
 end
 
 function Chat:append(str)
-  self:validate()
+  if not self:valid() then
+    return
+  end
 
   local last_line, last_column = self:last()
   vim.api.nvim_buf_set_text(
@@ -38,8 +37,6 @@ function Chat:append(str)
 end
 
 function Chat:last()
-  self:validate()
-
   local last_line = vim.api.nvim_buf_line_count(self.bufnr) - 1
   local last_line_content = vim.api.nvim_buf_get_lines(self.bufnr, -2, -1, false)
   local last_column = #last_line_content[1]
