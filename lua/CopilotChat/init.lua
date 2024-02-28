@@ -85,7 +85,7 @@ local function show_help()
   local out = 'Press '
   for name, key in pairs(M.config.mappings) do
     if key then
-      out = out .. "'" .. key .. "' to " .. name .. ', \n'
+      out = out .. "'" .. key .. "' to " .. name .. ', '
     end
   end
 
@@ -248,13 +248,15 @@ function M.open(config)
     elseif layout == 'horizontal' then
       win_opts.vertical = false
     elseif layout == 'float' then
-      win_opts.relative = 'editor'
+      win_opts.relative = config.window.relative
       win_opts.border = config.window.border
       win_opts.title = config.window.title
-      win_opts.row = math.floor(vim.o.lines * 0.2)
-      win_opts.col = math.floor(vim.o.columns * 0.1)
-      win_opts.width = math.floor(vim.o.columns * 0.8)
-      win_opts.height = math.floor(vim.o.lines * 0.6)
+      win_opts.footer = config.window.footer
+      win_opts.row = config.window.row or math.floor(vim.o.lines * ((1 - config.window.height) / 2))
+      win_opts.col = config.window.col
+        or math.floor(vim.o.columns * ((1 - config.window.width) / 2))
+      win_opts.width = math.floor(vim.o.columns * config.window.width)
+      win_opts.height = math.floor(vim.o.lines * config.window.height)
     end
 
     state.window = vim.api.nvim_open_win(state.chat.bufnr, false, win_opts)
@@ -385,11 +387,16 @@ M.config = {
     return select.visual() or select.line()
   end,
   window = {
-    layout = 'vertical',
-    width = 0.8,
-    height = 0.6,
-    border = 'single',
+    layout = 'vertical', -- 'vertical', 'horizontal', 'float'
+    -- Options for float layout
+    relative = 'editor', -- 'editor', 'win', 'cursor', 'mouse'
+    border = 'single', -- 'none', single', 'double', 'rounded', 'solid', 'shadow'
+    width = 0.8, -- fractional width of parent
+    height = 0.6, -- fractional height of parent
+    row = nil, -- row position of the window, default is centered
+    col = nil, -- column position of the window, default is centered
     title = 'Copilot Chat',
+    footer = nil,
   },
   mappings = {
     close = 'q',
