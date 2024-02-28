@@ -23,9 +23,33 @@ local function machine_id()
   return hex
 end
 
+local function find_config_path()
+  local config = vim.fn.expand('$XDG_CONFIG_HOME')
+  if config and vim.fn.isdirectory(config) > 0 then
+    return config
+  elseif vim.fn.has('win32') > 0 then
+    config = vim.fn.expand('~/AppData/Local')
+    if vim.fn.isdirectory(config) > 0 then
+      return config
+    end
+  else
+    config = vim.fn.expand('~/.config')
+    if vim.fn.isdirectory(config) > 0 then
+      return config
+    else
+      log.error('Could not find config path')
+    end
+  end
+end
+
 local function get_cached_token()
-  local userdata =
-    vim.fn.json_decode(vim.fn.readfile(vim.fn.expand('~/.config/github-copilot/hosts.json')))
+  local config_path = find_config_path()
+  if not config_path then
+    return nil
+  end
+  local userdata = vim.fn.json_decode(
+    vim.fn.readfile(vim.fn.expand(find_config_path() .. '/github-copilot/hosts.json'))
+  )
   return userdata['github.com'].oauth_token
 end
 
@@ -124,14 +148,25 @@ function Copilot:ask(prompt, opts)
   local on_progress = opts.on_progress
   local on_error = opts.on_error
 
+  if not self.github_token then
+    local msg =
+      'No GitHub token found, please use `:Copilot setup` to set it up from copilot.vim or copilot.lua'
+    log.error(msg)
+    if on_error then
+      on_error(msg)
+    end
+    return
+  end
+
   if
     not self.token or (self.token.expires_at and self.token.expires_at <= math.floor(os.time()))
   then
     local sessionid, token, err = authenticate(self.github_token)
     if err then
-      log.error('Failed to authenticate: ' .. tostring(err))
+      local msg = 'Failed to authenticate: ' .. tostring(err)
+      log.error(msg)
       if on_error then
-        on_error(err)
+        on_error(msg)
       end
       return
     else
