@@ -11,6 +11,9 @@
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 > [!NOTE]
+> We are excited to announce that we are currently migrating the plugin to fully Lua in the [canary](https://github.com/CopilotC-Nvim/CopilotChat.nvim/tree/canary) branch.
+
+> [!NOTE]
 > A new command, `CopilotChatBuffer` has been added. It allows you to chat with Copilot using the entire content of the buffer.
 
 > [!NOTE]
