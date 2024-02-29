@@ -1,4 +1,6 @@
-local class = require('CopilotChat.utils').class
+local utils = require('CopilotChat.utils')
+local class = utils.class
+local is_stable = utils.is_stable
 
 local spinner_frames = {
   '⠋',
@@ -33,15 +35,21 @@ function Spinner:set(text, offset)
     local line = vim.api.nvim_buf_line_count(self.bufnr) - 1 + offset
     line = math.max(0, line)
 
-    vim.api.nvim_buf_set_extmark(self.bufnr, self.ns, line, 0, {
+    local opts = {
       id = self.ns,
       hl_mode = 'combine',
       priority = 100,
-      virt_text_pos = offset ~= 0 and 'inline' or 'eol',
       virt_text = vim.tbl_map(function(t)
         return { t, 'Comment' }
       end, vim.split(text, '\n')),
-    })
+    }
+
+    -- stable do not supports virt_text_pos
+    if not is_stable() then
+      opts.virt_text_pos = offset ~= 0 and 'inline' or 'eol'
+    end
+
+    vim.api.nvim_buf_set_extmark(self.bufnr, self.ns, line, 0, opts)
   end)
 end
 

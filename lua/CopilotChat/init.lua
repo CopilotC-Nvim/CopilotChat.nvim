@@ -4,6 +4,7 @@ local Chat = require('CopilotChat.chat')
 local prompts = require('CopilotChat.prompts')
 local select = require('CopilotChat.select')
 local debuginfo = require('CopilotChat.debuginfo')
+local is_stable = require('CopilotChat.utils').is_stable
 
 local M = {}
 local plugin_name = 'CopilotChat.nvim'
@@ -301,11 +302,8 @@ function M.open(config)
 
     local layout = config.window.layout
 
-    if layout == 'vertical' then
-      win_opts.vertical = true
-    elseif layout == 'horizontal' then
-      win_opts.vertical = false
-    elseif layout == 'float' then
+    -- nvim_open_win do not supports splits on stable
+    if layout == 'float' or is_stable() then
       win_opts.zindex = 1
       win_opts.relative = config.window.relative
       win_opts.border = config.window.border
@@ -316,6 +314,12 @@ function M.open(config)
         or math.floor(vim.o.columns * ((1 - config.window.width) / 2))
       win_opts.width = math.floor(vim.o.columns * config.window.width)
       win_opts.height = math.floor(vim.o.lines * config.window.height)
+    elseif layout == 'vertical' then
+      if not is_stable() then
+        win_opts.vertical = true
+      end
+    elseif layout == 'horizontal' then
+      win_opts.vertical = false
     end
 
     state.window = vim.api.nvim_open_win(state.chat.bufnr, false, win_opts)

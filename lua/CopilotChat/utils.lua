@@ -40,4 +40,10 @@ function M.get_log_file_path()
   return log.logfile
 end
 
+--- Check if the current version of neovim is stable
+---@return boolean
+function M.is_stable()
+  return vim.fn.has('nvim-0.10.0') == 0
+end
+
 return M
