@@ -1,13 +1,18 @@
+local default_config = require('CopilotChat.config')
 local log = require('plenary.log')
 local Copilot = require('CopilotChat.copilot')
 local Chat = require('CopilotChat.chat')
 local prompts = require('CopilotChat.prompts')
-local select = require('CopilotChat.select')
 local debuginfo = require('CopilotChat.debuginfo')
 local is_stable = require('CopilotChat.utils').is_stable
 
 local M = {}
 local plugin_name = 'CopilotChat.nvim'
+
+--- @class CopilotChat.state
+--- @field copilot CopilotChat.Copilot?
+--- @field chat CopilotChat.Chat?
+--- @field selection CopilotChat.config.selection?
 local state = {
   copilot = nil,
   chat = nil,
@@ -137,7 +142,7 @@ local function show_help()
   local out = 'Press '
   for name, key in pairs(M.config.mappings) do
     if key then
-      out = out .. "'" .. key .. "' to " .. name .. ', '
+      out = out .. "'" .. key .. "' to " .. name:gsub('_', ' ') .. ', '
     end
   end
 
@@ -176,7 +181,7 @@ local function complete()
 end
 
 --- Get the prompts to use.
----@param skip_system (boolean?)
+---@param skip_system boolean|nil
 function M.get_prompts(skip_system)
   local function get_prompt_kind(name)
     return vim.startswith(name, 'COPILOT_') and 'system' or 'user'
@@ -211,7 +216,7 @@ function M.get_prompts(skip_system)
 end
 
 --- Open the chat window.
----@param config (table | nil)
+---@param config CopilotChat.config|nil
 function M.open(config)
   local should_reset = config and config.window ~= nil and not vim.tbl_isempty(config.window)
 
@@ -230,8 +235,13 @@ function M.open(config)
     state.chat = Chat(plugin_name)
     just_created = true
 
-    if config.mappings.complete then
-      vim.keymap.set('i', config.mappings.complete, complete, { buffer = state.chat.bufnr })
+    if config.mappings.complete_after_slash then
+      vim.keymap.set(
+        'i',
+        config.mappings.complete_after_slash,
+        complete,
+        { buffer = state.chat.bufnr }
+      )
     end
 
     if config.mappings.reset then
@@ -319,6 +329,7 @@ function M.open(config)
       win_opts.height = math.floor(vim.o.lines * config.window.height)
     elseif layout == 'vertical' then
       if is_stable() then
+        win_opts.zindex = 1
         win_opts.relative = 'editor'
         win_opts.width = math.floor(vim.o.columns * 0.5) -- 50% width
         win_opts.height = vim.o.lines -- full height
@@ -332,6 +343,7 @@ function M.open(config)
       end
     elseif layout == 'horizontal' then
       if is_stable() then
+        win_opts.zindex = 1
         win_opts.relative = 'editor'
         win_opts.height = math.floor(vim.o.lines * 0.5) -- 50% height
         win_opts.width = vim.o.columns -- full width
@@ -384,7 +396,7 @@ function M.close()
 end
 
 --- Toggle the chat window.
----@param config (table | nil)
+---@param config CopilotChat.config|nil
 function M.toggle(config)
   if state.window and vim.api.nvim_win_is_valid(state.window) then
     M.close()
@@ -394,8 +406,8 @@ function M.toggle(config)
 end
 
 --- Ask a question to the Copilot model.
----@param prompt (string)
----@param config (table | nil)
+---@param prompt string
+---@param config CopilotChat.config|nil
 function M.ask(prompt, config)
   M.open(config)
 
@@ -484,7 +496,7 @@ function M.reset()
 end
 
 --- Enables/disables debug
----@param debug (boolean)
+---@param debug boolean
 function M.set_debug(debug)
   M.config.debug = debug
   local logfile = string.format('%s/%s.log', vim.fn.stdpath('state'), plugin_name)
@@ -496,77 +508,10 @@ function M.set_debug(debug)
   log.logfile = logfile
 end
 
-M.config = {
-  system_prompt = prompts.COPILOT_INSTRUCTIONS,
-  model = 'gpt-4',
-  temperature = 0.1,
-  debug = false, -- Enable debug logging
-  show_user_selection = true, -- Shows user selection in chat
-  show_system_prompt = false, -- Shows system prompt in chat
-  show_folds = true, -- Shows folds for sections in chat
-  clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
-  auto_follow_cursor = true, -- Auto-follow cursor in chat
-  name = 'CopilotChat',
-  separator = '---',
-  prompts = {
-    Explain = 'Explain how it works.',
-    Tests = 'Briefly explain how selected code works then generate unit tests.',
-    FixDiagnostic = {
-      prompt = 'Please assist with the following diagnostic issue in file:',
-      selection = select.diagnostics,
-    },
-    Commit = {
-      prompt = 'Write commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
-      selection = select.gitdiff,
-    },
-    CommitStaged = {
-      prompt = 'Write commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
-      selection = function()
-        return select.gitdiff(true)
-      end,
-    },
-  },
-  selection = function()
-    return select.visual() or select.line()
-  end,
-  window = {
-    layout = 'vertical', -- 'vertical', 'horizontal', 'float'
-    -- Options for float layout
-    relative = 'editor', -- 'editor', 'win', 'cursor', 'mouse'
-    border = 'single', -- 'none', single', 'double', 'rounded', 'solid', 'shadow'
-    width = 0.8, -- fractional width of parent
-    height = 0.6, -- fractional height of parent
-    row = nil, -- row position of the window, default is centered
-    col = nil, -- column position of the window, default is centered
-    title = 'Copilot Chat',
-    footer = nil,
-  },
-  mappings = {
-    close = 'q',
-    reset = '<C-l>',
-    complete = '<Tab>',
-    submit_prompt = '<CR>',
-    accept_diff = '<C-y>',
-    show_diff = '<C-d>',
-  },
-}
 --- Set up the plugin
----@param config (table | nil)
---       - system_prompt: (string?).
---       - model: (string?) default: 'gpt-4'.
---       - temperature: (number?) default: 0.1.
---       - debug: (boolean?) default: false.
---       - clear_chat_on_new_prompt: (boolean?) default: false.
---       - disable_extra_info: (boolean?) default: true.
---       - auto_follow_cursor: (boolean?) default: true.
---       - name: (string?) default: 'CopilotChat'.
---       - separator: (string?) default: '---'.
---       - prompts: (table?).
---       - selection: (function | table | nil).
---       - window: (table?).
---       - mappings: (table?).
+---@param config CopilotChat.config|nil
 function M.setup(config)
-  M.config = vim.tbl_deep_extend('force', M.config, config or {})
+  M.config = vim.tbl_deep_extend('force', default_config, config or {})
   state.copilot = Copilot()
   debuginfo.setup()
   M.set_debug(M.config.debug)

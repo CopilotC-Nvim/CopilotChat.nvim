@@ -72,7 +72,7 @@ For further reference, you can view @jellydn's [configuration](https://github.co
 - [ ] Delete rest of the python code? Or finish rewriting in place then delete
 - [ ] Check for curl availability with health check
 - [x] Add folds logic from python, maybe? Not sure if this is even needed
-- [ ] As said in changes part, finish rewriting the authentication request if needed
+- [ ] Finish rewriting the authentication request if needed or just keep relying on copilot.vim/lua
 - [x] Properly get token file path, atm it only supports Linux (easy fix)
-- [ ] Update README and stuff
+- [x] Update README and stuff
 - [ ] Add token count from tiktoken support to extra_info

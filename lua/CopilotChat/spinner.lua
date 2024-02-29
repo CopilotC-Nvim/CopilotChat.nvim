@@ -1,3 +1,9 @@
+---@class CopilotChat.Spinner
+---@field bufnr number
+---@field set fun(self: CopilotChat.Spinner, text: string, offset: number)
+---@field start fun(self: CopilotChat.Spinner)
+---@field finish fun(self: CopilotChat.Spinner)
+
 local utils = require('CopilotChat.utils')
 local class = utils.class
 local is_stable = utils.is_stable
