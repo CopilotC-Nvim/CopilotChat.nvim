@@ -178,4 +178,31 @@ function M.diagnostics()
   return select_buffer
 end
 
+--- Select and process current git diff
+--- @param staged boolean @If true, it will return the staged changes
+--- @return table|nil
+function M.gitdiff(staged)
+  local select_buffer = M.buffer()
+  if not select_buffer then
+    return nil
+  end
+
+  local cmd = 'git diff --no-color --no-ext-diff' .. (staged and ' --staged' or '')
+  local handle = io.popen(cmd)
+  if not handle then
+    return nil
+  end
+
+  local result = handle:read('*a')
+  handle:close()
+
+  if not result or result == '' then
+    return nil
+  end
+
+  select_buffer.filetype = 'diff'
+  select_buffer.lines = result
+  return select_buffer
+end
+
 return M
