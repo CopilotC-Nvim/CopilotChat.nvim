@@ -1,6 +1,6 @@
 # Migration guide after Copilot Chat rewrite to Lua
 
-## Prerequisities
+## Prerequisites
 
 Ensure you have the following plugins installed:
 
@@ -63,6 +63,8 @@ end, { nargs = '*', range = true })
 -- Restore CopilotChatVsplitToggle
 vim.api.nvim_create_user_command('CopilotChatVsplitToggle', chat.toggle, {})
 ```
+
+For further reference, you can view @jellydn's [configuration](https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/copilot-chat-v2.lua).
 
 ## TODO
 
