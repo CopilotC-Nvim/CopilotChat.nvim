@@ -70,7 +70,7 @@ local function generate_request(history, selection, filetype, system_prompt, mod
   if selection ~= '' then
     -- Insert the active selection before last prompt
     table.insert(messages, #messages, {
-      content = '\nActive selection:\n```' .. selection .. '\n' .. filetype .. '\n```',
+      content = '\nActive selection:\n```' .. filetype .. '\n' .. selection .. '\n```',
       role = 'system',
     })
   end
