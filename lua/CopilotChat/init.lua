@@ -349,7 +349,7 @@ function M.ask(prompt, config)
   local finish = false
   if config.show_system_prompt then
     finish = true
-    append(' **System prompt** ---\n```\n' .. system_prompt .. '```\n')
+    append(' **System prompt** ' .. config.separator .. '\n```\n' .. system_prompt .. '```\n')
   end
   if
     config.show_user_selection
@@ -359,7 +359,9 @@ function M.ask(prompt, config)
   then
     finish = true
     append(
-      ' **Selection** ---\n```'
+      ' **Selection** '
+        .. config.separator
+        .. '\n```'
         .. (state.selection.filetype or '')
         .. '\n'
         .. state.selection.lines
