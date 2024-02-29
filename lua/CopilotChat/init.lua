@@ -329,9 +329,9 @@ function M.open(config)
     elseif layout == 'horizontal' then
       if is_stable() then
         win_opts.relative = 'editor'
-        win_opts.height = math.floor(vim.o.lines * 0.3) -- 30% height
+        win_opts.height = math.floor(vim.o.lines * 0.5) -- 50% height
         win_opts.width = vim.o.columns -- full width
-        win_opts.row = math.floor(vim.o.lines * 0.7) -- bottom of the screen
+        win_opts.row = math.floor(vim.o.lines * 0.5) -- bottom of the screen
         win_opts.col = 0 -- left side of the screen
         win_opts.border = config.window.border
         win_opts.title = config.window.title
