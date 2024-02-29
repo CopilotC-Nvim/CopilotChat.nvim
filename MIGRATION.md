@@ -29,6 +29,11 @@ Removed or changed params that you pass to `setup`:
 - `CopilotChat` now functions as `CopilotChatVisual`, the unnamed register selection now exists as `select.unnamed` selector
 - `CopilotChatVsplitToggle` was renamed to `CopilotChatToggle`
 
+## API changes
+
+- `CopilotChat.code_actions.show_prompt_actions` now accepts `config` instead of `boolean`. To force visual selection (e.g old behaviour of true), pass `{ selection = select.visual }` to `config`
+- `CopilotChat.code_actions.show_help_actions` now accepts `config` instead of nothing.
+
 ## How to restore legacy behaviour
 
 ```lua
