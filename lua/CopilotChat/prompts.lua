@@ -1,3 +1,5 @@
+---@class CopilotChat.prompts
+
 local M = {}
 
 M.COPILOT_INSTRUCTIONS = [[You are an AI programming assistant.

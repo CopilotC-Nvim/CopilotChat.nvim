@@ -1,3 +1,11 @@
+---@class CopilotChat.Chat
+---@field bufnr number
+---@field spinner CopilotChat.Spinner
+---@field valid fun(self: CopilotChat.Chat)
+---@field append fun(self: CopilotChat.Chat, str: string)
+---@field last fun(self: CopilotChat.Chat)
+---@field clear fun(self: CopilotChat.Chat)
+
 local Spinner = require('CopilotChat.spinner')
 local class = require('CopilotChat.utils').class
 

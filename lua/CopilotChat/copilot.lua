@@ -1,3 +1,8 @@
+---@class CopilotChat.Copilot
+---@field ask fun(self: CopilotChat.Copilot, prompt: string, opts: table): table
+---@field stop fun(self: CopilotChat.Copilot)
+---@field reset fun(self: CopilotChat.Copilot)
+
 local log = require('plenary.log')
 local curl = require('plenary.curl')
 local class = require('CopilotChat.utils').class

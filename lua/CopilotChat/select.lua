@@ -55,7 +55,7 @@ local function get_selection_lines(start, finish, mode)
 end
 
 --- Select and process current visual selection
---- @return table|nil
+--- @return CopilotChat.config.selection|nil
 function M.visual()
   local mode = vim.fn.mode()
   local start = vim.fn.getpos('v')
@@ -93,7 +93,7 @@ function M.visual()
 end
 
 --- Select and process contents of unnamed register ('"')
---- @return table|nil
+--- @return CopilotChat.config.selection|nil
 function M.unnamed()
   local lines = vim.fn.getreg('"')
 
@@ -109,7 +109,7 @@ function M.unnamed()
 end
 
 --- Select and process whole buffer
---- @return table|nil
+--- @return CopilotChat.config.selection|nil
 function M.buffer()
   local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
 
@@ -129,7 +129,7 @@ function M.buffer()
 end
 
 --- Select and process current line
---- @return table|nil
+--- @return CopilotChat.config.selection|nil
 function M.line()
   local cursor = vim.api.nvim_win_get_cursor(0)
   local line = vim.api.nvim_get_current_line()
@@ -151,7 +151,7 @@ end
 
 --- Select whole buffer and find diagnostics
 --- It uses the built-in LSP client in Neovim to get the diagnostics.
---- @return table|nil
+--- @return CopilotChat.config.selection|nil
 function M.diagnostics()
   local select_buffer = M.buffer()
   if not select_buffer then
@@ -180,7 +180,7 @@ end
 
 --- Select and process current git diff
 --- @param staged boolean @If true, it will return the staged changes
---- @return table|nil
+--- @return CopilotChat.config.selection|nil
 function M.gitdiff(staged)
   local select_buffer = M.buffer()
   if not select_buffer then
