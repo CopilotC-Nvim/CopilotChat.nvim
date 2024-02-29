@@ -112,6 +112,8 @@ local function update_prompts(prompt, system_prompt)
   return system_prompt, result
 end
 
+--- Append a string to the chat window.
+---@param str (string)
 local function append(str)
   vim.schedule(function()
     local last_line, last_column = state.chat:append(str)
@@ -121,7 +123,9 @@ local function append(str)
       return
     end
 
-    vim.api.nvim_win_set_cursor(state.window, { last_line + 1, last_column })
+    if M.config.auto_follow_cursor then
+      vim.api.nvim_win_set_cursor(state.window, { last_line + 1, last_column })
+    end
   end)
 end
 
@@ -495,6 +499,7 @@ M.config = {
   show_system_prompt = false, -- Shows system prompt in chat
   show_folds = true, -- Shows folds for sections in chat
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
+  auto_follow_cursor = true, -- Auto-follow cursor in chat
   name = 'CopilotChat',
   separator = '---',
   prompts = {
@@ -547,6 +552,7 @@ M.config = {
 --       - debug: (boolean?) default: false.
 --       - clear_chat_on_new_prompt: (boolean?) default: false.
 --       - disable_extra_info: (boolean?) default: true.
+--       - auto_follow_cursor: (boolean?) default: true.
 --       - name: (string?) default: 'CopilotChat'.
 --       - separator: (string?) default: '---'.
 --       - prompts: (table?).
