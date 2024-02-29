@@ -512,8 +512,8 @@ M.config = {
     reset = '<C-l>',
     complete = '<Tab>',
     submit_prompt = '<CR>',
-    accept_diff = '<C-d>',
-    show_diff = 'K',
+    accept_diff = '<C-y>',
+    show_diff = '<C-d>',
   },
 }
 --- Set up the plugin
