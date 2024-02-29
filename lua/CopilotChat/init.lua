@@ -455,6 +455,12 @@ function M.ask(prompt, config)
     temperature = config.temperature,
     on_start = function()
       append('\n\n **' .. config.name .. '** ' .. config.separator .. '\n\n')
+
+      -- Move the current to the end of the buffer before starting the spinner
+      vim.api.nvim_win_set_cursor(
+        state.window,
+        { vim.api.nvim_buf_line_count(state.chat.bufnr), 0 }
+      )
       state.chat.spinner:start()
     end,
     on_done = function()
