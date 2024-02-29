@@ -56,6 +56,33 @@ local function find_lines_between_separator(lines, pattern, at_least_one)
   return result, separator_line_start, separator_line_finish, line_count
 end
 
+local function show_diff_between_selection_and_copilot()
+  local selection = state.selection
+  if not selection or not selection.buffer or not selection.start_row or not selection.end_row then
+    return
+  end
+
+  local chat_lines = vim.api.nvim_buf_get_lines(state.chat.bufnr, 0, -1, false)
+  local section_lines = find_lines_between_separator(chat_lines, M.config.separator .. '$', true)
+  local lines = find_lines_between_separator(section_lines, '^```%w*$', true)
+  if #lines > 0 then
+    local diff = tostring(vim.diff(selection.lines, table.concat(lines, '\n'), {}))
+    if diff and diff ~= '' then
+      vim.lsp.util.open_floating_preview(vim.split(diff, '\n'), 'diff', {
+        border = 'single',
+        title = M.config.name .. ' Diff',
+        title_pos = 'left',
+        focusable = false,
+        focus = false,
+        relative = 'editor',
+        row = 0,
+        col = 0,
+        width = vim.api.nvim_win_get_width(0) - 3,
+      })
+    end
+  end
+end
+
 local function update_prompts(prompt, system_prompt)
   local prompts_to_use = M.get_prompts()
   local try_again = false
@@ -226,8 +253,14 @@ function M.open(config)
       end, { buffer = state.chat.bufnr })
     end
 
-    if config.mappings.accept_code then
-      vim.keymap.set('n', config.mappings.accept_code, function()
+    if config.mappings.show_diff then
+      vim.keymap.set('n', config.mappings.show_diff, show_diff_between_selection_and_copilot, {
+        buffer = state.chat.bufnr,
+      })
+    end
+
+    if config.mappings.accept_diff then
+      vim.keymap.set('n', config.mappings.accept_diff, function()
         if
           not state.selection
           or not state.selection.buffer
@@ -273,6 +306,7 @@ function M.open(config)
     elseif layout == 'horizontal' then
       win_opts.vertical = false
     elseif layout == 'float' then
+      win_opts.zindex = 1
       win_opts.relative = config.window.relative
       win_opts.border = config.window.border
       win_opts.title = config.window.title
@@ -478,7 +512,8 @@ M.config = {
     reset = '<C-l>',
     complete = '<Tab>',
     submit_prompt = '<CR>',
-    accept_code = '<C-d>',
+    accept_diff = '<C-d>',
+    show_diff = 'K',
   },
 }
 --- Set up the plugin
