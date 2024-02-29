@@ -302,8 +302,7 @@ function M.open(config)
 
     local layout = config.window.layout
 
-    -- nvim_open_win do not supports splits on stable
-    if layout == 'float' or is_stable() then
+    if layout == 'float' then
       win_opts.zindex = 1
       win_opts.relative = config.window.relative
       win_opts.border = config.window.border
@@ -315,11 +314,31 @@ function M.open(config)
       win_opts.width = math.floor(vim.o.columns * config.window.width)
       win_opts.height = math.floor(vim.o.lines * config.window.height)
     elseif layout == 'vertical' then
-      if not is_stable() then
+      if is_stable() then
+        win_opts.relative = 'editor'
+        win_opts.width = math.floor(vim.o.columns * 0.5) -- 50% width
+        win_opts.height = vim.o.lines -- full height
+        win_opts.row = 0 -- top of the screen
+        win_opts.col = math.floor(vim.o.columns * 0.5) -- right side of the screen
+        win_opts.border = config.window.border
+        win_opts.title = config.window.title
+        win_opts.footer = config.window.footer
+      else
         win_opts.vertical = true
       end
     elseif layout == 'horizontal' then
-      win_opts.vertical = false
+      if is_stable() then
+        win_opts.relative = 'editor'
+        win_opts.height = math.floor(vim.o.lines * 0.3) -- 30% height
+        win_opts.width = vim.o.columns -- full width
+        win_opts.row = math.floor(vim.o.lines * 0.7) -- bottom of the screen
+        win_opts.col = 0 -- left side of the screen
+        win_opts.border = config.window.border
+        win_opts.title = config.window.title
+        win_opts.footer = config.window.footer
+      else
+        win_opts.vertical = false
+      end
     end
 
     state.window = vim.api.nvim_open_win(state.chat.bufnr, false, win_opts)
