@@ -149,7 +149,7 @@ chat.ask("Explain how it works.", {
 
 For further reference, you can view @jellydn's [configuration](https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/copilot-chat.lua).
 
-#### Default configurtion
+#### Default configuration
 
 Also see [here](/lua/CopilotChat/config.lua):
 
@@ -229,7 +229,7 @@ commands and keymaps in `cmd` and `keys` respectively.
     MyCustomPrompt = {
       prompt = 'Explain how it works.',
       mapping = '<leader>ccmc',
-      desription = 'My custom prompt description',
+      description = 'My custom prompt description',
       selection = require('CopilotChat.select').visual,
     },
   },
