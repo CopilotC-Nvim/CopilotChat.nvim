@@ -76,4 +76,4 @@ For further reference, you can view @jellydn's [configuration](https://github.co
 - [x] Properly get token file path, atm it only supports Linux (easy fix)
 - [x] Update README and stuff
 - [ ] Add token count from tiktoken support to extra_info
-- [ ] Add test and fix failed test in CI
+- [x] Add test and fix failed test in CI
