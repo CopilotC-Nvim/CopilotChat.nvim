@@ -64,8 +64,6 @@ require("CopilotChat").setup {
 EOF
 ```
 
-See @treyhunner and @nekowasabi for [configuration](https://github.com/CopilotC-Nvim/CopilotChat.nvim/discussions/46).
-
 ### Manual
 
 1. Put the files in the right place
@@ -147,7 +145,7 @@ chat.ask("Explain how it works.", {
 
 ### Configuration
 
-For further reference, you can view @jellydn's [configuration](https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/copilot-chat.lua).
+For further reference, you can view @jellydn's [configuration](https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/copilot-chat-v2.lua).
 
 #### Default configuration
 
@@ -314,51 +312,6 @@ This will allow you to chat with Copilot without opening a new window.
 ```
 
 ![inline-chat](https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/608e3c9b-8569-408d-a5d1-2213325fc93c)
-
-### Integration with `telescope.nvim`
-
-To integrate CopilotChat with Telescope, you can add the following configuration to your keymap:
-
-```lua
--- lazy.nvim keys
-
-  -- Show help actions with telescope
-  {
-    "<leader>cch",
-    function()
-      require("CopilotChat.code_actions").show_help_actions()
-    end,
-    desc = "CopilotChat - Help actions",
-  },
-  -- Show prompts actions with telescope
-  {
-    "<leader>ccp",
-    function()
-      require("CopilotChat.code_actions").show_prompt_actions()
-    end,
-    desc = "CopilotChat - Prompt actions",
-  },
-  {
-    "<leader>ccp",
-    function()
-      require("CopilotChat.code_actions").show_prompt_actions(true)
-    end,
-    mode = "x",
-    desc = "CopilotChat - Prompt actions (Visual)",
-  },
-```
-
-1. Select help actions base the diagnostic message under the cursor.
-   [![Help action with Copilot Chat](https://i.gyazo.com/146dc35368592ba9f5de047ddc4728ad.gif)](https://gyazo.com/146dc35368592ba9f5de047ddc4728ad)
-
-2. Select action base on user prompts.
-   [![Select action base on user prompts](https://i.gyazo.com/a9c41e6398591c2f1d1d872fd58a2c63.gif)](https://gyazo.com/a9c41e6398591c2f1d1d872fd58a2c63)
-
-### Debugging with `:messages` and `:CopilotChatDebugInfo`
-
-If you encounter any issues, you can run the command `:messages` to inspect the log. You can also run the command `:CopilotChatDebugInfo` to inspect the debug information.
-
-[![Debug Info](https://i.gyazo.com/bf00e700bcee1b77bcbf7b516b552521.gif)](https://gyazo.com/bf00e700bcee1b77bcbf7b516b552521)
 
 ## Roadmap (Wishlist)
 
