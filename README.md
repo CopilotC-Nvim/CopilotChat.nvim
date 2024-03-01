@@ -1,6 +1,5 @@
 # Copilot Chat for Neovim
 
-![Prerequisite](https://img.shields.io/badge/python-%3E%3D3.10-blue.svg)
 [![Documentation](https://img.shields.io/badge/documentation-yes-brightgreen.svg)](https://copilotc-nvim.github.io/CopilotChat.nvim/)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/CopilotC-Nvim/CopilotChat.nvim/main.svg)](https://results.pre-commit.ci/latest/github/CopilotC-Nvim/CopilotChat.nvim/main)
 
@@ -11,7 +10,7 @@
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 > [!NOTE]
-> Plugin was rewritten to Lua from Python. Please check the [migration guide](/MIGRATION.md) for more information.
+> Plugin was rewritten to Lua from Python. Please check the [migration guide from version 1 to version 2](/MIGRATION.md) for more information.
 
 ## Prerequisites
 
