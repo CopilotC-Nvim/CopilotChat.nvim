@@ -84,6 +84,7 @@ local function show_diff_between_selection_and_copilot()
         row = 0,
         col = 0,
         width = vim.api.nvim_win_get_width(0) - 3,
+        zindex = M.config.window.zindex + 1,
       })
     end
   end
@@ -317,7 +318,7 @@ function M.open(config)
     local layout = config.window.layout
 
     if layout == 'float' then
-      win_opts.zindex = 1
+      win_opts.zindex = config.window.zindex
       win_opts.relative = config.window.relative
       win_opts.border = config.window.border
       win_opts.title = config.window.title
@@ -329,7 +330,7 @@ function M.open(config)
       win_opts.height = math.floor(vim.o.lines * config.window.height)
     elseif layout == 'vertical' then
       if is_stable() then
-        win_opts.zindex = 1
+        win_opts.zindex = config.window.zindex
         win_opts.relative = 'editor'
         win_opts.width = math.floor(vim.o.columns * 0.5) -- 50% width
         win_opts.height = vim.o.lines -- full height
@@ -343,7 +344,7 @@ function M.open(config)
       end
     elseif layout == 'horizontal' then
       if is_stable() then
-        win_opts.zindex = 1
+        win_opts.zindex = config.window.zindex
         win_opts.relative = 'editor'
         win_opts.height = math.floor(vim.o.lines * 0.5) -- 50% height
         win_opts.width = vim.o.columns -- full width
