@@ -12,12 +12,12 @@ local plugin_name = 'CopilotChat.nvim'
 --- @class CopilotChat.state
 --- @field copilot CopilotChat.Copilot?
 --- @field chat CopilotChat.Chat?
---- @field selection CopilotChat.config.selection?
+--- @field current_bufnr number?
 local state = {
   copilot = nil,
   chat = nil,
-  selection = nil,
   window = nil,
+  current_bufnr = nil,
 }
 
 function CopilotChatFoldExpr(lnum, separator)
@@ -62,9 +62,8 @@ local function find_lines_between_separator(lines, pattern, at_least_one)
   return result, separator_line_start, separator_line_finish, line_count
 end
 
-local function show_diff_between_selection_and_copilot()
-  local selection = state.selection
-  if not selection or not selection.buffer or not selection.start_row or not selection.end_row then
+local function show_diff_between_selection_and_copilot(selection)
+  if not selection or not selection.start_row or not selection.end_row then
     return
   end
 
@@ -91,7 +90,7 @@ local function show_diff_between_selection_and_copilot()
 end
 
 local function update_prompts(prompt, system_prompt)
-  local prompts_to_use = M.get_prompts()
+  local prompts_to_use = M.prompts()
   local try_again = false
   local result = string.gsub(prompt, [[/[%w_]+]], function(match)
     local found = prompts_to_use[string.sub(match, 2)]
@@ -164,7 +163,7 @@ local function complete()
   end
 
   local items = {}
-  local prompts_to_use = M.get_prompts()
+  local prompts_to_use = M.prompts()
 
   for name, prompt in pairs(prompts_to_use) do
     items[#items + 1] = {
@@ -181,9 +180,16 @@ local function complete()
   vim.fn.complete(cmp_start + 1, items)
 end
 
+local function get_selection(config, bufnr)
+  if config and config.selection and vim.api.nvim_buf_is_valid(bufnr) then
+    return config.selection(bufnr) or {}
+  end
+  return {}
+end
+
 --- Get the prompts to use.
 ---@param skip_system boolean|nil
-function M.get_prompts(skip_system)
+function M.prompts(skip_system)
   local function get_prompt_kind(name)
     return vim.startswith(name, 'COPILOT_') and 'system' or 'user'
   end
@@ -217,18 +223,13 @@ function M.get_prompts(skip_system)
 end
 
 --- Open the chat window.
----@param config CopilotChat.config|nil
-function M.open(config)
+---@param config CopilotChat.config?
+---@param current_bufnr number?
+function M.open(config, current_bufnr)
   local should_reset = config and config.window ~= nil and not vim.tbl_isempty(config.window)
-
   config = vim.tbl_deep_extend('force', M.config, config or {})
-  local selection = nil
-  if type(config.selection) == 'function' then
-    selection = config.selection()
-  else
-    selection = config.selection
-  end
-  state.selection = selection or {}
+  state.current_bufnr = current_bufnr or vim.api.nvim_get_current_buf()
+  local selection = get_selection(config, state.current_bufnr)
 
   local just_created = false
 
@@ -264,26 +265,24 @@ function M.open(config)
           if line_count == end_line then
             vim.api.nvim_buf_set_lines(state.chat.bufnr, start_line, end_line, false, { '' })
           end
-          M.ask(input, { selection = state.selection })
+          M.ask(input, nil, state.current_bufnr)
         end
       end, { buffer = state.chat.bufnr })
     end
 
     if config.mappings.show_diff then
-      vim.keymap.set('n', config.mappings.show_diff, show_diff_between_selection_and_copilot, {
+      vim.keymap.set('n', config.mappings.show_diff, function()
+        local selection = get_selection(config, state.current_bufnr)
+        show_diff_between_selection_and_copilot(selection)
+      end, {
         buffer = state.chat.bufnr,
       })
     end
 
     if config.mappings.accept_diff then
       vim.keymap.set('n', config.mappings.accept_diff, function()
-        if
-          not state.selection
-          or not state.selection.buffer
-          or not state.selection.start_row
-          or not state.selection.end_row
-          or not vim.api.nvim_buf_is_valid(state.selection.buffer)
-        then
+        local selection = get_selection(config, state.current_bufnr)
+        if not selection.start_row or not selection.end_row then
           return
         end
 
@@ -293,11 +292,11 @@ function M.open(config)
         local lines = find_lines_between_separator(section_lines, '^```%w*$', true)
         if #lines > 0 then
           vim.api.nvim_buf_set_text(
-            state.selection.buffer,
-            state.selection.start_row - 1,
-            state.selection.start_col - 1,
-            state.selection.end_row - 1,
-            state.selection.end_col,
+            state.current_bufnr,
+            selection.start_row - 1,
+            selection.start_col - 1,
+            selection.end_row - 1,
+            selection.end_col,
             lines
           )
         end
@@ -398,19 +397,21 @@ end
 
 --- Toggle the chat window.
 ---@param config CopilotChat.config|nil
-function M.toggle(config)
+---@param bufnr number?
+function M.toggle(config, bufnr)
   if state.window and vim.api.nvim_win_is_valid(state.window) then
     M.close()
   else
-    M.open(config)
+    M.open(config, bufnr)
   end
 end
 
 --- Ask a question to the Copilot model.
 ---@param prompt string
 ---@param config CopilotChat.config|nil
-function M.ask(prompt, config)
-  M.open(config)
+---@param bufnr number?
+function M.ask(prompt, config, bufnr)
+  M.open(config, bufnr)
 
   if not prompt or prompt == '' then
     return
@@ -428,8 +429,10 @@ function M.ask(prompt, config)
     M.reset()
   end
 
-  if state.selection.prompt_extra then
-    updated_prompt = updated_prompt .. ' ' .. state.selection.prompt_extra
+  local selection = get_selection(config, state.current_bufnr)
+  local filetype = vim.bo[state.current_bufnr].filetype
+  if selection.prompt_extra then
+    updated_prompt = updated_prompt .. ' ' .. selection.prompt_extra
   end
 
   local finish = false
@@ -437,20 +440,15 @@ function M.ask(prompt, config)
     finish = true
     append(' **System prompt** ' .. config.separator .. '\n```\n' .. system_prompt .. '```\n')
   end
-  if
-    config.show_user_selection
-    and state.selection
-    and state.selection.lines
-    and state.selection.lines ~= ''
-  then
+  if config.show_user_selection and selection.lines and selection.lines ~= '' then
     finish = true
     append(
       ' **Selection** '
         .. config.separator
         .. '\n```'
-        .. (state.selection.filetype or '')
+        .. (filetype or '')
         .. '\n'
-        .. state.selection.lines
+        .. selection.lines
         .. '\n```'
     )
   end
@@ -461,8 +459,8 @@ function M.ask(prompt, config)
   append(updated_prompt)
 
   return state.copilot:ask(updated_prompt, {
-    selection = state.selection.lines,
-    filetype = state.selection.filetype,
+    selection = selection.lines,
+    filetype = filetype,
     system_prompt = system_prompt,
     model = config.model,
     temperature = config.temperature,
@@ -498,7 +496,7 @@ end
 
 --- Enables/disables debug
 ---@param debug boolean
-function M.set_debug(debug)
+function M.debug(debug)
   M.config.debug = debug
   local logfile = string.format('%s/%s.log', vim.fn.stdpath('state'), plugin_name)
   log.new({
@@ -515,9 +513,9 @@ function M.setup(config)
   M.config = vim.tbl_deep_extend('force', default_config, config or {})
   state.copilot = Copilot()
   debuginfo.setup()
-  M.set_debug(M.config.debug)
+  M.debug(M.config.debug)
 
-  for name, prompt in pairs(M.get_prompts(true)) do
+  for name, prompt in pairs(M.prompts(true)) do
     vim.api.nvim_create_user_command('CopilotChat' .. name, function(args)
       local input = prompt.prompt
       if args.args and vim.trim(args.args) ~= '' then
