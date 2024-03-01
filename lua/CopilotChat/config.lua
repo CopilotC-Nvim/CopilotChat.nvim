@@ -27,6 +27,7 @@ local select = require('CopilotChat.select')
 ---@field col number?
 ---@field title string?
 ---@field footer string?
+---@field zindex number?
 
 ---@class CopilotChat.config.mappings
 ---@field close string?
@@ -95,6 +96,7 @@ return {
   -- default window options
   window = {
     layout = 'vertical', -- 'vertical', 'horizontal', 'float'
+    -- Options below only apply to floating windows
     relative = 'editor', -- 'editor', 'win', 'cursor', 'mouse'
     border = 'single', -- 'none', single', 'double', 'rounded', 'solid', 'shadow'
     width = 0.8, -- fractional width of parent
@@ -103,6 +105,7 @@ return {
     col = nil, -- column position of the window, default is centered
     title = 'Copilot Chat', -- title of chat window
     footer = nil, -- footer of chat window
+    zindex = 1, -- determines if window is on top or below other floating windows
   },
   -- default mappings
   mappings = {
