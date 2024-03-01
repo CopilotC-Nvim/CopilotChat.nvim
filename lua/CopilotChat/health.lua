@@ -1,78 +1,78 @@
 local M = {}
 
 local start = vim.health.start or vim.health.report_start
+local error = vim.health.error or vim.health.report_error
 local warn = vim.health.warn or vim.health.report_warn
 local ok = vim.health.ok or vim.health.report_ok
 
---- Run a command on an executable and handle potential errors
+--- Run a command and handle potential errors
 ---@param executable string
 ---@param command string
-local function run_command_on_executable(executable, command)
+local function run_command(executable, command)
   local is_present = vim.fn.executable(executable)
   if is_present == 0 then
     return false
   else
     local success, result = pcall(vim.fn.system, { executable, command })
     if success then
-      return result
+      return vim.trim(result)
     else
       return false
     end
   end
 end
 
---- Run a python command and handle potential errors
----@param command string
-local function run_python_command(command)
-  local python3_host_prog = vim.g['python3_host_prog']
-  return run_command_on_executable(python3_host_prog or 'python3', command)
+--- Check if a Lua library is installed
+---@param lib_name string
+---@return boolean
+local function lualib_installed(lib_name)
+  local res, _ = pcall(require, lib_name)
+  return res
 end
 
--- Add health check for python3 and pynvim
 function M.check()
-  start('CopilotChat.nvim health check')
-  local python_version = run_python_command('--version')
+  start('CopilotChat.nvim [core]')
 
-  if python_version == false then
-    warn('Python 3 is required')
-    return
-  end
-
-  local major, minor = string.match(python_version, 'Python (%d+)%.(%d+)')
-  if not (major and minor and tonumber(major) >= 3 and tonumber(minor) >= 10) then
-    warn('Python version 3.10 or higher is required')
+  local is_nightly = vim.fn.has('nvim-0.10.0') == 1
+  if is_nightly then
+    ok('nvim: nightly')
   else
-    ok('Python version ' .. major .. '.' .. minor .. ' is supported')
+    warn('nvim: stable, some features may not be available')
   end
 
-  -- Create a temporary Python script to check the pynvim version
-  local temp_file = os.tmpname() .. '.py'
-  local file = io.open(temp_file, 'w')
-  if file == nil then
-    warn('Failed to create temporary Python script')
-    return
-  end
+  start('CopilotChat.nvim [commands]')
 
-  file:write(
-    'import pynvim; v = pynvim.VERSION; print("{0}.{1}.{2}".format(v.major, v.minor, v.patch))'
-  )
-  file:close()
-
-  -- Run the temporary Python script and capture the output
-  local pynvim_version = run_python_command(temp_file)
-
-  -- Trim the output
-  if pynvim_version ~= false then
-    pynvim_version = string.gsub(pynvim_version, '^%s*(.-)%s*$', '%1')
-  end
-
-  -- Delete the temporary Python script
-  os.remove(temp_file)
-
-  if vim.version.lt(pynvim_version, '0.4.3') then
-    warn('pynvim version ' .. pynvim_version .. ' is not supported')
+  local curl_version = run_command('curl', '--version')
+  if curl_version == false then
+    error('curl: missing, required for API requests')
   else
-    ok('pynvim version ' .. pynvim_version .. ' is supported')
+    ok('curl: ' .. curl_version)
+  end
+
+  local git_version = run_command('git', '--version')
+  if git_version == false then
+    warn('git: missing, required for git-related commands')
+  else
+    ok('git: ' .. git_version)
+  end
+
+  start('CopilotChat.nvim [dependencies]')
+
+  local has_plenary = lualib_installed('plenary')
+  if has_plenary then
+    ok('plenary: installed')
+  else
+    error('plenary: missing, required for running tests. Install plenary.nvim')
+  end
+
+  local has_copilot = lualib_installed('copilot')
+  local copilot_loaded = vim.g.loaded_copilot == 1
+  if has_copilot or copilot_loaded then
+    ok('copilot: ' .. (has_copilot and 'copilot.lua' or 'copilot.vim'))
+  else
+    error(
+      'copilot: missing, required for 2 factor authentication. Install copilot.vim or copilot.lua'
+    )
   end
 end
 

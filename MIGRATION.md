@@ -70,7 +70,7 @@ For further reference, you can view @jellydn's [configuration](https://github.co
 
 - [ ] For proxy support, this is needed: https://github.com/nvim-lua/plenary.nvim/pull/559
 - [ ] Delete rest of the python code? Or finish rewriting in place then delete
-- [ ] Check for curl availability with health check
+- [x] Check for curl availability with health check
 - [x] Add folds logic from python, maybe? Not sure if this is even needed
 - [ ] Finish rewriting the authentication request if needed or just keep relying on copilot.vim/lua
 - [x] Properly get token file path, atm it only supports Linux (easy fix)
