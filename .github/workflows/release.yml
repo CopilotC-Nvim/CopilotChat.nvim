@@ -23,7 +23,9 @@ jobs:
           release-type: simple
           package-name: CopilotChat.nvim
           token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: tag stable versions
         if: ${{ steps.release.outputs.release_created }}
         run: |
