@@ -29,7 +29,10 @@ class ChatHandler:
         self.copilot: Copilot = None
         self.buffer: MyBuffer = buffer
         self.proxy: str = os.getenv("HTTPS_PROXY") or os.getenv("ALL_PROXY") or ""
-        self.language = self.nvim.eval("g:copilot_chat_language")
+        try:
+            self.language = self.nvim.eval("g:copilot_chat_language")
+        except Exception:
+            self.language = ""
 
     # public
 
@@ -47,9 +50,12 @@ class ChatHandler:
         """Disable vim diagnostics on the chat buffer"""
         self.nvim.command(":lua vim.diagnostic.disable()")
 
-        disable_separators = (
-            self.nvim.eval("g:copilot_chat_disable_separators") == "yes"
-        )
+        try:
+            disable_separators = (
+                self.nvim.eval("g:copilot_chat_disable_separators") == "yes"
+            )
+        except Exception:
+            disable_separators = False
 
         # Validate and set temperature
         temperature = self._get_temperature()
@@ -59,12 +65,6 @@ class ChatHandler:
 
         if system_prompt is None:
             system_prompt = self._construct_system_prompt(prompt)
-        # Start the spinner
-        self.nvim.exec_lua('require("CopilotChat.spinner").show()')
-
-        self.nvim.exec_lua(
-            'require("CopilotChat.utils").log_info(...)', f"Chatting with {model} model"
-        )
 
         if not disable_start_separator:
             self._add_start_separator(
@@ -75,20 +75,23 @@ class ChatHandler:
             system_prompt, prompt, code, filetype, model, temperature=temperature
         )
 
-        # Stop the spinner
-        self.nvim.exec_lua('require("CopilotChat.spinner").hide()')
-
         if not disable_end_separator:
             self._add_end_separator(model, disable_separators)
 
     # private
     def _set_proxy(self):
-        self.proxy = self.nvim.eval("g:copilot_chat_proxy")
+        try:
+            self.proxy = self.nvim.eval("g:copilot_chat_proxy")
+        except Exception:
+            self.proxy = ""
         if "://" not in self.proxy:
             self.proxy = None
 
     def _get_temperature(self):
-        temperature = self.nvim.eval("g:copilot_chat_temperature")
+        try:
+            temperature = self.nvim.eval("g:copilot_chat_temperature")
+        except Exception:
+            temperature = DEFAULT_TEMPERATURE
         try:
             temperature = float(temperature)
             if not 0 <= temperature <= 1:
@@ -146,9 +149,12 @@ class ChatHandler:
         winnr: int,
         no_annoyance: bool = False,
     ):
-        hide_system_prompt = (
-            self.nvim.eval("g:copilot_chat_hide_system_prompt") == "yes"
-        )
+        try:
+            hide_system_prompt = (
+                self.nvim.eval("g:copilot_chat_hide_system_prompt") == "yes"
+            )
+        except Exception:
+            hide_system_prompt = True
 
         if hide_system_prompt:
             system_prompt = "...System prompt hidden..."
@@ -193,9 +199,13 @@ SYSTEM PROMPT:
 
         encoding = tiktoken.encoding_for_model("gpt-4")
 
-        hide_system_prompt = (
-            self.nvim.eval("g:copilot_chat_hide_system_prompt") == "yes"
-        )
+        try:
+            hide_system_prompt = (
+                self.nvim.eval("g:copilot_chat_hide_system_prompt") == "yes"
+            )
+        except Exception:
+            hide_system_prompt = True
+
         num_total_tokens = len(encoding.encode(f"{system_prompt}\n{prompt}\n{code}"))
         num_system_tokens = len(encoding.encode(system_prompt))
         num_prompt_tokens = len(encoding.encode(prompt))
@@ -282,28 +292,7 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
             self.copilot.authenticate()
 
         last_line_col = 0
-        self.nvim.exec_lua(
-            'require("CopilotChat.utils").log_info(...)',
-            f"System prompt: {system_prompt}",
-        )
-        self.nvim.exec_lua(
-            'require("CopilotChat.utils").log_info(...)', f"Prompt: {prompt}"
-        )
-        self.nvim.exec_lua(
-            'require("CopilotChat.utils").log_info(...)', f"Code: {code}"
-        )
-        self.nvim.exec_lua(
-            'require("CopilotChat.utils").log_info(...)', f"File type: {file_type}"
-        )
-        self.nvim.exec_lua(
-            'require("CopilotChat.utils").log_info(...)', f"Model: {model}"
-        )
-        self.nvim.exec_lua(
-            'require("CopilotChat.utils").log_info(...)', f"Temperature: {temperature}"
-        )
-        self.nvim.exec_lua(
-            'require("CopilotChat.utils").log_info(...)', "Asking Copilot"
-        )
+
         # TODO: Abort request if the user closes the layout
         for token in self.copilot.ask(
             system_prompt,
@@ -313,9 +302,6 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
             model=model,
             temperature=temperature,
         ):
-            self.nvim.exec_lua(
-                'require("CopilotChat.utils").log_info(...)', f"Token: {token}"
-            )
             buffer_lines = cast(list[str], self.buffer.lines())
             last_line_row = len(buffer_lines) - 1
             self.nvim.api.buf_set_text(
@@ -329,9 +315,6 @@ SYSTEM PROMPT: {num_system_tokens} Tokens
             last_line_col += len(token.encode("utf-8"))
             if "\n" in token:
                 last_line_col = 0
-        self.nvim.exec_lua(
-            'require("CopilotChat.utils").log_info(...)', "Copilot answered"
-        )
 
         """ Enable vim diagnostics on the chat buffer after the chat is complete """
         self.nvim.command(":lua vim.diagnostic.enable()")

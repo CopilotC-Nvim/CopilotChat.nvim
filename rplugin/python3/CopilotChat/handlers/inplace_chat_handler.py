@@ -20,11 +20,10 @@ class InPlaceChatHandler:
         self.diff_mode: bool = False
         self.model: str = MODEL_GPT4
         self.system_prompt: str = "SENIOR_DEVELOPER_PROMPT"
-        self.language = self.nvim.eval("g:copilot_chat_language")
-
-        # Add user prompts collection
-        self.user_prompts = self.nvim.eval("g:copilot_chat_user_prompts")
-        self.current_user_prompt = 0
+        try:
+            self.language = self.nvim.eval("g:copilot_chat_language")
+        except Exception:
+            self.language = ""
 
         # Initialize popups
         self.original_popup = PopUp(nvim, title="Original")
@@ -45,7 +44,13 @@ class InPlaceChatHandler:
         ]
 
         # Initialize layout base on help text option
-        self.help_popup_visible = self.nvim.eval("g:copilot_chat_show_help") == "yes"
+        try:
+            self.help_popup_visible = (
+                self.nvim.eval("g:copilot_chat_show_help") == "yes"
+            )
+        except Exception:
+            self.help_popup_visible = False
+
         if self.help_popup_visible:
             self.layout = self._create_layout()
             self.popups.append(self.help_popup)
@@ -174,20 +179,6 @@ class InPlaceChatHandler:
     def _set_prompt(self, prompt: str):
         self.prompt_popup.buffer.lines(prompt)
 
-    def _set_next_user_prompt(self):
-        self.current_user_prompt = (self.current_user_prompt + 1) % len(
-            self.user_prompts
-        )
-        prompt = list(self.user_prompts.keys())[self.current_user_prompt]
-        self.prompt_popup.buffer.lines(self.user_prompts[prompt])
-
-    def _set_previous_user_prompt(self):
-        self.current_user_prompt = (self.current_user_prompt - 1) % len(
-            self.user_prompts
-        )
-        prompt = list(self.user_prompts.keys())[self.current_user_prompt]
-        self.prompt_popup.buffer.lines(self.user_prompts[prompt])
-
     def _toggle_model(self):
         if self.model == MODEL_GPT4:
             self.model = MODEL_GPT35_TURBO
@@ -252,18 +243,6 @@ class InPlaceChatHandler:
             "i", "<C-s>", lambda: (self.nvim.feed("<Esc>"), self._chat())
         )
 
-        self.prompt_popup.map(
-            "n",
-            "<C-n>",
-            lambda: self._set_next_user_prompt(),
-        )
-
-        self.prompt_popup.map(
-            "n",
-            "<C-p>",
-            lambda: self._set_previous_user_prompt(),
-        )
-
         for i, popup in enumerate(self.popups):
             popup.buffer.map("n", "q", lambda: self.layout.unmount())
             popup.buffer.map("n", "<C-l>", lambda: self._clear_chat_history())
@@ -298,18 +277,12 @@ class InPlaceChatHandler:
             "Prompt Binding:",
             "  ': Set prompt to SIMPLE_DOCSTRING",
             "  s: Set prompt to SEPARATE",
-            "  <C-p>: Get the previous user prompt",
-            "  <C-n>: Set prompt to next item in user prompts",
             "",
             "Model:",
             "  <C-g>: Toggle AI model",
             "  <C-m>: Set system prompt to next item in system prompts",
             "",
-            "User prompts:",
         ]
-
-        for prompt in self.user_prompts:
-            help_content.append(f"  {prompt}: {self.user_prompts[prompt]}")
 
         self.help_popup.buffer.lines(help_content)
 
