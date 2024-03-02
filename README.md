@@ -10,7 +10,7 @@
 
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-> [!NOTE]
+> [!IMPORTANT]
 > We are excited to announce that we are currently migrating the plugin to fully Lua in the [canary](https://github.com/CopilotC-Nvim/CopilotChat.nvim/tree/canary) branch.
 
 > [!NOTE]
