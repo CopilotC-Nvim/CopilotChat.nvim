@@ -59,7 +59,7 @@ end
 local function show_help_actions(config)
   -- Convert diagnostic to a table of actions
   local help_actions = {}
-  local diagnostic = select.diagnostics()
+  local diagnostic = select.diagnostics(vim.api.nvim_get_current_buf())
   if diagnostic then
     table.insert(help_actions, {
       label = 'Please assist with fixing the following diagnostic issue in file: "'
@@ -99,7 +99,7 @@ end
 local function show_prompt_actions(config)
   -- Convert user prompts to a table of actions
   local user_prompt_actions = {}
-  for key, prompt in pairs(chat.get_prompts(true)) do
+  for key, prompt in pairs(chat.prompts(true)) do
     table.insert(user_prompt_actions, { name = key, label = prompt.prompt })
   end
 

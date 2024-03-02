@@ -113,6 +113,14 @@ chat.close()
 -- Toggle chat window
 chat.toggle()
 
+-- Toggle chat window with custom options
+chat.toggle({
+  window = {
+    layout = 'float',
+    title = 'My Title',
+  },
+})
+
 -- Reset chat window
 chat.reset()
 
@@ -123,6 +131,9 @@ chat.ask("Explain how it works.")
 chat.ask("Explain how it works.", {
   selection = require("CopilotChat.select").buffer,
 })
+
+-- Get all available prompts (can be used for integrations like fzf/telescope)
+local prompts = chat.prompts()
 ```
 
 ### Commands
@@ -181,14 +192,14 @@ Also see [here](/lua/CopilotChat/config.lua):
     },
     CommitStaged = {
       prompt = 'Write commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
-      selection = function()
-        return select.gitdiff(true)
+      selection = function(bufnr)
+        return select.gitdiff(bufnr, true)
       end,
     },
   },
   -- default selection (visual or line)
-  selection = function()
-    return select.visual() or select.line()
+  selection = function(bufnr)
+    return select.visual(bufnr) or select.line(bufnr)
   end,
   -- default window options
   window = {
