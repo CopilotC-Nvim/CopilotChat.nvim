@@ -20,15 +20,6 @@ local state = {
   source = nil,
 }
 
-function CopilotChatFoldExpr(lnum, separator)
-  local line = vim.fn.getline(lnum)
-  if string.match(line, separator .. '$') then
-    return '>1'
-  end
-
-  return '='
-end
-
 local function find_lines_between_separator(lines, pattern, at_least_one)
   local line_count = #lines
   local separator_line_start = 1
@@ -375,7 +366,7 @@ function M.open(config, source, no_focus)
     if config.show_folds then
       vim.wo[state.window].foldcolumn = '1'
       vim.wo[state.window].foldmethod = 'expr'
-      vim.wo[state.window].foldexpr = "v:lua.CopilotChatFoldExpr(v:lnum, '"
+      vim.wo[state.window].foldexpr = "v:lua.require('CopilotChat.folding').CopilotChatFoldExpr(v:lnum, '"
         .. config.separator
         .. "')"
     else
