@@ -1,4 +1,4 @@
-*CopilotChat.txt*          For NVIM v0.8.0          Last change: 2024 March 01
+*CopilotChat.txt*          For NVIM v0.8.0          Last change: 2024 March 02
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -22,8 +22,8 @@ Table of Contents                              *CopilotChat-table-of-contents*
 |CopilotChat-|
 
 
-  [!NOTE] We are excited to announce that we are currently migrating the plugin
-  to fully Lua in the canary
+  [!IMPORTANT] We are excited to announce that we are currently migrating the
+  plugin to fully Lua in the canary
   <https://github.com/CopilotC-Nvim/CopilotChat.nvim/tree/canary> branch.
 
   [!NOTE] A new command, `CopilotChatBuffer` has been added. It allows you to
