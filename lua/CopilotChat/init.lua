@@ -363,6 +363,7 @@ function M.open(config, source, no_focus)
     vim.wo[state.window].cursorline = true
     vim.wo[state.window].conceallevel = 2
     vim.wo[state.window].concealcursor = 'niv'
+    vim.wo[state.window].foldlevel = 99
     if config.show_folds then
       vim.wo[state.window].foldcolumn = '1'
       vim.wo[state.window].foldmethod = 'expr'
