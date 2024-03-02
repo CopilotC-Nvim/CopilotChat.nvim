@@ -59,7 +59,10 @@ end
 local function show_help_actions(config)
   -- Convert diagnostic to a table of actions
   local help_actions = {}
-  local diagnostic = select.diagnostics(vim.api.nvim_get_current_buf())
+  local diagnostic = select.diagnostics({
+    bufnr = vim.api.nvim_get_current_buf(),
+    winnr = vim.api.nvim_get_current_win(),
+  })
   if diagnostic then
     table.insert(help_actions, {
       label = 'Please assist with fixing the following diagnostic issue in file: "'
