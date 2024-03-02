@@ -1,8 +1,13 @@
 local prompts = require('CopilotChat.prompts')
 local select = require('CopilotChat.select')
 
+--- @class CopilotChat.config.source
+--- @field bufnr number
+--- @field winnr number
+
 ---@class CopilotChat.config.selection
 ---@field lines string
+---@field filetype string?
 ---@field start_row number?
 ---@field start_col number?
 ---@field end_row number?
@@ -11,7 +16,7 @@ local select = require('CopilotChat.select')
 
 ---@class CopilotChat.config.prompt
 ---@field prompt string?
----@field selection nil|fun(bufnr: number?):CopilotChat.config.selection?
+---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
 ---@field mapping string?
 ---@field description string?
 
@@ -49,7 +54,7 @@ local select = require('CopilotChat.select')
 ---@field name string?
 ---@field separator string?
 ---@field prompts table<string, CopilotChat.config.prompt|string>?
----@field selection nil|fun(bufnr: number?):CopilotChat.config.selection?
+---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
 ---@field window CopilotChat.config.window?
 ---@field mappings CopilotChat.config.mappings?
 return {
@@ -82,14 +87,14 @@ return {
     },
     CommitStaged = {
       prompt = 'Write commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
-      selection = function(bufnr)
-        return select.gitdiff(bufnr, true)
+      selection = function(source)
+        return select.gitdiff(source, true)
       end,
     },
   },
   -- default selection (visual or line)
-  selection = function(bufnr)
-    return select.visual(bufnr) or select.line(bufnr)
+  selection = function(source)
+    return select.visual(source) or select.line(source)
   end,
   -- default window options
   window = {

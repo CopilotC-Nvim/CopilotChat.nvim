@@ -192,14 +192,14 @@ Also see [here](/lua/CopilotChat/config.lua):
     },
     CommitStaged = {
       prompt = 'Write commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
-      selection = function(bufnr)
-        return select.gitdiff(bufnr, true)
+      selection = function(source)
+        return select.gitdiff(source, true)
       end,
     },
   },
   -- default selection (visual or line)
-  selection = function(bufnr)
-    return select.visual(bufnr) or select.line(bufnr)
+  selection = function(source)
+    return select.visual(source) or select.line(source)
   end,
   -- default window options
   window = {

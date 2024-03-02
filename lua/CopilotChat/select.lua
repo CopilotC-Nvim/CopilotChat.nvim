@@ -1,31 +1,22 @@
 local M = {}
 
---- Select and process current visual selection
---- @param bufnr number
---- @return CopilotChat.config.selection|nil
-function M.visual(bufnr)
-  -- Exit visual mode
-  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<esc>', true, false, true), 'x', true)
-  local start_line, start_col = unpack(vim.api.nvim_buf_get_mark(bufnr, '<'))
-  local finish_line, finish_col = unpack(vim.api.nvim_buf_get_mark(bufnr, '>'))
-
+local function get_selection_lines(bufnr, start_line, start_col, finish_line, finish_col, full_line)
   if start_line == finish_line and start_col == finish_col then
     return nil
   end
 
-  if start_line > finish_line then
+  if start_line > finish_line or (start_line == finish_line and start_col > finish_col) then
     start_line, finish_line = finish_line, start_line
-  end
-  if start_col > finish_col then
     start_col, finish_col = finish_col, start_col
   end
 
-  start_col = start_col + 1
+  if full_line then
+    start_col = 1
+  end
 
-  if finish_col == vim.v.maxcol then
-    finish_col = #vim.api.nvim_buf_get_lines(bufnr, finish_line - 1, finish_line, false)[1]
-  else
-    finish_col = finish_col + 1
+  local finish_line_len = #vim.api.nvim_buf_get_lines(bufnr, finish_line - 1, finish_line, false)[1]
+  if finish_col > finish_line_len or full_line then
+    finish_col = finish_line_len
   end
 
   local lines =
@@ -45,6 +36,42 @@ function M.visual(bufnr)
   }
 end
 
+--- Select and process current visual selection
+--- @param source CopilotChat.config.source
+--- @return CopilotChat.config.selection|nil
+function M.visual(source)
+  local bufnr = source.bufnr
+
+  local full_line = false
+  local start_line = nil
+  local start_col = nil
+  local finish_line = nil
+  local finish_col = nil
+  if 'copilot-chat' ~= vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf()) then
+    local start = vim.fn.getpos('v')
+    start_line = start[2]
+    start_col = start[3]
+    local finish = vim.fn.getpos('.')
+    finish_line = finish[2]
+    finish_col = finish[3]
+    if vim.fn.mode() == 'V' then
+      full_line = true
+    end
+  end
+
+  -- Exit visual mode
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<esc>', true, false, true), 'x', true)
+
+  if start_line == finish_line and start_col == finish_col then
+    start_line, start_col = unpack(vim.api.nvim_buf_get_mark(bufnr, '<'))
+    finish_line, finish_col = unpack(vim.api.nvim_buf_get_mark(bufnr, '>'))
+    start_col = start_col + 1
+    finish_col = finish_col + 1
+  end
+
+  return get_selection_lines(bufnr, start_line, start_col, finish_line, finish_col, full_line)
+end
+
 --- Select and process contents of unnamed register ('"')
 --- @return CopilotChat.config.selection|nil
 function M.unnamed()
@@ -60,9 +87,10 @@ function M.unnamed()
 end
 
 --- Select and process whole buffer
---- @param bufnr number
+--- @param source CopilotChat.config.source
 --- @return CopilotChat.config.selection|nil
-function M.buffer(bufnr)
+function M.buffer(source)
+  local bufnr = source.bufnr
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 
   if not lines or #lines == 0 then
@@ -79,11 +107,13 @@ function M.buffer(bufnr)
 end
 
 --- Select and process current line
---- @param bufnr number
+--- @param source CopilotChat.config.source
 --- @return CopilotChat.config.selection|nil
-function M.line(bufnr)
-  local cursor = vim.api.nvim_win_get_cursor(bufnr)
-  local line = vim.api.nvim_get_lines(bufnr, cursor[1] - 1, cursor[1], false)[1]
+function M.line(source)
+  local bufnr = source.bufnr
+  local winnr = source.winnr
+  local cursor = vim.api.nvim_win_get_cursor(winnr)
+  local line = vim.api.nvim_buf_get_lines(bufnr, cursor[1] - 1, cursor[1], false)[1]
 
   if not line or line == '' then
     return nil
@@ -100,15 +130,17 @@ end
 
 --- Select whole buffer and find diagnostics
 --- It uses the built-in LSP client in Neovim to get the diagnostics.
---- @param bufnr number
+--- @param source CopilotChat.config.source
 --- @return CopilotChat.config.selection|nil
-function M.diagnostics(bufnr)
-  local select_buffer = M.buffer(bufnr)
+function M.diagnostics(source)
+  local bufnr = source.bufnr
+  local winnr = source.winnr
+  local select_buffer = M.buffer(source)
   if not select_buffer then
     return nil
   end
 
-  local cursor = vim.api.nvim_win_get_cursor(bufnr)
+  local cursor = vim.api.nvim_win_get_cursor(winnr)
   local line_diagnostics = vim.lsp.diagnostic.get_line_diagnostics(bufnr, cursor[1] - 1)
 
   if #line_diagnostics == 0 then
@@ -129,11 +161,11 @@ function M.diagnostics(bufnr)
 end
 
 --- Select and process current git diff
---- @param bufnr number
+--- @param source CopilotChat.config.source
 --- @param staged boolean @If true, it will return the staged changes
 --- @return CopilotChat.config.selection|nil
-function M.gitdiff(bufnr, staged)
-  local select_buffer = M.buffer(bufnr)
+function M.gitdiff(source, staged)
+  local select_buffer = M.buffer(source)
   if not select_buffer then
     return nil
   end

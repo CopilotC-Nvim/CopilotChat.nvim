@@ -12,12 +12,12 @@ local plugin_name = 'CopilotChat.nvim'
 --- @class CopilotChat.state
 --- @field copilot CopilotChat.Copilot?
 --- @field chat CopilotChat.Chat?
---- @field current_bufnr number?
+--- @field source CopilotChat.config.source?
 local state = {
   copilot = nil,
   chat = nil,
   window = nil,
-  current_bufnr = nil,
+  source = nil,
 }
 
 function CopilotChatFoldExpr(lnum, separator)
@@ -180,9 +180,16 @@ local function complete()
   vim.fn.complete(cmp_start + 1, items)
 end
 
-local function get_selection(config, bufnr)
-  if config and config.selection and vim.api.nvim_buf_is_valid(bufnr) then
-    return config.selection(bufnr) or {}
+local function get_selection(config)
+  local bufnr = state.source.bufnr
+  local winnr = state.source.winnr
+  if
+    config
+    and config.selection
+    and vim.api.nvim_buf_is_valid(bufnr)
+    and vim.api.nvim_win_is_valid(winnr)
+  then
+    return config.selection(state.source) or {}
   end
   return {}
 end
@@ -224,12 +231,14 @@ end
 
 --- Open the chat window.
 ---@param config CopilotChat.config?
----@param current_bufnr number?
-function M.open(config, current_bufnr)
+---@param source CopilotChat.config.source?
+function M.open(config, source, no_focus)
   local should_reset = config and config.window ~= nil and not vim.tbl_isempty(config.window)
   config = vim.tbl_deep_extend('force', M.config, config or {})
-  state.current_bufnr = current_bufnr or vim.api.nvim_get_current_buf()
-  local selection = get_selection(config, state.current_bufnr)
+  state.source = vim.tbl_extend('keep', source or {}, {
+    bufnr = vim.api.nvim_get_current_buf(),
+    winnr = vim.api.nvim_get_current_win(),
+  })
 
   local just_created = false
 
@@ -265,14 +274,14 @@ function M.open(config, current_bufnr)
           if line_count == end_line then
             vim.api.nvim_buf_set_lines(state.chat.bufnr, start_line, end_line, false, { '' })
           end
-          M.ask(input, nil, state.current_bufnr)
+          M.ask(input, nil, state.source)
         end
       end, { buffer = state.chat.bufnr })
     end
 
     if config.mappings.show_diff then
       vim.keymap.set('n', config.mappings.show_diff, function()
-        local selection = get_selection(config, state.current_bufnr)
+        local selection = get_selection(config)
         show_diff_between_selection_and_copilot(selection)
       end, {
         buffer = state.chat.bufnr,
@@ -281,7 +290,7 @@ function M.open(config, current_bufnr)
 
     if config.mappings.accept_diff then
       vim.keymap.set('n', config.mappings.accept_diff, function()
-        local selection = get_selection(config, state.current_bufnr)
+        local selection = get_selection(config)
         if not selection.start_row or not selection.end_row then
           return
         end
@@ -292,7 +301,7 @@ function M.open(config, current_bufnr)
         local lines = find_lines_between_separator(section_lines, '^```%w*$', true)
         if #lines > 0 then
           vim.api.nvim_buf_set_text(
-            state.current_bufnr,
+            state.source.bufnr,
             selection.start_row - 1,
             selection.start_col - 1,
             selection.end_row - 1,
@@ -378,7 +387,9 @@ function M.open(config, current_bufnr)
     end
   end
 
-  vim.api.nvim_set_current_win(state.window)
+  if not no_focus then
+    vim.api.nvim_set_current_win(state.window)
+  end
 end
 
 --- Close the chat window and stop the Copilot model.
@@ -397,21 +408,21 @@ end
 
 --- Toggle the chat window.
 ---@param config CopilotChat.config|nil
----@param bufnr number?
-function M.toggle(config, bufnr)
+---@param source CopilotChat.config.source?
+function M.toggle(config, source)
   if state.window and vim.api.nvim_win_is_valid(state.window) then
     M.close()
   else
-    M.open(config, bufnr)
+    M.open(config, source)
   end
 end
 
 --- Ask a question to the Copilot model.
 ---@param prompt string
 ---@param config CopilotChat.config|nil
----@param bufnr number?
-function M.ask(prompt, config, bufnr)
-  M.open(config, bufnr)
+---@param source CopilotChat.config.source?
+function M.ask(prompt, config, source)
+  M.open(config, source, true)
 
   if not prompt or prompt == '' then
     return
@@ -425,12 +436,14 @@ function M.ask(prompt, config, bufnr)
     return
   end
 
+  local selection = get_selection(config)
+  vim.api.nvim_set_current_win(state.window)
+
   if config.clear_chat_on_new_prompt then
     M.reset()
   end
 
-  local selection = get_selection(config, state.current_bufnr)
-  local filetype = vim.bo[state.current_bufnr].filetype
+  local filetype = selection.filetype or vim.bo[state.source.bufnr].filetype
   if selection.prompt_extra then
     updated_prompt = updated_prompt .. ' ' .. selection.prompt_extra
   end
