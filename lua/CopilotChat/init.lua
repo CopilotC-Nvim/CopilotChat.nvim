@@ -329,35 +329,28 @@ function M.open(config, source, no_focus)
       win_opts.height = math.floor(vim.o.lines * config.window.height)
     elseif layout == 'vertical' then
       if is_stable() then
-        win_opts.zindex = config.window.zindex
-        win_opts.relative = 'editor'
-        win_opts.width = math.floor(vim.o.columns * 0.5) -- 50% width
-        win_opts.height = vim.o.lines -- full height
-        win_opts.row = 0 -- top of the screen
-        win_opts.col = math.floor(vim.o.columns * 0.5) -- right side of the screen
-        win_opts.border = config.window.border
-        win_opts.title = config.window.title
-        win_opts.footer = config.window.footer
+        vim.cmd('vsplit')
+        state.window = vim.api.nvim_get_current_win()
+        vim.api.nvim_win_set_buf(state.window, state.chat.bufnr)
+        vim.api.nvim_set_current_win(state.source.winnr)
       else
         win_opts.vertical = true
       end
     elseif layout == 'horizontal' then
       if is_stable() then
-        win_opts.zindex = config.window.zindex
-        win_opts.relative = 'editor'
-        win_opts.height = math.floor(vim.o.lines * 0.5) -- 50% height
-        win_opts.width = vim.o.columns -- full width
-        win_opts.row = math.floor(vim.o.lines * 0.5) -- bottom of the screen
-        win_opts.col = 0 -- left side of the screen
-        win_opts.border = config.window.border
-        win_opts.title = config.window.title
-        win_opts.footer = config.window.footer
+        vim.cmd('split')
+        state.window = vim.api.nvim_get_current_win()
+        vim.api.nvim_win_set_buf(state.window, state.chat.bufnr)
+        vim.api.nvim_set_current_win(state.source.winnr)
       else
         win_opts.vertical = false
       end
     end
 
-    state.window = vim.api.nvim_open_win(state.chat.bufnr, false, win_opts)
+    if not state.window or not vim.api.nvim_win_is_valid(state.window) then
+      state.window = vim.api.nvim_open_win(state.chat.bufnr, false, win_opts)
+    end
+
     vim.wo[state.window].wrap = true
     vim.wo[state.window].linebreak = true
     vim.wo[state.window].cursorline = true
