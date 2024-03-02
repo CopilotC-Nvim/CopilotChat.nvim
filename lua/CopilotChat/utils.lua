@@ -33,4 +33,22 @@ function M.is_stable()
   return vim.fn.has('nvim-0.10.0') == 0
 end
 
+--- Join multiple async functions
+function M.join(on_done, fns)
+  local count = #fns
+  local results = {}
+  local function done()
+    count = count - 1
+    if count == 0 then
+      on_done(results)
+    end
+  end
+  for i, fn in ipairs(fns) do
+    fn(function(result)
+      results[i] = result
+      done()
+    end)
+  end
+end
+
 return M

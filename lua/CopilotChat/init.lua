@@ -2,6 +2,7 @@ local default_config = require('CopilotChat.config')
 local log = require('plenary.log')
 local Copilot = require('CopilotChat.copilot')
 local Chat = require('CopilotChat.chat')
+local context = require('CopilotChat.context')
 local prompts = require('CopilotChat.prompts')
 local debuginfo = require('CopilotChat.debuginfo')
 local tiktoken = require('CopilotChat.tiktoken')
@@ -113,7 +114,7 @@ end
 
 --- Append a string to the chat window.
 ---@param str (string)
-local function append(str)
+local function append(str, force)
   vim.schedule(function()
     local last_line, last_column = state.chat:append(str)
 
@@ -122,7 +123,7 @@ local function append(str)
       return
     end
 
-    if M.config.auto_follow_cursor then
+    if M.config.auto_follow_cursor or force then
       vim.api.nvim_win_set_cursor(state.window, { last_line + 1, last_column })
     end
   end)
@@ -140,6 +141,12 @@ local function show_help()
     end
   end
 
+  out = out
+    .. 'use @'
+    .. M.config.mappings.complete
+    .. ' or /'
+    .. M.config.mappings.complete
+    .. ' for different options.'
   state.chat.spinner:finish()
   state.chat.spinner:set(out, -1)
 end
@@ -151,7 +158,7 @@ local function complete()
     return
   end
 
-  local prefix, cmp_start = unpack(vim.fn.matchstrpos(line:sub(1, col), '\\/\\k*$'))
+  local prefix, cmp_start = unpack(vim.fn.matchstrpos(line:sub(1, col), '\\/\\|@\\k*$'))
   if not prefix then
     return
   end
@@ -164,12 +171,34 @@ local function complete()
       word = '/' .. name,
       kind = prompt.kind,
       info = prompt.prompt,
-      detail = prompt.description or '',
+      menu = prompt.description or '',
       icase = 1,
       dup = 0,
       empty = 0,
     }
   end
+
+  items[#items + 1] = {
+    word = '@buffers',
+    kind = 'context',
+    menu = 'Use all loaded buffers as context',
+    icase = 1,
+    dup = 0,
+    empty = 0,
+  }
+
+  items[#items + 1] = {
+    word = '@buffer',
+    kind = 'context',
+    menu = 'Use the current buffer as context',
+    icase = 1,
+    dup = 0,
+    empty = 0,
+  }
+
+  items = vim.tbl_filter(function(item)
+    return vim.startswith(item.word:lower(), prefix:lower())
+  end, items)
 
   vim.fn.complete(cmp_start + 1, items)
 end
@@ -244,13 +273,8 @@ function M.open(config, source, no_focus)
     state.chat = Chat(plugin_name)
     just_created = true
 
-    if config.mappings.complete_after_slash then
-      vim.keymap.set(
-        'i',
-        config.mappings.complete_after_slash,
-        complete,
-        { buffer = state.chat.bufnr }
-      )
+    if config.mappings.complete then
+      vim.keymap.set('i', config.mappings.complete, complete, { buffer = state.chat.bufnr })
     end
 
     if config.mappings.reset then
@@ -431,6 +455,7 @@ function M.ask(prompt, config, source)
   end
 
   local filetype = selection.filetype or vim.bo[state.source.bufnr].filetype
+  local filename = selection.filename or vim.api.nvim_buf_get_name(state.source.bufnr)
   if selection.prompt_extra then
     updated_prompt = updated_prompt .. ' ' .. selection.prompt_extra
   end
@@ -457,34 +482,47 @@ function M.ask(prompt, config, source)
   end
 
   append(updated_prompt)
+  append('\n\n **' .. config.name .. '** ' .. config.separator .. '\n\n', true)
+  state.chat.spinner:start()
 
-  return state.copilot:ask(updated_prompt, {
-    selection = selection.lines,
-    filetype = filetype,
-    system_prompt = system_prompt,
-    model = config.model,
-    temperature = config.temperature,
-    on_start = function()
-      append('\n\n **' .. config.name .. '** ' .. config.separator .. '\n\n')
+  local selected_context = config.context
+  if string.find(prompt, '@buffers') then
+    selected_context = 'buffers'
+  elseif string.find(prompt, '@buffer') then
+    selected_context = 'buffer'
+  end
+  updated_prompt = string.gsub(updated_prompt, '@buffers?%s*', '')
 
-      -- Move the current to the end of the buffer before starting the spinner
-      vim.api.nvim_win_set_cursor(
-        state.window,
-        { vim.api.nvim_buf_line_count(state.chat.bufnr), 0 }
-      )
-      state.chat.spinner:start()
-    end,
-    on_done = function(response, token_count)
-      if token_count > 0 then
-        append('\n\n' .. token_count .. ' tokens used')
-      end
-      append('\n\n' .. config.separator .. '\n\n')
-      show_help()
-    end,
-    on_progress = function(token)
-      append(token)
-    end,
-  })
+  context.find_for_query(
+    state.copilot,
+    selected_context,
+    updated_prompt,
+    selection.lines,
+    filetype,
+    filename,
+    state.source.bufnr,
+    function(embeddings)
+      state.copilot:ask(updated_prompt, {
+        selection = selection.lines,
+        embeddings = embeddings,
+        filename = filename,
+        filetype = filetype,
+        system_prompt = system_prompt,
+        model = config.model,
+        temperature = config.temperature,
+        on_done = function(response, token_count)
+          if tiktoken.available() and token_count and token_count > 0 then
+            append('\n\n' .. token_count .. ' tokens used')
+          end
+          append('\n\n' .. config.separator .. '\n\n')
+          show_help()
+        end,
+        on_progress = function(token)
+          append(token)
+        end,
+      })
+    end
+  )
 end
 
 --- Reset the chat window and show the help message.
@@ -504,7 +542,7 @@ function M.debug(debug)
   local logfile = string.format('%s/%s.log', vim.fn.stdpath('state'), plugin_name)
   log.new({
     plugin = plugin_name,
-    level = debug and 'trace' or 'warn',
+    level = debug and 'debug' or 'warn',
     outfile = logfile,
   }, true)
   log.logfile = logfile

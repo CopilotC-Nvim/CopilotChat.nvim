@@ -171,6 +171,7 @@ Also see [here](/lua/CopilotChat/config.lua):
   system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use
   model = 'gpt-4', -- GPT model to use
   temperature = 0.1, -- GPT temperature
+  context = 'manual', -- Context to use, 'buffers', 'buffer' or 'manual'
   debug = false, -- Enable debug logging
   show_user_selection = true, -- Shows user selection in chat
   show_system_prompt = false, -- Shows system prompt in chat
@@ -224,7 +225,7 @@ Also see [here](/lua/CopilotChat/config.lua):
   mappings = {
     close = 'q',
     reset = '<C-l>',
-    complete_after_slash = '<Tab>',
+    complete = '<Tab>',
     submit_prompt = '<CR>',
     accept_diff = '<C-y>',
     show_diff = '<C-d>',
