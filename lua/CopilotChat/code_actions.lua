@@ -58,26 +58,28 @@ end
 
 local function show_help_actions(config)
   -- Convert diagnostic to a table of actions
-  local help_actions = {}
   local diagnostic = select.diagnostics({
     bufnr = vim.api.nvim_get_current_buf(),
     winnr = vim.api.nvim_get_current_win(),
   })
-  if diagnostic then
-    table.insert(help_actions, {
-      label = 'Please assist with fixing the following diagnostic issue in file: "'
-        .. diagnostic.prompt_extra
-        .. '"',
-      name = 'Fix diagnostic',
-    })
-
-    table.insert(help_actions, {
-      label = 'Please explain the following diagnostic issue in file: "'
-        .. diagnostic.prompt_extra
-        .. '"',
-      name = 'Explain diagnostic',
-    })
+  if not diagnostic then
+    return
   end
+
+  local help_actions = {}
+  table.insert(help_actions, {
+    label = 'Please assist with fixing the following diagnostic issue in file: "'
+      .. diagnostic.prompt_extra
+      .. '"',
+    name = 'Fix diagnostic',
+  })
+
+  table.insert(help_actions, {
+    label = 'Please explain the following diagnostic issue in file: "'
+      .. diagnostic.prompt_extra
+      .. '"',
+    name = 'Explain diagnostic',
+  })
 
   -- Show the menu with telescope pickers
   local opts = themes.get_dropdown({})
