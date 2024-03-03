@@ -188,6 +188,7 @@ function Copilot:ask(prompt, opts)
   log.debug('Model: ' .. model)
   log.debug('Temperature: ' .. temperature)
 
+  self.token_count = self.token_count + tiktoken.count(prompt)
   table.insert(self.history, {
     content = prompt,
     role = 'user',
@@ -208,10 +209,6 @@ function Copilot:ask(prompt, opts)
     generate_request(self.history, selection, filetype, system_prompt, model, temperature)
 
   local full_response = ''
-
-  self.token_count = self.token_count + tiktoken.count(system_prompt)
-  self.token_count = self.token_count + tiktoken.count(selection)
-  self.token_count = self.token_count + tiktoken.count(prompt)
 
   self.current_job_on_cancel = on_done
   self.current_job = curl
@@ -234,10 +231,14 @@ function Copilot:ask(prompt, opts)
           return
         elseif line == '[DONE]' then
           log.debug('Full response: ' .. full_response)
+
           self.token_count = self.token_count + tiktoken.count(full_response)
 
           if on_done then
-            on_done(full_response, self.token_count)
+            on_done(
+              full_response,
+              self.token_count + tiktoken.count(system_prompt) + tiktoken.count(selection)
+            )
           end
 
           table.insert(self.history, {
