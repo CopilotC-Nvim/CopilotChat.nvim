@@ -8,7 +8,7 @@ local curl = require('plenary.curl')
 local class = require('CopilotChat.utils').class
 local prompts = require('CopilotChat.prompts')
 
-local Encoder = require('CopilotChat.tiktoken')()
+local Encoder = require('CopilotChat.tiktoken')
 
 local function uuid()
   local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
@@ -210,7 +210,7 @@ function Copilot:ask(prompt, opts)
 
   local full_response = ''
 
-  self.token_count = self.token_count + Encoder:count(prompt)
+  self.token_count = self.token_count + Encoder.count(prompt)
 
   self.current_job_on_cancel = on_done
   self.current_job = curl
@@ -278,7 +278,7 @@ function Copilot:ask(prompt, opts)
       end,
     })
     :after(function()
-      self.token_count = self.token_count + Encoder:count(full_response)
+      self.token_count = self.token_count + Encoder.count(full_response)
       self.current_job = nil
     end)
 
@@ -293,8 +293,8 @@ function Copilot:get_token_count(selection, system_prompt)
     system_prompt = prompts.COPILOT_INSTRUCTIONS
   end
   return self.token_count
-    + Encoder:count(table.concat(selection, '\n'))
-    + Encoder:count(system_prompt)
+    + Encoder.count(table.concat(selection, '\n'))
+    + Encoder.count(system_prompt)
 end
 
 --- Stop the running job

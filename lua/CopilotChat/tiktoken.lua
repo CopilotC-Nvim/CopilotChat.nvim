@@ -1,5 +1,4 @@
 local curl = require('plenary.curl')
-local class = require('CopilotChat.utils').class
 local tiktoken_core = nil
 if pcall(require, 'tiktoken_core') then
   tiktoken_core = require('tiktoken_core')
@@ -55,10 +54,7 @@ local function get_tiktoken_data()
   end
 end
 
-local Encoder = class(function()
-  if not tiktoken_core then
-    return
-  end
+if tiktoken_core then
   if not get_tiktoken_data() then
     error('Failed to get tiktoken data')
   end
@@ -71,9 +67,8 @@ local Encoder = class(function()
   local pat_str =
     "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
   tiktoken_core.new(get_cache_path(), special_tokens, pat_str)
-end)
-
-function Encoder:encode(prompt)
+end
+local function encode(prompt)
   if not tiktoken_core then
     return nil
   end
@@ -87,12 +82,15 @@ function Encoder:encode(prompt)
   return tiktoken_core.encode(prompt)
 end
 
-function Encoder:count(prompt)
-  local tokens = self:encode(prompt)
+local function count(prompt)
+  local tokens = encode(prompt)
   if not tokens then
     return 0
   end
   return #tokens
 end
 
-return Encoder
+return {
+  encode = encode,
+  count = count,
+}
