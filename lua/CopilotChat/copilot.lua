@@ -286,13 +286,13 @@ function Copilot:ask(prompt, opts)
 end
 
 --- Get the token count for the current selection
----@param selection string: The selection to count tokens for
+---@param selection string[]: The selection to count tokens for
 ---@param system_prompt string|nil: The system prompt to count tokens for
 function Copilot:get_token_count(selection, system_prompt)
   if not system_prompt then
     system_prompt = prompts.COPILOT_INSTRUCTIONS
   end
-  return self.token_count + Encoder:count(selection) + Encoder:count(system_prompt)
+  return self.token_count + Encoder:count(table.concat(selection, '\n')) + Encoder:count(system_prompt)
 end
 
 --- Stop the running job
