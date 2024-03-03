@@ -416,20 +416,15 @@ end
 function M.ask(prompt, config, source)
   M.open(config, source, true)
 
-  if not prompt or prompt == '' then
-    return
-  end
-
   config = vim.tbl_deep_extend('force', M.config, config or {})
+  local selection = get_selection(config)
+  vim.api.nvim_set_current_win(state.window)
 
+  prompt = prompt or ''
   local system_prompt, updated_prompt = update_prompts(prompt, config.system_prompt)
-
   if vim.trim(prompt) == '' then
     return
   end
-
-  local selection = get_selection(config)
-  vim.api.nvim_set_current_win(state.window)
 
   if config.clear_chat_on_new_prompt then
     M.reset()
