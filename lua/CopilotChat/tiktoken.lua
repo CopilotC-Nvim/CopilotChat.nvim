@@ -77,6 +77,13 @@ function Encoder:encode(prompt)
   if not tiktoken_core then
     return nil
   end
+  if not prompt or prompt == '' then
+	 return nil
+  end
+  -- Check if prompt is a string
+  if type(prompt) ~= 'string' then
+	 error('Prompt must be a string')
+  end
   return tiktoken_core.encode(prompt)
 end
 
