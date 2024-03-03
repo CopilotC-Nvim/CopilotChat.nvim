@@ -241,6 +241,8 @@ function Copilot:ask(prompt, opts)
             content = full_response,
             role = 'system',
           })
+          self.token_count = self.token_count + Encoder.count(full_response)
+
           return
         end
 
@@ -278,7 +280,6 @@ function Copilot:ask(prompt, opts)
       end,
     })
     :after(function()
-      self.token_count = self.token_count + Encoder.count(full_response)
       self.current_job = nil
     end)
 
