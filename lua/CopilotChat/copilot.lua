@@ -292,7 +292,9 @@ function Copilot:get_token_count(selection, system_prompt)
   if not system_prompt then
     system_prompt = prompts.COPILOT_INSTRUCTIONS
   end
-  return self.token_count + Encoder:count(table.concat(selection, '\n')) + Encoder:count(system_prompt)
+  return self.token_count
+    + Encoder:count(table.concat(selection, '\n'))
+    + Encoder:count(system_prompt)
 end
 
 --- Stop the running job
