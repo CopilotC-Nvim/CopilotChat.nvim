@@ -74,6 +74,11 @@ function M.check()
       'copilot: missing, required for 2 factor authentication. Install copilot.vim or copilot.lua'
     )
   end
+  if lualib_installed('tiktoken_core') then
+    ok('tiktoken_core: installed')
+  else
+    warn('tiktoken_core: missing, optional for token counting.')
+  end
 end
 
 return M

@@ -7,6 +7,7 @@ local log = require('plenary.log')
 local curl = require('plenary.curl')
 local class = require('CopilotChat.utils').class
 local prompts = require('CopilotChat.prompts')
+local tiktoken = require('CopilotChat.tiktoken')
 
 local function uuid()
   local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
@@ -131,6 +132,7 @@ local Copilot = class(function(self)
   self.github_token = get_cached_token()
   self.history = {}
   self.token = nil
+  self.token_count = 0
   self.sessionid = nil
   self.machineid = machine_id()
   self.current_job = nil
@@ -186,6 +188,7 @@ function Copilot:ask(prompt, opts)
   log.debug('Model: ' .. model)
   log.debug('Temperature: ' .. temperature)
 
+  self.token_count = self.token_count + tiktoken.count(prompt)
   table.insert(self.history, {
     content = prompt,
     role = 'user',
@@ -228,8 +231,14 @@ function Copilot:ask(prompt, opts)
           return
         elseif line == '[DONE]' then
           log.debug('Full response: ' .. full_response)
+
+          self.token_count = self.token_count + tiktoken.count(full_response)
+
           if on_done then
-            on_done(full_response)
+            on_done(
+              full_response,
+              self.token_count + tiktoken.count(system_prompt) + tiktoken.count(selection)
+            )
           end
 
           table.insert(self.history, {
@@ -294,6 +303,7 @@ end
 --- Reset the history and stop any running job
 function Copilot:reset()
   self.history = {}
+  self.token_count = 0
   self:stop()
 end
 

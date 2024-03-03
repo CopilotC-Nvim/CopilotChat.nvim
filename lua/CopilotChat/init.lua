@@ -4,6 +4,7 @@ local Copilot = require('CopilotChat.copilot')
 local Chat = require('CopilotChat.chat')
 local prompts = require('CopilotChat.prompts')
 local debuginfo = require('CopilotChat.debuginfo')
+local tiktoken = require('CopilotChat.tiktoken')
 local is_stable = require('CopilotChat.utils').is_stable
 
 local M = {}
@@ -473,7 +474,10 @@ function M.ask(prompt, config, source)
       )
       state.chat.spinner:start()
     end,
-    on_done = function()
+    on_done = function(response, token_count)
+      if token_count then
+        append('\n\n' .. token_count .. ' tokens used')
+      end
       append('\n\n' .. config.separator .. '\n\n')
       show_help()
     end,
@@ -511,6 +515,7 @@ end
 function M.setup(config)
   M.config = vim.tbl_deep_extend('force', default_config, config or {})
   state.copilot = Copilot()
+  tiktoken.setup()
   debuginfo.setup()
   M.debug(M.config.debug)
 

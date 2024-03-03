@@ -18,6 +18,10 @@ Ensure you have the following installed:
 
 - **Neovim stable (0.9.5) or nightly**.
 
+Optional:
+
+- tiktoken_core: `sudo luarocks install --lua-version 5.1 tiktoken_core`. Alternatively, download a pre-built binary from [lua-tiktoken releases](https://github.com/gptlang/lua-tiktoken/releases)
+
 ## Installation
 
 ### Lazy.nvim
