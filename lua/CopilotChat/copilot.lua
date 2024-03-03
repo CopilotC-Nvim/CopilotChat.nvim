@@ -7,8 +7,7 @@ local log = require('plenary.log')
 local curl = require('plenary.curl')
 local class = require('CopilotChat.utils').class
 local prompts = require('CopilotChat.prompts')
-
-local encoder = require('CopilotChat.tiktoken')
+local tiktoken = require('CopilotChat.tiktoken')
 
 local function uuid()
   local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
@@ -210,9 +209,9 @@ function Copilot:ask(prompt, opts)
 
   local full_response = ''
 
-  self.token_count = self.token_count + encoder.count(system_prompt)
-  self.token_count = self.token_count + encoder.count(selection)
-  self.token_count = self.token_count + encoder.count(prompt)
+  self.token_count = self.token_count + tiktoken.count(system_prompt)
+  self.token_count = self.token_count + tiktoken.count(selection)
+  self.token_count = self.token_count + tiktoken.count(prompt)
 
   self.current_job_on_cancel = on_done
   self.current_job = curl
@@ -235,7 +234,7 @@ function Copilot:ask(prompt, opts)
           return
         elseif line == '[DONE]' then
           log.debug('Full response: ' .. full_response)
-          self.token_count = self.token_count + encoder.count(full_response)
+          self.token_count = self.token_count + tiktoken.count(full_response)
 
           if on_done then
             on_done(full_response, self.token_count)
