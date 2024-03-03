@@ -473,8 +473,10 @@ function M.ask(prompt, config, source)
       )
       state.chat.spinner:start()
     end,
-    on_done = function()
-      append('\n\n' .. state.copilot:get_token_count(selection, system_prompt) .. ' tokens used')
+    on_done = function(response, token_count)
+      if token_count then
+        append('\n\n' .. token_count .. ' tokens used')
+      end
       append('\n\n' .. config.separator .. '\n\n')
       show_help()
     end,

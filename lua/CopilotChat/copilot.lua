@@ -8,7 +8,7 @@ local curl = require('plenary.curl')
 local class = require('CopilotChat.utils').class
 local prompts = require('CopilotChat.prompts')
 
-local Encoder = require('CopilotChat.tiktoken')
+local encoder = require('CopilotChat.tiktoken')
 
 local function uuid()
   local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
@@ -210,7 +210,9 @@ function Copilot:ask(prompt, opts)
 
   local full_response = ''
 
-  self.token_count = self.token_count + Encoder.count(prompt)
+  self.token_count = self.token_count + encoder.count(system_prompt)
+  self.token_count = self.token_count + encoder.count(selection)
+  self.token_count = self.token_count + encoder.count(prompt)
 
   self.current_job_on_cancel = on_done
   self.current_job = curl
@@ -233,16 +235,16 @@ function Copilot:ask(prompt, opts)
           return
         elseif line == '[DONE]' then
           log.debug('Full response: ' .. full_response)
+          self.token_count = self.token_count + encoder.count(full_response)
+
           if on_done then
-            on_done(full_response)
+            on_done(full_response, self.token_count)
           end
 
           table.insert(self.history, {
             content = full_response,
             role = 'system',
           })
-          self.token_count = self.token_count + Encoder.count(full_response)
-
           return
         end
 
@@ -284,18 +286,6 @@ function Copilot:ask(prompt, opts)
     end)
 
   return self.current_job
-end
-
---- Get the token count for the current selection
----@param selection string[]: The selection to count tokens for
----@param system_prompt string|nil: The system prompt to count tokens for
-function Copilot:get_token_count(selection, system_prompt)
-  if not system_prompt then
-    system_prompt = prompts.COPILOT_INSTRUCTIONS
-  end
-  return self.token_count
-    + Encoder.count(table.concat(selection, '\n'))
-    + Encoder.count(system_prompt)
 end
 
 --- Stop the running job
