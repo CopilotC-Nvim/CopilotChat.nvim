@@ -13,11 +13,13 @@ local plugin_name = 'CopilotChat.nvim'
 --- @field copilot CopilotChat.Copilot?
 --- @field chat CopilotChat.Chat?
 --- @field source CopilotChat.config.source?
+--- @field config CopilotChat.config?
 local state = {
   copilot = nil,
   chat = nil,
   window = nil,
   source = nil,
+  config = nil,
 }
 
 local function find_lines_between_separator(lines, pattern, at_least_one)
@@ -171,16 +173,16 @@ local function complete()
   vim.fn.complete(cmp_start + 1, items)
 end
 
-local function get_selection(config)
+local function get_selection()
   local bufnr = state.source.bufnr
   local winnr = state.source.winnr
   if
-    config
-    and config.selection
+    state.config
+    and state.config.selection
     and vim.api.nvim_buf_is_valid(bufnr)
     and vim.api.nvim_win_is_valid(winnr)
   then
-    return config.selection(state.source) or {}
+    return state.config.selection(state.source) or {}
   end
   return {}
 end
@@ -226,10 +228,14 @@ end
 function M.open(config, source, no_focus)
   local should_reset = config and config.window ~= nil and not vim.tbl_isempty(config.window)
   config = vim.tbl_deep_extend('force', M.config, config or {})
+  state.config = config
   state.source = vim.tbl_extend('keep', source or {}, {
     bufnr = vim.api.nvim_get_current_buf(),
     winnr = vim.api.nvim_get_current_win(),
   })
+
+  -- Exit visual mode if we are in visual mode
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<esc>', true, false, true), 'x', false)
 
   local just_created = false
 
@@ -265,14 +271,14 @@ function M.open(config, source, no_focus)
           if line_count == end_line then
             vim.api.nvim_buf_set_lines(state.chat.bufnr, start_line, end_line, false, { '' })
           end
-          M.ask(input, nil, state.source)
+          M.ask(input, state.config, state.source)
         end
       end, { buffer = state.chat.bufnr })
     end
 
     if config.mappings.show_diff then
       vim.keymap.set('n', config.mappings.show_diff, function()
-        local selection = get_selection(config)
+        local selection = get_selection()
         show_diff_between_selection_and_copilot(selection)
       end, {
         buffer = state.chat.bufnr,
@@ -281,7 +287,7 @@ function M.open(config, source, no_focus)
 
     if config.mappings.accept_diff then
       vim.keymap.set('n', config.mappings.accept_diff, function()
-        local selection = get_selection(config)
+        local selection = get_selection()
         if not selection.start_row or not selection.end_row then
           return
         end
@@ -410,7 +416,7 @@ function M.ask(prompt, config, source)
   M.open(config, source, true)
 
   config = vim.tbl_deep_extend('force', M.config, config or {})
-  local selection = get_selection(config)
+  local selection = get_selection()
   vim.api.nvim_set_current_win(state.window)
 
   prompt = prompt or ''

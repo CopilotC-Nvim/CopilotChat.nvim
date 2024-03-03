@@ -42,34 +42,11 @@ end
 function M.visual(source)
   local bufnr = source.bufnr
 
-  local full_line = false
-  local start_line = nil
-  local start_col = nil
-  local finish_line = nil
-  local finish_col = nil
-  if 'copilot-chat' ~= vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf()) then
-    local start = vim.fn.getpos('v')
-    start_line = start[2]
-    start_col = start[3]
-    local finish = vim.fn.getpos('.')
-    finish_line = finish[2]
-    finish_col = finish[3]
-    if vim.fn.mode() == 'V' then
-      full_line = true
-    end
-  end
-
-  -- Exit visual mode
-  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<esc>', true, false, true), 'x', true)
-
-  if start_line == finish_line and start_col == finish_col then
-    start_line, start_col = unpack(vim.api.nvim_buf_get_mark(bufnr, '<'))
-    finish_line, finish_col = unpack(vim.api.nvim_buf_get_mark(bufnr, '>'))
-    start_col = start_col + 1
-    finish_col = finish_col + 1
-  end
-
-  return get_selection_lines(bufnr, start_line, start_col, finish_line, finish_col, full_line)
+  local start_line, start_col = unpack(vim.api.nvim_buf_get_mark(bufnr, '<'))
+  local finish_line, finish_col = unpack(vim.api.nvim_buf_get_mark(bufnr, '>'))
+  start_col = start_col + 1
+  finish_col = finish_col + 1
+  return get_selection_lines(bufnr, start_line, start_col, finish_line, finish_col, false)
 end
 
 --- Select and process contents of unnamed register ('"')
