@@ -1,8 +1,5 @@
 local curl = require('plenary.curl')
 local tiktoken_core = nil
-if pcall(require, 'tiktoken_core') then
-  tiktoken_core = require('tiktoken_core')
-end
 
 ---Get the path of the cache directory or nil
 ---@return nil|string
@@ -38,7 +35,7 @@ end
 
 ---Get tiktoken data from cache or download it
 ---@return boolean
-local function get_tiktoken_data()
+local function load_tiktoken_data()
   if file_exists(get_cache_path()) then
     return true
   else
@@ -54,21 +51,34 @@ local function get_tiktoken_data()
   end
 end
 
-if tiktoken_core then
-  if not get_tiktoken_data() then
-    error('Failed to get tiktoken data')
+local M = {}
+
+function M.setup()
+  local ok, core = pcall(require, 'tiktoken_core')
+  if not ok then
+    return
   end
-  local special_tokens = {}
-  special_tokens['<|endoftext|>'] = 100257
-  special_tokens['<|fim_prefix|>'] = 100258
-  special_tokens['<|fim_middle|>'] = 100259
-  special_tokens['<|fim_suffix|>'] = 100260
-  special_tokens['<|endofprompt|>'] = 100276
-  local pat_str =
-    "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
-  tiktoken_core.new(get_cache_path(), special_tokens, pat_str)
+
+  -- start coroutine to load tiktoken data
+  local co = coroutine.create(function()
+    if not load_tiktoken_data() then
+      error('Failed to get tiktoken data')
+    end
+    local special_tokens = {}
+    special_tokens['<|endoftext|>'] = 100257
+    special_tokens['<|fim_prefix|>'] = 100258
+    special_tokens['<|fim_middle|>'] = 100259
+    special_tokens['<|fim_suffix|>'] = 100260
+    special_tokens['<|endofprompt|>'] = 100276
+    local pat_str =
+      "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
+    core.new(get_cache_path(), special_tokens, pat_str)
+    tiktoken_core = core
+  end)
+  coroutine.resume(co)
 end
-local function encode(prompt)
+
+function M.encode(prompt)
   if not tiktoken_core then
     return nil
   end
@@ -82,15 +92,12 @@ local function encode(prompt)
   return tiktoken_core.encode(prompt)
 end
 
-local function count(prompt)
-  local tokens = encode(prompt)
+function M.count(prompt)
+  local tokens = M.encode(prompt)
   if not tokens then
     return 0
   end
   return #tokens
 end
 
-return {
-  encode = encode,
-  count = count,
-}
+return M
