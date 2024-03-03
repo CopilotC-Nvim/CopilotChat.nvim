@@ -283,7 +283,9 @@ function Copilot:ask(prompt, opts)
       end,
     })
     :after(function()
-      self.token_count = self.token_count + Encoder:count(full_response)
+      if tiktoken_available then
+        self.token_count = self.token_count + Encoder:count(full_response)
+      end
       self.current_job = nil
     end)
 
@@ -295,10 +297,10 @@ end
 ---@param system_prompt string|nil: The system prompt to count tokens for
 function Copilot:get_token_count(selection, system_prompt)
   if not tiktoken_available then
-	 return 0
+    return 0
   end
   if not system_prompt then
-	 system_prompt = prompts.COPILOT_INSTRUCTIONS
+    system_prompt = prompts.COPILOT_INSTRUCTIONS
   end
   return self.token_count + Encoder:count(selection) + Encoder:count(system_prompt)
 end
