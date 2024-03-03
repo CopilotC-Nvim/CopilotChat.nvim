@@ -8,10 +8,7 @@ local curl = require('plenary.curl')
 local class = require('CopilotChat.utils').class
 local prompts = require('CopilotChat.prompts')
 
-local tiktoken_available = pcall(require, 'tiktoken')
-if tiktoken_available then
-  Encoder = require('CopilotChat.tiktoken')()
-end
+local Encoder = require('CopilotChat.tiktoken')()
 
 local function uuid()
   local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
@@ -213,9 +210,7 @@ function Copilot:ask(prompt, opts)
 
   local full_response = ''
 
-  if tiktoken_available then
-    self.token_count = self.token_count + Encoder:count(prompt)
-  end
+  self.token_count = self.token_count + Encoder:count(prompt)
 
   self.current_job_on_cancel = on_done
   self.current_job = curl
@@ -283,9 +278,7 @@ function Copilot:ask(prompt, opts)
       end,
     })
     :after(function()
-      if tiktoken_available then
-        self.token_count = self.token_count + Encoder:count(full_response)
-      end
+      self.token_count = self.token_count + Encoder:count(full_response)
       self.current_job = nil
     end)
 
@@ -296,9 +289,6 @@ end
 ---@param selection string: The selection to count tokens for
 ---@param system_prompt string|nil: The system prompt to count tokens for
 function Copilot:get_token_count(selection, system_prompt)
-  if not tiktoken_available then
-    return 0
-  end
   if not system_prompt then
     system_prompt = prompts.COPILOT_INSTRUCTIONS
   end
