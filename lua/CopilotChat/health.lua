@@ -77,7 +77,7 @@ function M.check()
   if lualib_installed('tiktoken_core') then
     ok('tiktoken_core: installed')
   else
-    error('tiktoken_core: missing, optional for token counting.')
+    warn('tiktoken_core: missing, optional for token counting.')
   end
 end
 
