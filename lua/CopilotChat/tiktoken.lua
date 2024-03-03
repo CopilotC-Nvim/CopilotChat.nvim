@@ -1,15 +1,10 @@
 local curl = require('plenary.curl')
 local tiktoken_core = nil
 
----Get the path of the cache directory or nil
----@return nil|string
+---Get the path of the cache directory
+---@return string
 local function get_cache_path()
-  local cache_path = vim.fn.stdpath('cache') .. '/cl100k_base.tiktoken'
-  if cache_path then
-    return cache_path
-  else
-    return nil
-  end
+  return vim.fn.stdpath('cache') .. '/cl100k_base.tiktoken'
 end
 
 local function file_exists(name)
