@@ -56,6 +56,9 @@ local function get_tiktoken_data()
 end
 
 local Encoder = class(function()
+  if not tiktoken_core then
+    return
+  end
   if not get_tiktoken_data() then
     error('Failed to get tiktoken data')
   end
@@ -67,9 +70,7 @@ local Encoder = class(function()
   special_tokens['<|endofprompt|>'] = 100276
   local pat_str =
     "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
-  if tiktoken_core then
-    tiktoken_core.new(get_cache_path(), special_tokens, pat_str)
-  end
+  tiktoken_core.new(get_cache_path(), special_tokens, pat_str)
 end)
 
 function Encoder:encode(prompt)
