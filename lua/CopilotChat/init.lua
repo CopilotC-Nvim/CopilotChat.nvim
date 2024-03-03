@@ -474,6 +474,7 @@ function M.ask(prompt, config, source)
       state.chat.spinner:start()
     end,
     on_done = function()
+      append('\n\n' .. state.copilot:get_token_count() .. ' tokens used')
       append('\n\n' .. config.separator .. '\n\n')
       show_help()
     end,

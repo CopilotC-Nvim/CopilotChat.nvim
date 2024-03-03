@@ -8,6 +8,11 @@ local curl = require('plenary.curl')
 local class = require('CopilotChat.utils').class
 local prompts = require('CopilotChat.prompts')
 
+local tiktoken_available = pcall(require, 'tiktoken')
+if tiktoken_available then
+  Encoder = require('CopilotChat.tiktoken')()
+end
+
 local function uuid()
   local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
   return (
@@ -131,6 +136,7 @@ local Copilot = class(function(self)
   self.github_token = get_cached_token()
   self.history = {}
   self.token = nil
+  self.token_count = 0
   self.sessionid = nil
   self.machineid = machine_id()
   self.current_job = nil
@@ -207,6 +213,10 @@ function Copilot:ask(prompt, opts)
 
   local full_response = ''
 
+  if tiktoken_available then
+    self.token_count = self.token_count + Encoder:count(prompt)
+  end
+
   self.current_job_on_cancel = on_done
   self.current_job = curl
     .post(url, {
@@ -273,10 +283,24 @@ function Copilot:ask(prompt, opts)
       end,
     })
     :after(function()
+      self.token_count = self.token_count + Encoder:count(full_response)
       self.current_job = nil
     end)
 
   return self.current_job
+end
+
+--- Get the token count for the current selection
+---@param selection string: The selection to count tokens for
+---@param system_prompt string|nil: The system prompt to count tokens for
+function Copilot:get_token_count(selection, system_prompt)
+  if not tiktoken_available then
+	 return 0
+  end
+  if not system_prompt then
+	 system_prompt = prompts.COPILOT_INSTRUCTIONS
+  end
+  return self.token_count + Encoder:count(selection) + Encoder:count(system_prompt)
 end
 
 --- Stop the running job
@@ -294,6 +318,7 @@ end
 --- Reset the history and stop any running job
 function Copilot:reset()
   self.history = {}
+  self.token_count = 0
   self:stop()
 end
 
