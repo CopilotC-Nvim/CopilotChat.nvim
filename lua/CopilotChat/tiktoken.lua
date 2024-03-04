@@ -55,6 +55,10 @@ function M.setup()
   end)
 end
 
+function M.available()
+  return tiktoken_core ~= nil
+end
+
 function M.encode(prompt)
   if not tiktoken_core then
     return nil
@@ -70,6 +74,10 @@ function M.encode(prompt)
 end
 
 function M.count(prompt)
+  if not tiktoken_core then
+    return math.ceil(#prompt * 0.5) -- Fallback to 1/2 character count
+  end
+
   local tokens = M.encode(prompt)
   if not tokens then
     return 0

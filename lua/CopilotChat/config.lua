@@ -7,6 +7,7 @@ local select = require('CopilotChat.select')
 
 ---@class CopilotChat.config.selection
 ---@field lines string
+---@field filename string?
 ---@field filetype string?
 ---@field start_row number?
 ---@field start_col number?
@@ -35,7 +36,7 @@ local select = require('CopilotChat.select')
 ---@class CopilotChat.config.mappings
 ---@field close string?
 ---@field reset string?
----@field complete_after_slash string?
+---@field complete string?
 ---@field submit_prompt string?
 ---@field accept_diff string?
 ---@field show_diff string?
@@ -45,6 +46,7 @@ local select = require('CopilotChat.select')
 ---@field system_prompt string?
 ---@field model string?
 ---@field temperature number?
+---@field context string?
 ---@field debug boolean?
 ---@field show_user_selection boolean?
 ---@field show_system_prompt boolean?
@@ -59,8 +61,9 @@ local select = require('CopilotChat.select')
 ---@field mappings CopilotChat.config.mappings?
 return {
   system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use
-  model = 'gpt-4', -- GPT model to use
+  model = 'gpt-4', -- GPT model to use, 'gpt-3.5-turbo' or 'gpt-4'
   temperature = 0.1, -- GPT temperature
+  context = 'manual', -- Context to use, 'buffers', 'buffer' or 'manual'
   debug = false, -- Enable debug logging
   show_user_selection = true, -- Shows user selection in chat
   show_system_prompt = false, -- Shows system prompt in chat
@@ -114,7 +117,7 @@ return {
   mappings = {
     close = 'q',
     reset = '<C-l>',
-    complete_after_slash = '<Tab>',
+    complete = '<Tab>',
     submit_prompt = '<CR>',
     accept_diff = '<C-y>',
     show_diff = '<C-d>',

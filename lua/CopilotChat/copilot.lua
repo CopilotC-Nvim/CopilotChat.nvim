@@ -1,13 +1,41 @@
+---@class CopilotChat.copilot.embed
+---@field filename string
+---@field filetype string
+---@field prompt string?
+---@field content string?
+
+---@class CopilotChat.copilot.ask.opts
+---@field selection string?
+---@field embeddings table<CopilotChat.copilot.embed>?
+---@field filename string?
+---@field filetype string?
+---@field system_prompt string?
+---@field model string?
+---@field temperature number?
+---@field on_done nil|fun(response: string, token_count: number?):nil
+---@field on_progress nil|fun(response: string):nil
+---@field on_error nil|fun(err: string):nil
+
+---@class CopilotChat.copilot.embed.opts
+---@field model string?
+---@field chunk_size number?
+---@field on_done nil|fun(results: table):nil
+---@field on_error nil|fun(err: string):nil
+
 ---@class CopilotChat.Copilot
----@field ask fun(self: CopilotChat.Copilot, prompt: string, opts: table): table
+---@field ask fun(self: CopilotChat.Copilot, prompt: string, opts: CopilotChat.copilot.ask.opts):nil
+---@field embed fun(self: CopilotChat.Copilot, inputs: table, opts: CopilotChat.copilot.embed.opts):nil
 ---@field stop fun(self: CopilotChat.Copilot)
 ---@field reset fun(self: CopilotChat.Copilot)
 
 local log = require('plenary.log')
 local curl = require('plenary.curl')
-local class = require('CopilotChat.utils').class
+local utils = require('CopilotChat.utils')
+local class = utils.class
+local join = utils.join
 local prompts = require('CopilotChat.prompts')
 local tiktoken = require('CopilotChat.tiktoken')
+local max_tokens = 8192
 
 local function uuid()
   local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
@@ -59,7 +87,57 @@ local function get_cached_token()
   return userdata['github.com'].oauth_token
 end
 
-local function generate_request(history, selection, filetype, system_prompt, model, temperature)
+local function generate_selection_message(filename, filetype, selection)
+  if not selection or selection == '' then
+    return ''
+  end
+
+  return string.format('Active selection: `%s`\n```%s\n%s\n```', filename, filetype, selection)
+end
+
+local function generate_embeddings_message(embeddings)
+  local files = {}
+  for _, embedding in ipairs(embeddings) do
+    local filename = embedding.filename
+    if not files[filename] then
+      files[filename] = {}
+    end
+    table.insert(files[filename], embedding)
+  end
+
+  local out = {
+    header = 'Open files:\n',
+    files = {},
+  }
+
+  for filename, group in pairs(files) do
+    table.insert(
+      out.files,
+      string.format(
+        'File: `%s`\n```%s\n%s\n```\n',
+        filename,
+        group[1].filetype,
+        table.concat(
+          vim.tbl_map(function(e)
+            return vim.trim(e.content)
+          end, group),
+          '\n'
+        )
+      )
+    )
+  end
+  return out
+end
+
+local function generate_ask_request(
+  history,
+  prompt,
+  embeddings,
+  selection,
+  system_prompt,
+  model,
+  temperature
+)
   local messages = {}
 
   if system_prompt ~= '' then
@@ -73,13 +151,25 @@ local function generate_request(history, selection, filetype, system_prompt, mod
     table.insert(messages, message)
   end
 
-  if selection ~= '' then
-    -- Insert the active selection before last prompt
-    table.insert(messages, #messages, {
-      content = '\nActive selection:\n```' .. filetype .. '\n' .. selection .. '\n```',
+  if embeddings and #embeddings.files > 0 then
+    -- FIXME: Is this really supposed to be sent like this? Maybe just send it with query, not sure
+    table.insert(messages, {
+      content = embeddings.header .. table.concat(embeddings.files, ''),
       role = 'system',
     })
   end
+
+  if selection ~= '' then
+    table.insert(messages, {
+      content = selection,
+      role = 'system',
+    })
+  end
+
+  table.insert(messages, {
+    content = prompt,
+    role = 'user',
+  })
 
   return {
     intent = true,
@@ -89,6 +179,28 @@ local function generate_request(history, selection, filetype, system_prompt, mod
     temperature = temperature,
     top_p = 1,
     messages = messages,
+  }
+end
+
+local function generate_embedding_request(inputs, model)
+  return {
+    input = vim.tbl_map(function(input)
+      local out = ''
+      if input.prompt then
+        out = input.prompt .. '\n'
+      end
+      if input.content then
+        out = out
+          .. string.format(
+            'File: `%s`\n```%s\n%s\n```',
+            input.filename,
+            input.filetype,
+            input.content
+          )
+      end
+      return out
+    end, inputs),
+    model = model,
   }
 end
 
@@ -117,15 +229,14 @@ local function authenticate(github_token)
     ['user-agent'] = 'GitHubCopilotChat/0.12.2023120701',
   }
 
-  local sessionid = uuid() .. tostring(math.floor(os.time() * 1000))
   local response = curl.get(url, { headers = headers })
 
   if response.status ~= 200 then
-    return nil, nil, response.status
+    return nil, response.status
   end
 
   local token = vim.json.decode(response.body)
-  return sessionid, token, nil
+  return token, nil
 end
 
 local Copilot = class(function(self)
@@ -139,21 +250,7 @@ local Copilot = class(function(self)
   self.current_job_on_cancel = nil
 end)
 
---- Ask a question to Copilot
----@param prompt string: The prompt to send to Copilot
----@param opts table: Options for the request
-function Copilot:ask(prompt, opts)
-  opts = opts or {}
-  local selection = opts.selection or ''
-  local filetype = opts.filetype or ''
-  local system_prompt = opts.system_prompt or prompts.COPILOT_INSTRUCTIONS
-  local model = opts.model or 'gpt-4'
-  local temperature = opts.temperature or 0.1
-  local on_start = opts.on_start
-  local on_done = opts.on_done
-  local on_progress = opts.on_progress
-  local on_error = opts.on_error
-
+function Copilot:check_auth(on_error)
   if not self.github_token then
     local msg =
       'No GitHub token found, please use `:Copilot setup` to set it up from copilot.vim or copilot.lua'
@@ -161,52 +258,106 @@ function Copilot:ask(prompt, opts)
     if on_error then
       on_error(msg)
     end
-    return
+    return false
   end
 
   if
     not self.token or (self.token.expires_at and self.token.expires_at <= math.floor(os.time()))
   then
-    local sessionid, token, err = authenticate(self.github_token)
+    local sessionid = uuid() .. tostring(math.floor(os.time() * 1000))
+    local token, err = authenticate(self.github_token)
     if err then
       local msg = 'Failed to authenticate: ' .. tostring(err)
       log.error(msg)
       if on_error then
         on_error(msg)
       end
-      return
+      return false
     else
       self.sessionid = sessionid
       self.token = token
     end
   end
 
+  return true
+end
+
+--- Ask a question to Copilot
+---@param prompt string: The prompt to send to Copilot
+---@param opts CopilotChat.copilot.ask.opts: Options for the request
+function Copilot:ask(prompt, opts)
+  opts = opts or {}
+  local embeddings = opts.embeddings or {}
+  local filename = opts.filename or ''
+  local filetype = opts.filetype or ''
+  local selection = opts.selection or ''
+  local system_prompt = opts.system_prompt or prompts.COPILOT_INSTRUCTIONS
+  local model = opts.model or 'gpt-4'
+  local temperature = opts.temperature or 0.1
+  local on_done = opts.on_done
+  local on_progress = opts.on_progress
+  local on_error = opts.on_error
+
+  if not self:check_auth(on_error) then
+    return
+  end
+
   log.debug('System prompt: ' .. system_prompt)
   log.debug('Prompt: ' .. prompt)
-  log.debug('Selection: ' .. selection)
+  log.debug('Embeddings: ' .. #embeddings)
+  log.debug('Filename: ' .. filename)
   log.debug('Filetype: ' .. filetype)
+  log.debug('Selection: ' .. selection)
   log.debug('Model: ' .. model)
   log.debug('Temperature: ' .. temperature)
-
-  self.token_count = self.token_count + tiktoken.count(prompt)
-  table.insert(self.history, {
-    content = prompt,
-    role = 'user',
-  })
 
   -- If we already have running job, cancel it and notify the user
   if self.current_job then
     self:stop()
   end
 
-  if on_start then
-    on_start()
+  local selection_message = generate_selection_message(filename, filetype, selection)
+  local embeddings_message = generate_embeddings_message(embeddings)
+
+  -- Count tokens
+  self.token_count = self.token_count + tiktoken.count(prompt)
+
+  local current_count = 0
+  current_count = current_count + tiktoken.count(system_prompt)
+  current_count = current_count + tiktoken.count(selection_message)
+
+  if #embeddings_message.files > 0 then
+    local filtered_files = {}
+    current_count = current_count + tiktoken.count(embeddings_message.header)
+    for _, file in ipairs(embeddings_message.files) do
+      local file_count = current_count + tiktoken.count(file)
+      if file_count + self.token_count < max_tokens then
+        current_count = file_count
+        table.insert(filtered_files, file)
+      end
+    end
+    embeddings_message.files = filtered_files
   end
 
   local url = 'https://api.githubcopilot.com/chat/completions'
   local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
-  local data =
-    generate_request(self.history, selection, filetype, system_prompt, model, temperature)
+  local body = vim.json.encode(
+    generate_ask_request(
+      self.history,
+      prompt,
+      embeddings_message,
+      selection_message,
+      system_prompt,
+      model,
+      temperature
+    )
+  )
+
+  -- Add the prompt to history after we have encoded the request
+  table.insert(self.history, {
+    content = prompt,
+    role = 'user',
+  })
 
   local full_response = ''
 
@@ -214,11 +365,13 @@ function Copilot:ask(prompt, opts)
   self.current_job = curl
     .post(url, {
       headers = headers,
-      body = vim.json.encode(data),
+      body = body,
       stream = function(err, line)
         if err then
           log.error('Failed to stream response: ' .. tostring(err))
-          on_error(err)
+          if on_error then
+            on_error(err)
+          end
           return
         end
 
@@ -230,15 +383,11 @@ function Copilot:ask(prompt, opts)
         if line == '' then
           return
         elseif line == '[DONE]' then
-          log.debug('Full response: ' .. full_response)
-
+          log.trace('Full response: ' .. full_response)
           self.token_count = self.token_count + tiktoken.count(full_response)
 
           if on_done then
-            on_done(
-              full_response,
-              self.token_count + tiktoken.count(system_prompt) + tiktoken.count(selection)
-            )
+            on_done(full_response, self.token_count + current_count)
           end
 
           table.insert(self.history, {
@@ -272,7 +421,6 @@ function Copilot:ask(prompt, opts)
           return
         end
 
-        log.debug('Token: ' .. content)
         if on_progress then
           on_progress(content)
         end
@@ -284,8 +432,106 @@ function Copilot:ask(prompt, opts)
     :after(function()
       self.current_job = nil
     end)
+end
 
-  return self.current_job
+--- Generate embeddings for the given inputs
+---@param inputs table<CopilotChat.copilot.embed>: The inputs to embed
+---@param opts CopilotChat.copilot.embed.opts: Options for the request
+function Copilot:embed(inputs, opts)
+  opts = opts or {}
+  local model = opts.model or 'copilot-text-embedding-ada-002'
+  local chunk_size = opts.chunk_size or 15
+  local on_done = opts.on_done
+  local on_error = opts.on_error
+
+  if not inputs or #inputs == 0 then
+    if on_done then
+      on_done({})
+    end
+    return
+  end
+
+  if not self:check_auth(on_error) then
+    return
+  end
+
+  local url = 'https://api.githubcopilot.com/embeddings'
+  local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
+
+  local chunks = {}
+  for i = 1, #inputs, chunk_size do
+    table.insert(chunks, vim.list_slice(inputs, i, i + chunk_size - 1))
+  end
+
+  local jobs = {}
+  for _, chunk in ipairs(chunks) do
+    local body = vim.json.encode(generate_embedding_request(chunk, model))
+
+    table.insert(jobs, function(resolve)
+      curl.post(url, {
+        headers = headers,
+        body = body,
+        on_error = function(err)
+          err = vim.inspect(err)
+          log.error('Failed to get response: ' .. err)
+          if on_error then
+            on_error(err)
+          end
+          resolve()
+        end,
+        callback = function(response)
+          if not response then
+            resolve()
+            return
+          end
+
+          if response.status ~= 200 then
+            local err = vim.inspect(response)
+            log.error('Failed to get response: ' .. err)
+            if on_error then
+              on_error(err)
+            end
+            resolve()
+            return
+          end
+
+          local ok, content = pcall(vim.json.decode, response.body, {
+            luanil = {
+              object = true,
+              array = true,
+            },
+          })
+
+          if not ok then
+            log.error('Failed parse response: ' .. tostring(content))
+            if on_error then
+              on_error(tostring(content))
+            end
+            resolve()
+            return
+          end
+
+          resolve(content.data)
+        end,
+      })
+    end)
+  end
+
+  join(function(results)
+    local out = {}
+    for chunk_i, chunk_result in ipairs(results) do
+      if chunk_result then
+        for _, embedding in ipairs(chunk_result) do
+          local input = chunks[chunk_i][embedding.index + 1]
+          table.insert(out, vim.tbl_extend('keep', input, embedding))
+        end
+      end
+    end
+
+    if on_done then
+      on_done(out)
+    end
+  end, jobs)
 end
 
 --- Stop the running job
