@@ -21,7 +21,7 @@ Ensure you have the following installed:
 Optional:
 
 - tiktoken_core: `sudo luarocks install --lua-version 5.1 tiktoken_core`. Alternatively, download a pre-built binary from [lua-tiktoken releases](https://github.com/gptlang/lua-tiktoken/releases)
-- Make sure it's installed as `/lib64/lua/5.1/tiktoken_core.so`
+- You can check your Lua PATH in Neovim by doing `:lua print(package.cpath)`. Save the binary as `tiktoken_core.so` in any of the given paths.
 
 ## Installation
 
