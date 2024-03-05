@@ -6,7 +6,6 @@ local context = require('CopilotChat.context')
 local prompts = require('CopilotChat.prompts')
 local debuginfo = require('CopilotChat.debuginfo')
 local tiktoken = require('CopilotChat.tiktoken')
-local is_stable = require('CopilotChat.utils').is_stable
 
 local M = {}
 local plugin_name = 'CopilotChat.nvim'
@@ -19,7 +18,6 @@ local plugin_name = 'CopilotChat.nvim'
 local state = {
   copilot = nil,
   chat = nil,
-  window = nil,
   source = nil,
   config = nil,
 }
@@ -114,26 +112,16 @@ end
 
 --- Append a string to the chat window.
 ---@param str (string)
-local function append(str, force)
+local function append(str)
   vim.schedule(function()
-    local last_line, last_column = state.chat:append(str)
-
-    if not state.window or not vim.api.nvim_win_is_valid(state.window) then
-      state.copilot:stop()
-      return
-    end
-
-    if M.config.auto_follow_cursor or force then
-      vim.api.nvim_win_set_cursor(state.window, { last_line + 1, last_column })
+    state.chat:append(str)
+    if M.config.auto_follow_cursor then
+      state.chat:follow()
     end
   end)
 end
 
 local function show_help()
-  if not state.chat then
-    return
-  end
-
   local out = 'Press '
   for name, key in pairs(M.config.mappings) do
     if key then
@@ -267,166 +255,29 @@ function M.open(config, source, no_focus)
   -- Exit visual mode if we are in visual mode
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<esc>', true, false, true), 'x', false)
 
-  local just_created = false
-
-  if not state.chat or not state.chat:valid() then
-    state.chat = Chat(plugin_name)
-    just_created = true
-
-    if config.mappings.complete then
-      vim.keymap.set('i', config.mappings.complete, complete, { buffer = state.chat.bufnr })
-    end
-
-    if config.mappings.reset then
-      vim.keymap.set('n', config.mappings.reset, M.reset, { buffer = state.chat.bufnr })
-    end
-
-    if config.mappings.close then
-      vim.keymap.set('n', 'q', M.close, { buffer = state.chat.bufnr })
-    end
-
-    if config.mappings.submit_prompt then
-      vim.keymap.set('n', config.mappings.submit_prompt, function()
-        local chat_lines = vim.api.nvim_buf_get_lines(state.chat.bufnr, 0, -1, false)
-        local lines, start_line, end_line, line_count =
-          find_lines_between_separator(chat_lines, config.separator .. '$')
-        local input = vim.trim(table.concat(lines, '\n'))
-        if input ~= '' then
-          -- If we are entering the input at the end, replace it
-          if line_count == end_line then
-            vim.api.nvim_buf_set_lines(state.chat.bufnr, start_line, end_line, false, { '' })
-          end
-          M.ask(input, state.config, state.source)
-        end
-      end, { buffer = state.chat.bufnr })
-    end
-
-    if config.mappings.show_diff then
-      vim.keymap.set('n', config.mappings.show_diff, function()
-        local selection = get_selection()
-        show_diff_between_selection_and_copilot(selection)
-      end, {
-        buffer = state.chat.bufnr,
-      })
-    end
-
-    if config.mappings.accept_diff then
-      vim.keymap.set('n', config.mappings.accept_diff, function()
-        local selection = get_selection()
-        if not selection.start_row or not selection.end_row then
-          return
-        end
-
-        local chat_lines = vim.api.nvim_buf_get_lines(state.chat.bufnr, 0, -1, false)
-        local section_lines =
-          find_lines_between_separator(chat_lines, config.separator .. '$', true)
-        local lines = find_lines_between_separator(section_lines, '^```%w*$', true)
-        if #lines > 0 then
-          vim.api.nvim_buf_set_text(
-            state.source.bufnr,
-            selection.start_row - 1,
-            selection.start_col - 1,
-            selection.end_row - 1,
-            selection.end_col,
-            lines
-          )
-        end
-      end, { buffer = state.chat.bufnr })
-    end
-  end
-
   -- Recreate the window if the layout has changed
   if should_reset then
     M.close()
   end
 
-  if not state.window or not vim.api.nvim_win_is_valid(state.window) then
-    local win_opts = {
-      style = 'minimal',
-    }
-
-    local layout = config.window.layout
-
-    if layout == 'float' then
-      win_opts.zindex = config.window.zindex
-      win_opts.relative = config.window.relative
-      win_opts.border = config.window.border
-      win_opts.title = config.window.title
-      win_opts.footer = config.window.footer
-      win_opts.row = config.window.row or math.floor(vim.o.lines * ((1 - config.window.height) / 2))
-      win_opts.col = config.window.col
-        or math.floor(vim.o.columns * ((1 - config.window.width) / 2))
-      win_opts.width = math.floor(vim.o.columns * config.window.width)
-      win_opts.height = math.floor(vim.o.lines * config.window.height)
-    elseif layout == 'vertical' then
-      if is_stable() then
-        vim.cmd('vsplit')
-        state.window = vim.api.nvim_get_current_win()
-        vim.api.nvim_win_set_buf(state.window, state.chat.bufnr)
-        vim.api.nvim_set_current_win(state.source.winnr)
-      else
-        win_opts.vertical = true
-      end
-    elseif layout == 'horizontal' then
-      if is_stable() then
-        vim.cmd('split')
-        state.window = vim.api.nvim_get_current_win()
-        vim.api.nvim_win_set_buf(state.window, state.chat.bufnr)
-        vim.api.nvim_set_current_win(state.source.winnr)
-      else
-        win_opts.vertical = false
-      end
-    end
-
-    if not state.window or not vim.api.nvim_win_is_valid(state.window) then
-      state.window = vim.api.nvim_open_win(state.chat.bufnr, false, win_opts)
-    end
-
-    vim.wo[state.window].wrap = true
-    vim.wo[state.window].linebreak = true
-    vim.wo[state.window].cursorline = true
-    vim.wo[state.window].conceallevel = 2
-    vim.wo[state.window].concealcursor = 'niv'
-    vim.wo[state.window].foldlevel = 99
-    if config.show_folds then
-      vim.wo[state.window].foldcolumn = '1'
-      vim.wo[state.window].foldmethod = 'expr'
-      vim.wo[state.window].foldexpr = "v:lua.require('CopilotChat.folding').CopilotChatFoldExpr(v:lnum, '"
-        .. config.separator
-        .. "')"
-    else
-      vim.wo[state.window].foldcolumn = '0'
-    end
-
-    if just_created then
-      M.reset()
-    end
-  end
-
+  state.chat:open(config)
   if not no_focus then
-    vim.api.nvim_set_current_win(state.window)
+    state.chat:focus()
+    state.chat:follow()
   end
 end
 
 --- Close the chat window and stop the Copilot model.
 function M.close()
   state.copilot:stop()
-
-  if state.chat then
-    state.chat.spinner:finish()
-  end
-
-  if state.window and vim.api.nvim_win_is_valid(state.window) then
-    vim.api.nvim_win_close(state.window, true)
-    state.window = nil
-  end
+  state.chat:close()
 end
 
 --- Toggle the chat window.
 ---@param config CopilotChat.config|nil
 ---@param source CopilotChat.config.source?
 function M.toggle(config, source)
-  if state.window and vim.api.nvim_win_is_valid(state.window) then
+  if state.chat:visible() then
     M.close()
   else
     M.open(config, source)
@@ -442,7 +293,7 @@ function M.ask(prompt, config, source)
 
   config = vim.tbl_deep_extend('force', M.config, config or {})
   local selection = get_selection()
-  vim.api.nvim_set_current_win(state.window)
+  state.chat:focus()
 
   prompt = prompt or ''
   local system_prompt, updated_prompt = update_prompts(prompt, config.system_prompt)
@@ -482,7 +333,8 @@ function M.ask(prompt, config, source)
   end
 
   append(updated_prompt)
-  append('\n\n **' .. config.name .. '** ' .. config.separator .. '\n\n', true)
+  append('\n\n **' .. config.name .. '** ' .. config.separator .. '\n\n')
+  state.chat:follow()
   state.chat.spinner:start()
 
   local selected_context = config.context
@@ -528,11 +380,9 @@ end
 --- Reset the chat window and show the help message.
 function M.reset()
   state.copilot:reset()
-  if state.chat then
-    state.chat:clear()
-    append('\n')
-    show_help()
-  end
+  state.chat:clear()
+  append('\n')
+  show_help()
 end
 
 --- Enables/disables debug
@@ -553,9 +403,73 @@ end
 function M.setup(config)
   M.config = vim.tbl_deep_extend('force', default_config, config or {})
   state.copilot = Copilot()
+  state.chat = Chat(plugin_name, function(bufnr)
+    if M.config.mappings.complete then
+      vim.keymap.set('i', M.config.mappings.complete, complete, { buffer = bufnr })
+    end
+
+    if M.config.mappings.reset then
+      vim.keymap.set('n', M.config.mappings.reset, M.reset, { buffer = bufnr })
+    end
+
+    if M.config.mappings.close then
+      vim.keymap.set('n', 'q', M.close, { buffer = bufnr })
+    end
+
+    if M.config.mappings.submit_prompt then
+      vim.keymap.set('n', M.config.mappings.submit_prompt, function()
+        local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+        local lines, start_line, end_line, line_count =
+          find_lines_between_separator(chat_lines, M.config.separator .. '$')
+        local input = vim.trim(table.concat(lines, '\n'))
+        if input ~= '' then
+          -- If we are entering the input at the end, replace it
+          if line_count == end_line then
+            vim.api.nvim_buf_set_lines(bufnr, start_line, end_line, false, { '' })
+          end
+          M.ask(input, state.config, state.source)
+        end
+      end, { buffer = bufnr })
+    end
+
+    if M.config.mappings.show_diff then
+      vim.keymap.set('n', M.config.mappings.show_diff, function()
+        local selection = get_selection()
+        show_diff_between_selection_and_copilot(selection)
+      end, {
+        buffer = bufnr,
+      })
+    end
+
+    if M.config.mappings.accept_diff then
+      vim.keymap.set('n', M.config.mappings.accept_diff, function()
+        local selection = get_selection()
+        if not selection.start_row or not selection.end_row then
+          return
+        end
+
+        local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+        local section_lines =
+          find_lines_between_separator(chat_lines, M.config.separator .. '$', true)
+        local lines = find_lines_between_separator(section_lines, '^```%w*$', true)
+        if #lines > 0 then
+          vim.api.nvim_buf_set_text(
+            state.source.bufnr,
+            selection.start_row - 1,
+            selection.start_col - 1,
+            selection.end_row - 1,
+            selection.end_col,
+            lines
+          )
+        end
+      end, { buffer = bufnr })
+    end
+  end)
+
   tiktoken.setup()
   debuginfo.setup()
   M.debug(M.config.debug)
+  M.reset()
 
   for name, prompt in pairs(M.prompts(true)) do
     vim.api.nvim_create_user_command('CopilotChat' .. name, function(args)
