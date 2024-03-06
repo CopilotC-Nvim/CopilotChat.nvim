@@ -68,10 +68,10 @@ For further reference, you can view @jellydn's [configuration](https://github.co
 ## TODO
 
 - [x] For proxy support, this is needed: https://github.com/nvim-lua/plenary.nvim/pull/559
-- [ ] Delete rest of the python code? Or finish rewriting in place then delete
+- [x] Delete rest of the python code? Or finish rewriting in place then delete - All InPlace features are done, per poll on discord delete the python code
 - [x] Check for curl availability with health check
 - [x] Add folds logic from python, maybe? Not sure if this is even needed
-- [ ] Finish rewriting the authentication request if needed or just keep relying on copilot.vim/lua
+- [x] Finish rewriting the authentication request if needed or just keep relying on copilot.vim/lua - Relies on copilot.vim/lua
 - [x] Properly get token file path, atm it only supports Linux (easy fix)
 - [x] Update README and stuff
 - [x] Add token count from tiktoken support to extra_info
