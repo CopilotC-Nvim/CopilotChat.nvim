@@ -47,6 +47,8 @@ local select = require('CopilotChat.select')
 ---@field model string?
 ---@field temperature number?
 ---@field context string?
+---@field proxy string?
+---@field allow_insecure boolean?
 ---@field debug boolean?
 ---@field show_user_selection boolean?
 ---@field show_system_prompt boolean?
@@ -64,6 +66,8 @@ return {
   model = 'gpt-4', -- GPT model to use, 'gpt-3.5-turbo' or 'gpt-4'
   temperature = 0.1, -- GPT temperature
   context = 'manual', -- Context to use, 'buffers', 'buffer' or 'manual'
+  proxy = nil, -- [protocol://]host[:port] Use this proxy
+  allow_insecure = false, -- Allow insecure server connections
   debug = false, -- Enable debug logging
   show_user_selection = true, -- Shows user selection in chat
   show_system_prompt = false, -- Shows system prompt in chat

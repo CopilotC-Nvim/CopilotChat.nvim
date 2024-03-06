@@ -19,7 +19,6 @@ Removed or changed params that you pass to `setup`:
 - `show_help` was removed (the help is now always shown as virtual text, and not intrusive)
 - `disable_extra_info` was renamed to `show_user_selection`
 - `hide_system_prompt` was renamed to `show_system_prompt`
-- `proxy` does not work at the moment (waiting for change in plenary.nvim), if you are behind corporate proxy you can look at something like [vpn-slice](https://github.com/dlenski/vpn-slice)
 - `language` was removed and is now part of `selection` as `selection.filetype`
 
 ## Command changes
@@ -68,12 +67,12 @@ For further reference, you can view @jellydn's [configuration](https://github.co
 
 ## TODO
 
-- [ ] For proxy support, this is needed: https://github.com/nvim-lua/plenary.nvim/pull/559
+- [x] For proxy support, this is needed: https://github.com/nvim-lua/plenary.nvim/pull/559
 - [ ] Delete rest of the python code? Or finish rewriting in place then delete
 - [x] Check for curl availability with health check
 - [x] Add folds logic from python, maybe? Not sure if this is even needed
 - [ ] Finish rewriting the authentication request if needed or just keep relying on copilot.vim/lua
 - [x] Properly get token file path, atm it only supports Linux (easy fix)
 - [x] Update README and stuff
-- [ ] Add token count from tiktoken support to extra_info
+- [x] Add token count from tiktoken support to extra_info
 - [x] Add test and fix failed test in CI
