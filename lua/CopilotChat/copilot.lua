@@ -548,9 +548,9 @@ end
 
 --- Reset the history and stop any running job
 function Copilot:reset()
+  self:stop()
   self.history = {}
   self.token_count = 0
-  self:stop()
 end
 
 return Copilot
