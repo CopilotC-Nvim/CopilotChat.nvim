@@ -119,6 +119,7 @@ Similar to the lazy setup, you can use the following configuration:
 Plug 'CopilotC-Nvim/CopilotChat.nvim'
 call plug#end()
 
+lua << EOF
 local copilot_chat = require("CopilotChat")
 copilot_chat.setup({
   debug = true,
@@ -134,6 +135,8 @@ copilot_chat.setup({
   end,
   event = "VeryLazy",
 })
+
+EOF
 
 nnoremap <leader>ccb <cmd>CopilotChatBuffer<cr>
 nnoremap <leader>cce <cmd>CopilotChatExplain<cr>
