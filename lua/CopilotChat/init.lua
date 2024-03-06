@@ -402,7 +402,7 @@ end
 ---@param config CopilotChat.config|nil
 function M.setup(config)
   M.config = vim.tbl_deep_extend('force', default_config, config or {})
-  state.copilot = Copilot()
+  state.copilot = Copilot(M.config.proxy, M.config.allow_insecure)
   state.chat = Chat(plugin_name, function(bufnr)
     if M.config.mappings.complete then
       vim.keymap.set('i', M.config.mappings.complete, complete, { buffer = bufnr })

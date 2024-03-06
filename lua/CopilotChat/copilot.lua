@@ -219,7 +219,7 @@ local function generate_headers(token, sessionid, machineid)
   }
 end
 
-local function authenticate(github_token)
+local function authenticate(github_token, proxy, allow_insecure)
   local url = 'https://api.github.com/copilot_internal/v2/token'
   local headers = {
     authorization = 'token ' .. github_token,
@@ -229,7 +229,11 @@ local function authenticate(github_token)
     ['user-agent'] = 'GitHubCopilotChat/0.12.2023120701',
   }
 
-  local response = curl.get(url, { headers = headers })
+  local response = curl.get(url, {
+    headers = headers,
+    proxy = proxy,
+    insecure = allow_insecure,
+  })
 
   if response.status ~= 200 then
     return nil, response.status
@@ -239,7 +243,9 @@ local function authenticate(github_token)
   return token, nil
 end
 
-local Copilot = class(function(self)
+local Copilot = class(function(self, proxy, allow_insecure)
+  self.proxy = proxy
+  self.allow_insecure = allow_insecure
   self.github_token = get_cached_token()
   self.history = {}
   self.token = nil
@@ -265,7 +271,7 @@ function Copilot:check_auth(on_error)
     not self.token or (self.token.expires_at and self.token.expires_at <= math.floor(os.time()))
   then
     local sessionid = uuid() .. tostring(math.floor(os.time() * 1000))
-    local token, err = authenticate(self.github_token)
+    local token, err = authenticate(self.github_token, self.proxy, self.allow_insecure)
     if err then
       local msg = 'Failed to authenticate: ' .. tostring(err)
       log.error(msg)
@@ -366,6 +372,15 @@ function Copilot:ask(prompt, opts)
     .post(url, {
       headers = headers,
       body = body,
+      proxy = self.proxy,
+      insecure = self.allow_insecure,
+      on_error = function(err)
+        err = vim.inspect(err)
+        log.error('Failed to get response: ' .. err)
+        if on_error then
+          on_error(err)
+        end
+      end,
       stream = function(err, line)
         if err then
           log.error('Failed to stream response: ' .. tostring(err))
@@ -471,6 +486,8 @@ function Copilot:embed(inputs, opts)
       curl.post(url, {
         headers = headers,
         body = body,
+        proxy = self.proxy,
+        insecure = self.allow_insecure,
         on_error = function(err)
           err = vim.inspect(err)
           log.error('Failed to get response: ' .. err)
