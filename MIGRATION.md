@@ -30,8 +30,19 @@ Removed or changed params that you pass to `setup`:
 
 ## API changes
 
-- `CopilotChat.code_actions.show_prompt_actions` now accepts `config` instead of `boolean`. To force visual selection (e.g old behaviour of true), pass `{ selection = select.visual }` to `config`
-- `CopilotChat.code_actions.show_help_actions` now accepts `config` instead of nothing.
+- `CopilotChat.code_actions.show_help_actions` was reworked. Now you can use:
+
+```lua
+local actions = require("CopilotChat.actions")
+require("CopilotChat.integrations.telescope").pick(actions.help_actions())
+```
+
+- `CopilotChat.code_actions.show_prompt_actions` was reworked. Now you can use:
+
+```lua
+local actions = require("CopilotChat.actions")
+require("CopilotChat.integrations.telescope").pick(actions.prompt_actions())
+```
 
 ## How to restore legacy behaviour
 

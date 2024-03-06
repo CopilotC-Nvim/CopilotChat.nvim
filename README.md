@@ -36,7 +36,6 @@ return {
     dependencies = {
       { "zbirenbaum/copilot.lua" }, -- or github/copilot.vim
       { "nvim-lua/plenary.nvim" }, -- for curl, log wrapper
-      { "nvim-telescope/telescope.nvim" }, -- for telescope help actions (optional)
     },
     opts = {
       debug = true, -- Enable debugging
@@ -57,7 +56,6 @@ Similar to the lazy setup, you can use the following configuration:
 call plug#begin()
 Plug 'zbirenbaum/copilot.lua'
 Plug 'nvim-lua/plenary.nvim'
-Plug 'nvim-telescope/telescope.nvim'
 Plug 'CopilotC-Nvim/CopilotChat.nvim', { 'branch': 'canary' }
 call plug#end()
 
@@ -79,7 +77,6 @@ cd ~/.config/nvim/pack/copilotchat/start
 
 git clone https://github.com/zbirenbaum/copilot.lua
 git clone https://github.com/nvim-lua/plenary.nvim
-git clone https://github.com/nvim-telescope/telescope.nvim
 
 git clone -b canary https://github.com/CopilotC-Nvim/CopilotChat.nvim
 ```
@@ -140,6 +137,15 @@ chat.ask("Explain how it works.", {
 
 -- Get all available prompts (can be used for integrations like fzf/telescope)
 local prompts = chat.prompts()
+
+-- Pick a prompt using vim.ui.select
+local actions = require("CopilotChat.actions")
+
+-- Pick help actions
+actions.pick(actions.help_actions())
+
+-- Pick prompt actions
+actions.pick(actions.prompt_actions())
 ```
 
 ### Commands
@@ -333,6 +339,60 @@ This will allow you to chat with Copilot without opening a new window.
 ```
 
 ![inline-chat](https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/608e3c9b-8569-408d-a5d1-2213325fc93c)
+
+### Telescope integration
+
+Requires [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) plugin to be installed.
+
+```lua
+-- lazy.nvim keys
+
+  -- Show help actions with telescope
+  {
+    "<leader>cch",
+    function()
+      local actions = require("CopilotChat.actions")
+      require("CopilotChat.integrations.telescope").pick(actions.help_actions())
+    end,
+    desc = "CopilotChat - Help actions",
+  },
+  -- Show prompts actions with telescope
+  {
+    "<leader>ccp",
+    function()
+      local actions = require("CopilotChat.actions")
+      require("CopilotChat.integrations.telescope").pick(actions.prompt_actions())
+    end,
+    desc = "CopilotChat - Prompt actions",
+  },
+```
+
+### fzf-lua integration
+
+Requires [fzf-lua](https://github.com/ibhagwan/fzf-lua) plugin to be installed.
+
+```lua
+-- lazy.nvim keys
+
+  -- Show help actions with fzf-lua
+  {
+    "<leader>cch",
+    function()
+      local actions = require("CopilotChat.actions")
+      require("CopilotChat.integrations.fzflua").pick(actions.help_actions())
+    end,
+    desc = "CopilotChat - Help actions",
+  },
+  -- Show prompts actions with fzf-lua
+  {
+    "<leader>ccp",
+    function()
+      local actions = require("CopilotChat.actions")
+      require("CopilotChat.integrations.fzflua").pick(actions.prompt_actions())
+    end,
+    desc = "CopilotChat - Prompt actions",
+  },
+```
 
 ## Roadmap (Wishlist)
 
