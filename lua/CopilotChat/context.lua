@@ -75,11 +75,16 @@ end
 ---@param bufnr number
 ---@return CopilotChat.copilot.embed?
 function M.build_outline(bufnr)
-  local ft = string.gsub(vim.bo[bufnr].filetype, 'react', '')
   local name = vim.api.nvim_buf_get_name(bufnr)
-  local parser = vim.treesitter.get_parser(bufnr, ft)
-  if not parser then
-    return
+  local ft = vim.bo[bufnr].filetype
+  local lang = vim.treesitter.language.get_lang(ft)
+  local ok, parser = lang and pcall(vim.treesitter.get_parser, bufnr, lang) or false, nil
+  if not ok or not parser then
+    ft = string.gsub(ft, 'react', '')
+    ok, parser = pcall(vim.treesitter.get_parser, bufnr, ft)
+    if not ok or not parser then
+      return
+    end
   end
 
   local root = parser:parse()[1]:root()
