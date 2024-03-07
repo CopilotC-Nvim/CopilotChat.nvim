@@ -115,7 +115,7 @@ function Chat:open(config)
       local orig = vim.api.nvim_get_current_win()
       vim.cmd('vsplit')
       self.winnr = vim.api.nvim_get_current_win()
-      vim.api.nvim_win_set_buf(self .. window, self.bufnr)
+      vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
       vim.api.nvim_set_current_win(orig)
     else
       win_opts.vertical = true
