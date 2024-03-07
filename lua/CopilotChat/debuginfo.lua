@@ -36,7 +36,6 @@ function M.setup()
     local height = math.min(vim.o.lines - 3, #lines)
     local opts = {
       title = 'CopilotChat.nvim Debug Info',
-      footer = "Press 'q' to close this window.",
       relative = 'editor',
       width = width,
       height = height,
@@ -45,6 +44,10 @@ function M.setup()
       style = 'minimal',
       border = 'rounded',
     }
+
+    if not utils.is_stable() then
+      opts.footer = "Press 'q' to close this window."
+    end
 
     local bufnr = vim.api.nvim_create_buf(false, true)
     vim.bo[bufnr].syntax = 'markdown'
