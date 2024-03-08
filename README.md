@@ -379,6 +379,8 @@ Requires [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) plug
   },
 ```
 
+![image](https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/14360883-7535-4ee3-aca1-79f6c39f626b)
+
 ### fzf-lua integration
 
 Requires [fzf-lua](https://github.com/ibhagwan/fzf-lua) plugin to be installed.
@@ -405,6 +407,8 @@ Requires [fzf-lua](https://github.com/ibhagwan/fzf-lua) plugin to be installed.
     desc = "CopilotChat - Prompt actions",
   },
 ```
+
+![image](https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/743455bb-9517-48a8-a7a1-81215dc3b747)
 
 ## Roadmap (Wishlist)
 
