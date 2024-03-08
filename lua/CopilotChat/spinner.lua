@@ -46,7 +46,7 @@ function Spinner:set(text, offset)
       hl_mode = 'combine',
       priority = 100,
       virt_text = vim.tbl_map(function(t)
-        return { t, 'Comment' }
+        return { t, 'CursorColumn' }
       end, vim.split(text, '\n')),
     }
 

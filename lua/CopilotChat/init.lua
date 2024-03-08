@@ -2,6 +2,7 @@ local default_config = require('CopilotChat.config')
 local log = require('plenary.log')
 local Copilot = require('CopilotChat.copilot')
 local Chat = require('CopilotChat.chat')
+local Diff = require('CopilotChat.diff')
 local context = require('CopilotChat.context')
 local prompts = require('CopilotChat.prompts')
 local debuginfo = require('CopilotChat.debuginfo')
@@ -13,11 +14,13 @@ local plugin_name = 'CopilotChat.nvim'
 --- @class CopilotChat.state
 --- @field copilot CopilotChat.Copilot?
 --- @field chat CopilotChat.Chat?
+--- @field diff CopilotChat.Diff?
 --- @field source CopilotChat.config.source?
 --- @field config CopilotChat.config?
 local state = {
   copilot = nil,
   chat = nil,
+  diff = nil,
   source = nil,
   config = nil,
 }
@@ -64,21 +67,8 @@ local function show_diff_between_selection_and_copilot(selection)
   local section_lines = find_lines_between_separator(chat_lines, M.config.separator .. '$', true)
   local lines = find_lines_between_separator(section_lines, '^```%w*$', true)
   if #lines > 0 then
-    local diff = tostring(vim.diff(selection.lines, table.concat(lines, '\n'), {}))
-    if diff and diff ~= '' then
-      vim.lsp.util.open_floating_preview(vim.split(diff, '\n'), 'diff', {
-        border = 'single',
-        title = M.config.name .. ' Diff',
-        title_pos = 'left',
-        focusable = false,
-        focus = false,
-        relative = 'editor',
-        row = 0,
-        col = 0,
-        width = vim.api.nvim_win_get_width(0) - 3,
-        zindex = M.config.window.zindex + 1,
-      })
-    end
+    local filetype = selection.filetype or vim.bo[state.source.bufnr].filetype
+    state.diff:show(selection.lines, table.concat(lines, '\n'), filetype, state.chat.winnr)
   end
 end
 
@@ -362,7 +352,7 @@ function M.ask(prompt, config, source)
         system_prompt = system_prompt,
         model = config.model,
         temperature = config.temperature,
-        on_done = function(response, token_count)
+        on_done = function(_, token_count)
           if tiktoken.available() and token_count and token_count > 0 then
             append('\n\n' .. token_count .. ' tokens used')
           end
@@ -403,6 +393,47 @@ end
 function M.setup(config)
   M.config = vim.tbl_deep_extend('force', default_config, config or {})
   state.copilot = Copilot(M.config.proxy, M.config.allow_insecure)
+
+  state.diff = Diff(
+    function(bufnr)
+      if M.config.mappings.close then
+        vim.keymap.set('n', M.config.mappings.close, function()
+          state.diff:restore(state.chat.winnr, state.chat.bufnr)
+        end, { buffer = bufnr })
+      end
+      if M.config.mappings.accept_diff then
+        vim.keymap.set('n', M.config.mappings.accept_diff, function()
+          local selection = get_selection()
+          if not selection.start_row or not selection.end_row then
+            return
+          end
+
+          local current = state.diff.current
+          if not current then
+            return
+          end
+
+          local lines = vim.split(current, '\n')
+          if #lines > 0 then
+            vim.api.nvim_buf_set_text(
+              state.source.bufnr,
+              selection.start_row - 1,
+              selection.start_col - 1,
+              selection.end_row - 1,
+              selection.end_col,
+              lines
+            )
+          end
+        end, { buffer = bufnr })
+      end
+    end,
+    "Press '"
+      .. M.config.mappings.close
+      .. "' to close diff, '"
+      .. M.config.mappings.accept_diff
+      .. "' to accept diff."
+  )
+
   state.chat = Chat(plugin_name, function(bufnr)
     if M.config.mappings.complete then
       vim.keymap.set('i', M.config.mappings.complete, complete, { buffer = bufnr })
@@ -413,7 +444,7 @@ function M.setup(config)
     end
 
     if M.config.mappings.close then
-      vim.keymap.set('n', 'q', M.close, { buffer = bufnr })
+      vim.keymap.set('n', M.config.mappings.close, M.close, { buffer = bufnr })
     end
 
     if M.config.mappings.submit_prompt then

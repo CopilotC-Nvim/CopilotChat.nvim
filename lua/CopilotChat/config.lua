@@ -79,10 +79,19 @@ return {
   -- default prompts
   prompts = {
     Explain = {
-      prompt = 'Explain how it works.',
+      prompt = '/COPILOT_EXPLAIN Write a explanation for the code above as paragraphs of text.',
     },
     Tests = {
-      prompt = 'Briefly explain how selected code works then generate unit tests.',
+      prompt = '/COPILOT_TESTS Write a set of detailed unit test functions for the code above.',
+    },
+    Fix = {
+      prompt = '/COPILOT_FIX There is a problem in this code. Rewrite the code to show it with the bug fixed.',
+    },
+    Optimize = {
+      prompt = '/COPILOT_REFACTOR Optimize the selected code to improve performance and readablilty.',
+    },
+    Docs = {
+      prompt = '/COPILOT_REFACTOR Write documentation for the selected code. The reply should be a codeblock containing the original code with the documentation added as comments. Use the most appropriate documentation style for the programming language used (e.g. JSDoc for JavaScript, docstrings for Python etc.',
     },
     FixDiagnostic = {
       prompt = 'Please assist with the following diagnostic issue in file:',
