@@ -19,7 +19,7 @@ function M.pick(pick_actions, config, opts)
   opts = vim.tbl_extend('force', {
     prompt = pick_actions.prompt .. '> ',
     preview = fzflua.shell.raw_preview_action_cmd(function(items)
-      return string.format('echo %s', pick_actions.actions[items[1]])
+      return string.format('echo "%s"', pick_actions.actions[items[1]])
     end),
     actions = {
       ['default'] = function(selected)
