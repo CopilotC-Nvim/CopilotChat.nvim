@@ -113,11 +113,14 @@ function Chat:open(config)
     win_opts.relative = window.relative
     win_opts.border = window.border
     win_opts.title = window.title
-    win_opts.footer = window.footer
     win_opts.row = window.row or math.floor(vim.o.lines * ((1 - config.window.height) / 2))
     win_opts.col = window.col or math.floor(vim.o.columns * ((1 - window.width) / 2))
     win_opts.width = math.floor(vim.o.columns * window.width)
     win_opts.height = math.floor(vim.o.lines * window.height)
+
+    if not is_stable() then
+      win_opts.footer = window.footer
+    end
   elseif layout == 'vertical' then
     if is_stable() then
       local orig = vim.api.nvim_get_current_win()
