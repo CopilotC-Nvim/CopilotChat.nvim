@@ -30,7 +30,11 @@ local function create_buf()
   local bufnr = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_name(bufnr, 'copilot-chat')
   vim.bo[bufnr].filetype = 'markdown'
-  vim.treesitter.start(bufnr, 'markdown')
+  vim.bo[bufnr].syntax = 'markdown'
+  local ok, parser = pcall(vim.treesitter.get_parser, bufnr, 'markdown')
+  if ok and parser then
+    vim.treesitter.start(bufnr, 'markdown')
+  end
   return bufnr
 end
 
