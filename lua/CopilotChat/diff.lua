@@ -40,9 +40,7 @@ local Diff = class(function(self, on_buf_create, help)
   self.current = nil
   self.ns = vim.api.nvim_create_namespace('copilot-diff')
   self.mark_ns = vim.api.nvim_create_namespace('copilot-diff-mark')
-  self.bufnr = create_buf()
-  self.on_buf_create(self.bufnr)
-
+  self.bufnr = nil
   vim.api.nvim_set_hl(self.ns, '@diff.plus', { bg = blend_color_with_neovim_bg('DiffAdd', 20) })
   vim.api.nvim_set_hl(self.ns, '@diff.minus', { bg = blend_color_with_neovim_bg('DiffDelete', 20) })
   vim.api.nvim_set_hl(self.ns, '@diff.delta', { bg = blend_color_with_neovim_bg('DiffChange', 20) })

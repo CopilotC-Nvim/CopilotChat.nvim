@@ -434,7 +434,7 @@ function M.setup(config)
       .. "' to accept diff."
   )
 
-  state.chat = Chat(plugin_name, function(bufnr)
+  state.chat = Chat(function(bufnr)
     if M.config.mappings.complete then
       vim.keymap.set('i', M.config.mappings.complete, complete, { buffer = bufnr })
     end
@@ -495,12 +495,13 @@ function M.setup(config)
         end
       end, { buffer = bufnr })
     end
+
+    M.reset()
   end)
 
   tiktoken.setup()
   debuginfo.setup()
   M.debug(M.config.debug)
-  M.reset()
 
   for name, prompt in pairs(M.prompts(true)) do
     vim.api.nvim_create_user_command('CopilotChat' .. name, function(args)
