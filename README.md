@@ -334,7 +334,6 @@ To chat with Copilot using the entire content of the buffer, you can add the fol
 
 </details>
 
-
 <details>
 <summary>Inline chat</summary>
 
