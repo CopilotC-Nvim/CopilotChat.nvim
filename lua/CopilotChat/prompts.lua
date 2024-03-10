@@ -171,4 +171,8 @@ Where's the code for base64 encoding?
 - encode, encoded, encoder, encoders
 ]]
 
+M.SHOW_CONTEXT = [[
+At the beginning of your response show code outline from all the provided files coming from Context and Active Selection.
+]]
+
 return M
