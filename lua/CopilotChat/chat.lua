@@ -34,11 +34,10 @@ local function create_buf()
   return bufnr
 end
 
-local Chat = class(function(self, name, on_buf_create)
+local Chat = class(function(self, on_buf_create)
   self.on_buf_create = on_buf_create
-  self.bufnr = create_buf()
-  self.on_buf_create(self.bufnr)
-  self.spinner = Spinner(self.bufnr, name)
+  self.bufnr = nil
+  self.spinner = nil
   self.winnr = nil
 end)
 
@@ -55,9 +54,14 @@ function Chat:validate()
     return
   end
   self.bufnr = create_buf()
-  self.on_buf_create(self.bufnr)
-  self.spinner.bufnr = self.bufnr
+  if not self.spinner then
+    self.spinner = Spinner(self.bufnr, 'copilot-chat')
+  else
+    self.spinner.bufnr = self.bufnr
+  end
+
   self:close()
+  self.on_buf_create(self.bufnr)
 end
 
 function Chat:last()
