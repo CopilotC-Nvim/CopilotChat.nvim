@@ -30,6 +30,14 @@ local function lualib_installed(lib_name)
   return res
 end
 
+--- Check if a treesitter parser is available
+---@param ft string
+---@return boolean
+local function treesitter_parser_available(ft)
+  local res, parser = pcall(vim.treesitter.get_parser, 0, ft)
+  return res and parser ~= nil
+end
+
 function M.check()
   start('CopilotChat.nvim [core]')
 
@@ -58,8 +66,7 @@ function M.check()
 
   start('CopilotChat.nvim [dependencies]')
 
-  local has_plenary = lualib_installed('plenary')
-  if has_plenary then
+  if lualib_installed('plenary') then
     ok('plenary: installed')
   else
     error('plenary: missing, required for running tests. Install plenary.nvim')
@@ -74,10 +81,23 @@ function M.check()
       'copilot: missing, required for 2 factor authentication. Install copilot.vim or copilot.lua'
     )
   end
+
   if lualib_installed('tiktoken_core') then
     ok('tiktoken_core: installed')
   else
     warn('tiktoken_core: missing, optional for token counting.')
+  end
+
+  if treesitter_parser_available('markdown') then
+    ok('treesitter[markdown]: installed')
+  else
+    warn('treesitter[markdown]: missing, optional for better chat highlighting')
+  end
+
+  if treesitter_parser_available('diff') then
+    ok('treesitter[diff]: installed')
+  else
+    warn('treesitter[diff]: missing, optional for better diff highlighting')
   end
 end
 
