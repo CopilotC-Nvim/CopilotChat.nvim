@@ -94,6 +94,26 @@ See @deathbeam for [configuration](https://github.com/deathbeam/dotfiles/blob/ma
 
 ## Usage
 
+### Commands
+
+- `:CopilotChat <input>?` - Open chat window with optional input
+- `:CopilotChatOpen` - Open chat window
+- `:CopilotChatClose` - Close chat window
+- `:CopilotChatToggle` - Toggle chat window
+- `:CopilotChatReset` - Reset chat window
+- `:CopilotChatDebugInfo` - Show debug information
+
+#### Commands coming from default prompts
+
+- `:CopilotChatExplain` - Explain how it works
+- `:CopilotChatTests` - Briefly explain how selected code works then generate unit tests
+- `:CopilotChatFix` - There is a problem in this code. Rewrite the code to show it with the bug fixed.
+- `:CopilotChatOptimize` - Optimize the selected code to improve performance and readablilty.
+- `:CopilotChatDocs` - Write documentation for the selected code. The reply should be a codeblock containing the original code with the documentation added as comments. Use the most appropriate documentation style for the programming language used (e.g. JSDoc for JavaScript, docstrings for Python etc.
+- `:CopilotChatFixDiagnostic` - Please assist with the following diagnostic issue in file
+- `:CopilotChatCommit` - Write commit message for the change with commitizen convention
+- `:CopilotChatCommitStaged` - Write commit message for the change with commitizen convention
+
 ### API
 
 ```lua
@@ -148,31 +168,9 @@ actions.pick(actions.help_actions())
 actions.pick(actions.prompt_actions())
 ```
 
-### Commands
+## Configuration
 
-- `:CopilotChat <input>?` - Open chat window with optional input
-- `:CopilotChatOpen` - Open chat window
-- `:CopilotChatClose` - Close chat window
-- `:CopilotChatToggle` - Toggle chat window
-- `:CopilotChatReset` - Reset chat window
-- `:CopilotChatDebugInfo` - Show debug information
-
-#### Commands coming from default prompts
-
-- `:CopilotChatExplain` - Explain how it works
-- `:CopilotChatTests` - Briefly explain how selected code works then generate unit tests
-- `:CopilotChatFix` - There is a problem in this code. Rewrite the code to show it with the bug fixed.
-- `:CopilotChatOptimize` - Optimize the selected code to improve performance and readablilty.
-- `:CopilotChatDocs` - Write documentation for the selected code. The reply should be a codeblock containing the original code with the documentation added as comments. Use the most appropriate documentation style for the programming language used (e.g. JSDoc for JavaScript, docstrings for Python etc.
-- `:CopilotChatFixDiagnostic` - Please assist with the following diagnostic issue in file
-- `:CopilotChatCommit` - Write commit message for the change with commitizen convention
-- `:CopilotChatCommitStaged` - Write commit message for the change with commitizen convention
-
-### Configuration
-
-For further reference, you can view @jellydn's [configuration](https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/copilot-chat-v2.lua).
-
-#### Default configuration
+### Default configuration
 
 Also see [here](/lua/CopilotChat/config.lua):
 
@@ -254,7 +252,9 @@ Also see [here](/lua/CopilotChat/config.lua):
 }
 ```
 
-#### Defining a prompt with command and keymap
+For further reference, you can view @jellydn's [configuration](https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/copilot-chat-v2.lua).
+
+### Defining a prompt with command and keymap
 
 This will define prompt that you can reference with `/MyCustomPrompt` in chat, call with `:CopilotChatMyCustomPrompt` or use the keymap `<leader>ccmc`.
 It will use visual selection as default selection. If you are using `lazy.nvim` and are already lazy loading based on `Commands` make sure to include the prompt
@@ -273,7 +273,7 @@ commands and keymaps in `cmd` and `keys` respectively.
 }
 ```
 
-#### Referencing system or user prompts
+### Referencing system or user prompts
 
 You can reference system or user prompts in your configuration or in chat with `/PROMPT_NAME` slash notation.
 For collection of default `COPILOT_` (system) and `USER_` (user) prompts, see [here](/lua/CopilotChat/prompts.lua).
@@ -291,7 +291,7 @@ For collection of default `COPILOT_` (system) and `USER_` (user) prompts, see [h
 }
 ```
 
-#### Custom system prompts
+### Custom system prompts
 
 You can define custom system prompts by using `system_prompt` property when passing config around.
 
@@ -309,7 +309,8 @@ You can define custom system prompts by using `system_prompt` property when pass
 
 ## Tips
 
-### Quick chat with your buffer
+<details>
+<summary>Quick chat with your buffer</summary>
 
 To chat with Copilot using the entire content of the buffer, you can add the following configuration to your keymap:
 
@@ -331,7 +332,10 @@ To chat with Copilot using the entire content of the buffer, you can add the fol
 
 [![Chat with buffer](https://i.gyazo.com/9b8cbf1d78a19f326282a6520bc9aab0.gif)](https://gyazo.com/9b8cbf1d78a19f326282a6520bc9aab0)
 
-### Inline Chat
+</details>
+
+<details>
+<summary>Inline chat</summary>
 
 Change the window layout to `float` and position relative to cursor to make the window look like inline chat.
 This will allow you to chat with Copilot without opening a new window.
@@ -352,7 +356,10 @@ This will allow you to chat with Copilot without opening a new window.
 
 ![inline-chat](https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/608e3c9b-8569-408d-a5d1-2213325fc93c)
 
-### Telescope integration
+</details>
+
+<details>
+<summary>Telescope integration</summary>
 
 Requires [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) plugin to be installed.
 
@@ -381,7 +388,10 @@ Requires [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) plug
 
 ![image](https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/14360883-7535-4ee3-aca1-79f6c39f626b)
 
-### fzf-lua integration
+</details>
+
+<details>
+<summary>fzf-lua integration</summary>
 
 Requires [fzf-lua](https://github.com/ibhagwan/fzf-lua) plugin to be installed.
 
@@ -410,10 +420,11 @@ Requires [fzf-lua](https://github.com/ibhagwan/fzf-lua) plugin to be installed.
 
 ![image](https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/743455bb-9517-48a8-a7a1-81215dc3b747)
 
+</details>
+
 ## Roadmap (Wishlist)
 
-- Use vector encodings to automatically select code
-- Treesitter integration for function definitions
+- Use indexed vector database with current workspace for better context selection
 - General QOL improvements
 
 ## Development
@@ -429,6 +440,8 @@ make install-pre-commit
 This will install the pre-commit tool and the pre-commit hooks.
 
 ## Contributors ✨
+
+If you want to contribute to this project, please read the [CONTRIBUTING.md](/CONTRIBUTING.md) file.
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
 
