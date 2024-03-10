@@ -30,7 +30,7 @@ local function create_buf()
   local bufnr = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_name(bufnr, 'copilot-diff')
   vim.bo[bufnr].filetype = 'diff'
-  vim.treesitter.start(bufnr, 'diff')
+  vim.bo[bufnr].syntax = 'diff'
   return bufnr
 end
 
@@ -93,8 +93,11 @@ function Diff:show(a, b, filetype, winnr)
   end
 
   vim.api.nvim_buf_set_extmark(self.bufnr, self.mark_ns, 0, 0, opts)
-  vim.treesitter.start(self.bufnr, 'diff')
-  vim.bo[self.bufnr].syntax = filetype
+  local ok, parser = pcall(vim.treesitter.get_parser, self.bufnr, 'diff')
+  if ok and parser then
+    vim.treesitter.start(self.bufnr, 'diff')
+    vim.bo[self.bufnr].syntax = filetype
+  end
 end
 
 function Diff:restore(winnr, bufnr)
