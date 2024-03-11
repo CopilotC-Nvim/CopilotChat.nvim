@@ -164,18 +164,30 @@ function M.build_outline(bufnr)
   }
 end
 
+---@class CopilotChat.context.find_for_query.opts
+---@field context string?
+---@field prompt string
+---@field selection string?
+---@field filename string
+---@field filetype string
+---@field bufnr number
+---@field on_done function
+---@field on_error function?
+
 --- Find items for a query
 ---@param copilot CopilotChat.Copilot
----@param context string?
----@param prompt string
----@param selection string?
----@param filename string
----@param filetype string
----@param bufnr number
----@param on_done function
-function M.find_for_query(copilot, context, prompt, selection, filename, filetype, bufnr, on_done)
-  local outline = {}
+---@param opts CopilotChat.context.find_for_query.opts
+function M.find_for_query(copilot, opts)
+  local context = opts.context
+  local prompt = opts.prompt
+  local selection = opts.selection
+  local filename = opts.filename
+  local filetype = opts.filetype
+  local bufnr = opts.bufnr
+  local on_done = opts.on_done
+  local on_error = opts.on_error
 
+  local outline = {}
   if context == 'buffers' then
     -- For multiiple buffers, only make outlines
     outline = vim.tbl_map(
@@ -206,14 +218,17 @@ function M.find_for_query(copilot, context, prompt, selection, filename, filetyp
   end
 
   copilot:embed(outline, {
+    on_error = on_error,
     on_done = function(out)
-      log.debug(string.format('Got %s embeddings', #out))
-
+      out = vim.tbl_filter(function(item)
+        return item ~= nil
+      end, out)
       if #out == 0 then
         on_done({})
         return
       end
 
+      log.debug(string.format('Got %s embeddings', #out))
       copilot:embed({
         {
           prompt = prompt,
@@ -222,6 +237,7 @@ function M.find_for_query(copilot, context, prompt, selection, filename, filetyp
           filetype = filetype,
         },
       }, {
+        on_error = on_error,
         on_done = function(query_out)
           local query = query_out[1]
           log.debug('Prompt:', query.prompt)

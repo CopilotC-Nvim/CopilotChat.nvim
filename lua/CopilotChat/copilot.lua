@@ -365,6 +365,7 @@ function Copilot:ask(prompt, opts)
     role = 'user',
   })
 
+  local errored = false
   local full_response = ''
 
   self.current_job_on_cancel = on_done
@@ -375,22 +376,24 @@ function Copilot:ask(prompt, opts)
       proxy = self.proxy,
       insecure = self.allow_insecure,
       on_error = function(err)
-        err = vim.inspect(err)
-        log.error('Failed to get response: ' .. err)
+        err = 'Failed to get response: ' .. vim.inspect(err)
+        log.error(err)
         if on_error then
           on_error(err)
         end
       end,
       stream = function(err, line)
-        if err then
-          log.error('Failed to stream response: ' .. tostring(err))
-          if on_error then
-            on_error(err)
-          end
+        if not line or errored then
           return
         end
 
-        if not line then
+        if err then
+          err = 'Failed to get response: ' .. vim.inspect(err)
+          errored = true
+          log.error(err)
+          if on_error then
+            on_error(err)
+          end
           return
         end
 
@@ -420,10 +423,8 @@ function Copilot:ask(prompt, opts)
         })
 
         if not ok then
-          log.error('Failed parse response: ' .. tostring(content))
-          if on_error then
-            on_error(content)
-          end
+          err = 'Failed parse response: ' .. vim.inspect(content)
+          log.error(err)
           return
         end
 
@@ -489,11 +490,8 @@ function Copilot:embed(inputs, opts)
         proxy = self.proxy,
         insecure = self.allow_insecure,
         on_error = function(err)
-          err = vim.inspect(err)
-          log.error('Failed to get response: ' .. err)
-          if on_error then
-            on_error(err)
-          end
+          err = 'Failed to get response: ' .. vim.inspect(err)
+          log.error(err)
           resolve()
         end,
         callback = function(response)
@@ -503,11 +501,8 @@ function Copilot:embed(inputs, opts)
           end
 
           if response.status ~= 200 then
-            local err = vim.inspect(response)
-            log.error('Failed to get response: ' .. err)
-            if on_error then
-              on_error(err)
-            end
+            local err = 'Failed to get response: ' .. vim.inspect(response)
+            log.error(err)
             resolve()
             return
           end
@@ -520,10 +515,8 @@ function Copilot:embed(inputs, opts)
           })
 
           if not ok then
-            log.error('Failed parse response: ' .. tostring(content))
-            if on_error then
-              on_error(tostring(content))
-            end
+            local err = vim.inspect(content)
+            log.error('Failed parse response: ' .. err)
             resolve()
             return
           end
