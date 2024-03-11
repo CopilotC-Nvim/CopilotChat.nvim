@@ -335,15 +335,22 @@ function M.ask(prompt, config, source)
   end
   updated_prompt = string.gsub(updated_prompt, '@buffers?%s*', '')
 
-  context.find_for_query(
-    state.copilot,
-    selected_context,
-    updated_prompt,
-    selection.lines,
-    filetype,
-    filename,
-    state.source.bufnr,
-    function(embeddings)
+  local function on_error(err)
+    append('\n\n **Error** ' .. config.separator .. '\n\n')
+    append('```\n' .. err .. '\n```')
+    append('\n\n' .. config.separator .. '\n\n')
+    show_help()
+  end
+
+  context.find_for_query(state.copilot, {
+    context = selected_context,
+    prompt = updated_prompt,
+    selection = selection.lines,
+    filename = filename,
+    filetype = filetype,
+    bufnr = state.source.bufnr,
+    on_error = on_error,
+    on_done = function(embeddings)
       state.copilot:ask(updated_prompt, {
         selection = selection.lines,
         embeddings = embeddings,
@@ -352,6 +359,7 @@ function M.ask(prompt, config, source)
         system_prompt = system_prompt,
         model = config.model,
         temperature = config.temperature,
+        on_error = on_error,
         on_done = function(_, token_count)
           if tiktoken.available() and token_count and token_count > 0 then
             append('\n\n' .. token_count .. ' tokens used')
@@ -363,8 +371,8 @@ function M.ask(prompt, config, source)
           append(token)
         end,
       })
-    end
-  )
+    end,
+  })
 end
 
 --- Reset the chat window and show the help message.
