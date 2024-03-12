@@ -193,7 +193,7 @@ Also see [here](/lua/CopilotChat/config.lua):
   -- default prompts
   prompts = {
     Explain = {
-      prompt = '/COPILOT_EXPLAIN Write a explanation for the code above as paragraphs of text.',
+      prompt = '/COPILOT_EXPLAIN Write an explanation for the code above as paragraphs of text.',
     },
     Tests = {
       prompt = '/COPILOT_TESTS Write a set of detailed unit test functions for the code above.',
