@@ -46,7 +46,9 @@ local Chat = class(function(self, on_buf_create)
 end)
 
 function Chat:valid()
-  return self.bufnr and vim.api.nvim_buf_is_valid(self.bufnr)
+  return self.bufnr
+    and vim.api.nvim_buf_is_valid(self.bufnr)
+    and vim.api.nvim_buf_is_loaded(self.bufnr)
 end
 
 function Chat:visible()
@@ -57,6 +59,7 @@ function Chat:validate()
   if self:valid() then
     return
   end
+
   self.bufnr = create_buf()
   if not self.spinner then
     self.spinner = Spinner(self.bufnr, 'copilot-chat')
@@ -64,27 +67,27 @@ function Chat:validate()
     self.spinner.bufnr = self.bufnr
   end
 
-  self:close()
   self.on_buf_create(self.bufnr)
 end
 
 function Chat:last()
   self:validate()
-  local last_line = vim.api.nvim_buf_line_count(self.bufnr) - 1
+  local line_count = vim.api.nvim_buf_line_count(self.bufnr)
+  local last_line = line_count - 1
   if last_line < 0 then
-    return 0, 0
+    return 0, 0, line_count
   end
   local last_line_content = vim.api.nvim_buf_get_lines(self.bufnr, -2, -1, false)
   if not last_line_content or #last_line_content == 0 then
-    return last_line, 0
+    return last_line, 0, line_count
   end
   local last_column = #last_line_content[1]
-  return last_line, last_column
+  return last_line, last_column, line_count
 end
 
 function Chat:append(str)
   self:validate()
-  local last_line, last_column = self:last()
+  local last_line, last_column, _ = self:last()
   vim.api.nvim_buf_set_text(
     self.bufnr,
     last_line,
@@ -172,6 +175,7 @@ function Chat:close()
   self.spinner:finish()
   if self:visible() then
     vim.api.nvim_win_close(self.winnr, true)
+    self.winnr = nil
   end
 end
 
@@ -186,7 +190,11 @@ function Chat:follow()
     return
   end
 
-  local last_line, last_column = self:last()
+  local last_line, last_column, line_count = self:last()
+  if line_count == 0 then
+    return
+  end
+
   vim.api.nvim_win_set_cursor(self.winnr, { last_line + 1, last_column })
 end
 
