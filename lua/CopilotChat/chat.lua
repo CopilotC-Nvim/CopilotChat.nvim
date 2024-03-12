@@ -71,7 +71,13 @@ end
 function Chat:last()
   self:validate()
   local last_line = vim.api.nvim_buf_line_count(self.bufnr) - 1
+  if last_line < 0 then
+    return 0, 0
+  end
   local last_line_content = vim.api.nvim_buf_get_lines(self.bufnr, -2, -1, false)
+  if not last_line_content or #last_line_content == 0 then
+    return last_line, 0
+  end
   local last_column = #last_line_content[1]
   return last_line, last_column
 end
