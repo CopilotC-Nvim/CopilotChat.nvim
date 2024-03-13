@@ -79,7 +79,7 @@ git clone https://github.com/nvim-lua/plenary.nvim
 git clone -b canary https://github.com/CopilotC-Nvim/CopilotChat.nvim
 ```
 
-2. Add to you configuration
+2. Add to you configuration (e.g. `~/.config/nvim/init.vim`)
 
 ```lua
 require("CopilotChat").setup {
