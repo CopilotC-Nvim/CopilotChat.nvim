@@ -123,6 +123,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/46934916?v=4",
       "profile": "http://www.gaardhus.dk",
       "contributions": ["doc"]
+    },
+    {
+      "login": "PetrDlouhy",
+      "name": "Petr Dlouhý",
+      "avatar_url": "https://avatars.githubusercontent.com/u/156755?v=4",
+      "profile": "https://www.patreon.com/PetrDlouhy",
+      "contributions": ["doc"]
     }
   ],
   "contributorsPerLine": 7,
