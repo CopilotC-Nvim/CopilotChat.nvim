@@ -507,7 +507,7 @@ function M.setup(config)
     M.reset()
   end)
 
-  tiktoken.setup()
+  tiktoken.setup(M.config.enable_tiktoken)
   debuginfo.setup()
   M.debug(M.config.debug)
 

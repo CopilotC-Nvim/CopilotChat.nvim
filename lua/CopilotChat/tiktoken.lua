@@ -35,9 +35,12 @@ end
 
 local M = {}
 
-function M.setup()
+--- Setup the tiktoken module
+--- It might be a bit slower so it's disabled by default
+---@param is_enabled boolean
+function M.setup(is_enabled)
   local ok, core = pcall(require, 'tiktoken_core')
-  if not ok then
+  if not ok or not is_enabled then
     return
   end
 
