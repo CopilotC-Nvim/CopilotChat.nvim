@@ -5,7 +5,9 @@
 [![Discord](https://img.shields.io/discord/1200633211236122665.svg)](https://discord.gg/vy6hJsTWaZ)
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+
 [![All Contributors](https://img.shields.io/badge/all_contributors-17-orange.svg?style=flat-square)](#contributors-)
+
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 > [!NOTE]
@@ -79,7 +81,7 @@ git clone https://github.com/nvim-lua/plenary.nvim
 git clone -b canary https://github.com/CopilotC-Nvim/CopilotChat.nvim
 ```
 
-2. Add to you configuration
+2. Add to your configuration (e.g. `~/.config/nvim/init.lua`)
 
 ```lua
 require("CopilotChat").setup {
