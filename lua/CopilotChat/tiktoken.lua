@@ -19,18 +19,19 @@ end
 
 --- Load tiktoken data from cache or download it
 local function load_tiktoken_data(done)
-  local cache_path = get_cache_path()
-  if file_exists(cache_path) then
-    done(cache_path)
-    return
-  end
+  local async
+  async = vim.loop.new_async(function()
+    local cache_path = get_cache_path()
+    if not file_exists(cache_path) then
+      curl.get('https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken', {
+        output = cache_path,
+      })
+    end
 
-  curl.get('https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken', {
-    output = cache_path,
-    callback = function()
-      done(cache_path)
-    end,
-  })
+    done(cache_path)
+    async:close()
+  end)
+  async:send()
 end
 
 local M = {}
