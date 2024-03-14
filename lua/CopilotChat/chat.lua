@@ -172,7 +172,9 @@ function Chat:open(config)
 end
 
 function Chat:close()
-  self.spinner:finish()
+  if self.spinner then
+    self.spinner:finish()
+  end
   if self:visible() then
     vim.api.nvim_win_close(self.winnr, true)
     self.winnr = nil
