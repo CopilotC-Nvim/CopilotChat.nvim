@@ -445,9 +445,13 @@ function Copilot:ask(prompt, opts)
         full_response = full_response .. content
       end,
     })
-    :after(function()
-      self.current_job = nil
-    end)
+    if self.current_job then
+      self.current_job:after(
+        function ()
+          self.current_job = nil
+        end
+      )
+    end
 end
 
 --- Generate embeddings for the given inputs
