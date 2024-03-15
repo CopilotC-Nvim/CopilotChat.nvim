@@ -80,7 +80,10 @@ function M.build_outline(bufnr)
   local name = vim.api.nvim_buf_get_name(bufnr)
   local ft = vim.bo[bufnr].filetype
   local lang = vim.treesitter.language.get_lang(ft)
-  local ok, parser = lang and pcall(vim.treesitter.get_parser, bufnr, lang) or false, nil
+  local ok, parser = false, nil
+  if lang then
+    ok, parser = pcall(vim.treesitter.get_parser, bufnr, lang)
+  end
   if not ok or not parser then
     ft = string.gsub(ft, 'react', '')
     ok, parser = pcall(vim.treesitter.get_parser, bufnr, ft)
@@ -189,7 +192,7 @@ function M.find_for_query(copilot, opts)
 
   local outline = {}
   if context == 'buffers' then
-    -- For multiiple buffers, only make outlines
+    -- For multiple buffers, only make outlines
     outline = vim.tbl_map(
       function(b)
         return M.build_outline(b)
@@ -208,9 +211,16 @@ function M.find_for_query(copilot, opts)
         filetype = filetype,
       })
     else
-      table.insert(outline, M.build_outline(bufnr))
+      local result = M.build_outline(bufnr)
+      if result ~= nil then
+        table.insert(outline, result)
+      end
     end
   end
+
+  outline = vim.tbl_filter(function(item)
+    return item ~= nil
+  end, outline)
 
   if #outline == 0 then
     on_done({})
