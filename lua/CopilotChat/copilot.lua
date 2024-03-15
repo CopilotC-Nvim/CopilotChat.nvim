@@ -369,89 +369,86 @@ function Copilot:ask(prompt, opts)
   local full_response = ''
 
   self.current_job_on_cancel = on_done
-  self.current_job = curl
-    .post(url, {
-      headers = headers,
-      body = body,
-      proxy = self.proxy,
-      insecure = self.allow_insecure,
-      on_error = function(err)
+  self.current_job = curl.post(url, {
+    headers = headers,
+    body = body,
+    proxy = self.proxy,
+    insecure = self.allow_insecure,
+    on_error = function(err)
+      err = 'Failed to get response: ' .. vim.inspect(err)
+      log.error(err)
+      if on_error then
+        on_error(err)
+      end
+    end,
+    stream = function(err, line)
+      if not line or errored then
+        return
+      end
+
+      if err then
         err = 'Failed to get response: ' .. vim.inspect(err)
+        errored = true
         log.error(err)
         if on_error then
           on_error(err)
         end
-      end,
-      stream = function(err, line)
-        if not line or errored then
-          return
+        return
+      end
+
+      line = line:gsub('data: ', '')
+      if line == '' then
+        return
+      elseif line == '[DONE]' then
+        log.trace('Full response: ' .. full_response)
+        self.token_count = self.token_count + tiktoken.count(full_response)
+
+        if on_done then
+          on_done(full_response, self.token_count + current_count)
         end
 
-        if err then
-          err = 'Failed to get response: ' .. vim.inspect(err)
-          errored = true
-          log.error(err)
-          if on_error then
-            on_error(err)
-          end
-          return
-        end
-
-        line = line:gsub('data: ', '')
-        if line == '' then
-          return
-        elseif line == '[DONE]' then
-          log.trace('Full response: ' .. full_response)
-          self.token_count = self.token_count + tiktoken.count(full_response)
-
-          if on_done then
-            on_done(full_response, self.token_count + current_count)
-          end
-
-          table.insert(self.history, {
-            content = full_response,
-            role = 'system',
-          })
-          return
-        end
-
-        local ok, content = pcall(vim.json.decode, line, {
-          luanil = {
-            object = true,
-            array = true,
-          },
+        table.insert(self.history, {
+          content = full_response,
+          role = 'system',
         })
+        return
+      end
 
-        if not ok then
-          err = 'Failed parse response: ' .. vim.inspect(content)
-          log.error(err)
-          return
-        end
+      local ok, content = pcall(vim.json.decode, line, {
+        luanil = {
+          object = true,
+          array = true,
+        },
+      })
 
-        if not content.choices or #content.choices == 0 then
-          return
-        end
+      if not ok then
+        err = 'Failed parse response: ' .. vim.inspect(content)
+        log.error(err)
+        return
+      end
 
-        content = content.choices[1].delta.content
-        if not content then
-          return
-        end
+      if not content.choices or #content.choices == 0 then
+        return
+      end
 
-        if on_progress then
-          on_progress(content)
-        end
+      content = content.choices[1].delta.content
+      if not content then
+        return
+      end
 
-        -- Collect full response incrementally so we can insert it to history later
-        full_response = full_response .. content
-      end,
-    })
-    if self.current_job then
-      self.current_job:after(
-        function ()
-          self.current_job = nil
-        end
-      )
-    end
+      if on_progress then
+        on_progress(content)
+      end
+
+      -- Collect full response incrementally so we can insert it to history later
+      full_response = full_response .. content
+    end,
+  })
+  if self.current_job then
+    self.current_job:after(function()
+      self.current_job = nil
+    end)
+  end
 end
 
 --- Generate embeddings for the given inputs
