@@ -130,6 +130,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/156755?v=4",
       "profile": "https://www.patreon.com/PetrDlouhy",
       "contributions": ["doc"]
+    },
+    {
+      "login": "dmadisetti",
+      "name": "Dylan Madisetti",
+      "avatar_url": "https://avatars.githubusercontent.com/u/2689338?v=4",
+      "profile": "http://www.dylanmadisetti.com",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
