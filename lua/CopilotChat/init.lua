@@ -111,24 +111,6 @@ local function append(str)
   end)
 end
 
-local function show_help()
-  local out = 'Press '
-  for name, key in pairs(M.config.mappings) do
-    if key then
-      out = out .. "'" .. key .. "' to " .. name:gsub('_', ' ') .. ', '
-    end
-  end
-
-  out = out
-    .. 'use @'
-    .. M.config.mappings.complete
-    .. ' or /'
-    .. M.config.mappings.complete
-    .. ' for different options.'
-  state.chat.spinner:finish()
-  state.chat.spinner:set(out, -1)
-end
-
 local function complete()
   local line = vim.api.nvim_get_current_line()
   local col = vim.api.nvim_win_get_cursor(0)[2]
@@ -325,7 +307,6 @@ function M.ask(prompt, config, source)
   append(updated_prompt)
   append('\n\n **' .. config.name .. '** ' .. config.separator .. '\n\n')
   state.chat:follow()
-  state.chat.spinner:start()
 
   local selected_context = config.context
   if string.find(prompt, '@buffers') then
@@ -339,7 +320,7 @@ function M.ask(prompt, config, source)
     append('\n\n **Error** ' .. config.separator .. '\n\n')
     append('```\n' .. err .. '\n```')
     append('\n\n' .. config.separator .. '\n\n')
-    show_help()
+    state.chat:finish()
   end
 
   context.find_for_query(state.copilot, {
@@ -365,7 +346,7 @@ function M.ask(prompt, config, source)
             append('\n\n' .. token_count .. ' tokens used')
           end
           append('\n\n' .. config.separator .. '\n\n')
-          show_help()
+          state.chat:finish()
         end,
         on_progress = function(token)
           append(token)
@@ -380,7 +361,7 @@ function M.reset()
   state.copilot:reset()
   state.chat:clear()
   append('\n')
-  show_help()
+  state.chat:finish()
 end
 
 --- Enables/disables debug
@@ -401,48 +382,62 @@ end
 function M.setup(config)
   M.config = vim.tbl_deep_extend('force', default_config, config or {})
   state.copilot = Copilot(M.config.proxy, M.config.allow_insecure)
+  local mark_ns = vim.api.nvim_create_namespace('copilot-chat')
 
-  state.diff = Diff(
-    function(bufnr)
-      if M.config.mappings.close then
-        vim.keymap.set('n', M.config.mappings.close, function()
-          state.diff:restore(state.chat.winnr, state.chat.bufnr)
-        end, { buffer = bufnr })
-      end
-      if M.config.mappings.accept_diff then
-        vim.keymap.set('n', M.config.mappings.accept_diff, function()
-          local selection = get_selection()
-          if not selection.start_row or not selection.end_row then
-            return
-          end
+  local diff_help = "'"
+    .. M.config.mappings.close
+    .. "' to close diff.\n'"
+    .. M.config.mappings.accept_diff
+    .. "' to accept diff."
 
-          local current = state.diff.current
-          if not current then
-            return
-          end
+  state.diff = Diff(mark_ns, diff_help, function(bufnr)
+    if M.config.mappings.close then
+      vim.keymap.set('n', M.config.mappings.close, function()
+        state.diff:restore(state.chat.winnr, state.chat.bufnr)
+      end, { buffer = bufnr })
+    end
+    if M.config.mappings.accept_diff then
+      vim.keymap.set('n', M.config.mappings.accept_diff, function()
+        local selection = get_selection()
+        if not selection.start_row or not selection.end_row then
+          return
+        end
 
-          local lines = vim.split(current, '\n')
-          if #lines > 0 then
-            vim.api.nvim_buf_set_text(
-              state.source.bufnr,
-              selection.start_row - 1,
-              selection.start_col - 1,
-              selection.end_row - 1,
-              selection.end_col,
-              lines
-            )
-          end
-        end, { buffer = bufnr })
-      end
-    end,
-    "Press '"
-      .. M.config.mappings.close
-      .. "' to close diff, '"
-      .. M.config.mappings.accept_diff
-      .. "' to accept diff."
-  )
+        local current = state.diff.current
+        if not current then
+          return
+        end
 
-  state.chat = Chat(function(bufnr)
+        local lines = vim.split(current, '\n')
+        if #lines > 0 then
+          vim.api.nvim_buf_set_text(
+            state.source.bufnr,
+            selection.start_row - 1,
+            selection.start_col - 1,
+            selection.end_row - 1,
+            selection.end_col,
+            lines
+          )
+        end
+      end, { buffer = bufnr })
+    end
+  end)
+
+  local chat_help = ''
+  for name, key in pairs(M.config.mappings) do
+    if key then
+      chat_help = chat_help .. "'" .. key .. "' to " .. name:gsub('_', ' ') .. '\n'
+    end
+  end
+
+  chat_help = chat_help
+    .. '@'
+    .. M.config.mappings.complete
+    .. ' or /'
+    .. M.config.mappings.complete
+    .. ' for different completion options.'
+
+  state.chat = Chat(mark_ns, chat_help, function(bufnr)
     if M.config.mappings.complete then
       vim.keymap.set('i', M.config.mappings.complete, complete, { buffer = bufnr })
     end
