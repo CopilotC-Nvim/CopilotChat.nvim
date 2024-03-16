@@ -60,7 +60,6 @@ function M.setup()
     vim.wo[win].linebreak = true
     vim.wo[win].cursorline = true
     vim.wo[win].conceallevel = 2
-    vim.wo[win].concealcursor = 'niv'
 
     -- Bind 'q' to close the window
     vim.api.nvim_buf_set_keymap(
