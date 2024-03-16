@@ -17,8 +17,8 @@ Also make sure to run `:UpdateRemotePlugins` to cleanup the old python commands.
 Removed or changed params that you pass to `setup`:
 
 - `show_help` was removed (the help is now always shown as virtual text, and not intrusive)
-- `disable_extra_info` was renamed to `show_user_selection`
-- `hide_system_prompt` was renamed to `show_system_prompt`
+- `disable_extra_info` was removed. Now you can use keybinding to show current selection in chat on demand.
+- `hide_system_prompt` was removed. Now you can use keybinding to show current system prompt in chat on demand.
 - `language` was removed and is now part of `selection` as `selection.filetype`
 
 ## Command changes
