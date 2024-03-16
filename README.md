@@ -39,6 +39,7 @@ return {
     },
     opts = {
       debug = true, -- Enable debugging
+      -- language = "English" -- Copilot answer language settings when using default prompts. Default language is English.
       -- See Configuration section for rest
     },
     -- See Commands section for default commands if you want to lazy load on them
