@@ -369,10 +369,13 @@ function Copilot:ask(prompt, opts)
   local full_response = ''
 
   self.current_job_on_cancel = on_done
+
+  local temp_file = vim.fn.tempname()
+  vim.fn.writefile({ body }, temp_file)
   self.current_job = curl
     .post(url, {
       headers = headers,
-      body = body,
+      body = temp_file,
       proxy = self.proxy,
       insecure = self.allow_insecure,
       on_error = function(err)
@@ -423,7 +426,7 @@ function Copilot:ask(prompt, opts)
         })
 
         if not ok then
-          err = 'Failed parse response: ' .. vim.inspect(content)
+          err = 'Failed parse response: \n' .. line .. '\n' .. vim.inspect(content)
           log.error(err)
           return
         end
@@ -484,9 +487,12 @@ function Copilot:embed(inputs, opts)
     local body = vim.json.encode(generate_embedding_request(chunk, model))
 
     table.insert(jobs, function(resolve)
+      local temp_file = vim.fn.tempname()
+      vim.fn.writefile({ body }, temp_file)
+
       curl.post(url, {
         headers = headers,
-        body = body,
+        body = temp_file,
         proxy = self.proxy,
         insecure = self.allow_insecure,
         on_error = function(err)
