@@ -50,6 +50,7 @@ local select = require('CopilotChat.select')
 ---@field proxy string?
 ---@field allow_insecure boolean?
 ---@field debug boolean?
+---@field language string?
 ---@field show_user_selection boolean?
 ---@field show_system_prompt boolean?
 ---@field show_folds boolean?
@@ -76,6 +77,7 @@ return {
   auto_follow_cursor = true, -- Auto-follow cursor in chat
   name = 'CopilotChat', -- Name to use in chat
   separator = '---', -- Separator to use in chat
+  language = nil, -- Copilot answer language settings when using default prompts. Default language is English.
   -- default prompts
   prompts = {
     Explain = {

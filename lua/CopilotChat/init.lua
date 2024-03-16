@@ -396,10 +396,23 @@ function M.debug(debug)
   log.logfile = logfile
 end
 
+--- Set up the language for default prompts
+---@param config CopilotChat.config|nil
+function M.setup_copilot_language(config)
+  if not config or not config.language then
+    return
+  end
+
+  for _, prompt in pairs(config.prompts) do
+    prompt.prompt = prompt.prompt .. " " .. prompts.PROMPT_ANSWER_LANGUAGE_TEMPLATE(config.language)
+  end
+end
+
 --- Set up the plugin
 ---@param config CopilotChat.config|nil
 function M.setup(config)
   M.config = vim.tbl_deep_extend('force', default_config, config or {})
+  M.setup_copilot_language(M.config)
   state.copilot = Copilot(M.config.proxy, M.config.allow_insecure)
 
   state.diff = Diff(

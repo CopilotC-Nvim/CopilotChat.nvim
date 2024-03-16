@@ -175,4 +175,10 @@ M.SHOW_CONTEXT = [[
 At the beginning of your response show code outline from all the provided files coming from Context and Active Selection.
 ]]
 
+---Prompt for the user to provide a language
+--- @param language string
+function M.PROMPT_ANSWER_LANGUAGE_TEMPLATE(language)
+  return string.format([[Please answer in %s.]], language)
+end
+
 return M
