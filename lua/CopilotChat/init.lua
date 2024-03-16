@@ -404,7 +404,7 @@ function M.setup_copilot_language(config)
   end
 
   for _, prompt in pairs(config.prompts) do
-    prompt.prompt = prompt.prompt .. " " .. prompts.PROMPT_ANSWER_LANGUAGE_TEMPLATE(config.language)
+    prompt.prompt = prompt.prompt .. ' ' .. prompts.PROMPT_ANSWER_LANGUAGE_TEMPLATE(config.language)
   end
 end
 
