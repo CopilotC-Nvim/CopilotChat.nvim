@@ -11,6 +11,7 @@
 ---@field close fun(self: CopilotChat.Chat)
 ---@field focus fun(self: CopilotChat.Chat)
 ---@field follow fun(self: CopilotChat.Chat)
+---@field finish fun(self: CopilotChat.Chat)
 
 local Spinner = require('CopilotChat.spinner')
 local utils = require('CopilotChat.utils')
@@ -38,7 +39,9 @@ local function create_buf()
   return bufnr
 end
 
-local Chat = class(function(self, on_buf_create)
+local Chat = class(function(self, ns, help, on_buf_create)
+  self.ns = ns
+  self.help = help
   self.on_buf_create = on_buf_create
   self.bufnr = nil
   self.spinner = nil
@@ -62,7 +65,7 @@ function Chat:validate()
 
   self.bufnr = create_buf()
   if not self.spinner then
-    self.spinner = Spinner(self.bufnr, 'copilot-chat')
+    self.spinner = Spinner(self.bufnr, self.ns, 'copilot-chat')
   else
     self.spinner.bufnr = self.bufnr
   end
@@ -87,6 +90,11 @@ end
 
 function Chat:append(str)
   self:validate()
+
+  if self.spinner then
+    self.spinner:start()
+  end
+
   local last_line, last_column, _ = self:last()
   vim.api.nvim_buf_set_text(
     self.bufnr,
@@ -162,6 +170,7 @@ function Chat:open(config)
   vim.wo[self.winnr].conceallevel = 2
   vim.wo[self.winnr].concealcursor = 'niv'
   vim.wo[self.winnr].foldlevel = 99
+  vim.wo[self.winnr].relativenumber = false
   if config.show_folds then
     vim.wo[self.winnr].foldcolumn = '1'
     vim.wo[self.winnr].foldmethod = 'expr'
@@ -198,6 +207,14 @@ function Chat:follow()
   end
 
   vim.api.nvim_win_set_cursor(self.winnr, { last_line + 1, last_column })
+end
+
+function Chat:finish()
+  if not self.spinner then
+    return
+  end
+
+  self.spinner:finish(self.help, true)
 end
 
 return Chat

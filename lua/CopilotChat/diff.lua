@@ -34,16 +34,24 @@ local function create_buf()
   return bufnr
 end
 
-local Diff = class(function(self, on_buf_create, help)
+local Diff = class(function(self, ns, help, on_buf_create)
+  self.ns = ns
   self.help = help
   self.on_buf_create = on_buf_create
   self.current = nil
-  self.ns = vim.api.nvim_create_namespace('copilot-diff')
-  self.mark_ns = vim.api.nvim_create_namespace('copilot-diff-mark')
+  self.hl_ns = vim.api.nvim_create_namespace('copilot-diff-mark')
   self.bufnr = nil
-  vim.api.nvim_set_hl(self.ns, '@diff.plus', { bg = blend_color_with_neovim_bg('DiffAdd', 20) })
-  vim.api.nvim_set_hl(self.ns, '@diff.minus', { bg = blend_color_with_neovim_bg('DiffDelete', 20) })
-  vim.api.nvim_set_hl(self.ns, '@diff.delta', { bg = blend_color_with_neovim_bg('DiffChange', 20) })
+  vim.api.nvim_set_hl(self.hl_ns, '@diff.plus', { bg = blend_color_with_neovim_bg('DiffAdd', 20) })
+  vim.api.nvim_set_hl(
+    self.hl_ns,
+    '@diff.minus',
+    { bg = blend_color_with_neovim_bg('DiffDelete', 20) }
+  )
+  vim.api.nvim_set_hl(
+    self.hl_ns,
+    '@diff.delta',
+    { bg = blend_color_with_neovim_bg('DiffChange', 20) }
+  )
 end)
 
 function Diff:valid()
@@ -75,13 +83,13 @@ function Diff:show(a, b, filetype, winnr)
   diff = '\n' .. diff
 
   vim.api.nvim_win_set_buf(winnr, self.bufnr)
-  vim.api.nvim_win_set_hl_ns(winnr, self.ns)
+  vim.api.nvim_win_set_hl_ns(winnr, self.hl_ns)
   vim.bo[self.bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, vim.split(diff, '\n'))
   vim.bo[self.bufnr].modifiable = false
 
   local opts = {
-    id = self.mark_ns,
+    id = self.ns,
     hl_mode = 'combine',
     priority = 100,
     virt_text = { { self.help, 'CursorColumn' } },
@@ -92,7 +100,7 @@ function Diff:show(a, b, filetype, winnr)
     opts.virt_text_pos = 'inline'
   end
 
-  vim.api.nvim_buf_set_extmark(self.bufnr, self.mark_ns, 0, 0, opts)
+  vim.api.nvim_buf_set_extmark(self.bufnr, self.ns, 0, 0, opts)
   local ok, parser = pcall(vim.treesitter.get_parser, self.bufnr, 'diff')
   if ok and parser then
     vim.treesitter.start(self.bufnr, 'diff')
