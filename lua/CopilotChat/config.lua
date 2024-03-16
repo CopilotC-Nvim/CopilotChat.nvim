@@ -40,6 +40,8 @@ local select = require('CopilotChat.select')
 ---@field submit_prompt string?
 ---@field accept_diff string?
 ---@field show_diff string?
+---@field show_system_prompt string?
+---@field show_user_selection string?
 
 --- CopilotChat default configuration
 ---@class CopilotChat.config
@@ -50,8 +52,6 @@ local select = require('CopilotChat.select')
 ---@field proxy string?
 ---@field allow_insecure boolean?
 ---@field debug boolean?
----@field show_user_selection boolean?
----@field show_system_prompt boolean?
 ---@field show_folds boolean?
 ---@field clear_chat_on_new_prompt boolean?
 ---@field auto_follow_cursor boolean?
@@ -69,8 +69,6 @@ return {
   proxy = nil, -- [protocol://]host[:port] Use this proxy
   allow_insecure = false, -- Allow insecure server connections
   debug = false, -- Enable debug logging
-  show_user_selection = true, -- Shows user selection in chat
-  show_system_prompt = false, -- Shows system prompt in chat
   show_folds = true, -- Shows folds for sections in chat
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
   auto_follow_cursor = true, -- Auto-follow cursor in chat
@@ -133,6 +131,8 @@ return {
     complete = '<Tab>',
     submit_prompt = '<CR>',
     accept_diff = '<C-y>',
-    show_diff = '<C-d>',
+    show_diff = 'gd',
+    show_system_prompt = 'gp',
+    show_user_selection = 'gs',
   },
 }

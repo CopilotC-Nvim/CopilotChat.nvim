@@ -13,10 +13,12 @@
 ---@field follow fun(self: CopilotChat.Chat)
 ---@field finish fun(self: CopilotChat.Chat)
 
+local Overlay = require('CopilotChat.overlay')
 local Spinner = require('CopilotChat.spinner')
 local utils = require('CopilotChat.utils')
 local is_stable = utils.is_stable
 local class = utils.class
+local show_virt_line = utils.show_virt_line
 
 function CopilotChatFoldExpr(lnum, separator)
   local line = vim.fn.getline(lnum)
@@ -27,50 +29,37 @@ function CopilotChatFoldExpr(lnum, separator)
   return '='
 end
 
-local function create_buf()
-  local bufnr = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_name(bufnr, 'copilot-chat')
-  vim.bo[bufnr].filetype = 'markdown'
-  vim.bo[bufnr].syntax = 'markdown'
-  local ok, parser = pcall(vim.treesitter.get_parser, bufnr, 'markdown')
-  if ok and parser then
-    vim.treesitter.start(bufnr, 'markdown')
-  end
-  return bufnr
-end
-
-local Chat = class(function(self, ns, help, on_buf_create)
-  self.ns = ns
+local Chat = class(function(self, mark_ns, hl_ns, help, on_buf_create)
+  self.mark_ns = mark_ns
+  self.hl_ns = hl_ns
   self.help = help
   self.on_buf_create = on_buf_create
   self.bufnr = nil
-  self.spinner = nil
   self.winnr = nil
-end)
+  self.spinner = nil
 
-function Chat:valid()
-  return self.bufnr
-    and vim.api.nvim_buf_is_valid(self.bufnr)
-    and vim.api.nvim_buf_is_loaded(self.bufnr)
-end
+  self.buf_create = function()
+    local bufnr = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_name(bufnr, 'copilot-chat')
+    vim.bo[bufnr].filetype = 'markdown'
+    vim.bo[bufnr].syntax = 'markdown'
+    local ok, parser = pcall(vim.treesitter.get_parser, bufnr, 'markdown')
+    if ok and parser then
+      vim.treesitter.start(bufnr, 'markdown')
+    end
+
+    if not self.spinner then
+      self.spinner = Spinner(bufnr, mark_ns, 'copilot-chat')
+    else
+      self.spinner.bufnr = bufnr
+    end
+
+    return bufnr
+  end
+end, Overlay)
 
 function Chat:visible()
   return self.winnr and vim.api.nvim_win_is_valid(self.winnr)
-end
-
-function Chat:validate()
-  if self:valid() then
-    return
-  end
-
-  self.bufnr = create_buf()
-  if not self.spinner then
-    self.spinner = Spinner(self.bufnr, self.ns, 'copilot-chat')
-  else
-    self.spinner.bufnr = self.bufnr
-  end
-
-  self.on_buf_create(self.bufnr)
 end
 
 function Chat:last()
@@ -164,6 +153,7 @@ function Chat:open(config)
     self.winnr = vim.api.nvim_open_win(self.bufnr, false, win_opts)
   end
 
+  vim.api.nvim_win_set_hl_ns(self.winnr, self.hl_ns)
   vim.wo[self.winnr].wrap = true
   vim.wo[self.winnr].linebreak = true
   vim.wo[self.winnr].cursorline = true
@@ -183,6 +173,7 @@ function Chat:close()
   if self.spinner then
     self.spinner:finish()
   end
+
   if self:visible() then
     vim.api.nvim_win_close(self.winnr, true)
     self.winnr = nil
@@ -213,7 +204,9 @@ function Chat:finish()
     return
   end
 
-  self.spinner:finish(self.help, true)
+  self.spinner:finish()
+  local line = vim.api.nvim_buf_line_count(self.bufnr) - 1
+  show_virt_line(self.help, math.max(0, line - 1), self.bufnr, self.mark_ns)
 end
 
 return Chat
