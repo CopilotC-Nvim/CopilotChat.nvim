@@ -61,6 +61,7 @@ local select = require('CopilotChat.select')
 ---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
 ---@field window CopilotChat.config.window?
 ---@field mappings CopilotChat.config.mappings?
+---@field history_path string
 return {
   system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use
   model = 'gpt-4', -- GPT model to use, 'gpt-3.5-turbo' or 'gpt-4'
@@ -135,4 +136,5 @@ return {
     show_system_prompt = 'gp',
     show_user_selection = 'gs',
   },
+  history_path = vim.fn.stdpath('data') .. '/copilotchat_history',
 }

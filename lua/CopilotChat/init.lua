@@ -368,6 +368,17 @@ function M.reset()
   end)
 end
 
+function M.save_history(label, history_path)
+  state.copilot:save_history(label, history_path)
+end
+
+function M.load_history(label, history_path)
+  M.open()
+  M.reset()
+  state.copilot:load_history(label, history_path)
+  -- TODO: Clear chat window and load history
+end
+
 --- Enables/disables debug
 ---@param debug boolean
 function M.debug(debug)
@@ -632,6 +643,12 @@ function M.setup(config)
   vim.api.nvim_create_user_command('CopilotChatClose', M.close, { force = true })
   vim.api.nvim_create_user_command('CopilotChatToggle', M.toggle, { force = true })
   vim.api.nvim_create_user_command('CopilotChatReset', M.reset, { force = true })
+  vim.api.nvim_create_user_command('CopilotChatSaveHistory', function(args)
+    M.save_history(args.args, M.config.history_path)
+  end, { nargs = '*', force = true, range = true })
+  vim.api.nvim_create_user_command('CopilotChatLoadHistory', function(args)
+    M.load_history(args.args, M.config.history_path)
+  end, { nargs = '*', force = true, range = true })
 end
 
 return M

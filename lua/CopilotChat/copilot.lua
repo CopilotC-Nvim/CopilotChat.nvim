@@ -27,6 +27,8 @@
 ---@field embed fun(self: CopilotChat.Copilot, inputs: table, opts: CopilotChat.copilot.embed.opts):nil
 ---@field stop fun(self: CopilotChat.Copilot):boolean
 ---@field reset fun(self: CopilotChat.Copilot)
+---@field save_history fun(self: CopilotChat.Copilot, label: string, history_path: string):nil
+---@field load_history fun(self: CopilotChat.Copilot, label: string, history_path: string):nil
 
 local log = require('plenary.log')
 local curl = require('plenary.curl')
@@ -73,6 +75,25 @@ local function find_config_path()
       return config
     else
       log.error('Could not find config path')
+    end
+  end
+end
+
+local function find_share_path()
+  local share = vim.fn.expand('$XDG_DATA_HOME')
+  if share and vim.fn.isdirectory(share) > 0 then
+    return share
+  elseif vim.fn.has('win32') > 0 then
+    share = vim.fn.expand('~/AppData/Local')
+    if vim.fn.isdirectory(share) > 0 then
+      return share
+    end
+  else
+    share = vim.fn.expand('~/.local/share')
+    if vim.fn.isdirectory(share) > 0 then
+      return share
+    else
+      log.error('Could not find share path')
     end
   end
 end
@@ -255,6 +276,42 @@ local Copilot = class(function(self, proxy, allow_insecure)
   self.machineid = machine_id()
   self.current_job = nil
 end)
+
+--- Save the history to a file
+--- @param label string: The label to save the history to
+--- @param history_path string: The path to save the history to
+--- @return nil
+function Copilot:save_history(label, history_path)
+  local history = vim.fn.json_encode(self.history)
+  local path = vim.fn.expand(history_path)
+  vim.fn.mkdir(path, 'p')
+  path = path .. label .. '.json'
+  local file = io.open(path, 'w')
+  if file then
+    file:write(history)
+    file:close()
+  else
+    log.error('Failed to save history to ' .. path)
+  end
+end
+
+--- Load the history from a file
+--- @param label string: The label to load the history from
+--- @param history_path string: The path to load the history from
+--- @return nil
+function Copilot:load_history(label, history_path)
+  local path = vim.fn.expand(history_path)
+  path = path .. label .. '.json'
+
+  local file = io.open(path, 'r')
+  if file then
+    local history = file:read('*a')
+    file:close()
+    self.history = vim.fn.json_decode(history)
+  else
+    log.error('Failed to load history from ' .. path)
+  end
+end
 
 function Copilot:check_auth(on_error)
   if not self.github_token then
