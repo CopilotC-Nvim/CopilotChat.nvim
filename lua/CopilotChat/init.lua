@@ -679,12 +679,19 @@ function M.setup(config)
   vim.api.nvim_create_user_command('CopilotChatClose', M.close, { force = true })
   vim.api.nvim_create_user_command('CopilotChatToggle', M.toggle, { force = true })
   vim.api.nvim_create_user_command('CopilotChatReset', M.reset, { force = true })
+
+  local function complete_load()
+    return vim.tbl_map(function(file)
+      return vim.fn.fnamemodify(file, ':t:r')
+    end, vim.fn.glob(M.config.history_path .. '/*', true, true))
+  end
+
   vim.api.nvim_create_user_command('CopilotChatSave', function(args)
     M.save(args.args)
-  end, { nargs = '*', force = true })
+  end, { nargs = '*', force = true, complete = complete_load })
   vim.api.nvim_create_user_command('CopilotChatLoad', function(args)
     M.load(args.args)
-  end, { nargs = '*', force = true })
+  end, { nargs = '*', force = true, complete = complete_load })
 end
 
 return M

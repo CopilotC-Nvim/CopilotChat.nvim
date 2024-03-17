@@ -565,13 +565,13 @@ function Copilot:reset()
 end
 
 --- Save the history to a file
---- @param label string: The label to save the history to
+--- @param name string: The name to save the history to
 --- @param path string: The path to save the history to
-function Copilot:save(label, path)
+function Copilot:save(name, path)
   local history = vim.json.encode(self.history)
   path = vim.fn.expand(path)
   vim.fn.mkdir(path, 'p')
-  path = path .. '/' .. label .. '.json'
+  path = path .. '/' .. name .. '.json'
   local file = io.open(path, 'w')
   if not file then
     log.error('Failed to save history to ' .. path)
@@ -584,11 +584,11 @@ function Copilot:save(label, path)
 end
 
 --- Load the history from a file
---- @param label string: The label to load the history from
+--- @param name string: The name to load the history from
 --- @param path string: The path to load the history from
 --- @return table
-function Copilot:load(label, path)
-  path = vim.fn.expand(path) .. '/' .. label .. '.json'
+function Copilot:load(name, path)
+  path = vim.fn.expand(path) .. '/' .. name .. '.json'
   local file = io.open(path, 'r')
   if not file then
     log.error('Failed to load history from ' .. path)
