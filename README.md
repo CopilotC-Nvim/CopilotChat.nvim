@@ -101,6 +101,8 @@ See @deathbeam for [configuration](https://github.com/deathbeam/dotfiles/blob/ma
 - `:CopilotChatClose` - Close chat window
 - `:CopilotChatToggle` - Toggle chat window
 - `:CopilotChatReset` - Reset chat window
+- `:CopilotChatSave <name>?` - Save chat history to file
+- `:CopilotChatLoad <name>?` - Load chat history from file
 - `:CopilotChatDebugInfo` - Show debug information
 
 #### Commands coming from default prompts
