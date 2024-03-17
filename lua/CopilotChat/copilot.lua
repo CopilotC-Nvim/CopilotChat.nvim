@@ -25,7 +25,7 @@
 ---@class CopilotChat.Copilot
 ---@field ask fun(self: CopilotChat.Copilot, prompt: string, opts: CopilotChat.copilot.ask.opts):nil
 ---@field embed fun(self: CopilotChat.Copilot, inputs: table, opts: CopilotChat.copilot.embed.opts):nil
----@field stop fun(self: CopilotChat.Copilot)
+---@field stop fun(self: CopilotChat.Copilot):boolean
 ---@field reset fun(self: CopilotChat.Copilot)
 
 local log = require('plenary.log')
@@ -254,7 +254,6 @@ local Copilot = class(function(self, proxy, allow_insecure)
   self.sessionid = nil
   self.machineid = machine_id()
   self.current_job = nil
-  self.current_job_on_cancel = nil
 end)
 
 function Copilot:check_auth(on_error)
@@ -369,8 +368,6 @@ function Copilot:ask(prompt, opts)
   local errored = false
   local full_response = ''
 
-  self.current_job_on_cancel = on_done
-
   self.current_job = curl
     .post(url, {
       headers = headers,
@@ -380,7 +377,7 @@ function Copilot:ask(prompt, opts)
       on_error = function(err)
         err = 'Failed to get response: ' .. vim.inspect(err)
         log.error(err)
-        if on_error then
+        if self.current_job and on_error then
           on_error(err)
         end
       end,
@@ -393,7 +390,7 @@ function Copilot:ask(prompt, opts)
           err = 'Failed to get response: ' .. vim.inspect(err)
           errored = true
           log.error(err)
-          if on_error then
+          if self.current_job and on_error then
             on_error(err)
           end
           return
@@ -406,7 +403,7 @@ function Copilot:ask(prompt, opts)
           log.trace('Full response: ' .. full_response)
           self.token_count = self.token_count + tiktoken.count(full_response)
 
-          if on_done then
+          if self.current_job and on_done then
             on_done(full_response, self.token_count + current_count)
           end
 
@@ -439,7 +436,7 @@ function Copilot:ask(prompt, opts)
           return
         end
 
-        if on_progress then
+        if self.current_job and on_progress then
           on_progress(content)
         end
 
@@ -549,13 +546,13 @@ end
 --- Stop the running job
 function Copilot:stop()
   if self.current_job then
-    self.current_job:shutdown()
+    local job = self.current_job
     self.current_job = nil
-    if self.current_job_on_cancel then
-      self.current_job_on_cancel('job cancelled')
-      self.current_job_on_cancel = nil
-    end
+    job:shutdown()
+    return true
   end
+
+  return false
 end
 
 --- Reset the history and stop any running job

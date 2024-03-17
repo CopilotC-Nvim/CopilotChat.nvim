@@ -38,7 +38,11 @@ function Spinner:start()
     0,
     100,
     vim.schedule_wrap(function()
-      if not vim.api.nvim_buf_is_valid(self.bufnr) then
+      if
+        not vim.api.nvim_buf_is_valid(self.bufnr)
+        or not vim.api.nvim_buf_is_loaded(self.bufnr)
+        or not self.timer
+      then
         self:finish()
         return
       end
@@ -68,10 +72,11 @@ function Spinner:finish()
     return
   end
 
-  self.timer:stop()
-  self.timer:close()
+  local timer = self.timer
   self.timer = nil
 
+  timer:stop()
+  timer:close()
   vim.api.nvim_buf_del_extmark(self.bufnr, self.ns, self.ns)
   vim.notify('Done!', vim.log.levels.INFO, { title = self.title })
 end

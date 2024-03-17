@@ -86,8 +86,6 @@ local function find_lines_between_separator(lines, pattern, at_least_one)
   return result, separator_line_start, separator_line_finish, line_count
 end
 
-local function show_diff_between_selection_and_copilot(selection) end
-
 local function update_prompts(prompt, system_prompt)
   local prompts_to_use = M.prompts()
   local try_again = false
@@ -298,6 +296,10 @@ function M.ask(prompt, config, source)
     updated_prompt = updated_prompt .. ' ' .. selection.prompt_extra
   end
 
+  if state.copilot:stop() then
+    append('\n\n' .. config.separator .. '\n\n')
+  end
+
   append(updated_prompt)
   append('\n\n**' .. config.name .. '** ' .. config.separator .. '\n\n')
   state.chat:follow()
@@ -359,8 +361,8 @@ end
 --- Reset the chat window and show the help message.
 function M.reset()
   state.copilot:reset()
-  state.chat:clear()
   vim.schedule(function()
+    state.chat:clear()
     append('\n')
     state.chat:finish()
   end)
@@ -589,7 +591,8 @@ function M.setup(config)
       end, { buffer = bufnr })
     end
 
-    M.reset()
+    append('\n')
+    state.chat:finish()
   end)
 
   tiktoken.setup()
