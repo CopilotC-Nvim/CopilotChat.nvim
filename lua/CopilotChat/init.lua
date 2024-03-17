@@ -374,6 +374,8 @@ end
 function M.save(name, history_path)
   if not name or vim.trim(name) == '' then
     name = 'default'
+  else
+    name = vim.trim(name)
   end
 
   history_path = history_path or M.config.history_path
@@ -386,33 +388,37 @@ end
 function M.load(name, history_path)
   if not name or vim.trim(name) == '' then
     name = 'default'
+  else
+    name = vim.trim(name)
   end
 
   history_path = history_path or M.config.history_path
-  vim.schedule(function()
-    M.open()
-    state.copilot:reset()
-    state.chat:clear()
+  state.copilot:reset()
+  state.chat:clear()
 
-    local history = state.copilot:load(name, history_path)
-    for i, message in ipairs(history) do
-      if message.role == 'user' then
-        if i > 1 then
-          append('\n\n' .. M.config.separator .. '\n\n')
-        else
-          append('\n')
-        end
-        append(message.content)
-      elseif message.role == 'assistant' then
-        append('\n\n**' .. M.config.name .. '** ' .. M.config.separator .. '\n\n')
-        append(message.content)
+  local history = state.copilot:load(name, history_path)
+  for i, message in ipairs(history) do
+    if message.role == 'user' then
+      if i > 1 then
+        append('\n\n' .. M.config.separator .. '\n\n')
+      else
+        append('\n')
       end
+      append(message.content)
+    elseif message.role == 'assistant' then
+      append('\n\n**' .. M.config.name .. '** ' .. M.config.separator .. '\n\n')
+      append(message.content)
     end
+  end
 
-    append('\n\n' .. M.config.separator .. '\n\n')
-    state.chat:follow()
-    state.chat:finish()
-  end)
+  if #history == 0 then
+    append('\n')
+  else
+    append('\n\n' .. M.config.separator .. '\n')
+  end
+
+  state.chat:finish()
+  M.open()
 end
 
 --- Enables/disables debug
@@ -681,9 +687,15 @@ function M.setup(config)
   vim.api.nvim_create_user_command('CopilotChatReset', M.reset, { force = true })
 
   local function complete_load()
-    return vim.tbl_map(function(file)
+    local options = vim.tbl_map(function(file)
       return vim.fn.fnamemodify(file, ':t:r')
     end, vim.fn.glob(M.config.history_path .. '/*', true, true))
+
+    if not vim.tbl_contains(options, 'default') then
+      table.insert(options, 1, 'default')
+    end
+
+    return options
   end
 
   vim.api.nvim_create_user_command('CopilotChatSave', function(args)

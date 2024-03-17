@@ -591,7 +591,6 @@ function Copilot:load(name, path)
   path = vim.fn.expand(path) .. '/' .. name .. '.json'
   local file = io.open(path, 'r')
   if not file then
-    log.error('Failed to load history from ' .. path)
     return {}
   end
 
