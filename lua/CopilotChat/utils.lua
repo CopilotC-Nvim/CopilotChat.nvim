@@ -83,4 +83,18 @@ function M.show_virt_line(text, line, bufnr, mark_ns)
   })
 end
 
+--- Writes text to a temporary file and returns path
+---@param text string The text to write
+---@return string?
+function M.temp_file(text)
+  local temp_file = os.tmpname()
+  local f = io.open(temp_file, 'w+')
+  if f == nil then
+    error('Could not open file: ' .. temp_file)
+  end
+  f:write(text)
+  f:close()
+  return temp_file
+end
+
 return M

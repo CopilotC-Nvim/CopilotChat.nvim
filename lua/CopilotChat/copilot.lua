@@ -33,6 +33,7 @@ local curl = require('plenary.curl')
 local utils = require('CopilotChat.utils')
 local class = utils.class
 local join = utils.join
+local temp_file = utils.temp_file
 local prompts = require('CopilotChat.prompts')
 local tiktoken = require('CopilotChat.tiktoken')
 local max_tokens = 8192
@@ -370,12 +371,10 @@ function Copilot:ask(prompt, opts)
 
   self.current_job_on_cancel = on_done
 
-  local temp_file = vim.fn.tempname()
-  vim.fn.writefile({ body }, temp_file)
   self.current_job = curl
     .post(url, {
       headers = headers,
-      body = temp_file,
+      body = temp_file(body),
       proxy = self.proxy,
       insecure = self.allow_insecure,
       on_error = function(err)
@@ -487,12 +486,9 @@ function Copilot:embed(inputs, opts)
     local body = vim.json.encode(generate_embedding_request(chunk, model))
 
     table.insert(jobs, function(resolve)
-      local temp_file = vim.fn.tempname()
-      vim.fn.writefile({ body }, temp_file)
-
       curl.post(url, {
         headers = headers,
-        body = temp_file,
+        body = temp_file(body),
         proxy = self.proxy,
         insecure = self.allow_insecure,
         on_error = function(err)
