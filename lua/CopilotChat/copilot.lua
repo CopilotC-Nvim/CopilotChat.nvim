@@ -47,6 +47,16 @@ local function uuid()
   )
 end
 
+local function file_write(path, data, mode)
+  mode = mode or 'w' -- Default mode is write, which overwrites the file
+  local file, err = io.open(path, mode)
+  if not file then
+    error('Error opening file: ' .. tostring(err))
+  end
+  file:write(data)
+  file:close()
+end
+
 local function machine_id()
   local length = 65
   local hex_chars = '0123456789abcdef'
@@ -370,8 +380,8 @@ function Copilot:ask(prompt, opts)
 
   self.current_job_on_cancel = on_done
 
-  local temp_file = vim.fn.tempname()
-  vim.fn.writefile({ body }, temp_file)
+  local temp_file = os.tmpname()
+  file_write(temp_file, body)
   self.current_job = curl
     .post(url, {
       headers = headers,
@@ -487,8 +497,8 @@ function Copilot:embed(inputs, opts)
     local body = vim.json.encode(generate_embedding_request(chunk, model))
 
     table.insert(jobs, function(resolve)
-      local temp_file = vim.fn.tempname()
-      vim.fn.writefile({ body }, temp_file)
+      local temp_file = os.tmpname()
+      file_write(temp_file, body)
 
       curl.post(url, {
         headers = headers,
