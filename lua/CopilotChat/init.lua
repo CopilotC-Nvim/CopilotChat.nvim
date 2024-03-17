@@ -410,6 +410,7 @@ function M.load(name, history_path)
     end
 
     append('\n\n' .. M.config.separator .. '\n\n')
+    state.chat:follow()
     state.chat:finish()
   end)
 end
