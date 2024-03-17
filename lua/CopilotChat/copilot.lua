@@ -580,6 +580,7 @@ function Copilot:save(label, path)
 
   file:write(history)
   file:close()
+  log.info('Saved Copilot history to ' .. path)
 end
 
 --- Load the history from a file
@@ -603,6 +604,7 @@ function Copilot:load(label, path)
     },
   })
 
+  log.info('Loaded Copilot history from ' .. path)
   return self.history
 end
 

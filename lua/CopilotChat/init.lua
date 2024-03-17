@@ -415,7 +415,7 @@ function M.debug(debug)
   local logfile = string.format('%s/%s.log', vim.fn.stdpath('state'), plugin_name)
   log.new({
     plugin = plugin_name,
-    level = debug and 'debug' or 'warn',
+    level = debug and 'debug' or 'info',
     outfile = logfile,
   }, true)
   log.logfile = logfile
