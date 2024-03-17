@@ -205,6 +205,7 @@ function Chat:finish()
   end
 
   self.spinner:finish()
+  self:follow()
   local line = vim.api.nvim_buf_line_count(self.bufnr) - 1
   show_virt_line(self.help, math.max(0, line - 1), self.bufnr, self.mark_ns)
 end

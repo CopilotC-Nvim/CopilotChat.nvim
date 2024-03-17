@@ -368,17 +368,44 @@ function M.reset()
   end)
 end
 
-function M.save_history(label, history_path)
+--- Save the chat history to a file.
+---@param name string?
+---@param history_path string?
+function M.save(name, history_path)
+  name = name or 'default'
   history_path = history_path or M.config.history_path
-  state.copilot:save_history(label, history_path)
+  state.copilot:save(name, history_path)
 end
 
-function M.load_history(label, history_path)
+--- Load the chat history from a file.
+---@param name string?
+---@param history_path string?
+function M.load(name, history_path)
+  name = name or 'default'
   history_path = history_path or M.config.history_path
-  M.open()
-  M.reset()
-  state.copilot:load_history(label, history_path)
-  -- TODO: Clear chat window and load history
+  vim.schedule(function()
+    M.open()
+    state.copilot:reset()
+    state.chat:clear()
+
+    local history = state.copilot:load(name, history_path)
+    for i, message in ipairs(history) do
+      if message.role == 'user' then
+        if i > 1 then
+          append('\n\n' .. M.config.separator .. '\n\n')
+        else
+          append('\n')
+        end
+        append(message.content)
+      elseif message.role == 'assistant' then
+        append('\n\n**' .. M.config.name .. '** ' .. M.config.separator .. '\n\n')
+        append(message.content)
+      end
+    end
+
+    append('\n\n' .. M.config.separator .. '\n')
+    state.chat:finish()
+  end)
 end
 
 --- Enables/disables debug
@@ -645,12 +672,12 @@ function M.setup(config)
   vim.api.nvim_create_user_command('CopilotChatClose', M.close, { force = true })
   vim.api.nvim_create_user_command('CopilotChatToggle', M.toggle, { force = true })
   vim.api.nvim_create_user_command('CopilotChatReset', M.reset, { force = true })
-  vim.api.nvim_create_user_command('CopilotChatSaveHistory', function(args)
-    M.save_history(args.args, M.config.history_path)
-  end, { nargs = '*', force = true, range = true })
-  vim.api.nvim_create_user_command('CopilotChatLoadHistory', function(args)
-    M.load_history(args.args, M.config.history_path)
-  end, { nargs = '*', force = true, range = true })
+  vim.api.nvim_create_user_command('CopilotChatSave', function(args)
+    M.save(args.args)
+  end, { nargs = '*', force = true })
+  vim.api.nvim_create_user_command('CopilotChatLoad', function(args)
+    M.load(args.args)
+  end, { nargs = '*', force = true })
 end
 
 return M
