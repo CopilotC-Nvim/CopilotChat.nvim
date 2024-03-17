@@ -372,7 +372,10 @@ end
 ---@param name string?
 ---@param history_path string?
 function M.save(name, history_path)
-  name = name or 'default'
+  if not name or vim.trim(name) == '' then
+    name = 'default'
+  end
+
   history_path = history_path or M.config.history_path
   state.copilot:save(name, history_path)
 end
@@ -381,7 +384,10 @@ end
 ---@param name string?
 ---@param history_path string?
 function M.load(name, history_path)
-  name = name or 'default'
+  if not name or vim.trim(name) == '' then
+    name = 'default'
+  end
+
   history_path = history_path or M.config.history_path
   vim.schedule(function()
     M.open()
@@ -403,7 +409,7 @@ function M.load(name, history_path)
       end
     end
 
-    append('\n\n' .. M.config.separator .. '\n')
+    append('\n\n' .. M.config.separator .. '\n\n')
     state.chat:finish()
   end)
 end
