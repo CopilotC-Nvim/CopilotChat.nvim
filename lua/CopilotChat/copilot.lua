@@ -79,25 +79,6 @@ local function find_config_path()
   end
 end
 
-local function find_share_path()
-  local share = vim.fn.expand('$XDG_DATA_HOME')
-  if share and vim.fn.isdirectory(share) > 0 then
-    return share
-  elseif vim.fn.has('win32') > 0 then
-    share = vim.fn.expand('~/AppData/Local')
-    if vim.fn.isdirectory(share) > 0 then
-      return share
-    end
-  else
-    share = vim.fn.expand('~/.local/share')
-    if vim.fn.isdirectory(share) > 0 then
-      return share
-    else
-      log.error('Could not find share path')
-    end
-  end
-end
-
 local function get_cached_token()
   local config_path = find_config_path()
   if not config_path then

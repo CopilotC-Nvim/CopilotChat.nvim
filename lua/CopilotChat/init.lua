@@ -369,10 +369,12 @@ function M.reset()
 end
 
 function M.save_history(label, history_path)
+  history_path = history_path or M.config.history_path
   state.copilot:save_history(label, history_path)
 end
 
 function M.load_history(label, history_path)
+  history_path = history_path or M.config.history_path
   M.open()
   M.reset()
   state.copilot:load_history(label, history_path)
