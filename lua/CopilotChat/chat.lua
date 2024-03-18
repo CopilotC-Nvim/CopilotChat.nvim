@@ -29,9 +29,8 @@ function CopilotChatFoldExpr(lnum, separator)
   return '='
 end
 
-local Chat = class(function(self, mark_ns, hl_ns, help, on_buf_create)
+local Chat = class(function(self, mark_ns, help, on_buf_create)
   self.mark_ns = mark_ns
-  self.hl_ns = hl_ns
   self.help = help
   self.on_buf_create = on_buf_create
   self.bufnr = nil
@@ -153,7 +152,6 @@ function Chat:open(config)
     self.winnr = vim.api.nvim_open_win(self.bufnr, false, win_opts)
   end
 
-  vim.api.nvim_win_set_hl_ns(self.winnr, self.hl_ns)
   vim.wo[self.winnr].wrap = true
   vim.wo[self.winnr].linebreak = true
   vim.wo[self.winnr].cursorline = true

@@ -453,6 +453,7 @@ function M.setup(config)
   state.diff = Overlay(
     'copilot-diff',
     mark_ns,
+    hl_ns,
     "'"
       .. M.config.mappings.close
       .. "' to close diff.\n'"
@@ -493,21 +494,33 @@ function M.setup(config)
     end
   )
 
-  state.system_prompt = Overlay('copilot-system-prompt', mark_ns, overlay_help, function(bufnr)
-    if M.config.mappings.close then
-      vim.keymap.set('n', M.config.mappings.close, function()
-        state.system_prompt:restore(state.chat.winnr, state.chat.bufnr)
-      end, { buffer = bufnr })
+  state.system_prompt = Overlay(
+    'copilot-system-prompt',
+    mark_ns,
+    hl_ns,
+    overlay_help,
+    function(bufnr)
+      if M.config.mappings.close then
+        vim.keymap.set('n', M.config.mappings.close, function()
+          state.system_prompt:restore(state.chat.winnr, state.chat.bufnr)
+        end, { buffer = bufnr })
+      end
     end
-  end)
+  )
 
-  state.user_selection = Overlay('copilot-user-selection', mark_ns, overlay_help, function(bufnr)
-    if M.config.mappings.close then
-      vim.keymap.set('n', M.config.mappings.close, function()
-        state.user_selection:restore(state.chat.winnr, state.chat.bufnr)
-      end, { buffer = bufnr })
+  state.user_selection = Overlay(
+    'copilot-user-selection',
+    mark_ns,
+    hl_ns,
+    overlay_help,
+    function(bufnr)
+      if M.config.mappings.close then
+        vim.keymap.set('n', M.config.mappings.close, function()
+          state.user_selection:restore(state.chat.winnr, state.chat.bufnr)
+        end, { buffer = bufnr })
+      end
     end
-  end)
+  )
 
   local chat_help = ''
   local chat_keys = vim.tbl_keys(M.config.mappings)
@@ -529,7 +542,7 @@ function M.setup(config)
     .. M.config.mappings.complete
     .. ' for different completion options.'
 
-  state.chat = Chat(mark_ns, hl_ns, chat_help, function(bufnr)
+  state.chat = Chat(mark_ns, chat_help, function(bufnr)
     if M.config.mappings.complete then
       vim.keymap.set('i', M.config.mappings.complete, complete, { buffer = bufnr })
     end

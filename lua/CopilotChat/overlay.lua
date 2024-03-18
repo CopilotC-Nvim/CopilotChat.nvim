@@ -9,8 +9,9 @@ local utils = require('CopilotChat.utils')
 local class = utils.class
 local show_virt_line = utils.show_virt_line
 
-local Overlay = class(function(self, name, mark_ns, help, on_buf_create)
+local Overlay = class(function(self, name, mark_ns, hl_ns, help, on_buf_create)
   self.mark_ns = mark_ns
+  self.hl_ns = hl_ns
   self.help = help
   self.on_buf_create = on_buf_create
   self.bufnr = nil
@@ -52,6 +53,7 @@ function Overlay:show(text, filetype, syntax, winnr)
   show_virt_line(self.help, math.max(0, line), self.bufnr, self.mark_ns)
 
   -- Dual mode with treesitter (for diffs for example)
+  vim.api.nvim_win_set_hl_ns(winnr, self.hl_ns)
   local ok, parser = pcall(vim.treesitter.get_parser, self.bufnr, syntax)
   if ok and parser then
     vim.treesitter.start(self.bufnr, syntax)
@@ -64,6 +66,7 @@ end
 function Overlay:restore(winnr, bufnr)
   self.current = nil
   vim.api.nvim_win_set_buf(winnr, bufnr)
+  vim.api.nvim_win_set_hl_ns(winnr, 0)
 end
 
 return Overlay
