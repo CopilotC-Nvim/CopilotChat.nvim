@@ -137,6 +137,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/2689338?v=4",
       "profile": "http://www.dylanmadisetti.com",
       "contributions": ["code"]
+    },
+    {
+      "login": "aweis89",
+      "name": "Aaron Weisberg",
+      "avatar_url": "https://avatars.githubusercontent.com/u/5186956?v=4",
+      "profile": "https://github.com/aweis89",
+      "contributions": ["code", "doc"]
     }
   ],
   "contributorsPerLine": 7,
