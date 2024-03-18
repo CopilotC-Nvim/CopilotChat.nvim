@@ -157,6 +157,13 @@ chat.ask("Explain how it works.", {
   selection = require("CopilotChat.select").buffer,
 })
 
+-- Ask a question and do something with the response
+chat.ask("Show me something interesting", {
+  callback = function(response)
+    print("Response:", response)
+  end,
+})
+
 -- Get all available prompts (can be used for integrations like fzf/telescope)
 local prompts = chat.prompts()
 
@@ -192,6 +199,7 @@ Also see [here](/lua/CopilotChat/config.lua):
   name = 'CopilotChat', -- Name to use in chat
   separator = '---', -- Separator to use in chat
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
+  callback = nil, -- Callback to use when ask response is received
   -- default prompts
   prompts = {
     Explain = {
