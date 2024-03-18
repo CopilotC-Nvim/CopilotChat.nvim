@@ -506,4 +506,3 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 ### Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/CopilotC-Nvim/CopilotChat.nvim.svg)](https://starchart.cc/CopilotC-Nvim/CopilotChat.nvim)
-```
