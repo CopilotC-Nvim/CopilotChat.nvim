@@ -152,12 +152,14 @@ function Chat:open(config)
     self.winnr = vim.api.nvim_open_win(self.bufnr, false, win_opts)
   end
 
+  local wo = config.window.options
+
   vim.wo[self.winnr].wrap = true
   vim.wo[self.winnr].linebreak = true
   vim.wo[self.winnr].cursorline = true
   vim.wo[self.winnr].conceallevel = 2
   vim.wo[self.winnr].foldlevel = 99
-  vim.wo[self.winnr].relativenumber = false
+  vim.wo[self.winnr].relativenumber = wo.relativenumber
   if config.show_folds then
     vim.wo[self.winnr].foldcolumn = '1'
     vim.wo[self.winnr].foldmethod = 'expr'

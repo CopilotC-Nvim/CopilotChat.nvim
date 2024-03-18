@@ -21,6 +21,9 @@ local select = require('CopilotChat.select')
 ---@field mapping string?
 ---@field description string?
 
+---@class CopilotChat.config.window.options
+---@field relativenumber boolean?
+
 ---@class CopilotChat.config.window
 ---@field layout string?
 ---@field relative string?
@@ -32,6 +35,7 @@ local select = require('CopilotChat.select')
 ---@field title string?
 ---@field footer string?
 ---@field zindex number?
+---@field options CopilotChat.config.window.options?
 
 ---@class CopilotChat.config.mappings
 ---@field close string?
@@ -125,6 +129,9 @@ return {
     title = 'Copilot Chat', -- title of chat window
     footer = nil, -- footer of chat window
     zindex = 1, -- determines if window is on top or below other floating windows
+    options = {
+      relativenumber = false, -- show relative line numbers
+    },
   },
   -- default mappings
   mappings = {

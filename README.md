@@ -240,6 +240,9 @@ Also see [here](/lua/CopilotChat/config.lua):
     title = 'Copilot Chat', -- title of chat window
     footer = nil, -- footer of chat window
     zindex = 1, -- determines if window is on top or below other floating windows
+    options = {
+      relativenumber = false, -- show relative line numbers
+    },
   },
   -- default mappings
   mappings = {
