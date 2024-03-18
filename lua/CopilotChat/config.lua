@@ -61,6 +61,7 @@ local select = require('CopilotChat.select')
 ---@field history_path string?
 ---@field prompts table<string, CopilotChat.config.prompt|string>?
 ---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
+---@field callback fun(response: string)?
 ---@field window CopilotChat.config.window?
 ---@field mappings CopilotChat.config.mappings?
 return {

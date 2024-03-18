@@ -157,6 +157,20 @@ chat.ask("Explain how it works.", {
   selection = require("CopilotChat.select").buffer,
 })
 
+-- Ask a question and do something with the response
+local prompt = require("CopilotChat.config").prompts.Commit.prompt
+chat.ask(prompt, {
+  selection = require("CopilotChat.select").gitdiff,
+  callback = function(response)
+    local gitcommit = response:match("```gitcommit\n(.*)```")
+    if gitcommit then
+      vim.api.nvim_command("Git commit -m " .. '"' .. gitcommit .. '"')
+    else
+      print("No commit message found.")
+    end
+  end,
+})
+
 -- Get all available prompts (can be used for integrations like fzf/telescope)
 local prompts = chat.prompts()
 
@@ -492,3 +506,4 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 ### Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/CopilotC-Nvim/CopilotChat.nvim.svg)](https://starchart.cc/CopilotC-Nvim/CopilotChat.nvim)
+```
