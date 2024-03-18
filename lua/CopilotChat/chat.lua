@@ -36,26 +36,26 @@ local Chat = class(function(self, mark_ns, help, on_buf_create)
   self.bufnr = nil
   self.winnr = nil
   self.spinner = nil
+
+  self.buf_create = function()
+    local bufnr = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_name(bufnr, 'copilot-chat')
+    vim.bo[bufnr].filetype = 'markdown'
+    vim.bo[bufnr].syntax = 'markdown'
+    local ok, parser = pcall(vim.treesitter.get_parser, bufnr, 'markdown')
+    if ok and parser then
+      vim.treesitter.start(bufnr, 'markdown')
+    end
+
+    if not self.spinner then
+      self.spinner = Spinner(bufnr, mark_ns, 'copilot-chat')
+    else
+      self.spinner.bufnr = bufnr
+    end
+
+    return bufnr
+  end
 end, Overlay)
-
-function Chat:buf_create()
-  local bufnr = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_name(bufnr, 'copilot-chat')
-  vim.bo[bufnr].filetype = 'markdown'
-  vim.bo[bufnr].syntax = 'markdown'
-  local ok, parser = pcall(vim.treesitter.get_parser, bufnr, 'markdown')
-  if ok and parser then
-    vim.treesitter.start(bufnr, 'markdown')
-  end
-
-  if not self.spinner then
-    self.spinner = Spinner(bufnr, self.mark_ns, 'copilot-chat')
-  else
-    self.spinner.bufnr = bufnr
-  end
-
-  return bufnr
-end
 
 function Chat:visible()
   return self.winnr and vim.api.nvim_win_is_valid(self.winnr)

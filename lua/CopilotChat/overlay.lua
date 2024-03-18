@@ -10,20 +10,18 @@ local class = utils.class
 local show_virt_line = utils.show_virt_line
 
 local Overlay = class(function(self, name, mark_ns, hl_ns, help, on_buf_create)
-  self.name = name
   self.mark_ns = mark_ns
   self.hl_ns = hl_ns
   self.help = help
   self.on_buf_create = on_buf_create
   self.bufnr = nil
-  self.buf_create = function() end
-end)
 
-function Overlay:buf_create()
-  local bufnr = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_name(bufnr, self.name)
-  return bufnr
-end
+  self.buf_create = function()
+    local bufnr = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_name(bufnr, name)
+    return bufnr
+  end
+end)
 
 function Overlay:valid()
   return self.bufnr
@@ -36,7 +34,7 @@ function Overlay:validate()
     return
   end
 
-  self.bufnr = self:buf_create()
+  self.bufnr = self.buf_create(self)
   self.on_buf_create(self.bufnr)
 end
 
