@@ -523,24 +523,26 @@ function M.setup(config)
   )
 
   local chat_help = ''
-  local chat_keys = vim.tbl_keys(M.config.mappings)
-  table.sort(chat_keys, function(a, b)
-    return M.config.mappings[a] < M.config.mappings[b]
-  end)
+  if M.config.show_help then
+    local chat_keys = vim.tbl_keys(M.config.mappings)
+    table.sort(chat_keys, function(a, b)
+      return M.config.mappings[a] < M.config.mappings[b]
+    end)
 
-  for _, name in ipairs(chat_keys) do
-    local key = M.config.mappings[name]
-    if key then
-      chat_help = chat_help .. "'" .. key .. "' to " .. name:gsub('_', ' ') .. '\n'
+    for _, name in ipairs(chat_keys) do
+      local key = M.config.mappings[name]
+      if key then
+        chat_help = chat_help .. "'" .. key .. "' to " .. name:gsub('_', ' ') .. '\n'
+      end
     end
-  end
 
-  chat_help = chat_help
-    .. '@'
-    .. M.config.mappings.complete
-    .. ' or /'
-    .. M.config.mappings.complete
-    .. ' for different completion options.'
+    chat_help = chat_help
+      .. '@'
+      .. M.config.mappings.complete
+      .. ' or /'
+      .. M.config.mappings.complete
+      .. ' for different completion options.'
+  end
 
   state.chat = Chat(mark_ns, chat_help, function(bufnr)
     if M.config.mappings.complete then
