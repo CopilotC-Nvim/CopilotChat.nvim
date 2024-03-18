@@ -118,7 +118,7 @@ See @deathbeam for [configuration](https://github.com/deathbeam/dotfiles/blob/ma
 
 ### API
 
-```lua
+````lua
 local chat = require("CopilotChat")
 
 -- Open chat window
@@ -182,7 +182,7 @@ actions.pick(actions.help_actions())
 
 -- Pick prompt actions
 actions.pick(actions.prompt_actions())
-```
+````
 
 ## Configuration
 
