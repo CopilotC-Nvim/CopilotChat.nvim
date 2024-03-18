@@ -59,9 +59,9 @@ local select = require('CopilotChat.select')
 ---@field name string?
 ---@field separator string?
 ---@field history_path string?
+---@field callback fun(response: string)?
 ---@field prompts table<string, CopilotChat.config.prompt|string>?
 ---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
----@field callback fun(response: string)?
 ---@field window CopilotChat.config.window?
 ---@field mappings CopilotChat.config.mappings?
 return {
@@ -79,6 +79,7 @@ return {
   name = 'CopilotChat', -- Name to use in chat
   separator = '---', -- Separator to use in chat
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
+  callback = nil, -- Callback to use when ask response is received
   -- default prompts
   prompts = {
     Explain = {

@@ -118,7 +118,7 @@ See @deathbeam for [configuration](https://github.com/deathbeam/dotfiles/blob/ma
 
 ### API
 
-````lua
+```lua
 local chat = require("CopilotChat")
 
 -- Open chat window
@@ -158,16 +158,9 @@ chat.ask("Explain how it works.", {
 })
 
 -- Ask a question and do something with the response
-local prompt = require("CopilotChat.config").prompts.Commit.prompt
-chat.ask(prompt, {
-  selection = require("CopilotChat.select").gitdiff,
+chat.ask("Show me something interesting", {
   callback = function(response)
-    local gitcommit = response:match("```gitcommit\n(.*)```")
-    if gitcommit then
-      vim.api.nvim_command("Git commit -m " .. '"' .. gitcommit .. '"')
-    else
-      print("No commit message found.")
-    end
+    print("Response:", response)
   end,
 })
 
@@ -182,7 +175,7 @@ actions.pick(actions.help_actions())
 
 -- Pick prompt actions
 actions.pick(actions.prompt_actions())
-````
+```
 
 ## Configuration
 
@@ -206,6 +199,7 @@ Also see [here](/lua/CopilotChat/config.lua):
   name = 'CopilotChat', -- Name to use in chat
   separator = '---', -- Separator to use in chat
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
+  callback = nil, -- Callback to use when ask response is received
   -- default prompts
   prompts = {
     Explain = {
