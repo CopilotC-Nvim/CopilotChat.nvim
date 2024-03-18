@@ -27,6 +27,8 @@
 ---@field embed fun(self: CopilotChat.Copilot, inputs: table, opts: CopilotChat.copilot.embed.opts):nil
 ---@field stop fun(self: CopilotChat.Copilot):boolean
 ---@field reset fun(self: CopilotChat.Copilot)
+---@field save fun(self: CopilotChat.Copilot, name: string, path: string):nil
+---@field load fun(self: CopilotChat.Copilot, name: string, path: string):table
 
 local log = require('plenary.log')
 local curl = require('plenary.curl')
@@ -409,7 +411,7 @@ function Copilot:ask(prompt, opts)
 
           table.insert(self.history, {
             content = full_response,
-            role = 'system',
+            role = 'assistant',
           })
           return
         end
@@ -560,6 +562,49 @@ function Copilot:reset()
   self:stop()
   self.history = {}
   self.token_count = 0
+end
+
+--- Save the history to a file
+--- @param name string: The name to save the history to
+--- @param path string: The path to save the history to
+function Copilot:save(name, path)
+  local history = vim.json.encode(self.history)
+  path = vim.fn.expand(path)
+  vim.fn.mkdir(path, 'p')
+  path = path .. '/' .. name .. '.json'
+  local file = io.open(path, 'w')
+  if not file then
+    log.error('Failed to save history to ' .. path)
+    return
+  end
+
+  file:write(history)
+  file:close()
+  log.info('Saved Copilot history to ' .. path)
+end
+
+--- Load the history from a file
+--- @param name string: The name to load the history from
+--- @param path string: The path to load the history from
+--- @return table
+function Copilot:load(name, path)
+  path = vim.fn.expand(path) .. '/' .. name .. '.json'
+  local file = io.open(path, 'r')
+  if not file then
+    return {}
+  end
+
+  local history = file:read('*a')
+  file:close()
+  self.history = vim.json.decode(history, {
+    luanil = {
+      object = true,
+      array = true,
+    },
+  })
+
+  log.info('Loaded Copilot history from ' .. path)
+  return self.history
 end
 
 return Copilot

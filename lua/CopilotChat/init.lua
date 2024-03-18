@@ -368,6 +368,59 @@ function M.reset()
   end)
 end
 
+--- Save the chat history to a file.
+---@param name string?
+---@param history_path string?
+function M.save(name, history_path)
+  if not name or vim.trim(name) == '' then
+    name = 'default'
+  else
+    name = vim.trim(name)
+  end
+
+  history_path = history_path or M.config.history_path
+  state.copilot:save(name, history_path)
+end
+
+--- Load the chat history from a file.
+---@param name string?
+---@param history_path string?
+function M.load(name, history_path)
+  if not name or vim.trim(name) == '' then
+    name = 'default'
+  else
+    name = vim.trim(name)
+  end
+
+  history_path = history_path or M.config.history_path
+  state.copilot:reset()
+  state.chat:clear()
+
+  local history = state.copilot:load(name, history_path)
+  for i, message in ipairs(history) do
+    if message.role == 'user' then
+      if i > 1 then
+        append('\n\n' .. M.config.separator .. '\n\n')
+      else
+        append('\n')
+      end
+      append(message.content)
+    elseif message.role == 'assistant' then
+      append('\n\n**' .. M.config.name .. '** ' .. M.config.separator .. '\n\n')
+      append(message.content)
+    end
+  end
+
+  if #history == 0 then
+    append('\n')
+  else
+    append('\n\n' .. M.config.separator .. '\n')
+  end
+
+  state.chat:finish()
+  M.open()
+end
+
 --- Enables/disables debug
 ---@param debug boolean
 function M.debug(debug)
@@ -375,7 +428,7 @@ function M.debug(debug)
   local logfile = string.format('%s/%s.log', vim.fn.stdpath('state'), plugin_name)
   log.new({
     plugin = plugin_name,
-    level = debug and 'debug' or 'warn',
+    level = debug and 'debug' or 'info',
     outfile = logfile,
   }, true)
   log.logfile = logfile
@@ -632,6 +685,25 @@ function M.setup(config)
   vim.api.nvim_create_user_command('CopilotChatClose', M.close, { force = true })
   vim.api.nvim_create_user_command('CopilotChatToggle', M.toggle, { force = true })
   vim.api.nvim_create_user_command('CopilotChatReset', M.reset, { force = true })
+
+  local function complete_load()
+    local options = vim.tbl_map(function(file)
+      return vim.fn.fnamemodify(file, ':t:r')
+    end, vim.fn.glob(M.config.history_path .. '/*', true, true))
+
+    if not vim.tbl_contains(options, 'default') then
+      table.insert(options, 1, 'default')
+    end
+
+    return options
+  end
+
+  vim.api.nvim_create_user_command('CopilotChatSave', function(args)
+    M.save(args.args)
+  end, { nargs = '*', force = true, complete = complete_load })
+  vim.api.nvim_create_user_command('CopilotChatLoad', function(args)
+    M.load(args.args)
+  end, { nargs = '*', force = true, complete = complete_load })
 end
 
 return M

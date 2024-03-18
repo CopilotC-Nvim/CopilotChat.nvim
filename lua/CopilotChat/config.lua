@@ -57,6 +57,7 @@ local select = require('CopilotChat.select')
 ---@field auto_follow_cursor boolean?
 ---@field name string?
 ---@field separator string?
+---@field history_path string?
 ---@field prompts table<string, CopilotChat.config.prompt|string>?
 ---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
 ---@field window CopilotChat.config.window?
@@ -74,6 +75,7 @@ return {
   auto_follow_cursor = true, -- Auto-follow cursor in chat
   name = 'CopilotChat', -- Name to use in chat
   separator = '---', -- Separator to use in chat
+  history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
   -- default prompts
   prompts = {
     Explain = {
