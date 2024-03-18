@@ -53,6 +53,7 @@ local select = require('CopilotChat.select')
 ---@field allow_insecure boolean?
 ---@field debug boolean?
 ---@field show_folds boolean?
+---@field show_help boolean?
 ---@field clear_chat_on_new_prompt boolean?
 ---@field auto_follow_cursor boolean?
 ---@field name string?
@@ -71,6 +72,7 @@ return {
   allow_insecure = false, -- Allow insecure server connections
   debug = false, -- Enable debug logging
   show_folds = true, -- Shows folds for sections in chat
+  show_help = true, -- Shows help message as virtual lines when waiting for user input
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
   auto_follow_cursor = true, -- Auto-follow cursor in chat
   name = 'CopilotChat', -- Name to use in chat
