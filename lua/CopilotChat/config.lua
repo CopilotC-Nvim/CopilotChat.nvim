@@ -45,41 +45,50 @@ local select = require('CopilotChat.select')
 
 --- CopilotChat default configuration
 ---@class CopilotChat.config
+---@field debug boolean?
+---@field proxy string?
+---@field allow_insecure boolean?
 ---@field system_prompt string?
 ---@field model string?
 ---@field temperature number?
----@field context string?
----@field proxy string?
----@field allow_insecure boolean?
----@field debug boolean?
----@field show_folds boolean?
----@field show_help boolean?
----@field clear_chat_on_new_prompt boolean?
----@field auto_follow_cursor boolean?
 ---@field name string?
 ---@field separator string?
+---@field show_folds boolean?
+---@field show_help boolean?
+---@field auto_follow_cursor boolean?
+---@field clear_chat_on_new_prompt boolean?
+---@field context string?
 ---@field history_path string?
 ---@field callback fun(response: string)?
----@field prompts table<string, CopilotChat.config.prompt|string>?
 ---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
+---@field prompts table<string, CopilotChat.config.prompt|string>?
 ---@field window CopilotChat.config.window?
 ---@field mappings CopilotChat.config.mappings?
 return {
+  debug = false, -- Enable debug logging
+  proxy = nil, -- [protocol://]host[:port] Use this proxy
+  allow_insecure = false, -- Allow insecure server connections
+
   system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use
   model = 'gpt-4', -- GPT model to use, 'gpt-3.5-turbo' or 'gpt-4'
   temperature = 0.1, -- GPT temperature
-  context = 'manual', -- Context to use, 'buffers', 'buffer' or 'manual'
-  proxy = nil, -- [protocol://]host[:port] Use this proxy
-  allow_insecure = false, -- Allow insecure server connections
-  debug = false, -- Enable debug logging
-  show_folds = true, -- Shows folds for sections in chat
-  show_help = true, -- Shows help message as virtual lines when waiting for user input
-  clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
-  auto_follow_cursor = true, -- Auto-follow cursor in chat
+
   name = 'CopilotChat', -- Name to use in chat
   separator = '---', -- Separator to use in chat
+  show_folds = true, -- Shows folds for sections in chat
+  show_help = true, -- Shows help message as virtual lines when waiting for user input
+  auto_follow_cursor = true, -- Auto-follow cursor in chat
+  clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
+
+  context = nil, -- Default context to use, 'buffers', 'buffer' or none (can be specified manually in prompt via @).
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
   callback = nil, -- Callback to use when ask response is received
+
+  -- default selection (visual or line)
+  selection = function(source)
+    return select.visual(source) or select.line(source)
+  end,
+
   -- default prompts
   prompts = {
     Explain = {
@@ -112,10 +121,7 @@ return {
       end,
     },
   },
-  -- default selection (visual or line)
-  selection = function(source)
-    return select.visual(source) or select.line(source)
-  end,
+
   -- default window options
   window = {
     layout = 'vertical', -- 'vertical', 'horizontal', 'float'
@@ -130,6 +136,7 @@ return {
     footer = nil, -- footer of chat window
     zindex = 1, -- determines if window is on top or below other floating windows
   },
+
   -- default mappings
   mappings = {
     close = 'q',
