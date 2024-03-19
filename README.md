@@ -319,6 +319,19 @@ You can define custom system prompts by using `system_prompt` property when pass
 }
 ```
 
+### Customizing buffers
+
+You can set local options for the buffers that are created by this plugin: `copilot-diff`, `copilot-system-prompt`, `copilot-user-selection`, `copilot-chat`.
+
+```lua
+vim.api.nvim_create_autocmd('BufEnter', {
+    pattern = 'copilot-*',
+    callback = function()
+        vim.opt_local.relativenumber = true
+    end
+})
+```
+
 ## Tips
 
 <details>
