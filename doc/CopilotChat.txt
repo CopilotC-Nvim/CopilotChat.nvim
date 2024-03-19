@@ -20,7 +20,8 @@ Table of Contents                              *CopilotChat-table-of-contents*
 <https://results.pre-commit.ci/latest/github/CopilotC-Nvim/CopilotChat.nvim/main>
 
 |CopilotChat-|
-
+  [!NOTE]
+  Plugin was rewritten to Lua from Python. Please check the [migration guide from version 1 to version 2](/MIGRATION.md) for more information.
 
   [!NOTE] A new command, `CopilotChatBuffer` has been added. It allows you to
   chat with Copilot using the entire content of the buffer.
@@ -34,9 +35,12 @@ PREREQUISITES              *CopilotChat-copilot-chat-for-neovim-prerequisites*
 
 Ensure you have the following installed:
 
-- **Python 3.10 or later**.
-- **Python3 provider**: You can check if it’s enabled by running `:echo has('python3')` in Neovim. If it returns `1`, then the Python3 provider is enabled.
-- **rplugin**: This plugin uses the |remote plugin| system of Neovim. Make sure you have it enabled.
+- **Neovim stable (0.9.5) or nightly**.
+
+Optional:
+
+- tiktoken_core: `sudo luarocks install --lua-version 5.1 tiktoken_core`. Alternatively, download a pre-built binary from [lua-tiktoken releases](https://github.com/gptlang/lua-tiktoken/releases)
+- You can check your Lua PATH in Neovim by doing `:lua print(package.cpath)`. Save the binary as `tiktoken_core.so` in any of the given paths.
 
 
 AUTHENTICATION            *CopilotChat-copilot-chat-for-neovim-authentication*
@@ -50,81 +54,113 @@ INSTALLATION                *CopilotChat-copilot-chat-for-neovim-installation*
 
 LAZY.NVIM ~
 
-1. `pip install python-dotenv requests pynvim==0.5.0 prompt-toolkit`
-2. `pip install tiktoken` (optional for displaying prompt token counts)
-3. Put it in your lazy setup
-
+1.Put it in your lazy setup
 >lua
     return {
       {
-        "CopilotC-Nvim/CopilotChat.nvim",
-        opts = {
-          show_help = "yes", -- Show help text for CopilotChatInPlace, default: yes
-          debug = false, -- Enable or disable debug mode, the log file will be in ~/.local/state/nvim/CopilotChat.nvim.log
-          disable_extra_info = 'no', -- Disable extra information (e.g: system prompt) in the response.
-          language = "English" -- Copilot answer language settings when using default prompts. Default language is English.
-          -- proxy = "socks5://127.0.0.1:3000", -- Proxies requests via https or socks.
-          -- temperature = 0.1,
-        },
-        build = function()
-          vim.notify("Please update the remote plugins by running ':UpdateRemotePlugins', then restart Neovim.")
-        end,
-        event = "VeryLazy",
-        keys = {
-          { "<leader>ccb", "<cmd>CopilotChatBuffer ", desc = "CopilotChat - Chat with current buffer" },
-          { "<leader>cce", "<cmd>CopilotChatExplain<cr>", desc = "CopilotChat - Explain code" },
-          { "<leader>cct", "<cmd>CopilotChatTests<cr>", desc = "CopilotChat - Generate tests" },
-          {
-            "<leader>ccT",
-            "<cmd>CopilotChatVsplitToggle<cr>",
-            desc = "CopilotChat - Toggle Vsplit", -- Toggle vertical split
-          },
-          {
-            "<leader>ccv",
-            ":CopilotChatVisual ",
-            mode = "x",
-            desc = "CopilotChat - Open in vertical split",
-          },
-          {
-            "<leader>ccx",
-            ":CopilotChatInPlace<cr>",
-            mode = "x",
-            desc = "CopilotChat - Run in-place code",
-          },
-          {
-            "<leader>ccf",
-            "<cmd>CopilotChatFixDiagnostic<cr>", -- Get a fix for the diagnostic message under the cursor.
-            desc = "CopilotChat - Fix diagnostic",
-          },
-          {
-            "<leader>ccr",
-            "<cmd>CopilotChatReset<cr>", -- Reset chat history and clear buffer.
-            desc = "CopilotChat - Reset chat history and clear buffer",
-          }
-        },
+	"CopilotC-Nvim/CopilotChat.nvim",
+	branch = "canary",
+	dependencies = {
+	  { "zbirenbaum/copilot.lua" }, -- or github/copilot.vim
+	  { "nvim-lua/plenary.nvim" }, -- for curl, log wrapper
+	},
+	opts = {
+	  debug = true, -- Enable debugging
+	  -- See Configuration section for rest
+	},
+	-- See Commands section for default commands if you want to lazy load on them
+      },
+      event = "VeryLazy", 
+      keys = {
+      -- Show help actions with telescope
+	{
+	  "<leader>cch",
+	  function()
+	    local actions = require("CopilotChat.actions")
+	    require("CopilotChat.integrations.telescope").pick(actions.help_actions())
+	  end,
+	  desc = "CopilotChat - Help actions",
+	},
+	-- Show prompts actions with telescope
+	{
+	  "<leader>ccp",
+	  function()
+	    local actions = require("CopilotChat.actions")
+	    require("CopilotChat.integrations.telescope").pick(actions.prompt_actions())
+	  end,
+	  desc = "CopilotChat - Prompt actions",
+	},
+	{
+	  "<leader>ccp",
+	  ":lua require('CopilotChat.integrations.telescope').pick(require('CopilotChat.actions').prompt_actions())<CR>",
+	  mode = "x",
+	  desc = "CopilotChat - Prompt actions",
+	},
+	-- Code related commands
+	{ "<leader>cce", "<cmd>CopilotChatExplain<cr>",       desc = "CopilotChat - Explain code" },
+	{ "<leader>cct", "<cmd>CopilotChatTests<cr>",         desc = "CopilotChat - Generate tests" },
+	{ "<leader>ccr", "<cmd>CopilotChatReview<cr>",        desc = "CopilotChat - Review code" },
+	{ "<leader>ccR", "<cmd>CopilotChatRefactor<cr>",      desc = "CopilotChat - Refactor code" },
+	{ "<leader>ccn", "<cmd>CopilotChatBetterNamings<cr>", desc = "CopilotChat - Better Naming" },
+	-- Chat with Copilot in visual mode
+	{
+	  "<leader>ccv",
+	  ":CopilotChatVisual",
+	  mode = "x",
+	  desc = "CopilotChat - Open in vertical split",
+	},
+	{
+	  "<leader>ccx",
+	  ":CopilotChatInline<cr>",
+	  mode = "x",
+	  desc = "CopilotChat - Inline chat",
+	},
+	-- Custom input for CopilotChat
+	{
+	  "<leader>cci",
+	  function()
+	    local input = vim.fn.input("Ask Copilot: ")
+	    if input ~= "" then
+	      vim.cmd("CopilotChat " .. input)
+	    end
+	  end,
+	  desc = "CopilotChat - Ask input",
+	},
+	-- Generate commit message based on the git diff
+	{
+	  "<leader>ccm",
+	  "<cmd>CopilotChatCommit<cr>",
+	  desc = "CopilotChat - Generate commit message for all changes",
+	},
+	{
+	  "<leader>ccM",
+	  "<cmd>CopilotChatCommitStaged<cr>",
+	  desc = "CopilotChat - Generate commit message for staged changes",
+	},
+	-- Quick chat with Copilot
+	{
+	  "<leader>ccq",
+	  function()
+	    local input = vim.fn.input("Quick Chat: ")
+	    if input ~= "" then
+	      vim.cmd("CopilotChatBuffer " .. input)
+	    end
+	  end,
+	  desc = "CopilotChat - Quick chat",
+	},
+	-- Debug
+	{ "<leader>ccd", "<cmd>CopilotChatDebugInfo<cr>",     desc = "CopilotChat - Debug Info" },
+	-- Fix the issue with diagnostic
+	{ "<leader>ccf", "<cmd>CopilotChatFixDiagnostic<cr>", desc = "CopilotChat - Fix Diagnostic" },
+	-- Clear buffer and chat history
+	{ "<leader>ccl", "<cmd>CopilotChatReset<cr>",         desc = "CopilotChat - Clear buffer and chat history" },
+	-- Toggle Copilot Chat Vsplit
+	{ "<leader>ccv", "<cmd>CopilotChatToggle<cr>",        desc = "CopilotChat - Toggle Vsplit" },
       },
     }
 <
 
-1. Run command `:UpdateRemotePlugins`, then inspect the file `~/.local/share/nvim/rplugin.vim` for additional details. You will notice that the commands have been registered.
-
-For example:
-
->vim
-    " python3 plugins
-    call remote#host#RegisterPlugin('python3', '/Users/huynhdung/.local/share/nvim/lazy/CopilotChat.nvim/rplugin/python3/CopilotChat', [
-          \ {'sync': v:false, 'name': 'CopilotChatBuffer', 'type': 'command', 'opts': {'nargs': '1'}},
-          \ {'sync': v:false, 'name': 'CopilotChat', 'type': 'command', 'opts': {'nargs': '1'}},
-          \ {'sync': v:false, 'name': 'CopilotChatReset', 'type': 'command', 'opts': {}},
-          \ {'sync': v:false, 'name': 'CopilotChatVisual', 'type': 'command', 'opts': {'nargs': '1', 'range': ''}},
-          \ {'sync': v:false, 'name': 'CopilotChatVsplitToggle', 'type': 'command', 'opts': {}},
-          \ {'sync': v:false, 'name': 'CopilotChatInPlace', 'type': 'command', 'opts': {'nargs': '*', 'range': ''}},
-          \ {'sync': v:false, 'name': 'CopilotChatAutocmd', 'type': 'command', 'opts': {'nargs': '*'}},
-          \ {'sync': v:false, 'name': 'CopilotChatMapping', 'type': 'command', 'opts': {'nargs': '*'}},
-         \ ])
-<
-
-1. Restart `neovim`
+2. Restart `neovim`
 
 
 VIM-PLUG ~
@@ -166,95 +202,31 @@ MANUAL ~
 
 1. Put the files in the right place
 
+>bash
+  mkdir -p ~/.config/nvim/pack/copilotchat/start
+  cd ~/.config/nvim/pack/copilotchat/start
+
+  git clone https://github.com/zbirenbaum/copilot.lua
+  git clone https://github.com/nvim-lua/plenary.nvim
+
+  git clone -b canary https://github.com/CopilotC-Nvim/CopilotChat.nvim
 >
-    $ git clone https://github.com/CopilotC-Nvim/CopilotChat.nvim
-    $ cd CopilotChat.nvim
-    $ cp -r --backup=nil rplugin ~/.config/nvim/
-<
 
-1. Install dependencies
-
->
-    $ pip install -r requirements.txt
-<
-
-1. Add to you configuration
+2. Add to your configuration (e.g. `~/.config/nvim/init.lua`)
 
 >lua
-    local copilot_chat = require("CopilotChat")
-    
-    -- REQUIRED
-    copilot_chat:setup({})
-    -- REQUIRED
-    
-    -- Setup keymap
-    nnoremap <leader>ccb <cmd>CopilotChatBuffer<cr>
-    nnoremap <leader>cce <cmd>CopilotChatExplain<cr>
-    nnoremap <leader>cct <cmd>CopilotChatTests<cr>
-    xnoremap <leader>ccv :CopilotChatVisual<cr>
-    xnoremap <leader>ccx :CopilotChatInPlace<cr>
+  require("CopilotChat").setup {
+    debug = true, -- Enable debugging
+    -- See Configuration section for rest
+  }
 <
 
-1. Open up Neovim and run `:UpdateRemotePlugins`
-2. Restart Neovim
-
+3. Restart `neovim`
 
 USAGE                              *CopilotChat-copilot-chat-for-neovim-usage*
 
 
-CONFIGURATION ~
-
-You have the ability to tailor this plugin to your specific needs using the
-configuration options outlined below:
-
->lua
-    {
-      debug = false, -- Enable or disable debug mode
-      show_help = 'yes', -- Show help text for CopilotChatInPlace
-      disable_extra_info = 'no', -- Disable extra information in the response
-      hide_system_prompt = 'yes', -- Hide system prompts in the response
-      clear_chat_on_new_prompt = 'no', -- If yes then clear chat history on new prompt
-      proxy = '', -- Proxies requests via https or socks
-      prompts = { -- Set dynamic prompts for CopilotChat commands
-        Explain = 'Explain how it works.',
-        Tests = 'Briefly explain how the selected code works, then generate unit tests.',
-      }
-    }
-<
-
-You have the capability to expand the prompts to create more versatile
-commands:
-
->lua
-    return {
-        "CopilotC-Nvim/CopilotChat.nvim",
-        opts = {
-          debug = true,
-          show_help = "yes",
-          prompts = {
-            Explain = "Explain how it works.",
-            Review = "Review the following code and provide concise suggestions.",
-            Tests = "Briefly explain how the selected code works, then generate unit tests.",
-            Refactor = "Refactor the code to improve clarity and readability.",
-          },
-        },
-        build = function()
-          vim.notify("Please update the remote plugins by running ':UpdateRemotePlugins', then restart Neovim.")
-        end,
-        event = "VeryLazy",
-        keys = {
-          { "<leader>ccb", "<cmd>CopilotChatBuffer<cr>", desc = "CopilotChat - Chat with current buffer" },
-          { "<leader>cce", "<cmd>CopilotChatExplain<cr>", desc = "CopilotChat - Explain code" },
-          { "<leader>cct", "<cmd>CopilotChatTests<cr>", desc = "CopilotChat - Generate tests" },
-          { "<leader>ccr", "<cmd>CopilotChatReview<cr>", desc = "CopilotChat - Review code" },
-          { "<leader>ccR", "<cmd>CopilotChatRefactor<cr>", desc = "CopilotChat - Refactor code" },
-        }
-    }
-<
-
-For further reference, you can view @jellydn’s configuration
-<https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/copilot-chat.lua>.
-
+COMMANDS ~
 
 CHAT WITH GITHUB COPILOT ~
 
@@ -313,108 +285,242 @@ CHAT WITH COPILOT WITH ALL CONTENTS OF INFOCUS BUFFER ~
 2. Press `Enter` to send your question to Github Copilot.
 3. Copilot will pull the content of the infocus buffer and chat with you.
 
+CONFIGURATION ~
+
+You have the ability to tailor this plugin to your specific needs using the
+configuration options outlined below:
+
+>lua
+  {
+    system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use
+    model = 'gpt-4', -- GPT model to use
+    temperature = 0.1, -- GPT temperature
+    context = 'manual', -- Context to use, 'buffers', 'buffer' or 'manual'
+    proxy = nil, -- [protocol://]host[:port] Use this proxy
+    allow_insecure = false, -- Allow insecure server connections
+    debug = false, -- Enable debug logging
+    show_folds = true, -- Shows folds for sections in chat
+    show_help = true, -- Shows help message as virtual lines when waiting for user input
+    clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
+    auto_follow_cursor = true, -- Auto-follow cursor in chat
+    name = 'CopilotChat', -- Name to use in chat
+    separator = '---', -- Separator to use in chat
+    history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
+    callback = nil, -- Callback to use when ask response is received
+    -- default prompts
+    prompts = {
+      Explain = {
+	prompt = '/COPILOT_EXPLAIN Write an explanation for the code above as paragraphs of text.',
+      },
+      Tests = {
+	prompt = '/COPILOT_TESTS Write a set of detailed unit test functions for the code above.',
+      },
+      Fix = {
+	prompt = '/COPILOT_FIX There is a problem in this code. Rewrite the code to show it with the bug fixed.',
+      },
+      Optimize = {
+	prompt = '/COPILOT_REFACTOR Optimize the selected code to improve performance and readablilty.',
+      },
+      Docs = {
+	prompt = '/COPILOT_REFACTOR Write documentation for the selected code. The reply should be a codeblock containing the original code with the documentation added as comments. Use the most appropriate documentation style for the programming language used (e.g. JSDoc for JavaScript, docstrings for Python etc.',
+      },
+      FixDiagnostic = {
+	prompt = 'Please assist with the following diagnostic issue in file:',
+	selection = select.diagnostics,
+      },
+      Commit = {
+	prompt = 'Write commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
+	selection = select.gitdiff,
+      },
+      CommitStaged = {
+	prompt = 'Write commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
+	selection = function(source)
+	  return select.gitdiff(source, true)
+	end,
+      },
+    },
+    -- default selection (visual or line)
+    selection = function(source)
+      return select.visual(source) or select.line(source)
+    end,
+    -- default window options
+    window = {
+      layout = 'vertical', -- 'vertical', 'horizontal', 'float'
+      -- Options below only apply to floating windows
+      relative = 'editor', -- 'editor', 'win', 'cursor', 'mouse'
+      border = 'single', -- 'none', single', 'double', 'rounded', 'solid', 'shadow'
+      width = 0.8, -- fractional width of parent
+      height = 0.6, -- fractional height of parent
+      row = nil, -- row position of the window, default is centered
+      col = nil, -- column position of the window, default is centered
+      title = 'Copilot Chat', -- title of chat window
+      footer = nil, -- footer of chat window
+      zindex = 1, -- determines if window is on top or below other floating windows
+    },
+    -- default mappings
+    mappings = {
+      close = 'q',
+      reset = '<C-l>',
+      complete = '<Tab>',
+      submit_prompt = '<CR>',
+      accept_diff = '<C-y>',
+      show_diff = 'gd',
+      show_system_prompt = 'gp',
+      show_user_selection = 'gs',
+    },
+  }
+<
+DEFINING A PROMPT WITH COMMAND AND KEYMAP ~
+
+This will define prompt that you can reference with `/MyCustomPrompt` in chat, call with `:CopilotChatMyCustomPrompt` or use the keymap `<leader>ccmc`.
+It will use visual selection as default selection. If you are using `lazy.nvim` and are already lazy loading based on `Commands` make sure to include the prompt
+commands and keymaps in `cmd` and `keys` respectively.
+
+>lua
+  {
+    prompts = {
+      MyCustomPrompt = {
+	prompt = 'Explain how it works.',
+	mapping = '<leader>ccmc',
+	description = 'My custom prompt description',
+	selection = require('CopilotChat.select').visual,
+      },
+    },
+  }
+<
+
+REFERENCING SYSTEM OR USER PROMPTS ~
+
+You can reference system or user prompts in your configuration or in chat with `/PROMPT_NAME` slash notation.
+For collection of default `COPILOT_` (system) and `USER_` (user) prompts, see [here](/lua/CopilotChat/prompts.lua).
+
+>lua
+  {
+    prompts = {
+      MyCustomPrompt = {
+	prompt = '/COPILOT_EXPLAIN Explain how it works.',
+      },
+      MyCustomPrompt2 = {
+	prompt = '/MyCustomPrompt Include some additional context.',
+      },
+    },
+  }
+<
+
+CUSTOM SYSTEM PROMPTS ~
+
+You can define custom system prompts by using `system_prompt` property when passing config around.
+
+>lua
+  {
+    system_prompt = 'Your name is Github Copilot and you are a AI assistant for developers.',
+    prompts = {
+      MyCustomPromptWithCustomSystemPrompt = {
+	system_prompt = 'Your name is Johny Microsoft and you are not an AI assistant for developers.',
+	prompt = 'Explain how it works.',
+      },
+    },
+  }
+<
+
 
 TIPS                                *CopilotChat-copilot-chat-for-neovim-tips*
 
 
 QUICK CHAT WITH YOUR BUFFER ~
 
-To chat with Copilot using the entire content of the buffer, you can add the
-following configuration to your keymap:
+To chat with Copilot using the entire content of the buffer, you can add the following configuration to your keymap:
 
 >lua
-        -- Quick chat with Copilot
-          {
-            "<leader>ccq",
-            function()
-              local input = vim.fn.input("Quick Chat: ")
-              if input ~= "" then
-                vim.cmd("CopilotChatBuffer " .. input)
-              end
-            end,
-            desc = "CopilotChat - Quick chat",
-          },
-<
+  -- lazy.nvim keys
 
-<https://gyazo.com/9b8cbf1d78a19f326282a6520bc9aab0>
-
-
-INTEGRATION WITH TELESCOPE.NVIM ~
-
-To integrate CopilotChat with Telescope, you can add the following
-configuration to your keymap:
-
->lua
-      {
-        "CopilotC-Nvim/CopilotChat.nvim",
-        event = "VeryLazy",
-        dependencies = {
-          { "nvim-telescope/telescope.nvim" }, -- Use telescope for help actions
-          { "nvim-lua/plenary.nvim" },
-        },
-        keys = {
-         -- Show help actions with telescope
-          {
-            "<leader>cch",
-            function()
-              require("CopilotChat.code_actions").show_help_actions()
-            end,
-            desc = "CopilotChat - Help actions",
-          },
-          -- Show prompts actions with telescope
-          {
-            "<leader>ccp",
-            function()
-              require("CopilotChat.code_actions").show_prompt_actions()
-            end,
-            desc = "CopilotChat - Help actions",
-          },
-          {
-            "<leader>ccp",
-            ":lua require('CopilotChat.code_actions').show_prompt_actions(true)<CR>",
-            mode = "x",
-            desc = "CopilotChat - Prompt actions",
-          },
-        }
-      }
-<
-
-1. Select help actions base the diagnostic message under the cursor.
-<https://gyazo.com/146dc35368592ba9f5de047ddc4728ad>
-
-
-2. Select action base on user prompts.
-<https://gyazo.com/a9c41e6398591c2f1d1d872fd58a2c63>
-
-
-
-
-INTEGRATION WITH EDGY.NVIM ~
-
-Consider integrating this plugin with `edgy.nvim`
-<https://github.com/folke/edgy.nvim>. This will allow you to create a chat
-window on the right side of your screen, occupying 40% of the width, as
-illustrated below.
-
->lua
+    -- Quick chat with Copilot
     {
-      "folke/edgy.nvim",
-      event = "VeryLazy",
-      opts = {
-        -- Refer to my configuration here https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/edgy.lua
-        right = {
-          {
-            title = "CopilotChat.nvim", -- Title of the window
-            ft = "copilot-chat", -- This is custom file type from CopilotChat.nvim
-            size = { width = 0.4 }, -- Width of the window
-          },
-        },
-      },
+      "<leader>ccq",
+      function()
+	local input = vim.fn.input("Quick Chat: ")
+	if input ~= "" then
+	  require("CopilotChat").ask(input, { selection = require("CopilotChat.select").buffer })
+	end
+      end,
+      desc = "CopilotChat - Quick chat",
     }
 <
 
-<https://gyazo.com/550daf6cbb729027ca9bd703c21af53e>
+INLINE CHAT WITH COPILOT ~
 
+Change the window layout to `float` and position relative to cursor to make the window look like inline chat.
+This will allow you to chat with Copilot without opening a new window.
+
+>lua
+  -- lazy.nvim opts
+
+    {
+      window = {
+	layout = 'float',
+	relative = 'cursor',
+	width = 1,
+	height = 0.4,
+	row = 1
+      }
+    }
+<
+
+INTEGRATION WITH TELESCOPE.NVIM ~
+
+
+Requires [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) plugin to be installed.
+
+
+>lua
+  -- lazy.nvim keys
+
+    -- Show help actions with telescope
+    {
+      "<leader>cch",
+      function()
+	local actions = require("CopilotChat.actions")
+	require("CopilotChat.integrations.telescope").pick(actions.help_actions())
+      end,
+      desc = "CopilotChat - Help actions",
+    },
+    -- Show prompts actions with telescope
+    {
+      "<leader>ccp",
+      function()
+	local actions = require("CopilotChat.actions")
+	require("CopilotChat.integrations.telescope").pick(actions.prompt_actions())
+      end,
+      desc = "CopilotChat - Prompt actions",
+    },
+<
+
+INTEGRATION WITH FZF-LUA ~
+
+Requires [fzf-lua](https://github.com/ibhagwan/fzf-lua) plugin to be installed.
+
+>lua
+  -- lazy.nvim keys
+
+    -- Show help actions with fzf-lua
+    {
+      "<leader>cch",
+      function()
+	local actions = require("CopilotChat.actions")
+	require("CopilotChat.integrations.fzflua").pick(actions.help_actions())
+      end,
+      desc = "CopilotChat - Help actions",
+    },
+    -- Show prompts actions with fzf-lua
+    {
+      "<leader>ccp",
+      function()
+	local actions = require("CopilotChat.actions")
+	require("CopilotChat.integrations.fzflua").pick(actions.prompt_actions())
+      end,
+      desc = "CopilotChat - Prompt actions",
+    },
+<
 
 DEBUGGING WITH :MESSAGES AND :COPILOTCHATDEBUGINFO ~
 
@@ -425,105 +531,6 @@ information.
 <https://gyazo.com/bf00e700bcee1b77bcbf7b516b552521>
 
 
-HOW TO SETUP WITH WHICH-KEY.NVIM ~
-
-A special thanks to @ecosse3 for the configuration of which-key
-<https://github.com/jellydn/CopilotChat.nvim/issues/30>.
-
->lua
-      {
-        "CopilotC-Nvim/CopilotChat.nvim",
-        event = "VeryLazy",
-        opts = {
-          prompts = {
-            Explain = "Explain how it works.",
-            Review = "Review the following code and provide concise suggestions.",
-            Tests = "Briefly explain how the selected code works, then generate unit tests.",
-            Refactor = "Refactor the code to improve clarity and readability.",
-          },
-        },
-        build = function()
-          vim.notify("Please update the remote plugins by running ':UpdateRemotePlugins', then restart Neovim.")
-        end,
-        config = function()
-          local present, wk = pcall(require, "which-key")
-          if not present then
-            return
-          end
-    
-          wk.register({
-            c = {
-              c = {
-                name = "Copilot Chat",
-              }
-            }
-          }, {
-            mode = "n",
-            prefix = "<leader>",
-            silent = true,
-            noremap = true,
-            nowait = false,
-          })
-        end,
-        keys = {
-          { "<leader>ccc", ":CopilotChat ",                desc = "CopilotChat - Prompt" },
-          { "<leader>cce", ":CopilotChatExplain ",         desc = "CopilotChat - Explain code" },
-          { "<leader>cct", "<cmd>CopilotChatTests<cr>",    desc = "CopilotChat - Generate tests" },
-          { "<leader>ccr", "<cmd>CopilotChatReview<cr>",   desc = "CopilotChat - Review code" },
-          { "<leader>ccR", "<cmd>CopilotChatRefactor<cr>", desc = "CopilotChat - Refactor code" },
-        }
-      },
-<
-
-
-CREATE A SIMPLE INPUT FOR COPILOTCHAT ~
-
-Follow the example below to create a simple input for CopilotChat.
-
->lua
-    -- Create input for CopilotChat
-      {
-        "<leader>cci",
-        function()
-          local input = vim.fn.input("Ask Copilot: ")
-          if input ~= "" then
-            vim.cmd("CopilotChat " .. input)
-          end
-        end,
-        desc = "CopilotChat - Ask input",
-      },
-<
-
-
-ADD SAME KEYBINDS IN BOTH VISUAL AND NORMAL MODE ~
-
->lua
-        {
-          "CopilotC-Nvim/CopilotChat.nvim",
-          keys =
-        function()
-            local keybinds={
-                --add your custom keybinds here
-            }
-            -- change prompt and keybinds as per your need
-            local my_prompts = {
-                {prompt = "In Neovim.",desc = "Neovim",key = "n"},
-                {prompt = "Help with this",desc = "Help",key = "h"},
-                {prompt = "Simplify and improve readablilty",desc = "Simplify",key = "s"},
-                {prompt = "Optimize the code to improve performance and readablilty.",desc = "Optimize",key = "o"},
-                {prompt = "Find possible errors and fix them for me",desc = "Fix",key = "f"},
-                {prompt = "Explain in detail",desc = "Explain",key = "e"},
-                {prompt = "Write a shell script",desc = "Shell",key = "S"},
-            }
-            -- you can change <leader>cc to your desired keybind prefix
-            for _,v in pairs(my_prompts) do
-                table.insert(keybinds,{ "<leader>cc"..v.key, ":CopilotChatVisual "..v.prompt.."<cr>", mode = "x", desc = "CopilotChat - "..v.desc })
-                table.insert(keybinds,{ "<leader>cc"..v.key, "<cmd>CopilotChat "..v.prompt.."<cr>", desc = "CopilotChat - "..v.desc })
-            end
-            return keybinds
-        end,
-        },
-<
 
 
 ROADMAP (WISHLIST)    *CopilotChat-copilot-chat-for-neovim-roadmap-(wishlist)*
