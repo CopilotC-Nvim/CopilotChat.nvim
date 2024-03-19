@@ -144,6 +144,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/5186956?v=4",
       "profile": "https://github.com/aweis89",
       "contributions": ["code", "doc"]
+    },
+    {
+      "login": "tlacuilose",
+      "name": "Jose Tlacuilo",
+      "avatar_url": "https://avatars.githubusercontent.com/u/65783495?v=4",
+      "profile": "https://github.com/tlacuilose",
+      "contributions": ["code", "doc"]
     }
   ],
   "contributorsPerLine": 7,
