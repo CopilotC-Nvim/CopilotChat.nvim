@@ -346,6 +346,7 @@ function M.ask(prompt, config, source)
         on_done = function(response, token_count)
           vim.schedule(function()
             append('\n\n' .. config.separator .. '\n\n')
+            state.response = response
             if tiktoken.available() and token_count and token_count > 0 then
               state.chat:finish(token_count .. ' tokens used')
             else
