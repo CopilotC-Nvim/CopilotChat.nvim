@@ -11,16 +11,11 @@ local M = {}
 
 --- Pick an action from a list of actions
 ---@param pick_actions CopilotChat.integrations.actions?: A table with the actions to pick from
----@param config CopilotChat.config?: The chat configuration
 ---@param opts table?: Telescope options
-function M.pick(pick_actions, config, opts)
+function M.pick(pick_actions, opts)
   if not pick_actions or not pick_actions.actions or vim.tbl_isempty(pick_actions.actions) then
     return
   end
-
-  config = vim.tbl_extend('force', {
-    selection = pick_actions.selection,
-  }, config or {})
 
   opts = themes.get_dropdown(opts or {})
   pickers
@@ -37,7 +32,7 @@ function M.pick(pick_actions, config, opts)
             0,
             -1,
             false,
-            { pick_actions.actions[entry[1]] }
+            { pick_actions.actions[entry[1]].prompt }
           )
         end,
       }),
@@ -49,7 +44,10 @@ function M.pick(pick_actions, config, opts)
           if not selected or vim.tbl_isempty(selected) then
             return
           end
-          chat.ask(pick_actions.actions[selected[1]], config)
+
+          vim.defer_fn(function()
+            chat.ask(pick_actions.actions[selected[1]].prompt, pick_actions.actions[selected[1]])
+          end, 100)
         end)
         return true
       end,
