@@ -273,7 +273,7 @@ function M.toggle(config, source)
 end
 
 -- @returns string
-function M.get_last_response()
+function M.response()
   return state.response
 end
 
@@ -374,6 +374,7 @@ end
 
 --- Reset the chat window and show the help message.
 function M.reset()
+  state.response = nil
   state.copilot:reset()
   vim.schedule(function()
     state.chat:clear()
