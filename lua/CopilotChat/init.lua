@@ -18,6 +18,7 @@ local plugin_name = 'CopilotChat.nvim'
 --- @field config CopilotChat.config?
 --- @field last_system_prompt string?
 --- @field last_code_output string?
+--- @field response string?
 --- @field diff CopilotChat.Overlay?
 --- @field system_prompt CopilotChat.Overlay?
 --- @field user_selection CopilotChat.Overlay?
@@ -30,6 +31,9 @@ local state = {
   -- Tracking for overlays
   last_system_prompt = nil,
   last_code_output = nil,
+
+  -- Response for mappings
+  response = nil,
 
   -- Overlays
   diff = nil,
@@ -268,6 +272,11 @@ function M.toggle(config, source)
   end
 end
 
+-- @returns string
+function M.response()
+  return state.response
+end
+
 --- Ask a question to the Copilot model.
 ---@param prompt string
 ---@param config CopilotChat.config|nil
@@ -342,6 +351,7 @@ function M.ask(prompt, config, source)
         on_done = function(response, token_count)
           vim.schedule(function()
             append('\n\n' .. config.separator .. '\n\n')
+            state.response = response
             if tiktoken.available() and token_count and token_count > 0 then
               state.chat:finish(token_count .. ' tokens used')
             else
@@ -364,6 +374,7 @@ end
 
 --- Reset the chat window and show the help message.
 function M.reset()
+  state.response = nil
   state.copilot:reset()
   vim.schedule(function()
     state.chat:clear()
