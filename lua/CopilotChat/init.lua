@@ -272,6 +272,11 @@ function M.toggle(config, source)
   end
 end
 
+-- @returns string
+function M.get_last_response()
+  return state.response
+end
+
 --- Ask a question to the Copilot model.
 ---@param prompt string
 ---@param config CopilotChat.config|nil
@@ -675,23 +680,6 @@ function M.setup(config)
   tiktoken.setup()
   debuginfo.setup()
   M.debug(M.config.debug)
-
-  if M.config.user_mappings then
-    for mapping, val in pairs(M.config.user_mappings) do
-      vim.api.nvim_create_autocmd('BufEnter', {
-        pattern = 'copilot-*',
-        callback = function()
-          vim.api.nvim_buf_set_keymap(0, 'n', mapping, '', {
-            callback = function()
-              val(state.response)
-            end,
-            noremap = true,
-            silent = true,
-          })
-        end,
-      })
-    end
-  end
 
   for name, prompt in pairs(M.prompts(true)) do
     vim.api.nvim_create_user_command('CopilotChat' .. name, function(args)

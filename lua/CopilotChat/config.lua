@@ -60,7 +60,6 @@ local select = require('CopilotChat.select')
 ---@field context string?
 ---@field history_path string?
 ---@field callback fun(response: string)?
----@field user_mappings table<string, fun(response: string)>?
 ---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
 ---@field prompts table<string, CopilotChat.config.prompt|string>?
 ---@field window CopilotChat.config.window?
@@ -84,7 +83,6 @@ return {
   context = nil, -- Default context to use, 'buffers', 'buffer' or none (can be specified manually in prompt via @).
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
   callback = nil, -- Callback to use when ask response is received
-  user_mappings = {}, -- Mappings to add to copilot buffer
 
   -- default selection (visual or line)
   selection = function(source)
