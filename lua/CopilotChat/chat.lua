@@ -11,7 +11,7 @@
 ---@field close fun(self: CopilotChat.Chat)
 ---@field focus fun(self: CopilotChat.Chat)
 ---@field follow fun(self: CopilotChat.Chat)
----@field finish fun(self: CopilotChat.Chat)
+---@field finish fun(self: CopilotChat.Chat, msg: string?)
 
 local Overlay = require('CopilotChat.overlay')
 local Spinner = require('CopilotChat.spinner')
@@ -196,15 +196,24 @@ function Chat:follow()
   vim.api.nvim_win_set_cursor(self.winnr, { last_line + 1, last_column })
 end
 
-function Chat:finish()
+function Chat:finish(msg)
   if not self.spinner then
     return
   end
 
   self.spinner:finish()
-  if self.help and self.help ~= '' then
+
+  if msg and msg ~= '' then
+    if self.help and self.help ~= '' then
+      msg = msg .. '\n' .. self.help
+    end
+  else
+    msg = self.help
+  end
+
+  if msg and msg ~= '' then
     local line = vim.api.nvim_buf_line_count(self.bufnr) - 1
-    show_virt_line(self.help, math.max(0, line - 1), self.bufnr, self.mark_ns)
+    show_virt_line(msg, math.max(0, line - 1), self.bufnr, self.mark_ns)
   end
 end
 
