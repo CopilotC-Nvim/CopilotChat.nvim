@@ -203,6 +203,7 @@ Also see [here](/lua/CopilotChat/config.lua):
   context = nil, -- Default context to use, 'buffers', 'buffer' or none (can be specified manually in prompt via @).
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
   callback = nil, -- Callback to use when ask response is received
+  user_mappings = {}, -- User mappings to use
 
   -- default selection (visual or line)
   selection = function(source)
@@ -336,6 +337,22 @@ vim.api.nvim_create_autocmd('BufEnter', {
     callback = function()
         vim.opt_local.relativenumber = true
     end
+})
+```
+
+### Custom mappings
+```lua
+require("CopilotChat").setup({
+  user_mappings = {
+    ["<C-w>"] = function(response)
+      vim.ui.input("Specify file to write last code block: ", function(input)
+        local message = response:match("```.-\n(.-)```")
+        local file, _ = io.open(input, "a")
+        file:write(message)
+        file:close()
+      end)
+    end,
+  }
 })
 ```
 
