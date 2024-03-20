@@ -349,6 +349,15 @@ function M.ask(prompt, config, source)
             if config.callback then
               config.callback(response)
             end
+            for key, value in pairs(config.user_mappings) do
+              vim.api.nvim_buf_set_keymap(0, 'n', key, '', {
+                callback = function()
+                  value(response)
+                end,
+                noremap = true,
+                silent = true,
+              })
+            end
           end)
         end,
         on_progress = function(token)
