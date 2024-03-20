@@ -18,6 +18,7 @@ local plugin_name = 'CopilotChat.nvim'
 --- @field config CopilotChat.config?
 --- @field last_system_prompt string?
 --- @field last_code_output string?
+--- @field response string?
 --- @field diff CopilotChat.Overlay?
 --- @field system_prompt CopilotChat.Overlay?
 --- @field user_selection CopilotChat.Overlay?
@@ -30,6 +31,9 @@ local state = {
   -- Tracking for overlays
   last_system_prompt = nil,
   last_code_output = nil,
+
+  -- Response for mappings
+  response = nil,
 
   -- Overlays
   diff = nil,
@@ -345,18 +349,10 @@ function M.ask(prompt, config, source)
               append('\n\n' .. token_count .. ' tokens used')
             end
             append('\n\n' .. config.separator .. '\n\n')
+            state.response = response
             state.chat:finish()
             if config.callback then
               config.callback(response)
-            end
-            for key, value in pairs(config.user_mappings) do
-              vim.api.nvim_buf_set_keymap(0, 'n', key, '', {
-                callback = function()
-                  value(response)
-                end,
-                noremap = true,
-                silent = true,
-              })
             end
           end)
         end,
@@ -678,6 +674,21 @@ function M.setup(config)
   tiktoken.setup()
   debuginfo.setup()
   M.debug(M.config.debug)
+
+  for mapping, val in pairs(M.config.user_mappings) do
+    vim.api.nvim_create_autocmd('BufEnter', {
+      pattern = 'copilot-*',
+      callback = function()
+        vim.api.nvim_buf_set_keymap(0, 'n', mapping, '', {
+          callback = function()
+            val(state.response)
+          end,
+          noremap = true,
+          silent = true,
+        })
+      end,
+    })
+  end
 
   for name, prompt in pairs(M.prompts(true)) do
     vim.api.nvim_create_user_command('CopilotChat' .. name, function(args)
