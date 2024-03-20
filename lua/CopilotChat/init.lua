@@ -676,19 +676,21 @@ function M.setup(config)
   debuginfo.setup()
   M.debug(M.config.debug)
 
-  for mapping, val in pairs(M.config.user_mappings) do
-    vim.api.nvim_create_autocmd('BufEnter', {
-      pattern = 'copilot-*',
-      callback = function()
-        vim.api.nvim_buf_set_keymap(0, 'n', mapping, '', {
-          callback = function()
-            val(state.response)
-          end,
-          noremap = true,
-          silent = true,
-        })
-      end,
-    })
+  if M.config.user_mappings ~= nil then
+    for mapping, val in pairs(M.config.user_mappings) do
+      vim.api.nvim_create_autocmd('BufEnter', {
+        pattern = 'copilot-*',
+        callback = function()
+          vim.api.nvim_buf_set_keymap(0, 'n', mapping, '', {
+            callback = function()
+              val(state.response)
+            end,
+            noremap = true,
+            silent = true,
+          })
+        end,
+      })
+    end
   end
 
   for name, prompt in pairs(M.prompts(true)) do
