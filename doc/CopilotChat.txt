@@ -371,6 +371,11 @@ You can set local options for the buffers that are created by this plugin:
         pattern = 'copilot-*',
         callback = function()
             vim.opt_local.relativenumber = true
+    
+            -- C-p to print last response
+            vim.keymap.set('n', '<C-p>', function()
+              print(require("CopilotChat").response())
+            end, { buffer = true, remap = true })
         end
     })
 <
