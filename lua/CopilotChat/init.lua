@@ -676,7 +676,7 @@ function M.setup(config)
   debuginfo.setup()
   M.debug(M.config.debug)
 
-  if M.config.user_mappings ~= nil then
+  if M.config.user_mappings then
     for mapping, val in pairs(M.config.user_mappings) do
       vim.api.nvim_create_autocmd('BufEnter', {
         pattern = 'copilot-*',
