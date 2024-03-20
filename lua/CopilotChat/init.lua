@@ -341,11 +341,12 @@ function M.ask(prompt, config, source)
         on_error = on_error,
         on_done = function(response, token_count)
           vim.schedule(function()
-            if tiktoken.available() and token_count and token_count > 0 then
-              append('\n\n' .. token_count .. ' tokens used')
-            end
             append('\n\n' .. config.separator .. '\n\n')
-            state.chat:finish()
+            if tiktoken.available() and token_count and token_count > 0 then
+              state.chat:finish(token_count .. ' tokens used')
+            else
+              state.chat:finish()
+            end
             if config.callback then
               config.callback(response)
             end
