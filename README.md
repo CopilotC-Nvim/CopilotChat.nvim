@@ -341,7 +341,8 @@ vim.api.nvim_create_autocmd('BufEnter', {
 ```
 
 ### Custom mappings
-```lua
+
+````lua
 require("CopilotChat").setup({
   user_mappings = {
     ["<C-w>"] = function(response)
@@ -354,7 +355,7 @@ require("CopilotChat").setup({
     end,
   }
 })
-```
+````
 
 ## Tips
 
