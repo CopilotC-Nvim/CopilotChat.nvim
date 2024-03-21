@@ -201,6 +201,7 @@ Also see [here](/lua/CopilotChat/config.lua):
   show_folds = true, -- Shows folds for sections in chat
   show_help = true, -- Shows help message as virtual lines when waiting for user input
   auto_follow_cursor = true, -- Auto-follow cursor in chat
+  auto_insert_mode = false, -- Automatically enter insert mode when opening window and if auto follow cursor is enabled on new prompt
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
 
   context = nil, -- Default context to use, 'buffers', 'buffer' or none (can be specified manually in prompt via @).

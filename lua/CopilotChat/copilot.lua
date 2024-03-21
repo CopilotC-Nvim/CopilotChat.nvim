@@ -26,9 +26,10 @@
 ---@field ask fun(self: CopilotChat.Copilot, prompt: string, opts: CopilotChat.copilot.ask.opts):nil
 ---@field embed fun(self: CopilotChat.Copilot, inputs: table, opts: CopilotChat.copilot.embed.opts):nil
 ---@field stop fun(self: CopilotChat.Copilot):boolean
----@field reset fun(self: CopilotChat.Copilot)
+---@field reset fun(self: CopilotChat.Copilot):boolean
 ---@field save fun(self: CopilotChat.Copilot, name: string, path: string):nil
 ---@field load fun(self: CopilotChat.Copilot, name: string, path: string):table
+---@field running fun(self: CopilotChat.Copilot):boolean
 
 local log = require('plenary.log')
 local curl = require('plenary.curl')
@@ -559,14 +560,15 @@ end
 
 --- Reset the history and stop any running job
 function Copilot:reset()
-  self:stop()
+  local stopped = self:stop()
   self.history = {}
   self.token_count = 0
+  return stopped
 end
 
 --- Save the history to a file
---- @param name string: The name to save the history to
---- @param path string: The path to save the history to
+---@param name string: The name to save the history to
+---@param path string: The path to save the history to
 function Copilot:save(name, path)
   local history = vim.json.encode(self.history)
   path = vim.fn.expand(path)
@@ -584,9 +586,9 @@ function Copilot:save(name, path)
 end
 
 --- Load the history from a file
---- @param name string: The name to load the history from
---- @param path string: The path to load the history from
---- @return table
+---@param name string: The name to load the history from
+---@param path string: The path to load the history from
+---@return table
 function Copilot:load(name, path)
   path = vim.fn.expand(path) .. '/' .. name .. '.json'
   local file = io.open(path, 'r')
@@ -605,6 +607,12 @@ function Copilot:load(name, path)
 
   log.info('Loaded Copilot history from ' .. path)
   return self.history
+end
+
+--- Check if there is a running job
+---@return boolean
+function Copilot:running()
+  return self.current_job ~= nil
 end
 
 return Copilot
