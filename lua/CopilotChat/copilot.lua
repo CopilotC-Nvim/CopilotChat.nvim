@@ -98,13 +98,17 @@ local function generate_selection_message(filename, filetype, start_row, end_row
     return ''
   end
 
+  local lines = vim.split(selection, '\n')
+
+  for i, line in ipairs(lines) do
+    lines[i] = (i + start_row) .. ': ' .. line
+  end
+
   return string.format(
-    'Active selection: `%s` (lines %s-%s)\n```%s\n%s\n```',
+    'Active selection: `%s`\n```%s\n%s\n```',
     filename,
-    start_row,
-    end_row,
     filetype,
-    selection
+    table.concat(lines, '\n')
   )
 end
 
