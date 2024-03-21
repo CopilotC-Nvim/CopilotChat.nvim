@@ -8,8 +8,9 @@ local chat = require('CopilotChat')
 local M = {}
 
 --- Diagnostic help actions
+---@param config CopilotChat.config?: The chat configuration
 ---@return CopilotChat.integrations.actions?: The help actions
-function M.help_actions()
+function M.help_actions(config)
   local bufnr = vim.api.nvim_get_current_buf()
   local winnr = vim.api.nvim_get_current_win()
   local cursor = vim.api.nvim_win_get_cursor(winnr)
@@ -22,24 +23,25 @@ function M.help_actions()
   return {
     prompt = 'Copilot Chat Help Actions',
     actions = {
-      ['Fix diagnostic'] = {
+      ['Fix diagnostic'] = vim.tbl_extend('keep', {
         prompt = 'Please assist with fixing the following diagnostic issue in file: "',
         selection = select.diagnostics,
-      },
-      ['Explain diagnostic'] = {
+      }, config or {}),
+      ['Explain diagnostic'] = vim.tbl_extend('keep', {
         prompt = 'Please explain the following diagnostic issue in file: "',
         selection = select.diagnostics,
-      },
+      }, config or {}),
     },
   }
 end
 
 --- User prompt actions
+---@param config CopilotChat.config?: The chat configuration
 ---@return CopilotChat.integrations.actions?: The prompt actions
-function M.prompt_actions()
+function M.prompt_actions(config)
   local actions = {}
   for name, prompt in pairs(chat.prompts(true)) do
-    actions[name] = prompt
+    actions[name] = vim.tbl_extend('keep', prompt, config or {})
   end
   return {
     prompt = 'Copilot Chat Prompt Actions',
