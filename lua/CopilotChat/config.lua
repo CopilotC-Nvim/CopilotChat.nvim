@@ -17,9 +17,12 @@ local select = require('CopilotChat.select')
 
 ---@class CopilotChat.config.prompt
 ---@field prompt string?
----@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
----@field mapping string?
 ---@field description string?
+---@field kind string?
+---@field mapping string?
+---@field system_prompt string?
+---@field callback fun(response: string)?
+---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
 
 ---@class CopilotChat.config.window
 ---@field layout string?

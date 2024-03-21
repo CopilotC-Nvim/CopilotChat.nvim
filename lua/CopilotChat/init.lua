@@ -98,7 +98,7 @@ local function update_prompts(prompt, system_prompt)
     if found then
       if found.kind == 'user' then
         local out = found.prompt
-        if string.match(out, [[/[%w_]+]]) then
+        if out and string.match(out, [[/[%w_]+]]) then
           try_again = true
         end
         return out
@@ -195,6 +195,7 @@ end
 
 --- Get the prompts to use.
 ---@param skip_system boolean|nil
+---@return table<string, CopilotChat.config.prompt>
 function M.prompts(skip_system)
   local function get_prompt_kind(name)
     return vim.startswith(name, 'COPILOT_') and 'system' or 'user'
@@ -229,7 +230,7 @@ function M.prompts(skip_system)
 end
 
 --- Open the chat window.
----@param config CopilotChat.config?
+---@param config CopilotChat.config|CopilotChat.config.prompt|nil
 ---@param source CopilotChat.config.source?
 function M.open(config, source, no_focus)
   local should_reset = config and config.window ~= nil and not vim.tbl_isempty(config.window)
@@ -285,7 +286,7 @@ end
 
 --- Ask a question to the Copilot model.
 ---@param prompt string
----@param config CopilotChat.config|nil
+---@param config CopilotChat.config|CopilotChat.config.prompt|nil
 ---@param source CopilotChat.config.source?
 function M.ask(prompt, config, source)
   M.open(config, source, true)
@@ -426,7 +427,9 @@ function M.save(name, history_path)
   end
 
   history_path = history_path or M.config.history_path
-  state.copilot:save(name, history_path)
+  if history_path then
+    state.copilot:save(name, history_path)
+  end
 end
 
 --- Load the chat history from a file.
@@ -440,6 +443,10 @@ function M.load(name, history_path)
   end
 
   history_path = history_path or M.config.history_path
+  if not history_path then
+    return
+  end
+
   state.copilot:reset()
   state.chat:clear()
 
@@ -720,7 +727,9 @@ function M.setup(config)
       if args.args and vim.trim(args.args) ~= '' then
         input = input .. ' ' .. args.args
       end
-      M.ask(input, prompt)
+      if input then
+        M.ask(input, prompt)
+      end
     end, {
       nargs = '*',
       force = true,
