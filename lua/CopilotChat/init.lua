@@ -397,6 +397,8 @@ function M.ask(prompt, config, source)
         embeddings = embeddings,
         filename = filename,
         filetype = filetype,
+        start_row = selection.start_row,
+        end_row = selection.end_row,
         system_prompt = system_prompt,
         model = config.model,
         temperature = config.temperature,
