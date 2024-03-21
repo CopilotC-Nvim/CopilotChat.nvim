@@ -375,7 +375,7 @@ function M.ask(prompt, config, source)
               end)
             end
             if config.callback then
-              config.callback(response)
+              config.callback(response, state.source)
             end
           end)
         end,

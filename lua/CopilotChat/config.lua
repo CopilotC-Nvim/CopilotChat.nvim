@@ -21,7 +21,7 @@ local select = require('CopilotChat.select')
 ---@field kind string?
 ---@field mapping string?
 ---@field system_prompt string?
----@field callback fun(response: string)?
+---@field callback fun(response: string, source: CopilotChat.config.source)?
 ---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
 
 ---@class CopilotChat.config.window
@@ -63,7 +63,7 @@ local select = require('CopilotChat.select')
 ---@field clear_chat_on_new_prompt boolean?
 ---@field context string?
 ---@field history_path string?
----@field callback fun(response: string)?
+---@field callback fun(response: string, source: CopilotChat.config.source)?
 ---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
 ---@field prompts table<string, CopilotChat.config.prompt|string>?
 ---@field window CopilotChat.config.window?
