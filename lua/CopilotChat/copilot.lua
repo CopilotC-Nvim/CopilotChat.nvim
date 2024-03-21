@@ -99,7 +99,6 @@ local function generate_selection_message(filename, filetype, start_row, end_row
   end
 
   local lines = vim.split(selection, '\n')
-
   for i, line in ipairs(lines) do
     lines[i] = (i + start_row) .. ': ' .. line
   end
@@ -313,8 +312,8 @@ function Copilot:ask(prompt, opts)
   local filename = opts.filename or ''
   local filetype = opts.filetype or ''
   local selection = opts.selection or ''
-  local start_row = opts.start_row
-  local end_row = opts.end_row
+  local start_row = opts.start_row or 0
+  local end_row = opts.end_row or 0
   local system_prompt = opts.system_prompt or prompts.COPILOT_INSTRUCTIONS
   local model = opts.model or 'gpt-4'
   local temperature = opts.temperature or 0.1
