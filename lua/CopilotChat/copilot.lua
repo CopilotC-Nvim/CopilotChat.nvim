@@ -98,17 +98,19 @@ local function generate_selection_message(filename, filetype, start_row, end_row
     return ''
   end
 
-  local lines = vim.split(selection, '\n')
-  for i, line in ipairs(lines) do
-    lines[i] = (i + start_row) .. ': ' .. line
+  local content = selection
+  if start_row > 0 then
+    local lines = vim.split(selection, '\n')
+    local total_lines = #lines
+    local max_length = #tostring(total_lines)
+    for i, line in ipairs(lines) do
+      local formatted_line_number = string.format('%' .. max_length .. 'd', i - 1 + start_row)
+      lines[i] = formatted_line_number .. ': ' .. line
+    end
+    content = table.concat(lines, '\n')
   end
 
-  return string.format(
-    'Active selection: `%s`\n```%s\n%s\n```',
-    filename,
-    filetype,
-    table.concat(lines, '\n')
-  )
+  return string.format('Active selection: `%s`\n```%s\n%s\n```', filename, filetype, content)
 end
 
 local function generate_embeddings_message(embeddings)
@@ -168,7 +170,6 @@ local function generate_ask_request(
   end
 
   if embeddings and #embeddings.files > 0 then
-    -- FIXME: Is this really supposed to be sent like this? Maybe just send it with query, not sure
     table.insert(messages, {
       content = embeddings.header .. table.concat(embeddings.files, ''),
       role = 'system',
