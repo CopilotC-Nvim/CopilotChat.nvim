@@ -74,6 +74,11 @@ function M.buffer(source)
     return nil
   end
 
+  -- Prepend line numbers to each line
+  for i, line in ipairs(lines) do
+    lines[i] = string.format('%d: %s', i, line)
+  end
+
   return {
     lines = table.concat(lines, '\n'),
     start_row = 1,
