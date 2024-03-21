@@ -40,7 +40,10 @@ require("CopilotChat.integrations.telescope").pick(actions.help_actions())
 
 ```lua
 local actions = require("CopilotChat.actions")
-require("CopilotChat.integrations.telescope").pick(actions.prompt_actions())
+local select = require("CopilotChat.select")
+require("CopilotChat.integrations.telescope").pick(actions.prompt_actions({
+    selection = select.visual,
+}))
 ```
 
 ## How to restore legacy behaviour

@@ -177,7 +177,9 @@ local actions = require("CopilotChat.actions")
 actions.pick(actions.help_actions())
 
 -- Pick prompt actions
-actions.pick(actions.prompt_actions())
+actions.pick(actions.prompt_actions({
+    selection = require("CopilotChat.select").visual,
+}))
 ```
 
 ## Configuration
