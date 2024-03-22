@@ -528,6 +528,25 @@ end
 --- Set up the plugin
 ---@param config CopilotChat.config|nil
 function M.setup(config)
+  -- Handle old mapping format and show error
+  local found_old_format = false
+  if config and config.mappings then
+    for name, key in pairs(config.mappings) do
+      if type(key) == 'string' then
+        vim.notify(
+          'config.mappings.'
+            .. name
+            .. ": 'mappings' format have changed, please update your configuration, for now revering to default settings. See ':help CopilotChat-configuration' for current format",
+          vim.log.levels.ERROR
+        )
+        found_old_format = true
+      end
+    end
+  end
+  if found_old_format then
+    config.mappings = nil
+  end
+
   M.config = vim.tbl_deep_extend('force', default_config, config or {})
   state.copilot = Copilot(M.config.proxy, M.config.allow_insecure)
   local mark_ns = vim.api.nvim_create_namespace('copilot-chat-marks')
