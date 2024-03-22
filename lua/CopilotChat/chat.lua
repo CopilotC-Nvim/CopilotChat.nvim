@@ -4,6 +4,7 @@
 ---@field spinner CopilotChat.Spinner
 ---@field valid fun(self: CopilotChat.Chat)
 ---@field visible fun(self: CopilotChat.Chat)
+---@field active fun(self: CopilotChat.Chat)
 ---@field append fun(self: CopilotChat.Chat, str: string)
 ---@field last fun(self: CopilotChat.Chat)
 ---@field clear fun(self: CopilotChat.Chat)
@@ -59,6 +60,10 @@ end, Overlay)
 
 function Chat:visible()
   return self.winnr and vim.api.nvim_win_is_valid(self.winnr)
+end
+
+function Chat:active()
+  return vim.api.nvim_get_current_win() == self.winnr
 end
 
 function Chat:last()

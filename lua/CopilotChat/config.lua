@@ -36,15 +36,20 @@ local select = require('CopilotChat.select')
 ---@field footer string?
 ---@field zindex number?
 
+---@class CopilotChat.config.mapping
+---@field normal string?
+---@field insert string?
+---@field detail string?
+
 ---@class CopilotChat.config.mappings
----@field close string?
----@field reset string?
----@field complete string?
----@field submit_prompt string?
----@field accept_diff string?
----@field show_diff string?
----@field show_system_prompt string?
----@field show_user_selection string?
+---@field complete CopilotChat.config.mapping?
+---@field close CopilotChat.config.mapping?
+---@field reset CopilotChat.config.mapping?
+---@field submit_prompt CopilotChat.config.mapping?
+---@field accept_diff CopilotChat.config.mapping?
+---@field show_diff CopilotChat.config.mapping?
+---@field show_system_prompt CopilotChat.config.mapping?
+---@field show_user_selection CopilotChat.config.mapping?
 
 --- CopilotChat default configuration
 ---@class CopilotChat.config
@@ -142,15 +147,36 @@ return {
     zindex = 1, -- determines if window is on top or below other floating windows
   },
 
-  -- default mappings
+  -- default mappings (in tables first is normal mode, second is insert mode)
   mappings = {
-    close = 'q',
-    reset = '<C-l>',
-    complete = '<Tab>',
-    submit_prompt = '<CR>',
-    accept_diff = '<C-y>',
-    show_diff = 'gd',
-    show_system_prompt = 'gp',
-    show_user_selection = 'gs',
+    complete = {
+      detail = 'Use @<Tab> or /<Tab> for options.',
+      insert = '<Tab>',
+    },
+    close = {
+      normal = 'q',
+      insert = '<C-c>',
+    },
+    reset = {
+      normal = '<C-l>',
+      insert = '<C-l>',
+    },
+    submit_prompt = {
+      normal = '<CR>',
+      insert = '<C-m>',
+    },
+    accept_diff = {
+      normal = '<C-y>',
+      insert = '<C-y>',
+    },
+    show_diff = {
+      normal = 'gd',
+    },
+    show_system_prompt = {
+      normal = 'gp',
+    },
+    show_user_selection = {
+      normal = 'gs',
+    },
   },
 }
