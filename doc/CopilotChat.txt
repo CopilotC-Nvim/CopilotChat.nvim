@@ -182,10 +182,8 @@ API ~
     
     -- Ask a question and do something with the response
     chat.ask("Show me something interesting", {
-      callback = function(response, source)
+      callback = function(response)
         print("Response:", response)
-        print("Bufnr:", source.bufnr)
-        print("Winnr:", source.winnr)
       end,
     })
     
