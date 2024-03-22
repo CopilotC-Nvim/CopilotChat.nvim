@@ -263,7 +263,7 @@ Also see [here](/lua/CopilotChat/config.lua):
     zindex = 1, -- determines if window is on top or below other floating windows
   },
 
-  -- default mappings (in tables first is normal mode, second is insert mode)
+  -- default mappings
   mappings = {
     complete = {
       detail = 'Use @<Tab> or /<Tab> for options.',
