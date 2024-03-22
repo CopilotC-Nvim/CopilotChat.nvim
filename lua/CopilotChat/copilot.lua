@@ -9,6 +9,8 @@
 ---@field embeddings table<CopilotChat.copilot.embed>?
 ---@field filename string?
 ---@field filetype string?
+---@field start_row number?
+---@field end_row number?
 ---@field system_prompt string?
 ---@field model string?
 ---@field temperature number?
@@ -91,12 +93,24 @@ local function get_cached_token()
   return userdata['github.com'].oauth_token
 end
 
-local function generate_selection_message(filename, filetype, selection)
+local function generate_selection_message(filename, filetype, start_row, end_row, selection)
   if not selection or selection == '' then
     return ''
   end
 
-  return string.format('Active selection: `%s`\n```%s\n%s\n```', filename, filetype, selection)
+  local content = selection
+  if start_row > 0 then
+    local lines = vim.split(selection, '\n')
+    local total_lines = #lines
+    local max_length = #tostring(total_lines)
+    for i, line in ipairs(lines) do
+      local formatted_line_number = string.format('%' .. max_length .. 'd', i - 1 + start_row)
+      lines[i] = formatted_line_number .. ': ' .. line
+    end
+    content = table.concat(lines, '\n')
+  end
+
+  return string.format('Active selection: `%s`\n```%s\n%s\n```', filename, filetype, content)
 end
 
 local function generate_embeddings_message(embeddings)
@@ -156,7 +170,6 @@ local function generate_ask_request(
   end
 
   if embeddings and #embeddings.files > 0 then
-    -- FIXME: Is this really supposed to be sent like this? Maybe just send it with query, not sure
     table.insert(messages, {
       content = embeddings.header .. table.concat(embeddings.files, ''),
       role = 'system',
@@ -300,6 +313,8 @@ function Copilot:ask(prompt, opts)
   local filename = opts.filename or ''
   local filetype = opts.filetype or ''
   local selection = opts.selection or ''
+  local start_row = opts.start_row or 0
+  local end_row = opts.end_row or 0
   local system_prompt = opts.system_prompt or prompts.COPILOT_INSTRUCTIONS
   local model = opts.model or 'gpt-4'
   local temperature = opts.temperature or 0.1
@@ -325,7 +340,8 @@ function Copilot:ask(prompt, opts)
     self:stop()
   end
 
-  local selection_message = generate_selection_message(filename, filetype, selection)
+  local selection_message =
+    generate_selection_message(filename, filetype, start_row, end_row, selection)
   local embeddings_message = generate_embeddings_message(embeddings)
 
   -- Count tokens
