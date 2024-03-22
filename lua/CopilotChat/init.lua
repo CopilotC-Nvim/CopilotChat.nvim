@@ -273,7 +273,7 @@ end
 --- Open the chat window.
 ---@param config CopilotChat.config|CopilotChat.config.prompt|nil
 ---@param source CopilotChat.config.source?
-function M.open(config, source, no_focus)
+function M.open(config, source, no_insert)
   local should_reset = config and config.window ~= nil and not vim.tbl_isempty(config.window)
   config = vim.tbl_deep_extend('force', M.config, config or {})
   state.config = config
@@ -294,16 +294,16 @@ function M.open(config, source, no_focus)
   end
 
   state.chat:open(config)
-  if not no_focus then
-    state.chat:focus()
-    if not state.copilot:running() then
-      state.chat:follow()
-      if M.config.auto_insert_mode then
-        vim.api.nvim_win_call(state.chat.winnr, function()
-          vim.cmd('startinsert')
-        end)
-      end
-    end
+  state.chat:focus()
+  state.chat:follow()
+
+  if
+    not no_insert
+    and not state.copilot:running()
+    and M.config.auto_insert_mode
+    and state.chat:active()
+  then
+    vim.cmd('startinsert')
   end
 end
 
@@ -333,23 +333,22 @@ end
 ---@param config CopilotChat.config|CopilotChat.config.prompt|nil
 ---@param source CopilotChat.config.source?
 function M.ask(prompt, config, source)
-  M.open(config, source, true)
-
   config = vim.tbl_deep_extend('force', M.config, config or {})
-  local selection = get_selection()
-  state.chat:focus()
-
   prompt = prompt or ''
   local system_prompt, updated_prompt = update_prompts(prompt, config.system_prompt)
   if vim.trim(updated_prompt) == '' then
+    M.open(config, source)
     return
   end
+
+  M.open(config, source, true)
 
   if config.clear_chat_on_new_prompt then
     M.reset(true)
   end
 
   state.last_system_prompt = system_prompt
+  local selection = get_selection()
   local filetype = selection.filetype or vim.bo[state.source.bufnr].filetype
   local filename = selection.filename or vim.api.nvim_buf_get_name(state.source.bufnr)
   if selection.prompt_extra then
@@ -378,10 +377,8 @@ function M.ask(prompt, config, source)
       append('```\n' .. err .. '\n```')
       append('\n\n' .. config.separator .. '\n\n')
       state.chat:finish()
-      if M.config.auto_follow_cursor and M.config.auto_insert_mode then
-        vim.api.nvim_win_call(state.chat.winnr, function()
-          vim.cmd('startinsert')
-        end)
+      if M.config.auto_follow_cursor and M.config.auto_insert_mode and state.chat:active() then
+        vim.cmd('startinsert')
       end
     end)
   end
@@ -413,13 +410,11 @@ function M.ask(prompt, config, source)
             else
               state.chat:finish()
             end
-            if config.auto_follow_cursor and config.auto_insert_mode then
-              vim.api.nvim_win_call(state.chat.winnr, function()
-                vim.cmd('startinsert')
-              end)
-            end
             if config.callback then
               config.callback(response)
+            end
+            if config.auto_follow_cursor and config.auto_insert_mode and state.chat:active() then
+              vim.cmd('startinsert')
             end
           end)
         end,
@@ -434,7 +429,7 @@ function M.ask(prompt, config, source)
 end
 
 --- Reset the chat window and show the help message.
-function M.reset(no_focus)
+function M.reset(no_insert)
   state.response = nil
   local stopped = state.copilot:reset()
   local wrap = vim.schedule
@@ -448,14 +443,10 @@ function M.reset(no_focus)
     state.chat:clear()
     append('\n')
     state.chat:finish()
+    state.chat:follow()
 
-    if not no_focus then
-      state.chat:follow()
-      if M.config.auto_insert_mode then
-        vim.api.nvim_win_call(state.chat.winnr, function()
-          vim.cmd('startinsert')
-        end)
-      end
+    if not no_insert and M.config.auto_insert_mode and state.chat:active() then
+      vim.cmd('startinsert')
     end
   end)
 end
