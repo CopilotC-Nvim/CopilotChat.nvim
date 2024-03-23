@@ -413,7 +413,7 @@ function M.ask(prompt, config, source)
               state.chat:finish()
             end
             if config.callback then
-              config.callback(response)
+              config.callback(response, state.source)
             end
             if config.auto_follow_cursor and config.auto_insert_mode and state.chat:active() then
               vim.cmd('startinsert')
