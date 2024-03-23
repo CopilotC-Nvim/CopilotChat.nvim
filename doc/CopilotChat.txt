@@ -4,14 +4,14 @@
 Table of Contents                              *CopilotChat-table-of-contents*
 
 1. Copilot Chat for Neovim               |CopilotChat-copilot-chat-for-neovim|
-  - Prerequisites          |CopilotChat-copilot-chat-for-neovim-prerequisites|
-  - Installation            |CopilotChat-copilot-chat-for-neovim-installation|
-  - Usage                          |CopilotChat-copilot-chat-for-neovim-usage|
-  - Configuration          |CopilotChat-copilot-chat-for-neovim-configuration|
-  - Tips                            |CopilotChat-copilot-chat-for-neovim-tips|
-  - Roadmap (Wishlist)|CopilotChat-copilot-chat-for-neovim-roadmap-(wishlist)|
-  - Development              |CopilotChat-copilot-chat-for-neovim-development|
-  - Contributors ✨    |CopilotChat-copilot-chat-for-neovim-contributors-✨|
+  - Prerequisites                                  |CopilotChat-prerequisites|
+  - Installation                                    |CopilotChat-installation|
+  - Usage                                                  |CopilotChat-usage|
+  - Configuration                                  |CopilotChat-configuration|
+  - Tips                                                    |CopilotChat-tips|
+  - Roadmap (Wishlist)                        |CopilotChat-roadmap-(wishlist)|
+  - Development                                      |CopilotChat-development|
+  - Contributors ✨                            |CopilotChat-contributors-✨|
 
 ==============================================================================
 1. Copilot Chat for Neovim               *CopilotChat-copilot-chat-for-neovim*
@@ -26,7 +26,7 @@ Table of Contents                              *CopilotChat-table-of-contents*
   [!NOTE] Plugin was rewritten to Lua from Python. Please check the migration
   guide from version 1 to version 2 </MIGRATION.md> for more information.
 
-PREREQUISITES              *CopilotChat-copilot-chat-for-neovim-prerequisites*
+PREREQUISITES                                      *CopilotChat-prerequisites*
 
 Ensure you have the following installed:
 
@@ -38,7 +38,7 @@ Optional:
 - You can check your Lua PATH in Neovim by doing `:lua print(package.cpath)`. Save the binary as `tiktoken_core.so` in any of the given paths.
 
 
-INSTALLATION                *CopilotChat-copilot-chat-for-neovim-installation*
+INSTALLATION                                        *CopilotChat-installation*
 
 
 LAZY.NVIM ~
@@ -112,7 +112,7 @@ See @deathbeam for configuration
 <https://github.com/deathbeam/dotfiles/blob/master/nvim/.config/nvim/lua/config/copilot.lua#L14>
 
 
-USAGE                              *CopilotChat-copilot-chat-for-neovim-usage*
+USAGE                                                      *CopilotChat-usage*
 
 
 COMMANDS ~
@@ -208,7 +208,7 @@ API ~
 <
 
 
-CONFIGURATION              *CopilotChat-copilot-chat-for-neovim-configuration*
+CONFIGURATION                                      *CopilotChat-configuration*
 
 
 DEFAULT CONFIGURATION ~
@@ -410,7 +410,7 @@ You can set local options for the buffers that are created by this plugin:
 <
 
 
-TIPS                                *CopilotChat-copilot-chat-for-neovim-tips*
+TIPS                                                        *CopilotChat-tips*
 
 Quick chat with your buffer ~
 
@@ -511,13 +511,13 @@ Requires fzf-lua <https://github.com/ibhagwan/fzf-lua> plugin to be installed.
 <
 
 
-ROADMAP (WISHLIST)    *CopilotChat-copilot-chat-for-neovim-roadmap-(wishlist)*
+ROADMAP (WISHLIST)                            *CopilotChat-roadmap-(wishlist)*
 
 - Use indexed vector database with current workspace for better context selection
 - General QOL improvements
 
 
-DEVELOPMENT                  *CopilotChat-copilot-chat-for-neovim-development*
+DEVELOPMENT                                          *CopilotChat-development*
 
 
 INSTALLING PRE-COMMIT TOOL ~
@@ -532,7 +532,7 @@ pre-commit tool:
 This will install the pre-commit tool and the pre-commit hooks.
 
 
-CONTRIBUTORS ✨        *CopilotChat-copilot-chat-for-neovim-contributors-✨*
+CONTRIBUTORS ✨                                *CopilotChat-contributors-✨*
 
 If you want to contribute to this project, please read the CONTRIBUTING.md
 </CONTRIBUTING.md> file.
