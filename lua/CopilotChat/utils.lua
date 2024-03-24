@@ -76,9 +76,8 @@ function M.show_virt_line(text, line, bufnr, mark_ns)
     id = mark_ns,
     hl_mode = 'combine',
     priority = 100,
-    virt_lines_leftcol = true,
     virt_lines = vim.tbl_map(function(t)
-      return { { '| ' .. t, 'DiagnosticInfo' } }
+      return { { t, 'DiagnosticInfo' } }
     end, vim.split(text, '\n')),
   })
 end
