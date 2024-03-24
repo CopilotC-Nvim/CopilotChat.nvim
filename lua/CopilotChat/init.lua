@@ -356,11 +356,13 @@ function M.ask(prompt, config, source)
   end
 
   if state.copilot:stop() then
-    append('\n\n' .. config.separator .. '\n\n')
+    append('\n\n' .. config.separator)
   end
 
+  -- TODO: Add question_header, answer_header, error_header to, refer this discussion https://discord.com/channels/1200633211236122665/1209115196702859294/1221319239428866088
+  append('## User ' .. config.separator .. '\n\n')
   append(updated_prompt)
-  append('\n\n**' .. config.name .. '** ' .. config.separator .. '\n\n')
+  append('\n\n## ' .. config.name .. ' ' .. config.separator .. '\n\n')
   state.chat:follow()
 
   local selected_context = config.context
