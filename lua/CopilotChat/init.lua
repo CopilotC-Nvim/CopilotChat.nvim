@@ -356,11 +356,11 @@ function M.ask(prompt, config, source)
   end
 
   if state.copilot:stop() then
-    append('\n\n' .. config.separator .. '\n\n')
+    append('\n\n' .. config.question_header .. config.separator .. '\n\n')
   end
 
   append(updated_prompt)
-  append('\n\n**' .. config.name .. '** ' .. config.separator .. '\n\n')
+  append('\n\n' .. config.answer_header .. config.separator .. '\n\n')
   state.chat:follow()
 
   local selected_context = config.context
@@ -373,9 +373,9 @@ function M.ask(prompt, config, source)
 
   local function on_error(err)
     vim.schedule(function()
-      append('\n\n**Error** ' .. config.separator .. '\n\n')
+      append('\n\n' .. config.error_header .. config.separator .. '\n\n')
       append('```\n' .. err .. '\n```')
-      append('\n\n' .. config.separator .. '\n\n')
+      append('\n\n' .. config.question_header .. config.separator .. '\n\n')
       state.chat:finish()
       if M.config.auto_follow_cursor and M.config.auto_insert_mode and state.chat:active() then
         vim.cmd('startinsert')
@@ -405,7 +405,7 @@ function M.ask(prompt, config, source)
         on_error = on_error,
         on_done = function(response, token_count)
           vim.schedule(function()
-            append('\n\n' .. config.separator .. '\n\n')
+            append('\n\n' .. config.question_header .. config.separator .. '\n\n')
             state.response = response
             if tiktoken.available() and token_count and token_count > 0 then
               state.chat:finish(token_count .. ' tokens used')
@@ -443,7 +443,7 @@ function M.reset(no_insert)
 
   wrap(function()
     state.chat:clear()
-    append('\n')
+    append(M.config.question_header .. M.config.separator .. '\n\n')
     state.chat:finish()
     state.chat:follow()
 
@@ -491,22 +491,20 @@ function M.load(name, history_path)
   for i, message in ipairs(history) do
     if message.role == 'user' then
       if i > 1 then
-        append('\n\n' .. M.config.separator .. '\n\n')
-      else
-        append('\n')
+        append('\n\n')
       end
+      append(M.config.question_header .. M.config.separator .. '\n\n')
       append(message.content)
     elseif message.role == 'assistant' then
-      append('\n\n**' .. M.config.name .. '** ' .. M.config.separator .. '\n\n')
+      append('\n\n' .. M.config.answer_header .. M.config.separator .. '\n\n')
       append(message.content)
     end
   end
 
-  if #history == 0 then
-    append('\n')
-  else
-    append('\n\n' .. M.config.separator .. '\n')
+  if #history > 0 then
+    append('\n\n')
   end
+  append(M.config.question_header .. M.config.separator .. '\n\n')
 
   state.chat:finish()
   M.open()
@@ -733,7 +731,7 @@ function M.setup(config)
       end
     end)
 
-    append('\n')
+    append(M.config.question_header .. M.config.separator .. '\n\n')
     state.chat:finish()
   end)
 
