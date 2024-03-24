@@ -215,9 +215,10 @@ function Chat:finish(msg)
   else
     msg = self.help
   end
+  msg = vim.trim(msg)
 
   if msg and msg ~= '' then
-    local line = vim.api.nvim_buf_line_count(self.bufnr) - 1
+    local line = vim.api.nvim_buf_line_count(self.bufnr) - 2
     show_virt_line(msg, math.max(0, line - 1), self.bufnr, self.mark_ns)
   end
 end

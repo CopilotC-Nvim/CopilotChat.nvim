@@ -55,6 +55,10 @@ local select = require('CopilotChat.select')
 chat.setup {
     -- Restore the behaviour for CopilotChat to use unnamed register by default
     selection = select.unnamed,
+    -- Restore the format with ## headers as prefixes,
+    question_header = '## User ',
+    answer_header = '## Copilot ',
+    error_header = '## Error ',
 }
 
 -- Restore CopilotChatVisual
