@@ -288,6 +288,9 @@ Also see [here](/lua/CopilotChat/config.lua):
       normal = '<C-y>',
       insert = '<C-y>'
     },
+    yank_diff = {
+      normal = 'gy',
+    },
     show_diff = {
       normal = 'gd'
     },
