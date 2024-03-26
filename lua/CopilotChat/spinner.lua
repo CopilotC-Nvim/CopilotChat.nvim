@@ -5,7 +5,7 @@
 ---@field finish fun(self: CopilotChat.Spinner)
 
 local utils = require('CopilotChat.utils')
-local config = require('CopilotChat.config')
+local config = require('CopilotChat.init').config
 local class = utils.class
 
 local spinner_frames = {
