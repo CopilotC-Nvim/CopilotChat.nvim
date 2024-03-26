@@ -151,6 +151,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/65783495?v=4",
       "profile": "https://github.com/tlacuilose",
       "contributions": ["code", "doc"]
+    },
+    {
+      "login": "kevintraver",
+      "name": "Kevin Traver",
+      "avatar_url": "https://avatars.githubusercontent.com/u/196406?v=4",
+      "profile": "http://kevintraver.com",
+      "contributions": ["code", "doc"]
     }
   ],
   "contributorsPerLine": 7,
