@@ -49,7 +49,7 @@ local Chat = class(function(self, mark_ns, help, on_buf_create)
     end
 
     if not self.spinner then
-      self.spinner = Spinner(bufnr, mark_ns, 'copilot-chat')
+      self.spinner = Spinner(bufnr, mark_ns, 'copilot-chat', require('CopilotChat.config').notify_done)
     else
       self.spinner.bufnr = bufnr
     end
