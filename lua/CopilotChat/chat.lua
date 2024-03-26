@@ -30,7 +30,7 @@ function CopilotChatFoldExpr(lnum, separator)
   return '='
 end
 
-local Chat = class(function(self, mark_ns, help, on_buf_create)
+local Chat = class(function(self, mark_ns, help, on_buf_create, config)
   self.mark_ns = mark_ns
   self.help = help
   self.on_buf_create = on_buf_create
@@ -49,7 +49,7 @@ local Chat = class(function(self, mark_ns, help, on_buf_create)
     end
 
     if not self.spinner then
-      self.spinner = Spinner(bufnr, mark_ns, 'copilot-chat', require('CopilotChat.config').notify_done)
+      self.spinner = Spinner(bufnr, mark_ns, 'copilot-chat', config.notify_when_done)
     else
       self.spinner.bufnr = bufnr
     end
