@@ -78,7 +78,7 @@ function Spinner:finish()
 
   timer:stop()
   timer:close()
-  
+
   local config = require('CopilotChat.init').config
   if self.b_notify_when_done then
     vim.notify('Done!', vim.log.levels.INFO, { title = self.title })
