@@ -5,7 +5,6 @@
 ---@field finish fun(self: CopilotChat.Spinner)
 
 local utils = require('CopilotChat.utils')
-local config = require('CopilotChat.init').config
 local class = utils.class
 
 local spinner_frames = {
@@ -78,6 +77,8 @@ function Spinner:finish()
 
   timer:stop()
   timer:close()
+  
+  local config = require('CopilotChat.init').config
   vim.api.nvim_buf_del_extmark(self.bufnr, self.ns, self.ns)
   if config.notify_done then
     vim.notify('Done!', vim.log.levels.INFO, { title = self.title })
