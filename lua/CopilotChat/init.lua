@@ -201,10 +201,10 @@ local function map_key(key, bufnr, fn)
   if not key then
     return
   end
-  if key.normal then
+  if key.normal and key.normal ~= '' then
     vim.keymap.set('n', key.normal, fn, { buffer = bufnr })
   end
-  if key.insert then
+  if key.insert and key.insert ~= '' then
     vim.keymap.set('i', key.insert, fn, { buffer = bufnr })
   end
 end
@@ -215,10 +215,10 @@ end
 ---@return string
 local function key_to_info(name, key)
   local out = ''
-  if key.normal then
+  if key.normal and key.normal ~= '' then
     out = out .. "'" .. key.normal .. "' in normal mode"
   end
-  if key.insert then
+  if key.insert and key.insert ~= '' then
     if out ~= '' then
       out = out .. ' or '
     end
@@ -227,7 +227,7 @@ local function key_to_info(name, key)
 
   out = out .. ' to ' .. name:gsub('_', ' ')
 
-  if key.detail then
+  if key.detail and key.detail ~= '' then
     out = out .. '. ' .. key.detail
   end
 
