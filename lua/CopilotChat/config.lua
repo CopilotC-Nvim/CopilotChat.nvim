@@ -47,6 +47,7 @@ local select = require('CopilotChat.select')
 ---@field reset CopilotChat.config.mapping?
 ---@field submit_prompt CopilotChat.config.mapping?
 ---@field accept_diff CopilotChat.config.mapping?
+---@field yank_diff CopilotChat.config.mapping?
 ---@field show_diff CopilotChat.config.mapping?
 ---@field show_system_prompt CopilotChat.config.mapping?
 ---@field show_user_selection CopilotChat.config.mapping?
@@ -173,6 +174,9 @@ return {
     accept_diff = {
       normal = '<C-y>',
       insert = '<C-y>',
+    },
+    yank_diff = {
+      normal = 'gy',
     },
     show_diff = {
       normal = 'gd',

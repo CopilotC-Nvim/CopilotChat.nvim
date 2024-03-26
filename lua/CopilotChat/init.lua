@@ -678,6 +678,22 @@ function M.setup(config)
       end
     end)
 
+    map_key(M.config.mappings.yank_diff, bufnr, function()
+      local selection = get_selection()
+      if not selection.start_row or not selection.end_row then
+        return
+      end
+
+      local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+      local section_lines =
+        find_lines_between_separator(chat_lines, M.config.separator .. '$', true)
+      local lines = find_lines_between_separator(section_lines, '^```%w*$', true)
+      if #lines > 0 then
+        local content = table.concat(lines, '\n')
+        vim.fn.setreg('"', content)
+      end
+    end)
+
     map_key(M.config.mappings.show_diff, bufnr, function()
       local selection = get_selection()
       if not selection or not selection.start_row or not selection.end_row then
