@@ -20,13 +20,13 @@ local spinner_frames = {
   '⠏',
 }
 
-local Spinner = class(function(self, bufnr, ns, title, notify_when_done)
+local Spinner = class(function(self, bufnr, ns, title, notify_done)
   self.ns = ns
   self.bufnr = bufnr
   self.title = title
   self.timer = nil
   self.index = 1
-  self.b_notify_when_done = notify_when_done
+  self.b_notify_when_done = notify_done
 end)
 
 function Spinner:start()
@@ -79,7 +79,9 @@ function Spinner:finish()
   timer:stop()
   timer:close()
 
-  local config = require('CopilotChat.init').config
+  -- Clear the extmark
+  vim.api.nvim_buf_del_extmark(self.bufnr, self.ns, self.ns)
+
   if self.b_notify_when_done then
     vim.notify('Done!', vim.log.levels.INFO, { title = self.title })
   end
