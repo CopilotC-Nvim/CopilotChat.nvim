@@ -41,10 +41,7 @@ jobs:
 
   test:
     name: Run Test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: rhysd/action-setup-vim@v1
