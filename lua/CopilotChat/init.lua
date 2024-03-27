@@ -749,7 +749,7 @@ function M.setup(config)
 
     append(M.config.question_header .. M.config.separator .. '\n\n')
     state.chat:finish()
-  end, config)
+  end)
 
   tiktoken.setup()
   debuginfo.setup()

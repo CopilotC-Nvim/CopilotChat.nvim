@@ -30,7 +30,7 @@ function CopilotChatFoldExpr(lnum, separator)
   return '='
 end
 
-local Chat = class(function(self, mark_ns, help, on_buf_create, config)
+local Chat = class(function(self, mark_ns, help, on_buf_create)
   self.mark_ns = mark_ns
   self.help = help
   self.on_buf_create = on_buf_create
