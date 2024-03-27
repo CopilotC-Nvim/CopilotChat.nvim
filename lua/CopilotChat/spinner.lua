@@ -79,7 +79,6 @@ function Spinner:finish()
   timer:close()
 
   vim.api.nvim_buf_del_extmark(self.bufnr, self.ns, self.ns)
-
 end
 
 return Spinner
