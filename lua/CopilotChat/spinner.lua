@@ -77,8 +77,8 @@ function Spinner:finish()
 
   timer:stop()
   timer:close()
+
   vim.api.nvim_buf_del_extmark(self.bufnr, self.ns, self.ns)
-  vim.notify('Done!', vim.log.levels.INFO, { title = self.title })
 end
 
 return Spinner
