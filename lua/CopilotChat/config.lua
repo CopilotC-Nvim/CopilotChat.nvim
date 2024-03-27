@@ -76,7 +76,6 @@ local select = require('CopilotChat.select')
 ---@field prompts table<string, CopilotChat.config.prompt|string>?
 ---@field window CopilotChat.config.window?
 ---@field mappings CopilotChat.config.mappings?
-
 return {
   debug = false, -- Enable debug logging
   proxy = nil, -- [protocol://]host[:port] Use this proxy
