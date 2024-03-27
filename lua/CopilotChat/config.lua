@@ -76,8 +76,7 @@ local select = require('CopilotChat.select')
 ---@field prompts table<string, CopilotChat.config.prompt|string>?
 ---@field window CopilotChat.config.window?
 ---@field mappings CopilotChat.config.mappings?
----@field notify_done boolean?
----
+
 return {
   debug = false, -- Enable debug logging
   proxy = nil, -- [protocol://]host[:port] Use this proxy
@@ -94,7 +93,6 @@ return {
 
   show_folds = true, -- Shows folds for sections in chat
   show_help = true, -- Shows help message as virtual lines when waiting for user input
-  notify_done = true, -- Notify when chat is done
   auto_follow_cursor = true, -- Auto-follow cursor in chat
   auto_insert_mode = false, -- Automatically enter insert mode when opening window and if auto follow cursor is enabled on new prompt
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt

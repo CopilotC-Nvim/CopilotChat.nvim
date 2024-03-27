@@ -203,7 +203,6 @@ Also see [here](/lua/CopilotChat/config.lua):
   error_header = '**Error** ', -- Header to use for errors
   separator = '---', -- Separator to use in chat
 
-  notify_done = true, -- Send notification when chat is complete
 
   show_folds = true, -- Shows folds for sections in chat
   show_help = true, -- Shows help message as virtual lines when waiting for user input
