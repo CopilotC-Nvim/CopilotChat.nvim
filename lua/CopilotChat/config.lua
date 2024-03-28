@@ -169,7 +169,7 @@ return {
     },
     submit_prompt = {
       normal = '<CR>',
-      insert = '<C-m>',
+      insert = '<C-s>',
     },
     accept_diff = {
       normal = '<C-y>',
