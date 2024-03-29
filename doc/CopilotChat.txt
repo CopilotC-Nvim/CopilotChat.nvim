@@ -1,4 +1,4 @@
-*CopilotChat.txt*          For NVIM v0.8.0          Last change: 2024 March 27
+*CopilotChat.txt*          For NVIM v0.8.0          Last change: 2024 March 29
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -12,6 +12,7 @@ Table of Contents                              *CopilotChat-table-of-contents*
   - Roadmap (Wishlist)                        |CopilotChat-roadmap-(wishlist)|
   - Development                                      |CopilotChat-development|
   - Contributors ✨                            |CopilotChat-contributors-✨|
+2. Links                                                   |CopilotChat-links|
 
 ==============================================================================
 1. Copilot Chat for Neovim               *CopilotChat-copilot-chat-for-neovim*
