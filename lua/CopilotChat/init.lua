@@ -7,6 +7,7 @@ local context = require('CopilotChat.context')
 local prompts = require('CopilotChat.prompts')
 local debuginfo = require('CopilotChat.debuginfo')
 local tiktoken = require('CopilotChat.tiktoken')
+local utils = require('CopilotChat.utils')
 
 local M = {}
 local plugin_name = 'CopilotChat.nvim'
@@ -274,8 +275,8 @@ end
 ---@param config CopilotChat.config|CopilotChat.config.prompt|nil
 ---@param source CopilotChat.config.source?
 function M.open(config, source, no_insert)
-  local should_reset = config and config.window ~= nil and not vim.tbl_isempty(config.window)
   config = vim.tbl_deep_extend('force', M.config, config or {})
+  local should_reset = state.config and not utils.table_equals(config.window, state.config.window)
   state.config = config
   state.source = vim.tbl_extend('keep', source or {}, {
     bufnr = vim.api.nvim_get_current_buf(),
