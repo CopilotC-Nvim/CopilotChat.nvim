@@ -32,7 +32,7 @@ function M.pick(pick_actions, opts)
             0,
             -1,
             false,
-            { pick_actions.actions[entry[1]].prompt }
+            vim.split(pick_actions.actions[entry[1]].prompt, '\n')
           )
         end,
       }),
