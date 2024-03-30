@@ -165,6 +165,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/92609548?v=4",
       "profile": "https://github.com/D7ry",
       "contributions": ["code"]
+    },
+    {
+      "login": "ornew",
+      "name": "Arata Furukawa",
+      "avatar_url": "https://avatars.githubusercontent.com/u/19766770?v=4",
+      "profile": "https://blog.ornew.io",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
