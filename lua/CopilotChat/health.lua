@@ -43,12 +43,20 @@ function M.check()
 
   local is_nightly = vim.fn.has('nvim-0.10.0') == 1
   local is_good_stable = vim.fn.has('nvim-0.9.5') == 1
+  local vim_version = vim.api.nvim_command_output('version')
   if is_nightly then
-    ok('nvim: nightly')
+    local dev_number = tonumber(vim_version:match('dev%-(%d+)'))
+    if dev_number >= 2500 then
+      ok('nvim: ' .. vim_version)
+    else
+      error(
+        'nvim: outdated, please upgrade to a up to date nightly version. See "https://github.com/neovim/neovim".'
+      )
+    end
   elseif is_good_stable then
-    warn('nvim: stable, some features may not be available')
+    ok('nvim: ' .. vim_version)
   else
-    error('nvim: unsupported, please upgrade to 0.9.5 or later')
+    error('nvim: unsupported, please upgrade to 0.9.5 or later. See "https://neovim.io/".')
   end
 
   start('CopilotChat.nvim [commands]')
