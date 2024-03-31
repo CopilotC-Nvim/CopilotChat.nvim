@@ -96,4 +96,28 @@ function M.temp_file(text)
   return temp_file
 end
 
+--- Check if a table is equal to another table
+---@param a table The first table
+---@param b table The second table
+---@return boolean
+function M.table_equals(a, b)
+  if type(a) ~= type(b) then
+    return false
+  end
+  if type(a) ~= 'table' then
+    return a == b
+  end
+  for k, v in pairs(a) do
+    if not M.table_equals(v, b[k]) then
+      return false
+    end
+  end
+  for k, v in pairs(b) do
+    if not M.table_equals(v, a[k]) then
+      return false
+    end
+  end
+  return true
+end
+
 return M
