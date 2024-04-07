@@ -236,30 +236,6 @@ local function generate_headers(token, sessionid, machineid)
   }
 end
 
-local function authenticate(github_token, proxy, allow_insecure)
-  local url = 'https://api.github.com/copilot_internal/v2/token'
-  local headers = {
-    authorization = 'token ' .. github_token,
-    accept = 'application/json',
-    ['editor-version'] = 'vscode/1.85.1',
-    ['editor-plugin-version'] = 'copilot-chat/0.12.2023120701',
-    ['user-agent'] = 'GitHubCopilotChat/0.12.2023120701',
-  }
-
-  local response = curl.get(url, {
-    headers = headers,
-    proxy = proxy,
-    insecure = allow_insecure,
-  })
-
-  if response.status ~= 200 then
-    return nil, response.status
-  end
-
-  local token = vim.json.decode(response.body)
-  return token, nil
-end
-
 local Copilot = class(function(self, proxy, allow_insecure)
   self.proxy = proxy
   self.allow_insecure = allow_insecure
@@ -272,7 +248,7 @@ local Copilot = class(function(self, proxy, allow_insecure)
   self.current_job = nil
 end)
 
-function Copilot:check_auth(on_error)
+function Copilot:with_auth(on_done, on_error)
   if not self.github_token then
     local msg =
       'No GitHub token found, please use `:Copilot setup` to set it up from copilot.vim or copilot.lua'
@@ -280,28 +256,52 @@ function Copilot:check_auth(on_error)
     if on_error then
       on_error(msg)
     end
-    return false
+    return
   end
 
   if
     not self.token or (self.token.expires_at and self.token.expires_at <= math.floor(os.time()))
   then
     local sessionid = uuid() .. tostring(math.floor(os.time() * 1000))
-    local token, err = authenticate(self.github_token, self.proxy, self.allow_insecure)
-    if err then
-      local msg = 'Failed to authenticate: ' .. tostring(err)
-      log.error(msg)
-      if on_error then
-        on_error(msg)
-      end
-      return false
-    else
-      self.sessionid = sessionid
-      self.token = token
-    end
-  end
 
-  return true
+    local url = 'https://api.github.com/copilot_internal/v2/token'
+    local headers = {
+      authorization = 'token ' .. self.github_token,
+      accept = 'application/json',
+      ['editor-version'] = 'vscode/1.85.1',
+      ['editor-plugin-version'] = 'copilot-chat/0.12.2023120701',
+      ['user-agent'] = 'GitHubCopilotChat/0.12.2023120701',
+    }
+
+    curl.get(url, {
+      headers = headers,
+      proxy = self.proxy,
+      insecure = self.allow_insecure,
+      on_error = function(err)
+        err = 'Failed to get response: ' .. vim.inspect(err)
+        log.error(err)
+        if on_error then
+          on_error(err)
+        end
+      end,
+      callback = function(response)
+        if response.status ~= 200 then
+          local msg = 'Failed to authenticate: ' .. tostring(response.status)
+          log.error(msg)
+          if on_error then
+            on_error(msg)
+          end
+          return
+        end
+
+        self.sessionid = sessionid
+        self.token = vim.json.decode(response.body)
+        on_done()
+      end,
+    })
+  else
+    on_done()
+  end
 end
 
 --- Ask a question to Copilot
@@ -321,10 +321,6 @@ function Copilot:ask(prompt, opts)
   local on_done = opts.on_done
   local on_progress = opts.on_progress
   local on_error = opts.on_error
-
-  if not self:check_auth(on_error) then
-    return
-  end
 
   log.debug('System prompt: ' .. system_prompt)
   log.debug('Prompt: ' .. prompt)
@@ -365,7 +361,6 @@ function Copilot:ask(prompt, opts)
   end
 
   local url = 'https://api.githubcopilot.com/chat/completions'
-  local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
   local body = vim.json.encode(
     generate_ask_request(
       self.history,
@@ -387,85 +382,88 @@ function Copilot:ask(prompt, opts)
   local errored = false
   local full_response = ''
 
-  self.current_job = curl
-    .post(url, {
-      headers = headers,
-      body = temp_file(body),
-      proxy = self.proxy,
-      insecure = self.allow_insecure,
-      on_error = function(err)
-        err = 'Failed to get response: ' .. vim.inspect(err)
-        log.error(err)
-        if self.current_job and on_error then
-          on_error(err)
-        end
-      end,
-      stream = function(err, line)
-        if not line or errored then
-          return
-        end
-
-        if err then
+  self:with_auth(function()
+    local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
+    self.current_job = curl
+      .post(url, {
+        headers = headers,
+        body = temp_file(body),
+        proxy = self.proxy,
+        insecure = self.allow_insecure,
+        on_error = function(err)
           err = 'Failed to get response: ' .. vim.inspect(err)
-          errored = true
           log.error(err)
           if self.current_job and on_error then
             on_error(err)
           end
-          return
-        end
-
-        line = line:gsub('data: ', '')
-        if line == '' then
-          return
-        elseif line == '[DONE]' then
-          log.trace('Full response: ' .. full_response)
-          self.token_count = self.token_count + tiktoken.count(full_response)
-
-          if self.current_job and on_done then
-            on_done(full_response, self.token_count + current_count)
+        end,
+        stream = function(err, line)
+          if not line or errored then
+            return
           end
 
-          table.insert(self.history, {
-            content = full_response,
-            role = 'assistant',
+          if err then
+            err = 'Failed to get response: ' .. vim.inspect(err)
+            errored = true
+            log.error(err)
+            if self.current_job and on_error then
+              on_error(err)
+            end
+            return
+          end
+
+          line = line:gsub('data: ', '')
+          if line == '' then
+            return
+          elseif line == '[DONE]' then
+            log.trace('Full response: ' .. full_response)
+            self.token_count = self.token_count + tiktoken.count(full_response)
+
+            if self.current_job and on_done then
+              on_done(full_response, self.token_count + current_count)
+            end
+
+            table.insert(self.history, {
+              content = full_response,
+              role = 'assistant',
+            })
+            return
+          end
+
+          local ok, content = pcall(vim.json.decode, line, {
+            luanil = {
+              object = true,
+              array = true,
+            },
           })
-          return
-        end
 
-        local ok, content = pcall(vim.json.decode, line, {
-          luanil = {
-            object = true,
-            array = true,
-          },
-        })
+          if not ok then
+            err = 'Failed parse response: \n' .. line .. '\n' .. vim.inspect(content)
+            log.error(err)
+            return
+          end
 
-        if not ok then
-          err = 'Failed parse response: \n' .. line .. '\n' .. vim.inspect(content)
-          log.error(err)
-          return
-        end
+          if not content.choices or #content.choices == 0 then
+            return
+          end
 
-        if not content.choices or #content.choices == 0 then
-          return
-        end
+          content = content.choices[1].delta.content
+          if not content then
+            return
+          end
 
-        content = content.choices[1].delta.content
-        if not content then
-          return
-        end
+          if self.current_job and on_progress then
+            on_progress(content)
+          end
 
-        if self.current_job and on_progress then
-          on_progress(content)
-        end
-
-        -- Collect full response incrementally so we can insert it to history later
-        full_response = full_response .. content
-      end,
-    })
-    :after(function()
-      self.current_job = nil
-    end)
+          -- Collect full response incrementally so we can insert it to history later
+          full_response = full_response .. content
+        end,
+      })
+      :after(function()
+        self.current_job = nil
+      end)
+  end, on_error)
 end
 
 --- Generate embeddings for the given inputs
@@ -485,12 +483,7 @@ function Copilot:embed(inputs, opts)
     return
   end
 
-  if not self:check_auth(on_error) then
-    return
-  end
-
   local url = 'https://api.githubcopilot.com/embeddings'
-  local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
 
   local chunks = {}
   for i = 1, #inputs, chunk_size do
@@ -502,6 +495,7 @@ function Copilot:embed(inputs, opts)
     local body = vim.json.encode(generate_embedding_request(chunk, model))
 
     table.insert(jobs, function(resolve)
+      local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
       curl.post(url, {
         headers = headers,
         body = temp_file(body),
@@ -545,21 +539,23 @@ function Copilot:embed(inputs, opts)
     end)
   end
 
-  join(function(results)
-    local out = {}
-    for chunk_i, chunk_result in ipairs(results) do
-      if chunk_result then
-        for _, embedding in ipairs(chunk_result) do
-          local input = chunks[chunk_i][embedding.index + 1]
-          table.insert(out, vim.tbl_extend('keep', input, embedding))
+  self:with_auth(function()
+    join(function(results)
+      local out = {}
+      for chunk_i, chunk_result in ipairs(results) do
+        if chunk_result then
+          for _, embedding in ipairs(chunk_result) do
+            local input = chunks[chunk_i][embedding.index + 1]
+            table.insert(out, vim.tbl_extend('keep', input, embedding))
+          end
         end
       end
-    end
 
-    if on_done then
-      on_done(out)
-    end
-  end, jobs)
+      if on_done then
+        on_done(out)
+      end
+    end, jobs)
+  end, on_error)
 end
 
 --- Stop the running job
