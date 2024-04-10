@@ -76,8 +76,6 @@ local function find_config_path()
     config = vim.fn.expand('~/.config')
     if vim.fn.isdirectory(config) > 0 then
       return config
-    else
-      log.error('Could not find config path')
     end
   end
 end
@@ -87,9 +85,11 @@ local function get_cached_token()
   if not config_path then
     return nil
   end
-  local userdata = vim.fn.json_decode(
-    vim.fn.readfile(vim.fn.expand(find_config_path() .. '/github-copilot/hosts.json'))
-  )
+  local file_path = find_config_path() .. '/github-copilot/hosts.json'
+  if vim.fn.filereadable(file_path) == 0 then
+    return nil
+  end
+  local userdata = vim.fn.json_decode(vim.fn.readfile(file_path))
   return userdata['github.com'].oauth_token
 end
 
