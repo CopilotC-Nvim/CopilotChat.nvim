@@ -40,7 +40,7 @@ local off_side_rule_languages = {
   'fsharp',
 }
 
-local big_file_threshold = 1000
+local big_file_threshold = 500
 
 local function spatial_distance_cosine(a, b)
   local dot_product = 0
@@ -79,6 +79,17 @@ end
 function M.build_outline(bufnr)
   local name = vim.api.nvim_buf_get_name(bufnr)
   local ft = vim.bo[bufnr].filetype
+
+  -- If buffer is not too big, just return the content
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  if #lines < big_file_threshold then
+    return {
+      content = table.concat(lines, '\n'),
+      filename = name,
+      filetype = ft,
+    }
+  end
+
   local lang = vim.treesitter.language.get_lang(ft)
   local ok, parser = false, nil
   if lang then
@@ -202,20 +213,7 @@ function M.find_for_query(copilot, opts)
       end, vim.api.nvim_list_bufs())
     )
   elseif context == 'buffer' then
-    -- For a single buffer, send whole file if its not too big
-    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-    if #lines < big_file_threshold then
-      table.insert(outline, {
-        content = table.concat(lines, '\n'),
-        filename = filename,
-        filetype = filetype,
-      })
-    else
-      local result = M.build_outline(bufnr)
-      if result ~= nil then
-        table.insert(outline, result)
-      end
-    end
+    table.insert(outline, M.build_outline(bufnr))
   end
 
   outline = vim.tbl_filter(function(item)
