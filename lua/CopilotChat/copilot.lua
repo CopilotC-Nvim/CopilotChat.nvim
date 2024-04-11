@@ -42,6 +42,16 @@ local temp_file = utils.temp_file
 local prompts = require('CopilotChat.prompts')
 local tiktoken = require('CopilotChat.tiktoken')
 local max_tokens = 8192
+local version_headers = {
+  ['editor-version'] = 'Neovim/'
+    .. vim.version().major
+    .. '.'
+    .. vim.version().minor
+    .. '.'
+    .. vim.version().patch,
+  ['editor-plugin-version'] = 'CopilotChat.nvim/2.0.0',
+  ['user-agent'] = 'CopilotChat.nvim/2.0.0',
+}
 
 local function uuid()
   local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
@@ -222,18 +232,20 @@ local function generate_embedding_request(inputs, model)
 end
 
 local function generate_headers(token, sessionid, machineid)
-  return {
+  local headers = {
     ['authorization'] = 'Bearer ' .. token,
     ['x-request-id'] = uuid(),
     ['vscode-sessionid'] = sessionid,
-    ['machineid'] = machineid,
-    ['editor-version'] = 'vscode/1.85.1',
-    ['editor-plugin-version'] = 'copilot-chat/0.12.2023120701',
+    ['vscode-machineid'] = machineid,
+    ['copilot-integration-id'] = 'vscode-chat',
     ['openai-organization'] = 'github-copilot',
     ['openai-intent'] = 'conversation-panel',
     ['content-type'] = 'application/json',
-    ['user-agent'] = 'GitHubCopilotChat/0.12.2023120701',
   }
+  for key, value in pairs(version_headers) do
+    headers[key] = value
+  end
+  return headers
 end
 
 local Copilot = class(function(self, proxy, allow_insecure)
@@ -266,12 +278,12 @@ function Copilot:with_auth(on_done, on_error)
 
     local url = 'https://api.github.com/copilot_internal/v2/token'
     local headers = {
-      authorization = 'token ' .. self.github_token,
-      accept = 'application/json',
-      ['editor-version'] = 'vscode/1.85.1',
-      ['editor-plugin-version'] = 'copilot-chat/0.12.2023120701',
-      ['user-agent'] = 'GitHubCopilotChat/0.12.2023120701',
+      ['authorization'] = 'token ' .. self.github_token,
+      ['accept'] = 'application/json',
     }
+    for key, value in pairs(version_headers) do
+      headers[key] = value
+    end
 
     curl.get(url, {
       headers = headers,
