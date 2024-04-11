@@ -226,6 +226,10 @@ local function key_to_info(name, key)
     out = out .. "'" .. key.insert .. "' in insert mode"
   end
 
+  if out == '' then
+    return out
+  end
+
   out = out .. ' to ' .. name:gsub('_', ' ')
 
   if key.detail and key.detail ~= '' then
