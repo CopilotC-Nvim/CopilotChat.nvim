@@ -198,9 +198,9 @@ Also see [here](/lua/CopilotChat/config.lua):
   model = 'gpt-4', -- GPT model to use, 'gpt-3.5-turbo' or 'gpt-4'
   temperature = 0.1, -- GPT temperature
 
-  question_header = '', -- Header to use for user questions
-  answer_header = '**Copilot** ', -- Header to use for AI answers
-  error_header = '**Error** ', -- Header to use for errors
+  question_header = '## User ', -- Header to use for user questions
+  answer_header = '## Copilot ', -- Header to use for AI answers
+  error_header = '## Error ', -- Header to use for errors
   separator = '---', -- Separator to use in chat
 
   show_folds = true, -- Shows folds for sections in chat
