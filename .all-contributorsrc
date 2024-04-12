@@ -172,6 +172,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/19766770?v=4",
       "profile": "https://blog.ornew.io",
       "contributions": ["code"]
+    },
+    {
+      "login": "lingjie00",
+      "name": "Ling",
+      "avatar_url": "https://avatars.githubusercontent.com/u/64540764?v=4",
+      "profile": "https://github.com/lingjie00",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
