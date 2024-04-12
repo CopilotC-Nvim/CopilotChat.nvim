@@ -91,9 +91,10 @@ local function find_config_path()
 end
 
 local function get_cached_token()
-  -- loading token from the environment
+  -- loading token from the environment only in GitHub Codespaces
   local token = os.getenv('GITHUB_TOKEN')
-  if token then
+  local codespaces = os.getenv('CODESPACES')
+  if token and codespaces then
     return token
   end
 
