@@ -107,11 +107,12 @@ See @deathbeam for [configuration](https://github.com/deathbeam/dotfiles/blob/ma
 
 #### Commands coming from default prompts
 
-- `:CopilotChatExplain` - Explain how it works
-- `:CopilotChatTests` - Briefly explain how selected code works then generate unit tests
-- `:CopilotChatFix` - There is a problem in this code. Rewrite the code to show it with the bug fixed.
-- `:CopilotChatOptimize` - Optimize the selected code to improve performance and readablilty.
-- `:CopilotChatDocs` - Write documentation for the selected code. The reply should be a codeblock containing the original code with the documentation added as comments. Use the most appropriate documentation style for the programming language used (e.g. JSDoc for JavaScript, docstrings for Python etc.
+- `:CopilotChatExplain` - Write an explanation for the active selection as paragraphs of text
+- `:CopilotChatReview` - Review the selected code
+- `:CopilotChatFix` - There is a problem in this code. Rewrite the code to show it with the bug fixed
+- `:CopilotChatOptimize` - Optimize the selected code to improve performance and readablilty
+- `:CopilotChatDocs` - Please add documentation comment for the selection
+- `:CopilotChatTests` - Please generate tests for my code
 - `:CopilotChatFixDiagnostic` - Please assist with the following diagnostic issue in file
 - `:CopilotChatCommit` - Write commit message for the change with commitizen convention
 - `:CopilotChatCommitStaged` - Write commit message for the change with commitizen convention
@@ -221,19 +222,25 @@ Also see [here](/lua/CopilotChat/config.lua):
   -- default prompts
   prompts = {
     Explain = {
-      prompt = '/COPILOT_EXPLAIN Write an explanation for the code above as paragraphs of text.',
+      prompt = '/COPILOT_EXPLAIN Write an explanation for the active selection as paragraphs of text.',
     },
-    Tests = {
-      prompt = '/COPILOT_TESTS Write a set of detailed unit test functions for the code above.',
+    Review = {
+      prompt = '/COPILOT_REVIEW Review the selected code.',
+      callback = function(response, source)
+        -- see config.lua for implementation
+      end,
     },
     Fix = {
-      prompt = '/COPILOT_FIX There is a problem in this code. Rewrite the code to show it with the bug fixed.',
+      prompt = '/COPILOT_GENERATE There is a problem in this code. Rewrite the code to show it with the bug fixed.',
     },
     Optimize = {
-      prompt = '/COPILOT_REFACTOR Optimize the selected code to improve performance and readablilty.',
+      prompt = '/COPILOT_GENERATE Optimize the selected code to improve performance and readablilty.',
     },
     Docs = {
-      prompt = '/COPILOT_REFACTOR Write documentation for the selected code. The reply should be a codeblock containing the original code with the documentation added as comments. Use the most appropriate documentation style for the programming language used (e.g. JSDoc for JavaScript, docstrings for Python etc.',
+      prompt = '/COPILOT_GENERATE Please add documentation comment for the selection.',
+    },
+    Tests = {
+      prompt = '/COPILOT_GENERATE Please generate tests for my code.',
     },
     FixDiagnostic = {
       prompt = 'Please assist with the following diagnostic issue in file:',
