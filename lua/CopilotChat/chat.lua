@@ -134,7 +134,12 @@ function Chat:open(config)
   elseif layout == 'vertical' then
     if is_stable() then
       local orig = vim.api.nvim_get_current_win()
-      vim.cmd('vsplit')
+      local cmd = 'vsplit'
+      if config.window.width ~= nil and config.window.width ~= 0 then
+        local width = math.floor(vim.o.columns * config.window.width)
+        cmd = string.format('%dvsplit', width)
+      end
+      vim.cmd(cmd)
       self.winnr = vim.api.nvim_get_current_win()
       vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
       vim.api.nvim_set_current_win(orig)
@@ -144,7 +149,12 @@ function Chat:open(config)
   elseif layout == 'horizontal' then
     if is_stable() then
       local orig = vim.api.nvim_get_current_win()
-      vim.cmd('split')
+      local cmd = 'split'
+      if config.window.height ~= nil and config.window.height ~= 0 then
+        local height = math.floor(vim.o.lines * config.window.height)
+        cmd = string.format('%dsplit', height)
+      end
+      vim.cmd(cmd)
       self.winnr = vim.api.nvim_get_current_win()
       vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
       vim.api.nvim_set_current_win(orig)
