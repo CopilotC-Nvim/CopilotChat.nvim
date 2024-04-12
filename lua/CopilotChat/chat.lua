@@ -112,49 +112,46 @@ function Chat:open(config)
   end
 
   local window = config.window
-  local win_opts = {
-    style = 'minimal',
-  }
-
   local layout = window.layout
+  local width = window.width > 1 and window.width or math.floor(vim.o.columns * window.width)
+  local height = window.height > 1 and window.height or math.floor(vim.o.lines * window.height)
 
   if layout == 'float' then
-    win_opts.zindex = window.zindex
-    win_opts.relative = window.relative
-    win_opts.border = window.border
-    win_opts.title = window.title
-    win_opts.row = window.row or math.floor(vim.o.lines * ((1 - config.window.height) / 2))
-    win_opts.col = window.col or math.floor(vim.o.columns * ((1 - window.width) / 2))
-    win_opts.width = math.floor(vim.o.columns * window.width)
-    win_opts.height = math.floor(vim.o.lines * window.height)
-
+    local win_opts = {
+      style = 'minimal',
+      width = width,
+      height = height,
+      zindex = window.zindex,
+      relative = window.relative,
+      border = window.border,
+      title = window.title,
+      row = window.row or math.floor((vim.o.lines - height) / 2),
+      col = window.col or math.floor((vim.o.columns - width) / 2),
+    }
     if not is_stable() then
       win_opts.footer = window.footer
     end
-  elseif layout == 'vertical' then
-    if is_stable() then
-      local orig = vim.api.nvim_get_current_win()
-      vim.cmd('vsplit')
-      self.winnr = vim.api.nvim_get_current_win()
-      vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
-      vim.api.nvim_set_current_win(orig)
-    else
-      win_opts.vertical = true
-    end
-  elseif layout == 'horizontal' then
-    if is_stable() then
-      local orig = vim.api.nvim_get_current_win()
-      vim.cmd('split')
-      self.winnr = vim.api.nvim_get_current_win()
-      vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
-      vim.api.nvim_set_current_win(orig)
-    else
-      win_opts.vertical = false
-    end
-  end
-
-  if not self.winnr or not vim.api.nvim_win_is_valid(self.winnr) then
     self.winnr = vim.api.nvim_open_win(self.bufnr, false, win_opts)
+  elseif layout == 'vertical' then
+    local orig = vim.api.nvim_get_current_win()
+    local cmd = 'vsplit'
+    if width ~= 0 then
+      cmd = width .. cmd
+    end
+    vim.cmd(cmd)
+    self.winnr = vim.api.nvim_get_current_win()
+    vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
+    vim.api.nvim_set_current_win(orig)
+  elseif layout == 'horizontal' then
+    local orig = vim.api.nvim_get_current_win()
+    local cmd = 'split'
+    if height ~= 0 then
+      cmd = height .. cmd
+    end
+    vim.cmd(cmd)
+    self.winnr = vim.api.nvim_get_current_win()
+    vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
+    vim.api.nvim_set_current_win(orig)
   end
 
   vim.wo[self.winnr].wrap = true
