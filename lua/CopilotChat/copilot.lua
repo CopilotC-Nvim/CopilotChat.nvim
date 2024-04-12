@@ -414,8 +414,8 @@ function Copilot:ask(prompt, opts)
             return
           end
 
-          if err then
-            err = 'Failed to get response: ' .. vim.inspect(err)
+          if err or vim.startswith(line, '{"error"') then
+            err = 'Failed to get response: ' .. (err and vim.inspect(err) or line)
             errored = true
             log.error(err)
             if self.current_job and on_error then
