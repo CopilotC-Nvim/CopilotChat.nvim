@@ -1,4 +1,4 @@
-*CopilotChat.txt*          For NVIM v0.8.0          Last change: 2024 April 12
+*CopilotChat.txt*          For NVIM v0.8.0          Last change: 2024 April 13
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -130,11 +130,12 @@ COMMANDS ~
 
 COMMANDS COMING FROM DEFAULT PROMPTS
 
-- `:CopilotChatExplain` - Explain how it works
-- `:CopilotChatTests` - Briefly explain how selected code works then generate unit tests
-- `:CopilotChatFix` - There is a problem in this code. Rewrite the code to show it with the bug fixed.
-- `:CopilotChatOptimize` - Optimize the selected code to improve performance and readablilty.
-- `:CopilotChatDocs` - Write documentation for the selected code. The reply should be a codeblock containing the original code with the documentation added as comments. Use the most appropriate documentation style for the programming language used (e.g. JSDoc for JavaScript, docstrings for Python etc.
+- `:CopilotChatExplain` - Write an explanation for the active selection as paragraphs of text
+- `:CopilotChatReview` - Review the selected code
+- `:CopilotChatFix` - There is a problem in this code. Rewrite the code to show it with the bug fixed
+- `:CopilotChatOptimize` - Optimize the selected code to improve performance and readablilty
+- `:CopilotChatDocs` - Please add documentation comment for the selection
+- `:CopilotChatTests` - Please generate tests for my code
 - `:CopilotChatFixDiagnostic` - Please assist with the following diagnostic issue in file
 - `:CopilotChatCommit` - Write commit message for the change with commitizen convention
 - `:CopilotChatCommitStaged` - Write commit message for the change with commitizen convention
@@ -247,19 +248,25 @@ Also see here </lua/CopilotChat/config.lua>:
       -- default prompts
       prompts = {
         Explain = {
-          prompt = '/COPILOT_EXPLAIN Write an explanation for the code above as paragraphs of text.',
+          prompt = '/COPILOT_EXPLAIN Write an explanation for the active selection as paragraphs of text.',
         },
-        Tests = {
-          prompt = '/COPILOT_TESTS Write a set of detailed unit test functions for the code above.',
+        Review = {
+          prompt = '/COPILOT_REVIEW Review the selected code.',
+          callback = function(response, source)
+            -- see config.lua for implementation
+          end,
         },
         Fix = {
-          prompt = '/COPILOT_FIX There is a problem in this code. Rewrite the code to show it with the bug fixed.',
+          prompt = '/COPILOT_GENERATE There is a problem in this code. Rewrite the code to show it with the bug fixed.',
         },
         Optimize = {
-          prompt = '/COPILOT_REFACTOR Optimize the selected code to improve performance and readablilty.',
+          prompt = '/COPILOT_GENERATE Optimize the selected code to improve performance and readablilty.',
         },
         Docs = {
-          prompt = '/COPILOT_REFACTOR Write documentation for the selected code. The reply should be a codeblock containing the original code with the documentation added as comments. Use the most appropriate documentation style for the programming language used (e.g. JSDoc for JavaScript, docstrings for Python etc.',
+          prompt = '/COPILOT_GENERATE Please add documentation comment for the selection.',
+        },
+        Tests = {
+          prompt = '/COPILOT_GENERATE Please generate tests for my code.',
         },
         FixDiagnostic = {
           prompt = 'Please assist with the following diagnostic issue in file:',
@@ -545,7 +552,7 @@ If you want to contribute to this project, please read the CONTRIBUTING.md
 Thanks goes to these wonderful people (emoji key
 <https://allcontributors.org/docs/en/emoji-key>):
 
-gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻neutrinoA4💻 📖Jack Muratore💻Adriel Velazquez💻 📖Tomas Slusny💻 📖Nisal📖Tobias Gårdhus📖Petr Dlouhý📖Dylan Madisetti💻Aaron Weisberg💻 📖Jose Tlacuilo💻 📖Kevin Traver💻 📖dTry💻Arata Furukawa💻This project follows the all-contributors
+gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻neutrinoA4💻 📖Jack Muratore💻Adriel Velazquez💻 📖Tomas Slusny💻 📖Nisal📖Tobias Gårdhus📖Petr Dlouhý📖Dylan Madisetti💻Aaron Weisberg💻 📖Jose Tlacuilo💻 📖Kevin Traver💻 📖dTry💻Arata Furukawa💻Ling💻This project follows the all-contributors
 <https://github.com/all-contributors/all-contributors> specification.
 Contributions of any kind are welcome!
 
@@ -560,7 +567,7 @@ STARGAZERS OVER TIME ~
 1. *Documentation*: https://img.shields.io/badge/documentation-yes-brightgreen.svg
 2. *pre-commit.ci*: https://results.pre-commit.ci/badge/github/CopilotC-Nvim/CopilotChat.nvim/main.svg
 3. *Discord*: https://img.shields.io/discord/1200633211236122665.svg
-4. *All Contributors*: https://img.shields.io/badge/all_contributors-24-orange.svg?style=flat-square
+4. *All Contributors*: https://img.shields.io/badge/all_contributors-25-orange.svg?style=flat-square
 5. *@jellydn*: 
 6. *@deathbeam*: 
 7. *@jellydn*: 

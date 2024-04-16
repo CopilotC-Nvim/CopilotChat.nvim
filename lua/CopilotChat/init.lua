@@ -341,7 +341,8 @@ function M.ask(prompt, config, source)
   config = vim.tbl_deep_extend('force', M.config, config or {})
   prompt = prompt or ''
   local system_prompt, updated_prompt = update_prompts(prompt, config.system_prompt)
-  if vim.trim(updated_prompt) == '' then
+  updated_prompt = vim.trim(updated_prompt)
+  if updated_prompt == '' then
     M.open(config, source)
     return
   end
