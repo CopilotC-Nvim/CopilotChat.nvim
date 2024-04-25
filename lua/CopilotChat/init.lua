@@ -314,6 +314,7 @@ end
 
 --- Close the chat window.
 function M.close()
+  vim.cmd('stopinsert')
   state.chat:close()
 end
 
