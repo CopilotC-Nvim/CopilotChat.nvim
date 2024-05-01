@@ -356,8 +356,13 @@ function M.ask(prompt, config, source)
 
   state.last_system_prompt = system_prompt
   local selection = get_selection()
-  local filetype = selection.filetype or vim.bo[state.source.bufnr].filetype
-  local filename = selection.filename or vim.api.nvim_buf_get_name(state.source.bufnr)
+  local filetype = selection.filetype
+    or (vim.api.nvim_buf_is_valid(state.source.bufnr) and vim.bo[state.source.bufnr].filetype)
+  local filename = selection.filename
+    or (
+      vim.api.nvim_buf_is_valid(state.source.bufnr)
+      and vim.api.nvim_buf_get_name(state.source.bufnr)
+    )
   if selection.prompt_extra then
     updated_prompt = updated_prompt .. ' ' .. selection.prompt_extra
   end
