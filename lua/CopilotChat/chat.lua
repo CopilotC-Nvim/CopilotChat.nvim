@@ -153,6 +153,9 @@ function Chat:open(config)
     self.winnr = vim.api.nvim_get_current_win()
     vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
     vim.api.nvim_set_current_win(orig)
+  elseif layout == 'replace' then
+    self.winnr = vim.api.nvim_get_current_win()
+    vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
   end
 
   vim.wo[self.winnr].wrap = true
