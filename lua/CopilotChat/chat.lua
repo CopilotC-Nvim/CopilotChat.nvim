@@ -13,6 +13,7 @@
 ---@field focus fun(self: CopilotChat.Chat)
 ---@field follow fun(self: CopilotChat.Chat)
 ---@field finish fun(self: CopilotChat.Chat, msg: string?)
+---@field delete fun(self: CopilotChat.Chat)
 
 local Overlay = require('CopilotChat.overlay')
 local Spinner = require('CopilotChat.spinner')
