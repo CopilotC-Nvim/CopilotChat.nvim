@@ -558,10 +558,18 @@ function M.setup(config)
   end
 
   M.config = vim.tbl_deep_extend('force', default_config, config or {})
+
+  if state.copilot then
+    state.copilot:stop()
+  else
+    tiktoken.setup()
+    debuginfo.setup()
+  end
   state.copilot = Copilot(M.config.proxy, M.config.allow_insecure)
+  M.debug(M.config.debug)
+
   local mark_ns = vim.api.nvim_create_namespace('copilot-chat-marks')
   local hl_ns = vim.api.nvim_create_namespace('copilot-chat-highlights')
-
   vim.api.nvim_set_hl(hl_ns, '@diff.plus', { bg = blend_color_with_neovim_bg('DiffAdd', 20) })
   vim.api.nvim_set_hl(hl_ns, '@diff.minus', { bg = blend_color_with_neovim_bg('DiffDelete', 20) })
   vim.api.nvim_set_hl(hl_ns, '@diff.delta', { bg = blend_color_with_neovim_bg('DiffChange', 20) })
@@ -578,6 +586,9 @@ function M.setup(config)
     diff_help = diff_help .. '\n' .. overlay_help
   end
 
+  if state.diff then
+    state.diff:delete()
+  end
   state.diff = Overlay('copilot-diff', mark_ns, hl_ns, diff_help, function(bufnr)
     map_key(M.config.mappings.close, bufnr, function()
       state.diff:restore(state.chat.winnr, state.chat.bufnr)
@@ -608,6 +619,9 @@ function M.setup(config)
     end)
   end)
 
+  if state.system_prompt then
+    state.system_prompt:delete()
+  end
   state.system_prompt = Overlay(
     'copilot-system-prompt',
     mark_ns,
@@ -620,6 +634,9 @@ function M.setup(config)
     end
   )
 
+  if state.user_selection then
+    state.user_selection:delete()
+  end
   state.user_selection = Overlay(
     'copilot-user-selection',
     mark_ns,
@@ -649,6 +666,10 @@ function M.setup(config)
     end
   end
 
+  if state.chat then
+    state.chat:close()
+    state.chat:delete()
+  end
   state.chat = Chat(mark_ns, chat_help, function(bufnr)
     map_key(M.config.mappings.complete, bufnr, complete)
     map_key(M.config.mappings.reset, bufnr, M.reset)
@@ -762,10 +783,6 @@ function M.setup(config)
     append(M.config.question_header .. M.config.separator .. '\n\n')
     state.chat:finish()
   end)
-
-  tiktoken.setup()
-  debuginfo.setup()
-  M.debug(M.config.debug)
 
   for name, prompt in pairs(M.prompts(true)) do
     vim.api.nvim_create_user_command('CopilotChat' .. name, function(args)

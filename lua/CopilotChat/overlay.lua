@@ -4,6 +4,7 @@
 ---@field validate fun(self: CopilotChat.Overlay)
 ---@field show fun(self: CopilotChat.Overlay, text: string, filetype: string, syntax: string, winnr: number)
 ---@field restore fun(self: CopilotChat.Overlay, winnr: number, bufnr: number)
+---@field delete fun(self: CopilotChat.Overlay)
 
 local utils = require('CopilotChat.utils')
 local class = utils.class
@@ -67,6 +68,12 @@ function Overlay:restore(winnr, bufnr)
   self.current = nil
   vim.api.nvim_win_set_buf(winnr, bufnr)
   vim.api.nvim_win_set_hl_ns(winnr, 0)
+end
+
+function Overlay:delete()
+  if self:valid() then
+    vim.api.nvim_buf_delete(self.bufnr, { force = true })
+  end
 end
 
 return Overlay
