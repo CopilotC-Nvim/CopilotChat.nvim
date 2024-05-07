@@ -49,10 +49,24 @@ function M.visual(source)
   return get_selection_lines(bufnr, start_line, start_col, finish_line, finish_col, false)
 end
 
---- Select and process contents of unnamed register ('"')
+--- Select and process contents of unnamed register ("). This register contains last deleted, changed or yanked content.
 --- @return CopilotChat.config.selection|nil
 function M.unnamed()
   local lines = vim.fn.getreg('"')
+
+  if not lines or lines == '' then
+    return nil
+  end
+
+  return {
+    lines = lines,
+  }
+end
+
+--- Select and process contents of plus register (+). This register is synchronized with system clipboard.
+--- @return CopilotChat.config.selection|nil
+function M.clipboard()
+  local lines = vim.fn.getreg('+')
 
   if not lines or lines == '' then
     return nil
