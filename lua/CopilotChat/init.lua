@@ -351,7 +351,7 @@ function M.ask(prompt, config, source)
   M.open(config, source, true)
 
   if config.clear_chat_on_new_prompt then
-    M.reset(true)
+    M.stop(true, true)
   end
 
   state.last_system_prompt = system_prompt
@@ -442,10 +442,11 @@ function M.ask(prompt, config, source)
   })
 end
 
---- Reset the chat window and show the help message.
-function M.reset(no_insert)
+--- Stop current copilot output and optionally reset the chat ten show the help message.
+---@param reset boolean?
+function M.stop(reset, no_insert)
   state.response = nil
-  local stopped = state.copilot:reset()
+  local stopped = reset and state.copilot:reset() or state.copilot:stop()
   local wrap = vim.schedule
   if not stopped then
     wrap = function(fn)
@@ -454,7 +455,11 @@ function M.reset(no_insert)
   end
 
   wrap(function()
-    state.chat:clear()
+    if reset then
+      state.chat:clear()
+    else
+      append('\n\n')
+    end
     append(M.config.question_header .. M.config.separator .. '\n\n')
     state.chat:finish()
     state.chat:follow()
@@ -463,6 +468,11 @@ function M.reset(no_insert)
       vim.cmd('startinsert')
     end
   end)
+end
+
+--- Reset the chat window and show the help message.
+function M.reset()
+  M.stop(true)
 end
 
 --- Save the chat history to a file.
@@ -815,10 +825,21 @@ function M.setup(config)
     range = true,
   })
 
-  vim.api.nvim_create_user_command('CopilotChatOpen', M.open, { force = true })
-  vim.api.nvim_create_user_command('CopilotChatClose', M.close, { force = true })
-  vim.api.nvim_create_user_command('CopilotChatToggle', M.toggle, { force = true })
-  vim.api.nvim_create_user_command('CopilotChatReset', M.reset, { force = true })
+  vim.api.nvim_create_user_command('CopilotChatOpen', function()
+    M.open()
+  end, { force = true })
+  vim.api.nvim_create_user_command('CopilotChatClose', function()
+    M.close()
+  end, { force = true })
+  vim.api.nvim_create_user_command('CopilotChatToggle', function()
+    M.toggle()
+  end, { force = true })
+  vim.api.nvim_create_user_command('CopilotChatStop', function()
+    M.stop()
+  end, { force = true })
+  vim.api.nvim_create_user_command('CopilotChatReset', function()
+    M.reset()
+  end, { force = true })
 
   local function complete_load()
     local options = vim.tbl_map(function(file)
