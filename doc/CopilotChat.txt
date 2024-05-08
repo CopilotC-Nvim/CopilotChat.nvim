@@ -1,4 +1,4 @@
-*CopilotChat.txt*           For NVIM v0.8.0           Last change: 2024 May 07
+*CopilotChat.txt*           For NVIM v0.8.0           Last change: 2024 May 08
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -122,6 +122,7 @@ COMMANDS ~
 - `:CopilotChatOpen` - Open chat window
 - `:CopilotChatClose` - Close chat window
 - `:CopilotChatToggle` - Toggle chat window
+- `:CopilotChatStop` - Stop current copilot output
 - `:CopilotChatReset` - Reset chat window
 - `:CopilotChatSave <name>?` - Save chat history to file
 - `:CopilotChatLoad <name>?` - Load chat history from file
