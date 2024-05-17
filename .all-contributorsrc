@@ -179,6 +179,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/64540764?v=4",
       "profile": "https://github.com/lingjie00",
       "contributions": ["code"]
+    },
+    {
+      "login": "frolvanya",
+      "name": "Ivan Frolov",
+      "avatar_url": "https://avatars.githubusercontent.com/u/59515280?v=4",
+      "profile": "https://github.com/frolvanya",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
