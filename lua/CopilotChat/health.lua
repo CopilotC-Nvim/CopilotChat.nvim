@@ -41,11 +41,12 @@ end
 function M.check()
   start('CopilotChat.nvim [core]')
 
-  local is_nightly = vim.fn.has('nvim-0.11') == 1
-  local is_good_stable = vim.fn.has('nvim-0.9.5') == 1 or vim.fn.has('nvim-0.10') == 1
   local vim_version = vim.api.nvim_command_output('version')
-  if is_nightly then
-    local dev_number = tonumber(vim_version:match('dev%-(%d+)'))
+  local is_good_stable = vim.fn.has('nvim-0.9.5') == 1 or vim.fn.has('nvim-0.10.0') == 1
+
+  local dev_number = tonumber(vim_version:match('dev%-(%d+)'))
+
+  if dev_number then
     if dev_number >= 2500 then
       ok('nvim: ' .. vim_version)
     else
