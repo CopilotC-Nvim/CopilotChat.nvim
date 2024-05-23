@@ -103,12 +103,23 @@ local function get_cached_token()
   if not config_path then
     return nil
   end
-  local file_path = find_config_path() .. '/github-copilot/hosts.json'
-  if vim.fn.filereadable(file_path) == 0 then
-    return nil
+
+  -- token can be sometimes in apps.json sometimes in hosts.json
+  local file_paths = {
+    config_path .. '/github-copilot/hosts.json',
+    config_path .. '/github-copilot/apps.json',
+  }
+
+  for _, file_path in ipairs(file_paths) do
+    if vim.fn.filereadable(file_path) == 1 then
+      local userdata = vim.fn.json_decode(vim.fn.readfile(file_path))
+      if userdata['github.com'] and userdata['github.com'].oauth_token then
+        return userdata['github.com'].oauth_token
+      end
+    end
   end
-  local userdata = vim.fn.json_decode(vim.fn.readfile(file_path))
-  return userdata['github.com'].oauth_token
+
+  return nil
 end
 
 local function generate_selection_message(filename, filetype, start_row, end_row, selection)
