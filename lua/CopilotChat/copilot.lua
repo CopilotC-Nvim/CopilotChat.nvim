@@ -113,8 +113,10 @@ local function get_cached_token()
   for _, file_path in ipairs(file_paths) do
     if vim.fn.filereadable(file_path) == 1 then
       local userdata = vim.fn.json_decode(vim.fn.readfile(file_path))
-      if userdata['github.com'] and userdata['github.com'].oauth_token then
-        return userdata['github.com'].oauth_token
+      for key, value in pairs(userdata) do
+        if string.find(key, 'github.com') then
+          return value.oauth_token
+        end
       end
     end
   end
