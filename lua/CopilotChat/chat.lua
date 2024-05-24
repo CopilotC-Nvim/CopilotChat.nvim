@@ -61,7 +61,7 @@ local Chat = class(function(self, mark_ns, help, on_buf_create)
 end, Overlay)
 
 function Chat:visible()
-  return self.winnr and vim.api.nvim_win_is_valid(self.winnr)
+  return self.winnr and vim.api.nvim_win_is_valid(self.winnr) and vim.api.nvim_win_get_buf(self.winnr) == self.bufnr
 end
 
 function Chat:active()
