@@ -5,13 +5,12 @@
 ---@field show fun(self: CopilotChat.Overlay, text: string, filetype: string, syntax: string, winnr: number)
 ---@field restore fun(self: CopilotChat.Overlay, winnr: number, bufnr: number)
 ---@field delete fun(self: CopilotChat.Overlay)
+---@field show_help fun(self: CopilotChat.Overlay, msg: string, offset: number)
 
 local utils = require('CopilotChat.utils')
 local class = utils.class
-local show_virt_line = utils.show_virt_line
 
-local Overlay = class(function(self, name, mark_ns, hl_ns, help, on_buf_create)
-  self.mark_ns = mark_ns
+local Overlay = class(function(self, name, hl_ns, help, on_buf_create)
   self.hl_ns = hl_ns
   self.help = help
   self.on_buf_create = on_buf_create
@@ -48,10 +47,8 @@ function Overlay:show(text, filetype, syntax, winnr)
   vim.bo[self.bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, vim.split(text, '\n'))
   vim.bo[self.bufnr].modifiable = false
-
-  local line = vim.api.nvim_buf_line_count(self.bufnr) - 1
-  vim.api.nvim_win_set_cursor(winnr, { line + 1, 0 })
-  show_virt_line(self.help, math.max(0, line), self.bufnr, self.mark_ns)
+  self:show_help(self.help, -1)
+  vim.api.nvim_win_set_cursor(winnr, { vim.api.nvim_buf_line_count(self.bufnr), 0 })
 
   -- Dual mode with treesitter (for diffs for example)
   vim.api.nvim_win_set_hl_ns(winnr, self.hl_ns)
@@ -74,6 +71,29 @@ function Overlay:delete()
   if self:valid() then
     vim.api.nvim_buf_delete(self.bufnr, { force = true })
   end
+end
+
+function Overlay:show_help(msg, offset)
+  if not msg then
+    return
+  end
+
+  msg = vim.trim(msg)
+  if msg == '' then
+    return
+  end
+
+  self:validate()
+  local help_ns = vim.api.nvim_create_namespace('copilot-chat-help')
+  local line = vim.api.nvim_buf_line_count(self.bufnr) + offset
+  vim.api.nvim_buf_set_extmark(self.bufnr, help_ns, math.max(0, line - 1), 0, {
+    id = help_ns,
+    hl_mode = 'combine',
+    priority = 100,
+    virt_lines = vim.tbl_map(function(t)
+      return { { t, 'CopilotChatHelp' } }
+    end, vim.split(msg, '\n')),
+  })
 end
 
 return Overlay

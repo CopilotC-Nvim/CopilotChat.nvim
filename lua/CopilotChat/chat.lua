@@ -21,7 +21,6 @@ local Spinner = require('CopilotChat.spinner')
 local utils = require('CopilotChat.utils')
 local is_stable = utils.is_stable
 local class = utils.class
-local show_virt_line = utils.show_virt_line
 
 function CopilotChatFoldExpr(lnum, separator)
   local line = vim.fn.getline(lnum)
@@ -32,8 +31,7 @@ function CopilotChatFoldExpr(lnum, separator)
   return '='
 end
 
-local Chat = class(function(self, mark_ns, help, on_buf_create)
-  self.mark_ns = mark_ns
+local Chat = class(function(self, help, on_buf_create)
   self.header_ns = vim.api.nvim_create_namespace('copilot-chat-headers')
   self.help = help
   self.on_buf_create = on_buf_create
@@ -54,7 +52,7 @@ local Chat = class(function(self, mark_ns, help, on_buf_create)
     end
 
     if not self.spinner then
-      self.spinner = Spinner(bufnr, mark_ns, 'copilot-chat')
+      self.spinner = Spinner(bufnr)
     else
       self.spinner.bufnr = bufnr
     end
@@ -254,12 +252,8 @@ function Chat:finish(msg)
   else
     msg = self.help
   end
-  msg = vim.trim(msg)
 
-  if msg and msg ~= '' then
-    local line = vim.api.nvim_buf_line_count(self.bufnr) - 2
-    show_virt_line(msg, math.max(0, line - 1), self.bufnr, self.mark_ns)
-  end
+  self:show_help(msg, -2)
 end
 
 return Chat
