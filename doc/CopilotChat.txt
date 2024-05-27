@@ -229,7 +229,7 @@ Also see here </lua/CopilotChat/config.lua>:
       question_header = '## User ', -- Header to use for user questions
       answer_header = '## Copilot ', -- Header to use for AI answers
       error_header = '## Error ', -- Header to use for errors
-      separator = '---', -- Separator to use in chat
+      separator = '───', -- Separator to use in chat
     
       show_folds = true, -- Shows folds for sections in chat
       show_help = true, -- Shows help message as virtual lines when waiting for user input
