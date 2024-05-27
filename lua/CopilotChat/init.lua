@@ -613,6 +613,14 @@ function M.setup(config)
   vim.api.nvim_set_hl(hl_ns, '@diff.minus', { bg = blend_color_with_neovim_bg('DiffDelete', 20) })
   vim.api.nvim_set_hl(hl_ns, '@diff.delta', { bg = blend_color_with_neovim_bg('DiffChange', 20) })
   vim.api.nvim_set_hl(0, 'CopilotChatSelection', { link = 'Visual', default = true })
+  vim.api.nvim_set_hl(0, 'CopilotChatHeader', {
+    link = '@markup.heading.2.markdown',
+    default = true,
+  })
+  vim.api.nvim_set_hl(0, 'CopilotChatSeparator', {
+    link = '@punctuation.special.markdown',
+    default = true,
+  })
 
   local overlay_help = ''
   if M.config.mappings.close then
