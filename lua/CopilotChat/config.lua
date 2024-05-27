@@ -69,6 +69,7 @@ local select = require('CopilotChat.select')
 ---@field auto_follow_cursor boolean?
 ---@field auto_insert_mode boolean?
 ---@field clear_chat_on_new_prompt boolean?
+---@field highlight_selection boolean?
 ---@field context string?
 ---@field history_path string?
 ---@field callback fun(response: string, source: CopilotChat.config.source)?
@@ -95,6 +96,7 @@ return {
   auto_follow_cursor = true, -- Auto-follow cursor in chat
   auto_insert_mode = false, -- Automatically enter insert mode when opening window and if auto follow cursor is enabled on new prompt
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
+  highlight_selection = true, -- Highlight selection
 
   context = nil, -- Default context to use, 'buffers', 'buffer' or none (can be specified manually in prompt via @).
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
