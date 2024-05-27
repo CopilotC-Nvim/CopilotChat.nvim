@@ -23,11 +23,12 @@ local is_stable = utils.is_stable
 local class = utils.class
 
 function CopilotChatFoldExpr(lnum, separator)
-  local line = vim.fn.getline(lnum)
-  if string.match(line, separator .. '$') then
-    return '>1'
+  local to_match = separator .. '$'
+  if string.match(vim.fn.getline(lnum), to_match) then
+    return '1'
+  elseif string.match(vim.fn.getline(lnum + 1), to_match) then
+    return '0'
   end
-
   return '='
 end
 
