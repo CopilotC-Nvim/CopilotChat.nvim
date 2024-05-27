@@ -1,6 +1,7 @@
 ---@class CopilotChat.Chat
 ---@field bufnr number
 ---@field winnr number
+---@field separator string
 ---@field spinner CopilotChat.Spinner
 ---@field valid fun(self: CopilotChat.Chat)
 ---@field visible fun(self: CopilotChat.Chat)
@@ -33,11 +34,13 @@ end
 
 local Chat = class(function(self, mark_ns, help, on_buf_create)
   self.mark_ns = mark_ns
+  self.header_ns = vim.api.nvim_create_namespace('copilot-chat-headers')
   self.help = help
   self.on_buf_create = on_buf_create
   self.bufnr = nil
   self.winnr = nil
   self.spinner = nil
+  self.separator = nil
 
   self.buf_create = function()
     local bufnr = vim.api.nvim_create_buf(false, true)
@@ -64,6 +67,33 @@ function Chat:visible()
   return self.winnr
     and vim.api.nvim_win_is_valid(self.winnr)
     and vim.api.nvim_win_get_buf(self.winnr) == self.bufnr
+end
+
+function Chat:render()
+  if not self:visible() then
+    return
+  end
+  vim.api.nvim_buf_clear_namespace(self.bufnr, self.header_ns, 0, -1)
+  local lines = vim.api.nvim_buf_get_lines(self.bufnr, 0, -1, false)
+  for l, line in ipairs(lines) do
+    if line:match(self.separator .. '$') then
+      local sep = vim.fn.strwidth(line) - vim.fn.strwidth(self.separator)
+      -- separator line
+      vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, sep, {
+        virt_text_win_col = sep,
+        virt_text = { { string.rep(self.separator, vim.go.columns), 'CopilotChatSeparator' } },
+        priority = 100,
+        strict = false,
+      })
+      -- header hl group
+      vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, 0, {
+        end_col = sep + 1,
+        hl_group = 'CopilotChatHeader',
+        priority = 100,
+        strict = false,
+      })
+    end
+  end
 end
 
 function Chat:active()
@@ -101,11 +131,13 @@ function Chat:append(str)
     last_column,
     vim.split(str, '\n')
   )
+  self:render()
 end
 
 function Chat:clear()
   self:validate()
   vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, {})
+  self:render()
 end
 
 function Chat:open(config)
@@ -161,6 +193,8 @@ function Chat:open(config)
     vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
   end
 
+  self.separator = config.separator
+
   vim.wo[self.winnr].wrap = true
   vim.wo[self.winnr].linebreak = true
   vim.wo[self.winnr].cursorline = true
@@ -173,6 +207,7 @@ function Chat:open(config)
   else
     vim.wo[self.winnr].foldcolumn = '0'
   end
+  self:render()
 end
 
 function Chat:close()
