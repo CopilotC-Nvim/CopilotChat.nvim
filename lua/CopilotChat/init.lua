@@ -275,6 +275,34 @@ function M.prompts(skip_system)
   return prompts_to_use
 end
 
+local selection_ns = nil ---@type number
+
+--- Highlights the selection in the source buffer.
+---@param clear? boolean
+function M.highlight_selection(clear)
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    vim.api.nvim_buf_clear_namespace(buf, selection_ns, 0, -1)
+  end
+  if clear then
+    return
+  end
+  local selection = get_selection()
+  if selection then
+    vim.api.nvim_buf_set_extmark(
+      state.source.bufnr,
+      selection_ns,
+      selection.start_row - 1,
+      selection.start_col - 1,
+      {
+        hl_group = 'CopilotChatSelection',
+        end_row = selection.end_row - 1,
+        end_col = selection.end_col,
+        strict = false,
+      }
+    )
+  end
+end
+
 --- Open the chat window.
 ---@param config CopilotChat.config|CopilotChat.config.prompt|nil
 ---@param source CopilotChat.config.source?
@@ -578,11 +606,13 @@ function M.setup(config)
   state.copilot = Copilot(M.config.proxy, M.config.allow_insecure)
   M.debug(M.config.debug)
 
+  selection_ns = vim.api.nvim_create_namespace('copilot-chat-selection')
   local mark_ns = vim.api.nvim_create_namespace('copilot-chat-marks')
   local hl_ns = vim.api.nvim_create_namespace('copilot-chat-highlights')
   vim.api.nvim_set_hl(hl_ns, '@diff.plus', { bg = blend_color_with_neovim_bg('DiffAdd', 20) })
   vim.api.nvim_set_hl(hl_ns, '@diff.minus', { bg = blend_color_with_neovim_bg('DiffDelete', 20) })
   vim.api.nvim_set_hl(hl_ns, '@diff.delta', { bg = blend_color_with_neovim_bg('DiffChange', 20) })
+  vim.api.nvim_set_hl(0, 'CopilotChatSelection', { link = 'Visual', default = true })
 
   local overlay_help = ''
   if M.config.mappings.close then
@@ -789,6 +819,15 @@ function M.setup(config)
         state.user_selection:show(lines, filetype, filetype, state.chat.winnr)
       end
     end)
+
+    vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
+      buffer = state.chat.bufnr,
+      callback = function(ev)
+        if state.config.highlight_selection then
+          M.highlight_selection(ev.event == 'BufLeave')
+        end
+      end,
+    })
 
     append(M.config.question_header .. M.config.separator .. '\n\n')
     state.chat:finish()

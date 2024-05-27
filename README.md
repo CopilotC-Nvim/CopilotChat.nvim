@@ -210,6 +210,7 @@ Also see [here](/lua/CopilotChat/config.lua):
   auto_follow_cursor = true, -- Auto-follow cursor in chat
   auto_insert_mode = false, -- Automatically enter insert mode when opening window and if auto follow cursor is enabled on new prompt
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
+  highlight_selection = true, -- Highlight selection in the source buffer when in the chat window
 
   context = nil, -- Default context to use, 'buffers', 'buffer' or none (can be specified manually in prompt via @).
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
