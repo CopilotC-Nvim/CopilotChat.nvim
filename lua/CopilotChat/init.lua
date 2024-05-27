@@ -286,7 +286,7 @@ function M.highlight_selection(clear)
     return
   end
   local selection = get_selection()
-  if not selection then
+  if not selection.start_row or not selection.end_row then
     return
   end
   vim.api.nvim_buf_set_extmark(
@@ -807,7 +807,7 @@ function M.setup(config)
 
     map_key(M.config.mappings.show_user_selection, bufnr, function()
       local selection = get_selection()
-      if not selection or not selection.start_row or not selection.end_row then
+      if not selection.start_row or not selection.end_row then
         return
       end
 
