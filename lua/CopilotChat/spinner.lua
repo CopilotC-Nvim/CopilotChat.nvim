@@ -20,10 +20,9 @@ local spinner_frames = {
   '⠏',
 }
 
-local Spinner = class(function(self, bufnr, ns, title)
-  self.ns = ns
+local Spinner = class(function(self, bufnr)
+  self.ns = vim.api.nvim_create_namespace('copilot-chat-help')
   self.bufnr = bufnr
-  self.title = title
   self.timer = nil
   self.index = 1
 end)
@@ -57,7 +56,7 @@ function Spinner:start()
           hl_mode = 'combine',
           priority = 100,
           virt_text = vim.tbl_map(function(t)
-            return { t, 'CursorColumn' }
+            return { t, 'CopilotChatSpinner' }
           end, vim.split(spinner_frames[self.index], '\n')),
         }
       )

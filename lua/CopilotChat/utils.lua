@@ -62,26 +62,6 @@ function M.join(on_done, fns)
   end
 end
 
---- Show a virtual line
----@param text string The text to show
----@param line number The line number
----@param bufnr number The buffer number
----@param mark_ns number The namespace
-function M.show_virt_line(text, line, bufnr, mark_ns)
-  if not vim.api.nvim_buf_is_valid(bufnr) then
-    return
-  end
-
-  vim.api.nvim_buf_set_extmark(bufnr, mark_ns, math.max(0, line), 0, {
-    id = mark_ns,
-    hl_mode = 'combine',
-    priority = 100,
-    virt_lines = vim.tbl_map(function(t)
-      return { { t, 'DiagnosticInfo' } }
-    end, vim.split(text, '\n')),
-  })
-end
-
 --- Writes text to a temporary file and returns path
 ---@param text string The text to write
 ---@return string?
