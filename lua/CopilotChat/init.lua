@@ -315,11 +315,8 @@ function M.open(config, source, no_insert)
     winnr = vim.api.nvim_get_current_win(),
   })
 
-  -- Exit insert mode if we are in insert mode
   vim.cmd('stopinsert')
-
-  -- Exit visual mode if we are in visual mode
-  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<esc>', true, false, true), 'x', false)
+  utils.exit_visual_mode()
 
   -- Recreate the window if the layout has changed
   if should_reset then

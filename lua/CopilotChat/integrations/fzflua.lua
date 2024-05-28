@@ -1,5 +1,6 @@
 local fzflua = require('fzf-lua')
 local chat = require('CopilotChat')
+local utils = require('CopilotChat.utils')
 
 local M = {}
 
@@ -11,6 +12,7 @@ function M.pick(pick_actions, opts)
     return
   end
 
+  utils.exit_visual_mode()
   opts = vim.tbl_extend('force', {
     prompt = pick_actions.prompt .. '> ',
     preview = fzflua.shell.raw_preview_action_cmd(function(items)
