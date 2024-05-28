@@ -501,6 +501,30 @@ Requires [fzf-lua](https://github.com/ibhagwan/fzf-lua) plugin to be installed.
 
 </details>
 
+<details>
+<summary>nvim-cmp integration</summary>
+
+Requires [nvim-cmp](https://github.com/hrsh7th/nvim-cmp) plugin to be installed (and properly configured).
+
+```lua
+-- Registers copilot-chat source and enables it for copilot-chat filetype (so copilot chat window)
+require("CopilotChat.integrations.cmp").setup()
+
+-- You might also want to disable default <tab> complete mapping for copilot chat when doing this
+require('CopilotChat').setup({
+  mappings = {
+    complete = {
+      insert = '',
+    },
+  },
+  -- rest of your config
+})
+```
+
+![image](https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/063fc99f-a4b2-4187-a065-0fdd287ebee2)
+
+</details>
+
 ## Roadmap (Wishlist)
 
 - Use indexed vector database with current workspace for better context selection
