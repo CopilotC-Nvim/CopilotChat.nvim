@@ -17,6 +17,10 @@ function M.pick(pick_actions, opts)
     return
   end
 
+  if vim.fn.mode():lower():find('v') then
+    vim.cmd('normal! v')
+  end
+
   opts = themes.get_dropdown(opts or {})
   pickers
     .new(opts, {
