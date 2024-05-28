@@ -6,6 +6,7 @@ local themes = require('telescope.themes')
 local conf = require('telescope.config').values
 local previewers = require('telescope.previewers')
 local chat = require('CopilotChat')
+local utils = require('CopilotChat.utils')
 
 local M = {}
 
@@ -17,10 +18,7 @@ function M.pick(pick_actions, opts)
     return
   end
 
-  if vim.fn.mode():lower():find('v') then
-    vim.cmd('normal! v')
-  end
-
+  utils.exit_visual_mode()
   opts = themes.get_dropdown(opts or {})
   pickers
     .new(opts, {

@@ -100,4 +100,12 @@ function M.table_equals(a, b)
   return true
 end
 
+--- Exit visual mode if we are in it
+function M.exit_visual_mode()
+  if vim.fn.mode():lower():find('v') then
+    -- NOTE: vim.cmd('normal! v') does not work properly when executed from keymap
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<esc>', true, false, true), 'x', false)
+  end
+end
+
 return M
