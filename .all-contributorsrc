@@ -193,6 +193,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/292349?v=4",
       "profile": "http://www.folkelemaitre.com",
       "contributions": ["code", "doc"]
+    },
+    {
+      "login": "GitMurf",
+      "name": "GitMurf",
+      "avatar_url": "https://avatars.githubusercontent.com/u/64155612?v=4",
+      "profile": "https://github.com/GitMurf",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
