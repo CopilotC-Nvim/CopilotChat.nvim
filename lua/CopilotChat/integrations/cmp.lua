@@ -30,6 +30,13 @@ function Source:complete(params, callback)
   callback({ items = items })
 end
 
+---@param completion_item lsp.CompletionItem
+---@param callback fun(completion_item: lsp.CompletionItem|nil)
+function Source:execute(completion_item, callback)
+  callback(completion_item)
+  vim.api.nvim_set_option_value('buflisted', false, { buf = 0 })
+end
+
 local M = {}
 
 --- Setup the nvim-cmp source for copilot-chat window
