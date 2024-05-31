@@ -135,7 +135,7 @@ local function complete()
     return
   end
 
-  local prefix, cmp_start = unpack(vim.fn.matchstrpos(line:sub(1, col), '\\/\\|@\\k*$'))
+  local prefix, cmp_start = unpack(vim.fn.matchstrpos(line:sub(1, col), [[\(/\|@\)\k*$]]))
   if not prefix then
     return
   end
