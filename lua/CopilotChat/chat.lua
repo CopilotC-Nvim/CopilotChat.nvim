@@ -194,9 +194,12 @@ function Chat:open(config)
 
   self.separator = config.separator
 
+  if config.force_cursorline then
+    vim.wo[self.winnr].cursorline = true
+  end
+
   vim.wo[self.winnr].wrap = true
   vim.wo[self.winnr].linebreak = true
-  vim.wo[self.winnr].cursorline = true
   vim.wo[self.winnr].conceallevel = 2
   vim.wo[self.winnr].foldlevel = 99
   if config.show_folds then
