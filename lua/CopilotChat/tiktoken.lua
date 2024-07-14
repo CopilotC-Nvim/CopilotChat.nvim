@@ -18,12 +18,17 @@ local function file_exists(name)
 end
 
 --- Load tiktoken data from cache or download it
-local function load_tiktoken_data(done)
+local function load_tiktoken_data(done, model)
+  local tiktoken_url = 'https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken'
+  -- If model is gpt-4o, use o200k_base.tiktoken
+  if model == 'gpt-4o' then
+    tiktoken_url = 'https://openaipublic.blob.core.windows.net/encodings/o200k_base.tiktoken'
+  end
   local async
   async = vim.loop.new_async(function()
     local cache_path = get_cache_path()
     if not file_exists(cache_path) then
-      curl.get('https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken', {
+      curl.get(tiktoken_url, {
         output = cache_path,
       })
     end
@@ -36,7 +41,8 @@ end
 
 local M = {}
 
-function M.setup()
+---@param model string|nil
+function M.setup(model)
   local ok, core = pcall(require, 'tiktoken_core')
   if not ok then
     return
@@ -53,7 +59,7 @@ function M.setup()
       "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
     core.new(path, special_tokens, pat_str)
     tiktoken_core = core
-  end)
+  end, model)
 end
 
 function M.available()

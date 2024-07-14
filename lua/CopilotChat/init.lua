@@ -597,7 +597,7 @@ function M.setup(config)
   if state.copilot then
     state.copilot:stop()
   else
-    tiktoken.setup()
+    tiktoken.setup((config and config.model) or nil)
     debuginfo.setup()
   end
   state.copilot = Copilot(M.config.proxy, M.config.allow_insecure)
