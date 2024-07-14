@@ -2,9 +2,10 @@ local curl = require('plenary.curl')
 local tiktoken_core = nil
 
 ---Get the path of the cache directory
+---@param fname string
 ---@return string
-local function get_cache_path()
-  return vim.fn.stdpath('cache') .. '/cl100k_base.tiktoken'
+local function get_cache_path(fname)
+  return vim.fn.stdpath('cache') .. '/' .. fname
 end
 
 local function file_exists(name)
@@ -26,7 +27,8 @@ local function load_tiktoken_data(done, model)
   end
   local async
   async = vim.loop.new_async(function()
-    local cache_path = get_cache_path()
+    -- Take filename after the last slash of the url
+    local cache_path = get_cache_path(tiktoken_url:match('.+/(.+)'))
     if not file_exists(cache_path) then
       curl.get(tiktoken_url, {
         output = cache_path,
