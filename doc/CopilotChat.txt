@@ -1,4 +1,4 @@
-*CopilotChat.txt*           For NVIM v0.8.0           Last change: 2024 May 31
+*CopilotChat.txt*           For NVIM v0.8.0          Last change: 2024 July 14
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -574,7 +574,7 @@ If you want to contribute to this project, please read the CONTRIBUTING.md
 Thanks goes to these wonderful people (emoji key
 <https://allcontributors.org/docs/en/emoji-key>):
 
-gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻neutrinoA4💻 📖Jack Muratore💻Adriel Velazquez💻 📖Tomas Slusny💻 📖Nisal📖Tobias Gårdhus📖Petr Dlouhý📖Dylan Madisetti💻Aaron Weisberg💻 📖Jose Tlacuilo💻 📖Kevin Traver💻 📖dTry💻Arata Furukawa💻Ling💻Ivan Frolov💻Folke Lemaitre💻 📖GitMurf💻This project follows the all-contributors
+gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻neutrinoA4💻 📖Jack Muratore💻Adriel Velazquez💻 📖Tomas Slusny💻 📖Nisal📖Tobias Gårdhus📖Petr Dlouhý📖Dylan Madisetti💻Aaron Weisberg💻 📖Jose Tlacuilo💻 📖Kevin Traver💻 📖dTry💻Arata Furukawa💻Ling💻Ivan Frolov💻Folke Lemaitre💻 📖GitMurf💻Dmitrii Lipin💻This project follows the all-contributors
 <https://github.com/all-contributors/all-contributors> specification.
 Contributions of any kind are welcome!
 
@@ -589,7 +589,7 @@ STARGAZERS OVER TIME ~
 1. *Documentation*: https://img.shields.io/badge/documentation-yes-brightgreen.svg
 2. *pre-commit.ci*: https://results.pre-commit.ci/badge/github/CopilotC-Nvim/CopilotChat.nvim/main.svg
 3. *Discord*: https://img.shields.io/discord/1200633211236122665.svg
-4. *All Contributors*: https://img.shields.io/badge/all_contributors-28-orange.svg?style=flat-square
+4. *All Contributors*: https://img.shields.io/badge/all_contributors-29-orange.svg?style=flat-square
 5. *@jellydn*: 
 6. *@deathbeam*: 
 7. *@jellydn*: 
