@@ -361,7 +361,15 @@ end
 
 function M.select_model()
   state.copilot:select_model(function(model)
-    state.config.model = model
+    if M.config ~= nil then
+      M.config.model = model
+      return
+    end
+    if state.config ~= nil then
+      state.config.model = model
+      return
+    end
+    default_config.model = model
   end)
 end
 
