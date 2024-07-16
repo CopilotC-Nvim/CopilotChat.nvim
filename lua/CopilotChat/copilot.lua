@@ -280,6 +280,7 @@ local Copilot = class(function(self, proxy, allow_insecure)
   self.sessionid = nil
   self.machineid = machine_id()
   self.current_job = nil
+  self.models_cache = nil
 end)
 
 function Copilot:with_auth(on_done, on_error)
@@ -503,6 +504,14 @@ end
 --- Fetch & allow model selection
 ---@param callback fun(string):nil
 function Copilot:select_model(callback)
+  if self.models_cache ~= nil then
+    vim.ui.select(self.models_cache, {
+      prompt = 'Select a model',
+    }, function(choice)
+      callback(choice)
+    end)
+    return
+  end
   local url = 'https://api.githubcopilot.com/models'
   self:with_auth(function()
     local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
@@ -528,6 +537,7 @@ function Copilot:select_model(callback)
             table.insert(selections, model['version'])
           end
         end
+        self.models_cache = selections
         vim.schedule(function()
           vim.ui.select(selections, {
             prompt = 'Select a model',
