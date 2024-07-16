@@ -524,7 +524,9 @@ function Copilot:select_model(callback)
         local models = vim.json.decode(response.body)['data']
         local selections = {}
         for _, model in ipairs(models) do
-          table.insert(selections, model['version'])
+          if model['capabilities']['type'] == 'chat' then
+            table.insert(selections, model['version'])
+          end
         end
         vim.schedule(function()
           vim.ui.select(selections, {
