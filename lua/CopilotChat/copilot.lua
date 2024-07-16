@@ -504,34 +504,36 @@ end
 ---@param callback fun(string):nil
 function Copilot:select_model(callback)
   local url = 'https://api.githubcopilot.com/models'
-  local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
-  curl.get(url, {
-    headers = headers,
-    proxy = self.proxy,
-    insecure = self.allow_insecure,
-    on_error = function(err)
-      err = 'Failed to get response: ' .. vim.inspect(err)
-      log.error(err)
-    end,
-    callback = function(response)
-      if response.status ~= 200 then
-        local msg = 'Failed to fetch models: ' .. tostring(response.status)
-        log.error(msg)
-        return
-      end
+  self:with_auth(function()
+    local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
+    curl.get(url, {
+      headers = headers,
+      proxy = self.proxy,
+      insecure = self.allow_insecure,
+      on_error = function(err)
+        err = 'Failed to get response: ' .. vim.inspect(err)
+        log.error(err)
+      end,
+      callback = function(response)
+        if response.status ~= 200 then
+          local msg = 'Failed to fetch models: ' .. tostring(response.status)
+          log.error(msg)
+          return
+        end
 
-      local models = vim.json.decode(response.body)['data']
-      local selections = {}
-      for _, model in ipairs(models) do
-        table.insert(selections, model['version'])
-      end
-      vim.ui.select(selections, {
-        prompt = 'Select a model',
-      }, function(choice)
-        callback(choice)
-      end)
-    end,
-  })
+        local models = vim.json.decode(response.body)['data']
+        local selections = {}
+        for _, model in ipairs(models) do
+          table.insert(selections, model['version'])
+        end
+        vim.ui.select(selections, {
+          prompt = 'Select a model',
+        }, function(choice)
+          callback(choice)
+        end)
+      end,
+    })
+  end)
 end
 
 --- Generate embeddings for the given inputs
