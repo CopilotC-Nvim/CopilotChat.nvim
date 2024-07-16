@@ -526,10 +526,12 @@ function Copilot:select_model(callback)
         for _, model in ipairs(models) do
           table.insert(selections, model['version'])
         end
-        vim.ui.select(selections, {
-          prompt = 'Select a model',
-        }, function(choice)
-          callback(choice)
+        vim.schedule(function()
+          vim.ui.select(selections, {
+            prompt = 'Select a model',
+          }, function(choice)
+            callback(choice)
+          end)
         end)
       end,
     })

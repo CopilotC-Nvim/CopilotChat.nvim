@@ -30,9 +30,11 @@ local function load_tiktoken_data(done, model)
     -- Take filename after the last slash of the url
     local cache_path = get_cache_path(tiktoken_url:match('.+/(.+)'))
     if not file_exists(cache_path) then
-      curl.get(tiktoken_url, {
-        output = cache_path,
-      })
+      vim.schedule(function()
+        curl.get(tiktoken_url, {
+          output = cache_path,
+        })
+      end)
     end
 
     done(cache_path)
