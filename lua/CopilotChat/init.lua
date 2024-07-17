@@ -340,7 +340,7 @@ end
 --- Close the chat window.
 function M.close()
   vim.cmd('stopinsert')
-  state.chat:close()
+  state.chat:close(state.source and state.source.bufnr or nil)
 end
 
 --- Toggle the chat window.
@@ -359,12 +359,15 @@ function M.response()
   return state.response
 end
 
+--- Select a Copilot GPT model.
 function M.select_model()
   state.copilot:select_model(function(models)
-    vim.ui.select(models, {
-      prompt = 'Select a model',
-    }, function(choice)
-      M.config.model = choice
+    vim.schedule(function()
+      vim.ui.select(models, {
+        prompt = 'Select a model',
+      }, function(choice)
+        M.config.model = choice
+      end)
     end)
   end)
 end
@@ -712,7 +715,7 @@ function M.setup(config)
   end
 
   if state.chat then
-    state.chat:close()
+    state.chat:close(state.source and state.source.bufnr or nil)
     state.chat:delete()
   end
   state.chat = Chat(chat_help, function(bufnr)
