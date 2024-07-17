@@ -535,6 +535,15 @@ function Copilot:select_model(callback)
             table.insert(selections, model['version'])
           end
         end
+        -- Remove duplicates from selection
+        local hash = {}
+        selections = vim.tbl_filter(function(model)
+          if not hash[model] then
+            hash[model] = true
+            return true
+          end
+          return false
+        end, selections)
         self.models_cache = selections
         vim.schedule(function()
           callback(self.models_cache)
