@@ -105,6 +105,7 @@ See @deathbeam for [configuration](https://github.com/deathbeam/dotfiles/blob/ma
 - `:CopilotChatSave <name>?` - Save chat history to file
 - `:CopilotChatLoad <name>?` - Load chat history from file
 - `:CopilotChatDebugInfo` - Show debug information
+- `:CopilotChatModels` - View and select available models. This is reset when a new instance is made. Please set your model in `init.lua` for persistence.
 
 #### Commands coming from default prompts
 
