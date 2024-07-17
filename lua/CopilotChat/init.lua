@@ -354,9 +354,19 @@ function M.toggle(config, source)
   end
 end
 
--- @returns string
+--- @returns string
 function M.response()
   return state.response
+end
+
+function M.select_model()
+  state.copilot:select_model(function(models)
+    vim.ui.select(models, {
+      prompt = 'Select a model',
+    }, function(choice)
+      M.config.model = choice
+    end)
+  end)
 end
 
 --- Ask a question to the Copilot model.
@@ -858,6 +868,10 @@ function M.setup(config)
     force = true,
     range = true,
   })
+
+  vim.api.nvim_create_user_command('CopilotChatModels', function()
+    M.select_model()
+  end, { force = true })
 
   vim.api.nvim_create_user_command('CopilotChatOpen', function()
     M.open()

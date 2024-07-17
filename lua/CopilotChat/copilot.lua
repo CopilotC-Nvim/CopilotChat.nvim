@@ -32,6 +32,7 @@
 ---@field save fun(self: CopilotChat.Copilot, name: string, path: string):nil
 ---@field load fun(self: CopilotChat.Copilot, name: string, path: string):table
 ---@field running fun(self: CopilotChat.Copilot):boolean
+---@field select_model fun(self: CopilotChat.Copilot, callback: fun(table):nil):nil
 
 local log = require('plenary.log')
 local curl = require('plenary.curl')
@@ -279,6 +280,7 @@ local Copilot = class(function(self, proxy, allow_insecure)
   self.sessionid = nil
   self.machineid = machine_id()
   self.current_job = nil
+  self.models_cache = nil
 end)
 
 function Copilot:with_auth(on_done, on_error)
@@ -497,6 +499,58 @@ function Copilot:ask(prompt, opts)
         self.current_job = nil
       end)
   end, on_error)
+end
+
+--- Fetch & allow model selection
+---@param callback fun(table):nil
+function Copilot:select_model(callback)
+  if self.models_cache ~= nil then
+    vim.schedule(function()
+      callback(self.models_cache)
+    end)
+    return
+  end
+  local url = 'https://api.githubcopilot.com/models'
+  self:with_auth(function()
+    local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
+    curl.get(url, {
+      headers = headers,
+      proxy = self.proxy,
+      insecure = self.allow_insecure,
+      on_error = function(err)
+        err = 'Failed to get response: ' .. vim.inspect(err)
+        log.error(err)
+      end,
+      callback = function(response)
+        if response.status ~= 200 then
+          local msg = 'Failed to fetch models: ' .. tostring(response.status)
+          log.error(msg)
+          return
+        end
+
+        local models = vim.json.decode(response.body)['data']
+        local selections = {}
+        for _, model in ipairs(models) do
+          if model['capabilities']['type'] == 'chat' then
+            table.insert(selections, model['version'])
+          end
+        end
+        -- Remove duplicates from selection
+        local hash = {}
+        selections = vim.tbl_filter(function(model)
+          if not hash[model] then
+            hash[model] = true
+            return true
+          end
+          return false
+        end, selections)
+        self.models_cache = selections
+        vim.schedule(function()
+          callback(self.models_cache)
+        end)
+      end,
+    })
+  end)
 end
 
 --- Generate embeddings for the given inputs
