@@ -504,39 +504,43 @@ end
 --- Fetch & allow model selection
 ---@param callback fun(table):nil
 function Copilot:select_model(callback)
-  if self.models_cache == nil then
-    local url = 'https://api.githubcopilot.com/models'
-    self:with_auth(function()
-      local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
-      curl.get(url, {
-        headers = headers,
-        proxy = self.proxy,
-        insecure = self.allow_insecure,
-        on_error = function(err)
-          err = 'Failed to get response: ' .. vim.inspect(err)
-          log.error(err)
-        end,
-        callback = function(response)
-          if response.status ~= 200 then
-            local msg = 'Failed to fetch models: ' .. tostring(response.status)
-            log.error(msg)
-            return
-          end
-
-          local models = vim.json.decode(response.body)['data']
-          local selections = {}
-          for _, model in ipairs(models) do
-            if model['capabilities']['type'] == 'chat' then
-              table.insert(selections, model['version'])
-            end
-          end
-          self.models_cache = selections
-        end,
-      })
+  if self.models_cache ~= nil then
+    vim.schedule(function()
+      callback(self.models_cache)
     end)
+    return
   end
-  vim.schedule(function()
-    callback(self.models_cache)
+  local url = 'https://api.githubcopilot.com/models'
+  self:with_auth(function()
+    local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
+    curl.get(url, {
+      headers = headers,
+      proxy = self.proxy,
+      insecure = self.allow_insecure,
+      on_error = function(err)
+        err = 'Failed to get response: ' .. vim.inspect(err)
+        log.error(err)
+      end,
+      callback = function(response)
+        if response.status ~= 200 then
+          local msg = 'Failed to fetch models: ' .. tostring(response.status)
+          log.error(msg)
+          return
+        end
+
+        local models = vim.json.decode(response.body)['data']
+        local selections = {}
+        for _, model in ipairs(models) do
+          if model['capabilities']['type'] == 'chat' then
+            table.insert(selections, model['version'])
+          end
+        end
+        self.models_cache = selections
+        vim.schedule(function()
+          callback(self.models_cache)
+        end)
+      end,
+    })
   end)
 end
 
