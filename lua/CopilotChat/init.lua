@@ -360,16 +360,12 @@ function M.response()
 end
 
 function M.select_model()
-  state.copilot:select_model(function(model)
-    if M.config ~= nil then
-      M.config.model = model
-      return
-    end
-    if state.config ~= nil then
-      state.config.model = model
-      return
-    end
-    default_config.model = model
+  state.copilot:select_model(function(models)
+    vim.ui.select(models, {
+      prompt = 'Select a model',
+    }, function(choice)
+      M.config.model = choice
+    end)
   end)
 end
 
