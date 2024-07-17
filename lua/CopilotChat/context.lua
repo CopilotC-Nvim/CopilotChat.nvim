@@ -248,6 +248,10 @@ function M.find_for_query(copilot, opts)
         on_error = on_error,
         on_done = function(query_out)
           local query = query_out[1]
+          if not query then
+            on_done({})
+            return
+          end
           log.debug('Prompt:', query.prompt)
           log.debug('Content:', query.content)
           local data = data_ranked_by_relatedness(query, out, 20)

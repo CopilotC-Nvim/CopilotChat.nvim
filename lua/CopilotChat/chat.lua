@@ -10,7 +10,7 @@
 ---@field last fun(self: CopilotChat.Chat)
 ---@field clear fun(self: CopilotChat.Chat)
 ---@field open fun(self: CopilotChat.Chat, config: CopilotChat.config)
----@field close fun(self: CopilotChat.Chat)
+---@field close fun(self: CopilotChat.Chat, bufnr: number?)
 ---@field focus fun(self: CopilotChat.Chat)
 ---@field follow fun(self: CopilotChat.Chat)
 ---@field finish fun(self: CopilotChat.Chat, msg: string?)
@@ -40,6 +40,7 @@ local Chat = class(function(self, help, on_buf_create)
   self.winnr = nil
   self.spinner = nil
   self.separator = nil
+  self.layout = nil
 
   self.buf_create = function()
     local bufnr = vim.api.nvim_create_buf(false, true)
@@ -192,6 +193,7 @@ function Chat:open(config)
     vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
   end
 
+  self.layout = layout
   self.separator = config.separator
 
   vim.wo[self.winnr].wrap = true
@@ -209,13 +211,17 @@ function Chat:open(config)
   self:render()
 end
 
-function Chat:close()
+function Chat:close(bufnr)
   if self.spinner then
     self.spinner:finish()
   end
 
   if self:visible() then
-    vim.api.nvim_win_close(self.winnr, true)
+    if self.layout == 'replace' then
+      self:restore(self.winnr, bufnr)
+    else
+      vim.api.nvim_win_close(self.winnr, true)
+    end
     self.winnr = nil
   end
 end

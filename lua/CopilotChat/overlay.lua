@@ -63,7 +63,7 @@ end
 
 function Overlay:restore(winnr, bufnr)
   self.current = nil
-  vim.api.nvim_win_set_buf(winnr, bufnr)
+  vim.api.nvim_win_set_buf(winnr, bufnr or 0)
   vim.api.nvim_win_set_hl_ns(winnr, 0)
 end
 

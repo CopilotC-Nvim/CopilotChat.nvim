@@ -43,6 +43,7 @@ local temp_file = utils.temp_file
 local prompts = require('CopilotChat.prompts')
 local tiktoken = require('CopilotChat.tiktoken')
 local max_tokens = 8192
+local timeout = 30000
 local version_headers = {
   ['editor-version'] = 'Neovim/'
     .. vim.version().major
@@ -309,6 +310,7 @@ function Copilot:with_auth(on_done, on_error)
     end
 
     curl.get(url, {
+      timeout = timeout,
       headers = headers,
       proxy = self.proxy,
       insecure = self.allow_insecure,
@@ -421,6 +423,7 @@ function Copilot:ask(prompt, opts)
     local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
     self.current_job = curl
       .post(url, {
+        timeout = timeout,
         headers = headers,
         body = temp_file(body),
         proxy = self.proxy,
@@ -505,15 +508,15 @@ end
 ---@param callback fun(table):nil
 function Copilot:select_model(callback)
   if self.models_cache ~= nil then
-    vim.schedule(function()
-      callback(self.models_cache)
-    end)
+    callback(self.models_cache)
     return
   end
+
   local url = 'https://api.githubcopilot.com/models'
   self:with_auth(function()
     local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
     curl.get(url, {
+      timeout = timeout,
       headers = headers,
       proxy = self.proxy,
       insecure = self.allow_insecure,
@@ -545,9 +548,7 @@ function Copilot:select_model(callback)
           return false
         end, selections)
         self.models_cache = selections
-        vim.schedule(function()
-          callback(self.models_cache)
-        end)
+        callback(self.models_cache)
       end,
     })
   end)
@@ -584,6 +585,7 @@ function Copilot:embed(inputs, opts)
     table.insert(jobs, function(resolve)
       local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
       curl.post(url, {
+        timeout = timeout,
         headers = headers,
         body = temp_file(body),
         proxy = self.proxy,
