@@ -318,7 +318,7 @@ Also see here </lua/CopilotChat/config.lua>:
         },
         submit_prompt = {
           normal = '<CR>',
-          insert = '<C-m>'
+          insert = '<C-s>'
         },
         accept_diff = {
           normal = '<C-y>',
