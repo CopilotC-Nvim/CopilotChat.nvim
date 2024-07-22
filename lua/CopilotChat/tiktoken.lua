@@ -34,10 +34,11 @@ local function load_tiktoken_data(done, model)
         curl.get(tiktoken_url, {
           output = cache_path,
         })
+        done(cache_path)
       end)
+    else
+      done(cache_path)
     end
-
-    done(cache_path)
     async:close()
   end)
   async:send()
