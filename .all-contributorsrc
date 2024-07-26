@@ -207,6 +207,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/6877858?v=4",
       "profile": "http://dimalip.in",
       "contributions": ["code"]
+    },
+    {
+      "login": "jinzhongjia",
+      "name": "jinzhongjia",
+      "avatar_url": "https://avatars.githubusercontent.com/u/41784264?v=4",
+      "profile": "https://nvimer.org",
+      "contributions": ["doc"]
     }
   ],
   "contributorsPerLine": 7,
