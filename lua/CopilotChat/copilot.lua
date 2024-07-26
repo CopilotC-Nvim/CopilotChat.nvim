@@ -353,7 +353,7 @@ function Copilot:ask(prompt, opts)
   local start_row = opts.start_row or 0
   local end_row = opts.end_row or 0
   local system_prompt = opts.system_prompt or prompts.COPILOT_INSTRUCTIONS
-  local model = opts.model or 'gpt-4'
+  local model = opts.model or 'gpt-4o-2024-05-13'
   local temperature = opts.temperature or 0.1
   local on_done = opts.on_done
   local on_progress = opts.on_progress

@@ -22,7 +22,7 @@ end
 local function load_tiktoken_data(done, model)
   local tiktoken_url = 'https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken'
   -- If model is gpt-4o, use o200k_base.tiktoken
-  if model == 'gpt-4o' then
+  if model == 'gpt-4o-2024-05-13' then
     tiktoken_url = 'https://openaipublic.blob.core.windows.net/encodings/o200k_base.tiktoken'
   end
   local async
