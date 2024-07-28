@@ -606,6 +606,9 @@ function M.setup(config)
   end
 
   M.config = vim.tbl_deep_extend('force', default_config, config or {})
+  if M.config.model == 'gpt-4o' then
+    M.config.model = 'gpt-4o-2024-05-13'
+  end
 
   if state.copilot then
     state.copilot:stop()
