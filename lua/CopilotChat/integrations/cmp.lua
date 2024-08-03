@@ -28,8 +28,8 @@ function Source:complete(params, callback)
   for name, _ in pairs(prompts_to_use) do
     checkAdd('/' .. name)
   end
-  checkAdd("@buffers")
-  checkAdd("@buffer")
+  checkAdd('@buffers')
+  checkAdd('@buffer')
 
   callback({ items = items })
 end
