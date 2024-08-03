@@ -7,25 +7,29 @@ function Source:get_trigger_characters()
   return { '@', '/' }
 end
 
+function Source:get_keyword_pattern()
+  return [[\%(@\|/\)\k*]]
+end
+
 function Source:complete(params, callback)
   local items = {}
   local prompts_to_use = chat.prompts()
 
-  if params.completion_context.triggerCharacter == '/' then
-    for name, _ in pairs(prompts_to_use) do
+  local prefix = string.lower(params.context.cursor_before_line:sub(params.offset))
+  local prefix_len = #prefix
+  local checkAdd = function(word)
+    if word:lower():sub(1, prefix_len) == prefix then
       items[#items + 1] = {
-        label = '/' .. name,
+        label = word,
+        kind = cmp.lsp.CompletionItemKind.Keyword,
       }
     end
-  else
-    items[#items + 1] = {
-      label = '@buffers',
-    }
-
-    items[#items + 1] = {
-      label = '@buffer',
-    }
   end
+  for name, _ in pairs(prompts_to_use) do
+    checkAdd('/' .. name)
+  end
+  checkAdd("@buffers")
+  checkAdd("@buffer")
 
   callback({ items = items })
 end
