@@ -214,6 +214,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/41784264?v=4",
       "profile": "https://nvimer.org",
       "contributions": ["doc"]
+    },
+    {
+      "login": "guill",
+      "name": "guill",
+      "avatar_url": "https://avatars.githubusercontent.com/u/3157454?v=4",
+      "profile": "https://github.com/guill",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
