@@ -774,7 +774,7 @@ function M.setup(config)
       local lines = find_lines_between_separator(section_lines, '^```%w*$', true)
       if #lines > 0 then
         local content = table.concat(lines, '\n')
-        vim.fn.setreg('"', content)
+        vim.fn.setreg(M.config.yank_diff_register, content)
       end
     end)
 
