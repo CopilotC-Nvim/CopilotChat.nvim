@@ -58,6 +58,7 @@ local select = require('CopilotChat.select')
 ---@field proxy string?
 ---@field allow_insecure boolean?
 ---@field system_prompt string?
+---@field yank_diff_register string?
 ---@field model string?
 ---@field temperature number?
 ---@field question_header string?
@@ -81,6 +82,8 @@ return {
   debug = false, -- Enable debug logging
   proxy = nil, -- [protocol://]host[:port] Use this proxy
   allow_insecure = false, -- Allow insecure server connections
+
+  yank_diff_register = '"', -- Allows overriding the register for yanking diffs
 
   system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use
   model = 'gpt-4o-2024-05-13', -- GPT model to use, 'gpt-3.5-turbo', 'gpt-4', or `gpt-4o-2024-05-13`
