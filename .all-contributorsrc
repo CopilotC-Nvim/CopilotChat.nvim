@@ -221,6 +221,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/3157454?v=4",
       "profile": "https://github.com/guill",
       "contributions": ["code"]
+    },
+    {
+      "login": "sjonpaulbrown-cc",
+      "name": "Sjon-Paul Brown",
+      "avatar_url": "https://avatars.githubusercontent.com/u/81941908?v=4",
+      "profile": "https://github.com/sjonpaulbrown-cc",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
