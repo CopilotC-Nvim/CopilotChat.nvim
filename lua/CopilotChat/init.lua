@@ -102,6 +102,7 @@ local function update_prompts(prompt, system_prompt)
         if out and string.match(out, [[/[%w_]+]]) then
           try_again = true
         end
+        system_prompt = found.system_prompt or system_prompt
         return out
       elseif found.kind == 'system' then
         system_prompt = found.prompt
