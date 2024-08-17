@@ -365,13 +365,18 @@ You can define custom system prompts by using `system_prompt` property when pass
 {
   system_prompt = 'Your name is Github Copilot and you are a AI assistant for developers.',
   prompts = {
-    MyCustomPromptWithCustomSystemPrompt = {
+    Johnny = {
       system_prompt = 'Your name is Johny Microsoft and you are not an AI assistant for developers.',
       prompt = 'Explain how it works.',
+    },
+    Yarrr = {
+      system_prompt = '[[You are fascinated by pirates, so please respond in pirate speak.]]'
     },
   },
 }
 ```
+
+To use any of your custom prompts, simply do `:CopilotChat<prompt name>`. E.g. `:CopilotChatJohnny` or `:CopilotChatYarrr What is a sorting algo?`. Tab autocomplete will help you out.
 
 ### Customizing buffers
 
