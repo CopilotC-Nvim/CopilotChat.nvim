@@ -287,7 +287,7 @@ end)
 function Copilot:with_auth(on_done, on_error)
   if not self.github_token then
     local msg =
-      'No GitHub token found, please use `:Copilot setup` to set it up from copilot.vim or copilot.lua'
+      'No GitHub token found, please use `:Copilot auth` to set it up from copilot.lua or `:Copilot setup` for copilot.vim'
     log.error(msg)
     if on_error then
       on_error(msg)
