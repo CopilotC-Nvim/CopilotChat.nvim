@@ -370,7 +370,7 @@ You can define custom system prompts by using `system_prompt` property when pass
       prompt = 'Explain how it works.',
     },
     Yarrr = {
-      system_prompt = '[[You are fascinated by pirates, so please respond in pirate speak.]]'
+      system_prompt = 'You are fascinated by pirates, so please respond in pirate speak.'
     },
   },
 }
