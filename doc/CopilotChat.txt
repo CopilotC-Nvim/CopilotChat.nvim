@@ -133,6 +133,7 @@ COMMANDS ~
 - `:CopilotChatLoad <name>?` - Load chat history from file
 - `:CopilotChatDebugInfo` - Show debug information
 - `:CopilotChatModels` - View and select available models. This is reset when a new instance is made. Please set your model in `init.lua` for persistence.
+- `:CopilotChatModel` - View the currently selected model.
 
 
 COMMANDS COMING FROM DEFAULT PROMPTS
