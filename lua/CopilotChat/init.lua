@@ -876,6 +876,11 @@ function M.setup(config)
     range = true,
   })
 
+  vim.api.nvim_create_user_command('CopilotChatModel', function()
+    -- Show which model is being used in an alert
+    vim.notify('Using model: ' .. M.config.model, vim.log.levels.INFO)
+  end, { force = true })
+
   vim.api.nvim_create_user_command('CopilotChatModels', function()
     M.select_model()
   end, { force = true })
