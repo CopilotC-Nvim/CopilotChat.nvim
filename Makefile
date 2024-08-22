@@ -1,25 +1,64 @@
-.PHONY: help
-help:
-		@echo "Available commands:"
-		@echo "  install-cli       - Install Lua and Luarocks using Homebrew"
-		@echo "  install-pre-commit - Install pre-commit using pip"
-		@echo "  install           - Install vusted using Luarocks"
-		@echo "  test              - Run tests using vusted"
+UNAME := $(shell uname)
+ARCH := $(shell uname -m)
 
-.PHONY: install-cli
+ifeq ($(UNAME), Linux)
+    OS := linux
+    EXT := so
+else ifeq ($(UNAME), Darwin)
+    OS := macOS
+    EXT := dylib
+else
+    $(error Unsupported operating system: $(UNAME))
+endif
+
+LUA_VERSIONS := luajit lua51
+BUILD_DIR := build
+
+.PHONY: help install-cli install-pre-commit install test tiktoken clean
+
+help:
+	@echo "Available commands:"
+	@echo "  install-cli       - Install Lua and Luarocks using Homebrew"
+	@echo "  install-pre-commit - Install pre-commit using pip"
+	@echo "  install           - Install vusted using Luarocks"
+	@echo "  test              - Run tests using vusted"
+	@echo "  tiktoken          - Download tiktoken_core library"
+	@echo "  clean             - Remove build directory"
+
 install-cli:
 	brew install luarocks
 	brew install lua
 
-.PHONY: install-pre-commit
 install-pre-commit:
 	pip install pre-commit
 	pre-commit install
 
-.PHONY: install
 install:
 	luarocks install vusted
 
-.PHONY: test
 test:
 	vusted test
+
+all: luajit
+
+luajit: $(BUILD_DIR)/tiktoken_core.$(EXT)
+lua51: $(BUILD_DIR)/tiktoken_core-lua51.$(EXT)
+
+
+define download_release
+	curl -L https://github.com/gptlang/lua-tiktoken/releases/latest/download/tiktoken_core-$(1)-$(2).$(EXT) -o $(3)
+endef
+
+$(BUILD_DIR)/tiktoken_core.$(EXT): | $(BUILD_DIR)
+	$(call download_release,$(OS),luajit,$@)
+
+$(BUILD_DIR)/tiktoken_core-lua51.$(EXT): | $(BUILD_DIR)
+	$(call download_release,$(OS),lua51,$@)
+
+tiktoken: $(BUILD_DIR)/tiktoken_core.$(EXT) $(BUILD_DIR)/tiktoken_core-lua51.$(EXT)
+
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+
+clean:
+	rm -rf $(BUILD_DIR)
