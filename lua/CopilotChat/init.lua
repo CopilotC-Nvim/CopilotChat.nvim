@@ -307,7 +307,7 @@ end
 --- Open the chat window.
 ---@param config CopilotChat.config|CopilotChat.config.prompt|nil
 ---@param source CopilotChat.config.source?
-function M.open(config, source, no_insert)
+function M.open(config, source)
   config = vim.tbl_deep_extend('force', M.config, config or {})
   local should_reset = state.config and not utils.table_equals(config.window, state.config.window)
   state.config = config
@@ -316,8 +316,7 @@ function M.open(config, source, no_insert)
     winnr = vim.api.nvim_get_current_win(),
   })
 
-  vim.cmd('stopinsert')
-  utils.exit_visual_mode()
+  utils.return_to_normal_mode()
 
   -- Recreate the window if the layout has changed
   if should_reset then
@@ -325,22 +324,12 @@ function M.open(config, source, no_insert)
   end
 
   state.chat:open(config)
-  state.chat:focus()
   state.chat:follow()
-
-  if
-    not no_insert
-    and not state.copilot:running()
-    and M.config.auto_insert_mode
-    and state.chat:active()
-  then
-    vim.cmd('startinsert')
-  end
+  state.chat:focus()
 end
 
 --- Close the chat window.
 function M.close()
-  vim.cmd('stopinsert')
   state.chat:close(state.source and state.source.bufnr or nil)
 end
 
@@ -387,10 +376,10 @@ function M.ask(prompt, config, source)
     return
   end
 
-  M.open(config, source, true)
+  M.open(config, source)
 
   if config.clear_chat_on_new_prompt then
-    M.stop(true, true)
+    M.stop(true)
   end
 
   state.last_system_prompt = system_prompt
@@ -412,7 +401,6 @@ function M.ask(prompt, config, source)
 
   append(updated_prompt)
   append('\n\n' .. config.answer_header .. config.separator .. '\n\n')
-  state.chat:follow()
 
   local selected_context = config.context
   if string.find(prompt, '@buffers') then
@@ -428,9 +416,6 @@ function M.ask(prompt, config, source)
       append('```\n' .. err .. '\n```')
       append('\n\n' .. config.question_header .. config.separator .. '\n\n')
       state.chat:finish()
-      if M.config.auto_follow_cursor and M.config.auto_insert_mode and state.chat:active() then
-        vim.cmd('startinsert')
-      end
     end)
   end
 
@@ -466,9 +451,6 @@ function M.ask(prompt, config, source)
             if config.callback then
               config.callback(response, state.source)
             end
-            if config.auto_follow_cursor and config.auto_insert_mode and state.chat:active() then
-              vim.cmd('startinsert')
-            end
           end)
         end,
         on_progress = function(token)
@@ -483,7 +465,7 @@ end
 
 --- Stop current copilot output and optionally reset the chat ten show the help message.
 ---@param reset boolean?
-function M.stop(reset, no_insert)
+function M.stop(reset)
   state.response = nil
   local stopped = reset and state.copilot:reset() or state.copilot:stop()
   local wrap = vim.schedule
@@ -501,11 +483,6 @@ function M.stop(reset, no_insert)
     end
     append(M.config.question_header .. M.config.separator .. '\n\n')
     state.chat:finish()
-    state.chat:follow()
-
-    if not no_insert and M.config.auto_insert_mode and state.chat:active() then
-      vim.cmd('startinsert')
-    end
   end)
 end
 
@@ -589,19 +566,29 @@ end
 function M.setup(config)
   -- Handle old mapping format and show error
   local found_old_format = false
-  if config and config.mappings then
-    for name, key in pairs(config.mappings) do
-      if type(key) == 'string' then
-        vim.notify(
-          'config.mappings.'
-            .. name
-            .. ": 'mappings' format have changed, please update your configuration, for now revering to default settings. See ':help CopilotChat-configuration' for current format",
-          vim.log.levels.ERROR
-        )
-        found_old_format = true
+  if config then
+    if config.mappings then
+      for name, key in pairs(config.mappings) do
+        if type(key) == 'string' then
+          vim.notify(
+            'config.mappings.'
+              .. name
+              .. ": 'mappings' format have changed, please update your configuration, for now revering to default settings. See ':help CopilotChat-configuration' for current format",
+            vim.log.levels.ERROR
+          )
+          found_old_format = true
+        end
       end
     end
+
+    if config.yank_diff_register then
+      vim.notify(
+        'config.yank_diff_register: This option has been removed, please use mappings.yank_diff.register instead',
+        vim.log.levels.ERROR
+      )
+    end
   end
+
   if found_old_format then
     config.mappings = nil
   end
@@ -722,7 +709,7 @@ function M.setup(config)
     state.chat:close(state.source and state.source.bufnr or nil)
     state.chat:delete()
   end
-  state.chat = Chat(chat_help, function(bufnr)
+  state.chat = Chat(chat_help, M.config.auto_insert_mode, function(bufnr)
     map_key(M.config.mappings.complete, bufnr, complete)
     map_key(M.config.mappings.reset, bufnr, M.reset)
     map_key(M.config.mappings.close, bufnr, M.close)
@@ -775,7 +762,7 @@ function M.setup(config)
       local lines = find_lines_between_separator(section_lines, '^```%w*$', true)
       if #lines > 0 then
         local content = table.concat(lines, '\n')
-        vim.fn.setreg(M.config.yank_diff_register, content)
+        vim.fn.setreg(M.config.mappings.yank_diff.register, content)
       end
     end)
 
@@ -840,6 +827,17 @@ function M.setup(config)
         end
       end,
     })
+
+    if M.config.insert_at_end then
+      vim.api.nvim_create_autocmd({ 'InsertEnter' }, {
+        buffer = state.chat.bufnr,
+        callback = function()
+          vim.cmd('normal! 0')
+          vim.cmd('normal! G$')
+          vim.v.char = 'x'
+        end,
+      })
+    end
 
     append(M.config.question_header .. M.config.separator .. '\n\n')
     state.chat:finish()
