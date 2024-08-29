@@ -18,7 +18,7 @@ function M.pick(pick_actions, opts)
     return
   end
 
-  utils.exit_visual_mode()
+  utils.return_to_normal_mode()
   opts = themes.get_dropdown(opts or {})
   pickers
     .new(opts, {

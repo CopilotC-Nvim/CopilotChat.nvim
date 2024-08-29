@@ -32,9 +32,10 @@ function CopilotChatFoldExpr(lnum, separator)
   return '='
 end
 
-local Chat = class(function(self, help, on_buf_create)
+local Chat = class(function(self, help, auto_insert, on_buf_create)
   self.header_ns = vim.api.nvim_create_namespace('copilot-chat-headers')
   self.help = help
+  self.auto_insert = auto_insert
   self.on_buf_create = on_buf_create
   self.bufnr = nil
   self.winnr = nil
@@ -117,6 +118,10 @@ end
 
 function Chat:append(str)
   self:validate()
+
+  if self:active() then
+    utils.return_to_normal_mode()
+  end
 
   if self.spinner then
     self.spinner:start()
@@ -217,11 +222,16 @@ function Chat:close(bufnr)
   end
 
   if self:visible() then
+    if self:active() then
+      utils.return_to_normal_mode()
+    end
+
     if self.layout == 'replace' then
       self:restore(self.winnr, bufnr)
     else
       vim.api.nvim_win_close(self.winnr, true)
     end
+
     self.winnr = nil
   end
 end
@@ -229,6 +239,9 @@ end
 function Chat:focus()
   if self:visible() then
     vim.api.nvim_set_current_win(self.winnr)
+    if self.auto_insert and self:active() then
+      vim.cmd('startinsert')
+    end
   end
 end
 
@@ -261,6 +274,9 @@ function Chat:finish(msg)
   end
 
   self:show_help(msg, -2)
+  if self.auto_insert and self:active() then
+    vim.cmd('startinsert')
+  end
 end
 
 return Chat

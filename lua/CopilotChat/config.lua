@@ -58,7 +58,6 @@ local select = require('CopilotChat.select')
 ---@field proxy string?
 ---@field allow_insecure boolean?
 ---@field system_prompt string?
----@field yank_diff_register string?
 ---@field model string?
 ---@field temperature number?
 ---@field question_header string?
@@ -83,8 +82,6 @@ return {
   proxy = nil, -- [protocol://]host[:port] Use this proxy
   allow_insecure = false, -- Allow insecure server connections
 
-  yank_diff_register = '"', -- Allows overriding the register for yanking diffs
-
   system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use
   model = 'gpt-4o-2024-05-13', -- GPT model to use, 'gpt-3.5-turbo', 'gpt-4', or `gpt-4o-2024-05-13`
   temperature = 0.1, -- GPT temperature
@@ -97,7 +94,8 @@ return {
   show_folds = true, -- Shows folds for sections in chat
   show_help = true, -- Shows help message as virtual lines when waiting for user input
   auto_follow_cursor = true, -- Auto-follow cursor in chat
-  auto_insert_mode = false, -- Automatically enter insert mode when opening window and if auto follow cursor is enabled on new prompt
+  auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
+  insert_at_end = false, -- Move cursor to end of buffer when inserting text
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
   highlight_selection = true, -- Highlight selection
 
@@ -197,7 +195,7 @@ return {
     zindex = 1, -- determines if window is on top or below other floating windows
   },
 
-  -- default mappings (in tables first is normal mode, second is insert mode)
+  -- default mappings
   mappings = {
     complete = {
       detail = 'Use @<Tab> or /<Tab> for options.',
@@ -221,6 +219,7 @@ return {
     },
     yank_diff = {
       normal = 'gy',
+      register = '"',
     },
     show_diff = {
       normal = 'gd',

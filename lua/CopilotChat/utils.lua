@@ -100,11 +100,14 @@ function M.table_equals(a, b)
   return true
 end
 
---- Exit visual mode if we are in it
-function M.exit_visual_mode()
-  if vim.fn.mode():lower():find('v') then
+--- Return to normal mode
+function M.return_to_normal_mode()
+  local mode = vim.fn.mode():lower()
+  if mode:find('v') then
     -- NOTE: vim.cmd('normal! v') does not work properly when executed from keymap
     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<esc>', true, false, true), 'x', false)
+  elseif mode:find('i') then
+    vim.cmd('stopinsert')
   end
 end
 
