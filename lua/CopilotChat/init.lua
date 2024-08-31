@@ -23,6 +23,7 @@ local plugin_name = 'CopilotChat.nvim'
 --- @field diff CopilotChat.Overlay?
 --- @field system_prompt CopilotChat.Overlay?
 --- @field user_selection CopilotChat.Overlay?
+--- @field help CopilotChat.Overlay?
 local state = {
   copilot = nil,
   chat = nil,
@@ -40,6 +41,7 @@ local state = {
   diff = nil,
   system_prompt = nil,
   user_selection = nil,
+  help = nil,
 }
 
 local function blend_color_with_neovim_bg(color_name, blend)
@@ -213,9 +215,13 @@ end
 
 --- Get the info for a key.
 ---@param name string
----@param key CopilotChat.config.mapping
+---@param key CopilotChat.config.mapping?
 ---@return string
 local function key_to_info(name, key)
+  if not key then
+    return ''
+  end
+
   local out = ''
   if key.normal and key.normal ~= '' then
     out = out .. "'" .. key.normal .. "' in normal mode"
@@ -625,14 +631,8 @@ function M.setup(config)
     { link = '@punctuation.special.markdown', default = true }
   )
 
-  local overlay_help = ''
-  if M.config.mappings.close then
-    overlay_help = key_to_info('close', M.config.mappings.close)
-  end
-  local diff_help = ''
-  if M.config.mappings.accept_diff then
-    diff_help = key_to_info('accept_diff', M.config.mappings.accept_diff)
-  end
+  local overlay_help = key_to_info('close', M.config.mappings.close)
+  local diff_help = key_to_info('accept_diff', M.config.mappings.accept_diff)
   if overlay_help ~= '' and diff_help ~= '' then
     diff_help = diff_help .. '\n' .. overlay_help
   end
@@ -688,160 +688,174 @@ function M.setup(config)
     end)
   end)
 
-  local chat_help = ''
-  if M.config.show_help then
-    local chat_keys = vim.tbl_keys(M.config.mappings)
-    table.sort(chat_keys, function(a, b)
-      a = M.config.mappings[a]
-      a = a.normal or a.insert
-      b = M.config.mappings[b]
-      b = b.normal or b.insert
-      return a < b
-    end)
-
-    for _, name in ipairs(chat_keys) do
-      local key = M.config.mappings[name]
-      chat_help = chat_help .. key_to_info(name, key) .. '\n'
-    end
+  if state.help then
+    state.help:delete()
   end
+  state.help = Overlay('copilot-help', hl_ns, overlay_help, function(bufnr)
+    map_key(M.config.mappings.close, bufnr, function()
+      state.help:restore(state.chat.winnr, state.chat.bufnr)
+    end)
+  end)
 
   if state.chat then
     state.chat:close(state.source and state.source.bufnr or nil)
     state.chat:delete()
   end
-  state.chat = Chat(chat_help, M.config.auto_insert_mode, function(bufnr)
-    map_key(M.config.mappings.complete, bufnr, complete)
-    map_key(M.config.mappings.reset, bufnr, M.reset)
-    map_key(M.config.mappings.close, bufnr, M.close)
-
-    map_key(M.config.mappings.submit_prompt, bufnr, function()
-      local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-      local lines, start_line, end_line, line_count =
-        find_lines_between_separator(chat_lines, M.config.separator .. '$')
-      local input = vim.trim(table.concat(lines, '\n'))
-      if input ~= '' then
-        -- If we are entering the input at the end, replace it
-        if line_count == end_line then
-          vim.api.nvim_buf_set_lines(bufnr, start_line, end_line, false, { '' })
+  state.chat = Chat(
+    M.config.show_help and key_to_info('show_help', M.config.mappings.show_help),
+    M.config.auto_insert_mode,
+    function(bufnr)
+      map_key(M.config.mappings.show_help, bufnr, function()
+        local chat_help = ''
+        local chat_keys = vim.tbl_keys(M.config.mappings)
+        table.sort(chat_keys, function(a, b)
+          a = M.config.mappings[a]
+          a = a.normal or a.insert
+          b = M.config.mappings[b]
+          b = b.normal or b.insert
+          return a < b
+        end)
+        for _, name in ipairs(chat_keys) do
+          local key = M.config.mappings[name]
+          chat_help = chat_help .. key_to_info(name, key) .. '\n'
         end
-        M.ask(input, state.config, state.source)
-      end
-    end)
+        chat_help = chat_help .. M.config.separator .. '\n'
+        state.help:show(chat_help, 'markdown', 'markdown', state.chat.winnr)
+      end)
 
-    map_key(M.config.mappings.accept_diff, bufnr, function()
-      local selection = get_selection()
-      if not selection.start_row or not selection.end_row then
-        return
-      end
+      map_key(M.config.mappings.complete, bufnr, complete)
+      map_key(M.config.mappings.reset, bufnr, M.reset)
+      map_key(M.config.mappings.close, bufnr, M.close)
 
-      local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-      local section_lines =
-        find_lines_between_separator(chat_lines, M.config.separator .. '$', true)
-      local lines = find_lines_between_separator(section_lines, '^```%w*$', true)
-      if #lines > 0 then
-        vim.api.nvim_buf_set_text(
-          state.source.bufnr,
-          selection.start_row - 1,
-          selection.start_col - 1,
-          selection.end_row - 1,
-          selection.end_col,
-          lines
-        )
-      end
-    end)
+      map_key(M.config.mappings.submit_prompt, bufnr, function()
+        local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+        local lines, start_line, end_line, line_count =
+          find_lines_between_separator(chat_lines, M.config.separator .. '$')
+        local input = vim.trim(table.concat(lines, '\n'))
+        if input ~= '' then
+          -- If we are entering the input at the end, replace it
+          if line_count == end_line then
+            vim.api.nvim_buf_set_lines(bufnr, start_line, end_line, false, { '' })
+          end
+          M.ask(input, state.config, state.source)
+        end
+      end)
 
-    map_key(M.config.mappings.yank_diff, bufnr, function()
-      local selection = get_selection()
-      if not selection.start_row or not selection.end_row then
-        return
-      end
+      map_key(M.config.mappings.accept_diff, bufnr, function()
+        local selection = get_selection()
+        if not selection.start_row or not selection.end_row then
+          return
+        end
 
-      local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-      local section_lines =
-        find_lines_between_separator(chat_lines, M.config.separator .. '$', true)
-      local lines = find_lines_between_separator(section_lines, '^```%w*$', true)
-      if #lines > 0 then
-        local content = table.concat(lines, '\n')
-        vim.fn.setreg(M.config.mappings.yank_diff.register, content)
-      end
-    end)
+        local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+        local section_lines =
+          find_lines_between_separator(chat_lines, M.config.separator .. '$', true)
+        local lines = find_lines_between_separator(section_lines, '^```%w*$', true)
+        if #lines > 0 then
+          vim.api.nvim_buf_set_text(
+            state.source.bufnr,
+            selection.start_row - 1,
+            selection.start_col - 1,
+            selection.end_row - 1,
+            selection.end_col,
+            lines
+          )
+        end
+      end)
 
-    map_key(M.config.mappings.show_diff, bufnr, function()
-      local selection = get_selection()
-      if not selection or not selection.start_row or not selection.end_row then
-        return
-      end
+      map_key(M.config.mappings.yank_diff, bufnr, function()
+        local selection = get_selection()
+        if not selection.start_row or not selection.end_row then
+          return
+        end
 
-      local chat_lines = vim.api.nvim_buf_get_lines(state.chat.bufnr, 0, -1, false)
-      local section_lines =
-        find_lines_between_separator(chat_lines, M.config.separator .. '$', true)
-      local lines =
-        table.concat(find_lines_between_separator(section_lines, '^```%w*$', true), '\n')
-      if vim.trim(lines) ~= '' then
-        state.last_code_output = lines
+        local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+        local section_lines =
+          find_lines_between_separator(chat_lines, M.config.separator .. '$', true)
+        local lines = find_lines_between_separator(section_lines, '^```%w*$', true)
+        if #lines > 0 then
+          local content = table.concat(lines, '\n')
+          vim.fn.setreg(M.config.mappings.yank_diff.register, content)
+        end
+      end)
+
+      map_key(M.config.mappings.show_diff, bufnr, function()
+        local selection = get_selection()
+        if not selection or not selection.start_row or not selection.end_row then
+          return
+        end
+
+        local chat_lines = vim.api.nvim_buf_get_lines(state.chat.bufnr, 0, -1, false)
+        local section_lines =
+          find_lines_between_separator(chat_lines, M.config.separator .. '$', true)
+        local lines =
+          table.concat(find_lines_between_separator(section_lines, '^```%w*$', true), '\n')
+        if vim.trim(lines) ~= '' then
+          state.last_code_output = lines
+
+          local filetype = selection.filetype or vim.bo[state.source.bufnr].filetype
+
+          local diff = tostring(vim.diff(selection.lines, lines, {
+            result_type = 'unified',
+            ignore_blank_lines = true,
+            ignore_whitespace = true,
+            ignore_whitespace_change = true,
+            ignore_whitespace_change_at_eol = true,
+            ignore_cr_at_eol = true,
+            algorithm = 'myers',
+            ctxlen = #selection.lines,
+          }))
+
+          state.diff:show(diff, filetype, 'diff', state.chat.winnr)
+        end
+      end)
+
+      map_key(M.config.mappings.show_system_prompt, bufnr, function()
+        local prompt = state.last_system_prompt or M.config.system_prompt
+        if not prompt then
+          return
+        end
+
+        state.system_prompt:show(prompt, 'markdown', 'markdown', state.chat.winnr)
+      end)
+
+      map_key(M.config.mappings.show_user_selection, bufnr, function()
+        local selection = get_selection()
+        if not selection.start_row or not selection.end_row then
+          return
+        end
 
         local filetype = selection.filetype or vim.bo[state.source.bufnr].filetype
-
-        local diff = tostring(vim.diff(selection.lines, lines, {
-          result_type = 'unified',
-          ignore_blank_lines = true,
-          ignore_whitespace = true,
-          ignore_whitespace_change = true,
-          ignore_whitespace_change_at_eol = true,
-          ignore_cr_at_eol = true,
-          algorithm = 'myers',
-          ctxlen = #selection.lines,
-        }))
-
-        state.diff:show(diff, filetype, 'diff', state.chat.winnr)
-      end
-    end)
-
-    map_key(M.config.mappings.show_system_prompt, bufnr, function()
-      local prompt = state.last_system_prompt or M.config.system_prompt
-      if not prompt then
-        return
-      end
-
-      state.system_prompt:show(prompt, 'markdown', 'markdown', state.chat.winnr)
-    end)
-
-    map_key(M.config.mappings.show_user_selection, bufnr, function()
-      local selection = get_selection()
-      if not selection.start_row or not selection.end_row then
-        return
-      end
-
-      local filetype = selection.filetype or vim.bo[state.source.bufnr].filetype
-      local lines = selection.lines
-      if vim.trim(lines) ~= '' then
-        state.user_selection:show(lines, filetype, filetype, state.chat.winnr)
-      end
-    end)
-
-    vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
-      buffer = state.chat.bufnr,
-      callback = function(ev)
-        if state.config.highlight_selection then
-          M.highlight_selection(ev.event == 'BufLeave')
+        local lines = selection.lines
+        if vim.trim(lines) ~= '' then
+          state.user_selection:show(lines, filetype, filetype, state.chat.winnr)
         end
-      end,
-    })
+      end)
 
-    if M.config.insert_at_end then
-      vim.api.nvim_create_autocmd({ 'InsertEnter' }, {
+      vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
         buffer = state.chat.bufnr,
-        callback = function()
-          vim.cmd('normal! 0')
-          vim.cmd('normal! G$')
-          vim.v.char = 'x'
+        callback = function(ev)
+          if state.config.highlight_selection then
+            M.highlight_selection(ev.event == 'BufLeave')
+          end
         end,
       })
-    end
 
-    append(M.config.question_header .. M.config.separator .. '\n\n')
-    state.chat:finish()
-  end)
+      if M.config.insert_at_end then
+        vim.api.nvim_create_autocmd({ 'InsertEnter' }, {
+          buffer = state.chat.bufnr,
+          callback = function()
+            vim.cmd('normal! 0')
+            vim.cmd('normal! G$')
+            vim.v.char = 'x'
+          end,
+        })
+      end
+
+      append(M.config.question_header .. M.config.separator .. '\n\n')
+      state.chat:finish()
+    end
+  )
 
   for name, prompt in pairs(M.prompts(true)) do
     vim.api.nvim_create_user_command('CopilotChat' .. name, function(args)
