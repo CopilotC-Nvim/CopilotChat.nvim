@@ -51,6 +51,7 @@ local select = require('CopilotChat.select')
 ---@field show_diff CopilotChat.config.mapping?
 ---@field show_system_prompt CopilotChat.config.mapping?
 ---@field show_user_selection CopilotChat.config.mapping?
+---@field show_help CopilotChat.config.mapping?
 
 --- CopilotChat default configuration
 ---@class CopilotChat.config
@@ -229,6 +230,9 @@ return {
     },
     show_user_selection = {
       normal = 'gs',
+    },
+    show_help = {
+      normal = 'gh',
     },
   },
 }
