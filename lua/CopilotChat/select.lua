@@ -161,7 +161,8 @@ function M.gitdiff(source, staged)
     return nil
   end
 
-  local cmd = 'git diff --no-color --no-ext-diff' .. (staged and ' --staged' or '')
+  local dir = vim.fn.getcwd()
+  local cmd = 'git -C ' .. dir .. ' diff --no-color --no-ext-diff' .. (staged and ' --staged' or '')
   local handle = io.popen(cmd)
   if not handle then
     return nil
