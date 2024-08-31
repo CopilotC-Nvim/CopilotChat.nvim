@@ -161,7 +161,13 @@ function M.gitdiff(source, staged)
     return nil
   end
 
-  local dir = vim.fn.getcwd()
+  local bufname = vim.api.nvim_buf_get_name(source.bufnr)
+  local file_path = bufname:gsub('^%w+://', '')
+  local dir = vim.fn.fnamemodify(file_path, ':h')
+  if not dir or dir == '' then
+    return nil
+  end
+
   local cmd = 'git -C ' .. dir .. ' diff --no-color --no-ext-diff' .. (staged and ' --staged' or '')
   local handle = io.popen(cmd)
   if not handle then
@@ -170,7 +176,6 @@ function M.gitdiff(source, staged)
 
   local result = handle:read('*a')
   handle:close()
-
   if not result or result == '' then
     return nil
   end
