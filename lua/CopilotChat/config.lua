@@ -157,7 +157,7 @@ return {
       prompt = '/COPILOT_GENERATE There is a problem in this code. Rewrite the code to show it with the bug fixed.',
     },
     Optimize = {
-      prompt = '/COPILOT_GENERATE Optimize the selected code to improve performance and readablilty.',
+      prompt = '/COPILOT_GENERATE Optimize the selected code to improve performance and readability.',
     },
     Docs = {
       prompt = '/COPILOT_GENERATE Please add documentation comment for the selection.',
