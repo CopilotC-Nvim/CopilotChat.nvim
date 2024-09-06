@@ -52,7 +52,7 @@ zbirenbaum
 nnoremap
 treyhunner
 nekowasabi
-readablilty
+readability
 deathbeam
 jellydn's
 gptlang
