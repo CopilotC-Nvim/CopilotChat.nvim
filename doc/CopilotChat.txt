@@ -142,7 +142,7 @@ COMMANDS COMING FROM DEFAULT PROMPTS
 - `:CopilotChatExplain` - Write an explanation for the active selection as paragraphs of text
 - `:CopilotChatReview` - Review the selected code
 - `:CopilotChatFix` - There is a problem in this code. Rewrite the code to show it with the bug fixed
-- `:CopilotChatOptimize` - Optimize the selected code to improve performance and readablilty
+- `:CopilotChatOptimize` - Optimize the selected code to improve performance and readability
 - `:CopilotChatDocs` - Please add documentation comment for the selection
 - `:CopilotChatTests` - Please generate tests for my code
 - `:CopilotChatFixDiagnostic` - Please assist with the following diagnostic issue in file
@@ -271,7 +271,7 @@ Also see here </lua/CopilotChat/config.lua>:
           prompt = '/COPILOT_GENERATE There is a problem in this code. Rewrite the code to show it with the bug fixed.',
         },
         Optimize = {
-          prompt = '/COPILOT_GENERATE Optimize the selected code to improve performance and readablilty.',
+          prompt = '/COPILOT_GENERATE Optimize the selected code to improve performance and readability.',
         },
         Docs = {
           prompt = '/COPILOT_GENERATE Please add documentation comment for the selection.',
