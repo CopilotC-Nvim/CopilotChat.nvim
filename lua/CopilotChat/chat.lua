@@ -148,14 +148,18 @@ end
 function Chat:open(config)
   self:validate()
 
-  if self:visible() then
-    return
-  end
-
   local window = config.window
   local layout = window.layout
   local width = window.width > 1 and window.width or math.floor(vim.o.columns * window.width)
   local height = window.height > 1 and window.height or math.floor(vim.o.lines * window.height)
+
+  if self.layout ~= layout then
+    self:close()
+  end
+
+  if self:visible() then
+    return
+  end
 
   if layout == 'float' then
     local win_opts = {

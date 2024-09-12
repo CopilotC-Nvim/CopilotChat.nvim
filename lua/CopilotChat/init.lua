@@ -124,9 +124,10 @@ end
 
 --- Append a string to the chat window.
 ---@param str (string)
-local function append(str)
+---@param config CopilotChat.config
+local function append(str, config)
   state.chat:append(str)
-  if M.config.auto_follow_cursor then
+  if config.auto_follow_cursor then
     state.chat:follow()
   end
 end
@@ -315,7 +316,6 @@ end
 ---@param source CopilotChat.config.source?
 function M.open(config, source)
   config = vim.tbl_deep_extend('force', M.config, config or {})
-  local should_reset = state.config and not utils.table_equals(config.window, state.config.window)
   state.config = config
   state.source = vim.tbl_extend('keep', source or {}, {
     bufnr = vim.api.nvim_get_current_buf(),
@@ -323,12 +323,6 @@ function M.open(config, source)
   })
 
   utils.return_to_normal_mode()
-
-  -- Recreate the window if the layout has changed
-  if should_reset then
-    M.close()
-  end
-
   state.chat:open(config)
   state.chat:follow()
   state.chat:focus()
@@ -385,7 +379,7 @@ function M.ask(prompt, config, source)
   M.open(config, source)
 
   if config.clear_chat_on_new_prompt then
-    M.stop(true)
+    M.stop(true, config)
   end
 
   state.last_system_prompt = system_prompt
@@ -402,11 +396,11 @@ function M.ask(prompt, config, source)
   end
 
   if state.copilot:stop() then
-    append('\n\n' .. config.question_header .. config.separator .. '\n\n')
+    append('\n\n' .. config.question_header .. config.separator .. '\n\n', config)
   end
 
-  append(updated_prompt)
-  append('\n\n' .. config.answer_header .. config.separator .. '\n\n')
+  append(updated_prompt, config)
+  append('\n\n' .. config.answer_header .. config.separator .. '\n\n', config)
 
   local selected_context = config.context
   if string.find(prompt, '@buffers') then
@@ -418,9 +412,9 @@ function M.ask(prompt, config, source)
 
   local function on_error(err)
     vim.schedule(function()
-      append('\n\n' .. config.error_header .. config.separator .. '\n\n')
-      append('```\n' .. err .. '\n```')
-      append('\n\n' .. config.question_header .. config.separator .. '\n\n')
+      append('\n\n' .. config.error_header .. config.separator .. '\n\n', config)
+      append('```\n' .. err .. '\n```', config)
+      append('\n\n' .. config.question_header .. config.separator .. '\n\n', config)
       state.chat:finish()
     end)
   end
@@ -447,7 +441,7 @@ function M.ask(prompt, config, source)
         on_error = on_error,
         on_done = function(response, token_count)
           vim.schedule(function()
-            append('\n\n' .. config.question_header .. config.separator .. '\n\n')
+            append('\n\n' .. config.question_header .. config.separator .. '\n\n', config)
             state.response = response
             if tiktoken.available() and token_count and token_count > 0 then
               state.chat:finish(token_count .. ' tokens used')
@@ -461,7 +455,7 @@ function M.ask(prompt, config, source)
         end,
         on_progress = function(token)
           vim.schedule(function()
-            append(token)
+            append(token, config)
           end)
         end,
       })
@@ -471,7 +465,9 @@ end
 
 --- Stop current copilot output and optionally reset the chat ten show the help message.
 ---@param reset boolean?
-function M.stop(reset)
+---@param config CopilotChat.config?
+function M.stop(reset, config)
+  config = vim.tbl_deep_extend('force', M.config, config or {})
   state.response = nil
   local stopped = reset and state.copilot:reset() or state.copilot:stop()
   local wrap = vim.schedule
@@ -485,16 +481,17 @@ function M.stop(reset)
     if reset then
       state.chat:clear()
     else
-      append('\n\n')
+      append('\n\n', config)
     end
-    append(M.config.question_header .. M.config.separator .. '\n\n')
+    append(M.config.question_header .. M.config.separator .. '\n\n', config)
     state.chat:finish()
   end)
 end
 
 --- Reset the chat window and show the help message.
-function M.reset()
-  M.stop(true)
+---@param config CopilotChat.config?
+function M.reset(config)
+  M.stop(true, config)
 end
 
 --- Save the chat history to a file.
@@ -535,20 +532,20 @@ function M.load(name, history_path)
   for i, message in ipairs(history) do
     if message.role == 'user' then
       if i > 1 then
-        append('\n\n')
+        append('\n\n', state.config)
       end
-      append(M.config.question_header .. M.config.separator .. '\n\n')
-      append(message.content)
+      append(M.config.question_header .. M.config.separator .. '\n\n', state.config)
+      append(message.content, state.config)
     elseif message.role == 'assistant' then
-      append('\n\n' .. M.config.answer_header .. M.config.separator .. '\n\n')
-      append(message.content)
+      append('\n\n' .. M.config.answer_header .. M.config.separator .. '\n\n', state.config)
+      append(message.content, state.config)
     end
   end
 
   if #history > 0 then
-    append('\n\n')
+    append('\n\n', state.config)
   end
-  append(M.config.question_header .. M.config.separator .. '\n\n')
+  append(M.config.question_header .. M.config.separator .. '\n\n', state.config)
 
   state.chat:finish()
   M.open()
@@ -852,7 +849,7 @@ function M.setup(config)
         })
       end
 
-      append(M.config.question_header .. M.config.separator .. '\n\n')
+      append(M.config.question_header .. M.config.separator .. '\n\n', M.config)
       state.chat:finish()
     end
   )
