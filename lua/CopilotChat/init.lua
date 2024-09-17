@@ -127,7 +127,7 @@ end
 ---@param config CopilotChat.config
 local function append(str, config)
   state.chat:append(str)
-  if config.auto_follow_cursor then
+  if config and config.auto_follow_cursor then
     state.chat:follow()
   end
 end
