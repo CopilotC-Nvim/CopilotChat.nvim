@@ -235,6 +235,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/13023797?v=4",
       "profile": "https://github.com/renxzen",
       "contributions": ["code", "doc"]
+    },
+    {
+      "login": "fjchen7",
+      "name": "fjchen7",
+      "avatar_url": "https://avatars.githubusercontent.com/u/10106636?v=4",
+      "profile": "https://github.com/fjchen7",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
