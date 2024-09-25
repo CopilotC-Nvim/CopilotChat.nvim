@@ -167,6 +167,7 @@ function M.gitdiff(source, staged)
   if not dir or dir == '' then
     return nil
   end
+  dir = dir:gsub('.git$', '')
 
   local cmd = 'git -C ' .. dir .. ' diff --no-color --no-ext-diff' .. (staged and ' --staged' or '')
   local handle = io.popen(cmd)
