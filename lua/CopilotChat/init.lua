@@ -356,7 +356,9 @@ function M.select_model()
       vim.ui.select(models, {
         prompt = 'Select a model',
       }, function(choice)
-        M.config.model = choice
+        if choice then
+          M.config.model = choice
+        end
       end)
     end)
   end)
