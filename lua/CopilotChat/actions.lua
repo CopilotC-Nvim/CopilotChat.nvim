@@ -14,7 +14,7 @@ function M.help_actions(config)
   local bufnr = vim.api.nvim_get_current_buf()
   local winnr = vim.api.nvim_get_current_win()
   local cursor = vim.api.nvim_win_get_cursor(winnr)
-  local line_diagnostics = vim.lsp.diagnostic.get_line_diagnostics(bufnr, cursor[1] - 1)
+  local line_diagnostics = vim.diagnostic.get(bufnr, { lnum = cursor[1] - 1 })
 
   if #line_diagnostics == 0 then
     return nil
