@@ -170,6 +170,7 @@ function Chat:open(config)
       relative = window.relative,
       border = window.border,
       title = window.title,
+      title_pos = window.title_pos,
       row = window.row or math.floor((vim.o.lines - height) / 2),
       col = window.col or math.floor((vim.o.columns - width) / 2),
     }
