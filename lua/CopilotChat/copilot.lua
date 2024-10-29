@@ -54,6 +54,7 @@ local version_headers = {
   ['editor-plugin-version'] = 'CopilotChat.nvim/2.0.0',
   ['user-agent'] = 'CopilotChat.nvim/2.0.0',
 }
+local claude_enabled = false
 
 local function uuid()
   local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
@@ -364,6 +365,36 @@ function Copilot:with_auth(on_done, on_error)
   end
 end
 
+function Copilot:enable_claude()
+  if claude_enabled then
+    return
+  end
+  self:with_auth(function()
+    local url = 'https://api.githubcopilot.com/models/claude-3.5-sonnet/policy'
+    local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
+    curl.post(url, {
+      timeout = timeout,
+      headers = headers,
+      proxy = self.proxy,
+      insecure = self.allow_insecure,
+      on_error = function(err)
+        err = 'Failed to enable Claude: ' .. vim.inspect(err)
+        log.error(err)
+      end,
+      body = temp_file('{"state": "enabled"}'),
+      callback = function(response)
+        if response.status ~= 200 then
+          local msg = 'Failed to enable Claude: ' .. tostring(response.status)
+          log.error(msg)
+          return
+        end
+        claude_enabled = true
+        log.info('Claude enabled')
+      end,
+    })
+  end)
+end
+
 --- Ask a question to Copilot
 ---@param prompt string: The prompt to send to Copilot
 ---@param opts CopilotChat.copilot.ask.opts: Options for the request
@@ -418,6 +449,10 @@ function Copilot:ask(prompt, opts)
       end
     end
     embeddings_message.files = filtered_files
+  end
+
+  if vim.startswith(model, 'claude') then
+    self:enable_claude()
   end
 
   local url = 'https://api.githubcopilot.com/chat/completions'
