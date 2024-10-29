@@ -182,11 +182,11 @@ end
 
 --- Check if the model can stream
 --- @param model_name string: The model name to check
-local function can_stream(model_name)
+local function is_o1(model_name)
   if vim.startswith(model_name, 'o1') then
-    return false
+    return true
   end
-  return true
+  return false
 end
 
 local function generate_ask_request(
@@ -200,10 +200,15 @@ local function generate_ask_request(
 )
   local messages = {}
 
+  local system_role = 'system'
+  if is_o1(model) then
+    system_role = 'user'
+  end
+
   if system_prompt ~= '' then
     table.insert(messages, {
       content = system_prompt,
-      role = 'system',
+      role = system_role,
     })
   end
 
@@ -214,14 +219,14 @@ local function generate_ask_request(
   if embeddings and #embeddings.files > 0 then
     table.insert(messages, {
       content = embeddings.header .. table.concat(embeddings.files, ''),
-      role = 'system',
+      role = system_role,
     })
   end
 
   if selection ~= '' then
     table.insert(messages, {
       content = selection,
-      role = 'system',
+      role = system_role,
     })
   end
 
@@ -230,7 +235,13 @@ local function generate_ask_request(
     role = 'user',
   })
 
-  if can_stream(model) then
+  if is_o1(model) then
+    return {
+      messages = messages,
+      stream = false,
+      model = model,
+    }
+  else
     return {
       intent = true,
       model = model,
@@ -239,12 +250,6 @@ local function generate_ask_request(
       temperature = temperature,
       top_p = 1,
       messages = messages,
-    }
-  else
-    return {
-      messages = messages,
-      stream = false,
-      model = model,
     }
   end
 end
