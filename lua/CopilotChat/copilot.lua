@@ -181,6 +181,15 @@ local function generate_embeddings_message(embeddings)
   return out
 end
 
+--- Check if the model can stream
+--- @param model_name string: The model name to check
+local function can_stream(model_name)
+  if vim.startswith(model_name, 'o1') then
+    return false
+  end
+  return true
+end
+
 local function generate_ask_request(
   history,
   prompt,
@@ -222,15 +231,23 @@ local function generate_ask_request(
     role = 'user',
   })
 
-  return {
-    intent = true,
-    model = model,
-    n = 1,
-    stream = true,
-    temperature = temperature,
-    top_p = 1,
-    messages = messages,
-  }
+  if can_stream(model) then
+    return {
+      intent = true,
+      model = model,
+      n = 1,
+      stream = true,
+      temperature = temperature,
+      top_p = 1,
+      messages = messages,
+    }
+  else
+    return {
+      messages = messages,
+      stream = false,
+      model = model,
+    }
+  end
 end
 
 local function generate_embedding_request(inputs, model)
