@@ -1,26 +1,45 @@
 local M = {}
 
 local function get_selection_lines(bufnr, start_line, start_col, finish_line, finish_col, full_line)
+  -- Exit if no actual selection
   if start_line == finish_line and start_col == finish_col then
     return nil
   end
 
+  -- Get line lengths before swapping
+  local function get_line_length(line)
+    return #vim.api.nvim_buf_get_lines(bufnr, line - 1, line, false)[1]
+  end
+
+  -- Swap positions if selection is backwards
   if start_line > finish_line or (start_line == finish_line and start_col > finish_col) then
     start_line, finish_line = finish_line, start_line
     start_col, finish_col = finish_col, start_col
   end
 
+  -- Handle full line selection
   if full_line then
     start_col = 1
+    finish_col = get_line_length(finish_line)
   end
 
-  local finish_line_len = #vim.api.nvim_buf_get_lines(bufnr, finish_line - 1, finish_line, false)[1]
-  if finish_col > finish_line_len or full_line then
-    finish_col = finish_line_len
-  end
+  -- Ensure columns are within valid bounds
+  start_col = math.max(1, math.min(start_col, get_line_length(start_line)))
+  finish_col = math.max(start_col, math.min(finish_col, get_line_length(finish_line)))
 
-  local lines =
-    vim.api.nvim_buf_get_text(bufnr, start_line - 1, start_col - 1, finish_line - 1, finish_col, {})
+  -- Get selected text
+  local ok, lines = pcall(
+    vim.api.nvim_buf_get_text,
+    bufnr,
+    start_line - 1,
+    start_col - 1,
+    finish_line - 1,
+    finish_col,
+    {}
+  )
+  if not ok then
+    return nil
+  end
 
   local lines_content = table.concat(lines, '\n')
   if vim.trim(lines_content) == '' then
