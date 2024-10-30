@@ -184,11 +184,8 @@ end
 
 --- Check if the model can stream
 --- @param model_name string: The model name to check
-local function is_o1(model_name)
-  if vim.startswith(model_name, 'o1') then
-    return true
-  end
-  return false
+local function can_stream(model_name)
+  return not vim.startswith(model_name, 'o1')
 end
 
 local function generate_ask_request(
@@ -203,7 +200,7 @@ local function generate_ask_request(
   local messages = {}
 
   local system_role = 'system'
-  if is_o1(model) then
+  if not can_stream(model) then
     system_role = 'user'
   end
 
@@ -237,13 +234,7 @@ local function generate_ask_request(
     role = 'user',
   })
 
-  if is_o1(model) then
-    return {
-      messages = messages,
-      stream = false,
-      model = model,
-    }
-  else
+  if can_stream(model) then
     return {
       intent = true,
       model = model,
@@ -252,6 +243,12 @@ local function generate_ask_request(
       temperature = temperature,
       top_p = 1,
       messages = messages,
+    }
+  else
+    return {
+      messages = messages,
+      stream = false,
+      model = model,
     }
   end
 end
@@ -365,11 +362,13 @@ function Copilot:with_auth(on_done, on_error)
   end
 end
 
-function Copilot:enable_claude()
-  if claude_enabled then
-    return
-  end
+function Copilot:with_claude(on_done, on_error)
   self:with_auth(function()
+    if claude_enabled then
+      on_done()
+      return
+    end
+
     local url = 'https://api.githubcopilot.com/models/claude-3.5-sonnet/policy'
     local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
     curl.post(url, {
@@ -380,16 +379,24 @@ function Copilot:enable_claude()
       on_error = function(err)
         err = 'Failed to enable Claude: ' .. vim.inspect(err)
         log.error(err)
+        if on_error then
+          on_error(err)
+        end
       end,
       body = temp_file('{"state": "enabled"}'),
       callback = function(response)
         if response.status ~= 200 then
           local msg = 'Failed to enable Claude: ' .. tostring(response.status)
           log.error(msg)
+          if on_error then
+            on_error(msg)
+          end
           return
         end
+
         claude_enabled = true
         log.info('Claude enabled')
+        on_done()
       end,
     })
   end)
@@ -438,6 +445,7 @@ function Copilot:ask(prompt, opts)
   current_count = current_count + tiktoken.count(system_prompt)
   current_count = current_count + tiktoken.count(selection_message)
 
+  -- Limit the number of files to send
   if #embeddings_message.files > 0 then
     local filtered_files = {}
     current_count = current_count + tiktoken.count(embeddings_message.header)
@@ -449,10 +457,6 @@ function Copilot:ask(prompt, opts)
       end
     end
     embeddings_message.files = filtered_files
-  end
-
-  if vim.startswith(model, 'claude') then
-    self:enable_claude()
   end
 
   local url = 'https://api.githubcopilot.com/chat/completions'
@@ -476,8 +480,8 @@ function Copilot:ask(prompt, opts)
 
   local errored = false
   local full_response = ''
-  ---@type fun(err: string, line: string)?
-  local stream_func = function(err, line)
+
+  local function stream_func(err, line)
     if not line or errored then
       return
     end
@@ -539,12 +543,8 @@ function Copilot:ask(prompt, opts)
     -- Collect full response incrementally so we can insert it to history later
     full_response = full_response .. content
   end
-  if is_o1(model) then
-    stream_func = nil
-  end
 
-  ---@type fun(response: table)?
-  local nonstream_callback = function(response)
+  local function callback_func(response)
     if response.status ~= 200 then
       local err = 'Failed to get response: ' .. tostring(response.status)
       log.error(err)
@@ -585,11 +585,13 @@ function Copilot:ask(prompt, opts)
     })
   end
 
-  if not is_o1(model) then
-    nonstream_callback = nil
+  local is_stream = can_stream(model)
+  local with_auth = self.with_auth
+  if vim.startswith(model, 'claude') then
+    with_auth = self.with_claude
   end
 
-  self:with_auth(function()
+  with_auth(self, function()
     local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
     self.current_job = curl
       .post(url, {
@@ -598,7 +600,8 @@ function Copilot:ask(prompt, opts)
         body = temp_file(body),
         proxy = self.proxy,
         insecure = self.allow_insecure,
-        callback = nonstream_callback,
+        callback = (not is_stream) and callback_func or nil,
+        stream = is_stream and stream_func or nil,
         on_error = function(err)
           err = 'Failed to get response: ' .. vim.inspect(err)
           log.error(err)
@@ -606,7 +609,6 @@ function Copilot:ask(prompt, opts)
             on_error(err)
           end
         end,
-        stream = stream_func,
       })
       :after(function()
         self.current_job = nil
