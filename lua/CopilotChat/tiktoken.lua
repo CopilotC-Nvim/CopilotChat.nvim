@@ -5,6 +5,7 @@ local tiktoken_core = nil
 ---@param fname string
 ---@return string
 local function get_cache_path(fname)
+  vim.fn.mkdir(vim.fn.stdpath('cache'), 'p')
   return vim.fn.stdpath('cache') .. '/' .. fname
 end
 
