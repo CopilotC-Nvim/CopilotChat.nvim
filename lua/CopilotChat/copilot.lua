@@ -541,7 +541,7 @@ function Copilot:ask(prompt, opts)
     })
 
     if not ok then
-      err = 'Failed parse response: \n' .. line .. '\n' .. vim.inspect(content)
+      err = 'Failed to parse response: ' .. vim.inspect(content) .. '\n' .. line
       log.error(err)
       return
     end
@@ -581,7 +581,7 @@ function Copilot:ask(prompt, opts)
     })
 
     if not ok then
-      local err = 'Failed parse response: ' .. vim.inspect(content)
+      local err = 'Failed to parse response: ' .. vim.inspect(content) .. '\n' .. response.body
       log.error(err)
       if on_error then
         on_error(err)
@@ -748,7 +748,7 @@ function Copilot:embed(inputs, opts)
 
           if not ok then
             local err = vim.inspect(content)
-            log.error('Failed parse response: ' .. err)
+            log.error('Failed to parse response: ' .. err .. '\n' .. response.body)
             resolve()
             return
           end
