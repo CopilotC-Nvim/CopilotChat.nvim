@@ -397,7 +397,7 @@ function Copilot:with_claude(on_done, on_error)
       body = temp_file('{"state": "enabled"}'),
       callback = function(response)
         if response.status ~= 200 then
-          if string.find(response.content, business_check) then
+          if string.find(tostring(response.body), business_check) then
             claude_enabled = true
             log.info(business_msg)
             on_done()
