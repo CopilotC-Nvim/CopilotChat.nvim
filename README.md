@@ -95,7 +95,7 @@ require("CopilotChat").setup {
 
 See @deathbeam for [configuration](https://github.com/deathbeam/dotfiles/blob/master/nvim/.config/nvim/lua/config/copilot.lua#L14)
 
-## Post-Installation
+### Post-Installation
 
 Verify "[Copilot chat in the IDE](https://github.com/settings/copilot)" is enabled.
 
