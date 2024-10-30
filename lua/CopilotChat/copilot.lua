@@ -369,6 +369,10 @@ function Copilot:with_claude(on_done, on_error)
       return
     end
 
+    local business_check = 'cannot enable policy inline for business users'
+    local business_msg =
+      'Claude is probably enabled (for business users needs to be enabled manually).'
+
     local url = 'https://api.githubcopilot.com/models/claude-3.5-sonnet/policy'
     local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
     curl.post(url, {
@@ -378,6 +382,13 @@ function Copilot:with_claude(on_done, on_error)
       insecure = self.allow_insecure,
       on_error = function(err)
         err = 'Failed to enable Claude: ' .. vim.inspect(err)
+        if string.find(err, business_check) then
+          claude_enabled = true
+          log.info(business_msg)
+          on_done()
+          return
+        end
+
         log.error(err)
         if on_error then
           on_error(err)
@@ -386,7 +397,15 @@ function Copilot:with_claude(on_done, on_error)
       body = temp_file('{"state": "enabled"}'),
       callback = function(response)
         if response.status ~= 200 then
+          if string.find(response.content, business_check) then
+            claude_enabled = true
+            log.info(business_msg)
+            on_done()
+            return
+          end
+
           local msg = 'Failed to enable Claude: ' .. tostring(response.status)
+
           log.error(msg)
           if on_error then
             on_error(msg)
