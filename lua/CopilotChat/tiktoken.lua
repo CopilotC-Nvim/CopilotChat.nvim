@@ -26,10 +26,11 @@ local function load_tiktoken_data(done, model)
   if model ~= nil and vim.startswith(model, 'gpt-4o') then
     tiktoken_url = 'https://openaipublic.blob.core.windows.net/encodings/o200k_base.tiktoken'
   end
+  -- Take filename after the last slash of the url
+  local cache_path = get_cache_path(tiktoken_url:match('.+/(.+)'))
+
   local async
   async = vim.loop.new_async(function()
-    -- Take filename after the last slash of the url
-    local cache_path = get_cache_path(tiktoken_url:match('.+/(.+)'))
     if not file_exists(cache_path) then
       vim.schedule(function()
         curl.get(tiktoken_url, {
