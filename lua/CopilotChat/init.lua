@@ -6,7 +6,6 @@ local Overlay = require('CopilotChat.overlay')
 local context = require('CopilotChat.context')
 local prompts = require('CopilotChat.prompts')
 local debuginfo = require('CopilotChat.debuginfo')
-local tiktoken = require('CopilotChat.tiktoken')
 local utils = require('CopilotChat.utils')
 
 local M = {}
@@ -351,7 +350,7 @@ end
 
 --- Select a Copilot GPT model.
 function M.select_model()
-  state.copilot:select_model(function(models)
+  state.copilot:list_models(function(models)
     vim.schedule(function()
       vim.ui.select(models, {
         prompt = 'Select a model',
@@ -445,7 +444,7 @@ function M.ask(prompt, config, source)
           vim.schedule(function()
             append('\n\n' .. config.question_header .. config.separator .. '\n\n', config)
             state.response = response
-            if tiktoken.available() and token_count and token_count > 0 then
+            if token_count and token_count > 0 then
               state.chat:finish(token_count .. ' tokens used')
             else
               state.chat:finish()
@@ -606,9 +605,9 @@ function M.setup(config)
   if state.copilot then
     state.copilot:stop()
   else
-    tiktoken.setup((config and config.model) or nil)
     debuginfo.setup()
   end
+
   state.copilot = Copilot(M.config.proxy, M.config.allow_insecure)
   M.debug(M.config.debug)
 
