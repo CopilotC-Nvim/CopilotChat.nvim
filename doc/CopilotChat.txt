@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0         Last change: 2024 October 30
+*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 November 01
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -117,6 +117,12 @@ MANUAL ~
 
 See @deathbeam for configuration
 <https://github.com/deathbeam/dotfiles/blob/master/nvim/.config/nvim/lua/config/copilot.lua#L14>
+
+
+POST-INSTALLATION ~
+
+Verify "Copilot chat in the IDE <https://github.com/settings/copilot>" is
+enabled.
 
 
 USAGE                                                      *CopilotChat-usage*
