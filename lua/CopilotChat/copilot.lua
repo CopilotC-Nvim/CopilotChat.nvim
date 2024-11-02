@@ -623,7 +623,7 @@ function Copilot:ask(prompt, opts)
             end
 
             table.insert(self.history, {
-              content = full_response,
+              content = content,
               role = 'assistant',
             })
             return
