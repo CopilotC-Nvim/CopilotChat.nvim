@@ -23,12 +23,12 @@ local function load_tiktoken_data(done, tokenizer)
   local tiktoken_url = 'https://openaipublic.blob.core.windows.net/encodings/'
     .. tokenizer
     .. '.tiktoken'
-  log.info('Downloading tiktoken data from ' .. tiktoken_url)
   local cache_path = get_cache_path(tiktoken_url:match('.+/(.+)'))
 
   local async
   async = vim.loop.new_async(function()
     if not file_exists(cache_path) then
+      log.info('Downloading tiktoken data from ' .. tiktoken_url)
       vim.schedule(function()
         curl.get(tiktoken_url, {
           output = cache_path,
