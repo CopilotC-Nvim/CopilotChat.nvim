@@ -664,7 +664,19 @@ end
 function Copilot:list_models(callback)
   self:with_auth(function()
     self:with_models(function()
-      callback(vim.tbl_keys(self.models))
+      -- Group models by version and shortest ID
+      local version_map = {}
+      for id, model in pairs(self.models) do
+        local version = model.version
+        if not version_map[version] or #id < #version_map[version] then
+          version_map[version] = id
+        end
+      end
+
+      -- Map to IDs and sort
+      local result = vim.tbl_values(version_map)
+      table.sort(result)
+      callback(result)
     end)
   end)
 end
