@@ -440,12 +440,12 @@ function M.ask(prompt, config, source)
         model = config.model,
         temperature = config.temperature,
         on_error = on_error,
-        on_done = function(response, token_count)
+        on_done = function(response, token_count, token_max_count)
           vim.schedule(function()
             append('\n\n' .. config.question_header .. config.separator .. '\n\n', config)
             state.response = response
-            if token_count and token_count > 0 then
-              state.chat:finish(token_count .. ' tokens used')
+            if token_count and token_max_count and token_count > 0 then
+              state.chat:finish(token_count .. '/' .. token_max_count .. ' tokens used')
             else
               state.chat:finish()
             end

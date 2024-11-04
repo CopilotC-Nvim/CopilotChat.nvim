@@ -99,7 +99,7 @@ function M.check()
     ok('tiktoken_core: installed')
   else
     warn(
-      'tiktoken_core: missing, optional for token counting. See README for installation instructions.'
+      'tiktoken_core: missing, optional for accurate token counting. See README for installation instructions.'
     )
   end
 
