@@ -1,5 +1,5 @@
 UNAME := $(shell uname)
-ARCH := $(shell uname -m)
+ARCH := $(patsubst aarch64,arm64,$(shell uname -m))
 
 ifeq ($(UNAME), Linux)
     OS := linux
@@ -46,14 +46,14 @@ lua51: $(BUILD_DIR)/tiktoken_core-lua51.$(EXT)
 
 
 define download_release
-	curl -L https://github.com/gptlang/lua-tiktoken/releases/latest/download/tiktoken_core-$(1)-$(2).$(EXT) -o $(3)
+	curl -LSsf https://github.com/gptlang/lua-tiktoken/releases/latest/download/tiktoken_core-$(1)-$(2)-$(3).$(EXT) -o $(4)
 endef
 
 $(BUILD_DIR)/tiktoken_core.$(EXT): | $(BUILD_DIR)
-	$(call download_release,$(OS),luajit,$@)
+	$(call download_release,$(OS),$(ARCH),luajit,$@)
 
 $(BUILD_DIR)/tiktoken_core-lua51.$(EXT): | $(BUILD_DIR)
-	$(call download_release,$(OS),lua51,$@)
+	$(call download_release,$(OS),$(ARCH),lua51,$@)
 
 tiktoken: $(BUILD_DIR)/tiktoken_core.$(EXT) $(BUILD_DIR)/tiktoken_core-lua51.$(EXT)
 
