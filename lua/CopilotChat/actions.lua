@@ -24,11 +24,11 @@ function M.help_actions(config)
     prompt = 'Copilot Chat Help Actions',
     actions = {
       ['Fix diagnostic'] = vim.tbl_extend('keep', {
-        prompt = 'Please assist with fixing the following diagnostic issue in file: "',
+        prompt = 'Please assist with fixing the following diagnostic issue in file:',
         selection = select.diagnostics,
       }, config or {}),
       ['Explain diagnostic'] = vim.tbl_extend('keep', {
-        prompt = 'Please explain the following diagnostic issue in file: "',
+        prompt = 'Please explain the following diagnostic issue in file:',
         selection = select.diagnostics,
       }, config or {}),
     },
