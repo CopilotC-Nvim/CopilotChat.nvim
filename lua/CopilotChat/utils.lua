@@ -104,8 +104,7 @@ end
 function M.return_to_normal_mode()
   local mode = vim.fn.mode():lower()
   if mode:find('v') then
-    -- NOTE: vim.cmd('normal! v') does not work properly when executed from keymap
-    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<esc>', true, false, true), 'x', false)
+    vim.cmd([[execute "normal! \<Esc>"]])
   elseif mode:find('i') then
     vim.cmd('stopinsert')
   end
