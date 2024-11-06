@@ -18,6 +18,11 @@ function M.pick(pick_actions, opts)
     preview = function(items)
       return pick_actions.actions[items[1]].prompt
     end,
+    winopts = {
+      preview = {
+        wrap = 'wrap',
+      },
+    },
     actions = {
       ['default'] = function(selected)
         if not selected or vim.tbl_isempty(selected) then
