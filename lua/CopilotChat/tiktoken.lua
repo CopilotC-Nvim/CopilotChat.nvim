@@ -25,22 +25,18 @@ local function load_tiktoken_data(done, tokenizer)
     .. '.tiktoken'
   local cache_path = get_cache_path(tiktoken_url:match('.+/(.+)'))
 
-  local async
-  async = vim.loop.new_async(function()
-    if not file_exists(cache_path) then
-      log.info('Downloading tiktoken data from ' .. tiktoken_url)
-      vim.schedule(function()
-        curl.get(tiktoken_url, {
-          output = cache_path,
-        })
-        done(cache_path)
-      end)
-    else
+  if file_exists(cache_path) then
+    done(cache_path)
+    return
+  end
+
+  log.info('Downloading tiktoken data from ' .. tiktoken_url)
+  curl.get(tiktoken_url, {
+    output = cache_path,
+    callback = function()
       done(cache_path)
-    end
-    async:close()
-  end)
-  async:send()
+    end,
+  })
 end
 
 local M = {}
@@ -58,20 +54,23 @@ function M.load(tokenizer, on_done)
   end
 
   vim.schedule(function()
-    load_tiktoken_data(function(path)
-      local special_tokens = {}
-      special_tokens['<|endoftext|>'] = 100257
-      special_tokens['<|fim_prefix|>'] = 100258
-      special_tokens['<|fim_middle|>'] = 100259
-      special_tokens['<|fim_suffix|>'] = 100260
-      special_tokens['<|endofprompt|>'] = 100276
-      local pat_str =
-        "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
-      core.new(path, special_tokens, pat_str)
-      tiktoken_core = core
-      current_tokenizer = tokenizer
-      on_done()
-    end, tokenizer)
+    load_tiktoken_data(
+      vim.schedule_wrap(function(path)
+        local special_tokens = {}
+        special_tokens['<|endoftext|>'] = 100257
+        special_tokens['<|fim_prefix|>'] = 100258
+        special_tokens['<|fim_middle|>'] = 100259
+        special_tokens['<|fim_suffix|>'] = 100260
+        special_tokens['<|endofprompt|>'] = 100276
+        local pat_str =
+          "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
+        core.new(path, special_tokens, pat_str)
+        tiktoken_core = core
+        current_tokenizer = tokenizer
+        on_done()
+      end),
+      tokenizer
+    )
   end)
 end
 
