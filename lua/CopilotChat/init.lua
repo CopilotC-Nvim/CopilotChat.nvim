@@ -931,4 +931,105 @@ function M.setup(config)
   end, { nargs = '*', force = true, complete = complete_load })
 end
 
+--- Ask a question to the Copilot agent.
+---@param prompt string
+---@param config CopilotChat.config|CopilotChat.config.prompt|nil
+---@param source CopilotChat.config.source?
+function M.ask_agent(prompt, config, source)
+  config = vim.tbl_deep_extend('force', M.config, config or {})
+  prompt = prompt or ''
+  local system_prompt, updated_prompt = update_prompts(prompt, config.system_prompt)
+  updated_prompt = vim.trim(updated_prompt)
+  if updated_prompt == '' then
+    M.open(config, source)
+    return
+  end
+
+  M.open(config, source)
+
+  if config.clear_chat_on_new_prompt then
+    M.stop(true, config)
+  end
+
+  state.last_system_prompt = system_prompt
+  local selection = get_selection()
+  local filetype = selection.filetype
+    or (vim.api.nvim_buf_is_valid(state.source.bufnr) and vim.bo[state.source.bufnr].filetype)
+  local filename = selection.filename
+    or (
+      vim.api.nvim_buf_is_valid(state.source.bufnr)
+      and vim.api.nvim_buf_get_name(state.source.bufnr)
+    )
+  if selection.prompt_extra then
+    updated_prompt = updated_prompt .. ' ' .. selection.prompt_extra
+  end
+
+  if state.copilot:stop() then
+    append('\n\n' .. config.question_header .. config.separator .. '\n\n', config)
+  end
+
+  append(updated_prompt, config)
+  append('\n\n' .. config.answer_header .. config.separator .. '\n\n', config)
+
+  local selected_context = config.context
+  if string.find(prompt, '@buffers') then
+    selected_context = 'buffers'
+  elseif string.find(prompt, '@buffer') then
+    selected_context = 'buffer'
+  end
+  updated_prompt = string.gsub(updated_prompt, '@buffers?%s*', '')
+
+  local function on_error(err)
+    vim.schedule(function()
+      append('\n\n' .. config.error_header .. config.separator .. '\n\n', config)
+      append('```\n' .. err .. '\n```', config)
+      append('\n\n' .. config.question_header .. config.separator .. '\n\n', config)
+      state.chat:finish()
+    end)
+  end
+
+  context.find_for_query(state.copilot, {
+    context = selected_context,
+    prompt = updated_prompt,
+    selection = selection.lines,
+    filename = filename,
+    filetype = filetype,
+    bufnr = state.source.bufnr,
+    on_error = on_error,
+    on_done = function(embeddings)
+      state.copilot:ask_agent(updated_prompt, {
+        selection = selection.lines,
+        embeddings = embeddings,
+        filename = filename,
+        filetype = filetype,
+        start_row = selection.start_row,
+        end_row = selection.end_row,
+        system_prompt = system_prompt,
+        model = config.model,
+        temperature = config.temperature,
+        on_error = on_error,
+        on_done = function(response, token_count, token_max_count)
+          vim.schedule(function()
+            append('\n\n' .. config.question_header .. config.separator .. '\n\n', config)
+            state.response = response
+            if token_count and token_max_count and token_count > 0 then
+              state.chat:finish(token_count .. '/' .. token_max_count .. ' tokens used')
+            else
+              state.chat:finish()
+            end
+            if config.callback then
+              config.callback(response, state.source)
+            end
+          end)
+        end,
+        on_progress = function(token)
+          vim.schedule(function()
+            append(token, config)
+          end)
+        end,
+      })
+    end,
+  })
+end
+
 return M
