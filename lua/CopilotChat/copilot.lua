@@ -74,6 +74,31 @@ local function machine_id()
   return hex
 end
 
+local function sanitize_text(model, text)
+  if not text then
+    return ''
+  end
+
+  if not vim.startswith(model, 'claude') then
+    return text
+  end
+
+  -- Remove various emoji, symbols, and special characters:
+  return text:gsub(
+    '[\u{1F000}-\u{1F9FF}' -- Extended emoji and symbols
+      .. '\u{2600}-\u{26FF}' -- Miscellaneous symbols
+      .. '\u{2700}-\u{27BF}' -- Dingbats
+      .. '\u{FE00}-\u{FE0F}' -- Variation Selectors
+      .. '\u{1F1E6}-\u{1F1FF}' -- Regional indicator symbols
+      .. '\u{1F300}-\u{1F5FF}' -- Miscellaneous Symbols and Pictographs
+      .. '\u{1F600}-\u{1F64F}' -- Emoticons
+      .. '\u{1F680}-\u{1F6FF}' -- Transport and Map Symbols
+      .. '\u{1F900}-\u{1F9FF}' -- Supplemental Symbols and Pictographs
+      .. '\u{E000}-\u{F8FF}]', -- Private Use Area
+    ''
+  )
+end
+
 local function find_config_path()
   local config = vim.fn.expand('$XDG_CONFIG_HOME')
   if config and vim.fn.isdirectory(config) > 0 then
@@ -561,15 +586,18 @@ function Copilot:ask(prompt, opts)
 
         -- Generate the request
         local url = 'https://api.githubcopilot.com/chat/completions'
-        local body = vim.json.encode(
-          generate_ask_request(
-            self.history,
-            prompt,
-            embeddings_message,
-            selection_message,
-            system_prompt,
-            model,
-            temperature
+        local body = sanitize_text(
+          model,
+          vim.json.encode(
+            generate_ask_request(
+              self.history,
+              prompt,
+              embeddings_message,
+              selection_message,
+              system_prompt,
+              model,
+              temperature
+            )
           )
         )
 
@@ -744,7 +772,7 @@ function Copilot:embed(inputs, opts)
 
   local jobs = {}
   for _, chunk in ipairs(chunks) do
-    local body = vim.json.encode(generate_embedding_request(chunk, model))
+    local body = sanitize_text(model, vim.json.encode(generate_embedding_request(chunk, model)))
 
     table.insert(jobs, function(resolve)
       local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
