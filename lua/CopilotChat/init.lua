@@ -586,14 +586,15 @@ function M.load(name, history_path)
   M.open()
 end
 
---- Enables/disables debug
----@param debug boolean
-function M.debug(debug)
-  M.config.debug = debug
+--- Set the log level
+---@param level string
+function M.log_level(level)
+  M.config.log_level = level
+  M.config.debug = level == 'debug'
   local logfile = string.format('%s/%s.log', vim.fn.stdpath('state'), plugin_name)
   log.new({
     plugin = plugin_name,
-    level = debug and 'debug' or 'info',
+    level = level,
     outfile = logfile,
   }, true)
   log.logfile = logfile
@@ -643,7 +644,12 @@ function M.setup(config)
   end
 
   state.copilot = Copilot(M.config.proxy, M.config.allow_insecure)
-  M.debug(M.config.debug)
+
+  if M.config.debug then
+    M.log_level('debug')
+  else
+    M.log_level(M.config.log_level)
+  end
 
   local hl_ns = vim.api.nvim_create_namespace('copilot-chat-highlights')
   vim.api.nvim_set_hl(hl_ns, '@diff.plus', { bg = blend_color_with_neovim_bg('DiffAdd', 20) })

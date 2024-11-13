@@ -41,8 +41,7 @@ return {
     },
     build = "make tiktoken", -- Only on MacOS or Linux
     opts = {
-      debug = true, -- Enable debugging
-      -- See Configuration section for rest
+      -- See Configuration section for options
     },
     -- See Commands section for default commands if you want to lazy load on them
   },
@@ -64,8 +63,7 @@ call plug#end()
 
 lua << EOF
 require("CopilotChat").setup {
-  debug = true, -- Enable debugging
-  -- See Configuration section for rest
+  -- See Configuration section for options
 }
 EOF
 ```
@@ -88,8 +86,7 @@ git clone -b canary https://github.com/CopilotC-Nvim/CopilotChat.nvim
 
 ```lua
 require("CopilotChat").setup {
-  debug = true, -- Enable debugging
-  -- See Configuration section for rest
+  -- See Configuration section for options
 }
 ```
 
@@ -191,6 +188,9 @@ actions.pick(actions.help_actions())
 actions.pick(actions.prompt_actions({
     selection = require("CopilotChat.select").visual,
 }))
+
+-- Programatically set log level
+chat.log_level("debug")
 ```
 
 ## Configuration
@@ -201,7 +201,8 @@ Also see [here](/lua/CopilotChat/config.lua):
 
 ```lua
 {
-  debug = false, -- Enable debug logging
+  debug = false, -- Enable debug logging (same as 'log_level = 'debug')
+  log_level = 'info', -- Log level to use, 'trace', 'debug', 'info', 'warn', 'error', 'fatal'
   proxy = nil, -- [protocol://]host[:port] Use this proxy
   allow_insecure = false, -- Allow insecure server connections
 
