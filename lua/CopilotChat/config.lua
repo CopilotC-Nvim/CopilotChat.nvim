@@ -56,6 +56,7 @@ local select = require('CopilotChat.select')
 --- CopilotChat default configuration
 ---@class CopilotChat.config
 ---@field debug boolean?
+---@field log_level string?
 ---@field proxy string?
 ---@field allow_insecure boolean?
 ---@field system_prompt string?
@@ -79,7 +80,8 @@ local select = require('CopilotChat.select')
 ---@field window CopilotChat.config.window?
 ---@field mappings CopilotChat.config.mappings?
 return {
-  debug = false, -- Enable debug logging
+  debug = false, -- Enable debug logging (same as 'log_level = 'debug')
+  log_level = 'info', -- Log level to use, 'trace', 'debug', 'info', 'warn', 'error', 'fatal'
   proxy = nil, -- [protocol://]host[:port] Use this proxy
   allow_insecure = false, -- Allow insecure server connections
 
