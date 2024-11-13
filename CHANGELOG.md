@@ -1,5 +1,6 @@
 # Changelog
 
+
 ## [1.9.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.8.0...v1.9.0) (2024-02-24)
 
 
