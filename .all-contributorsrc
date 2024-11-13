@@ -270,6 +270,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/300342?v=4",
       "profile": "https://lisk.in/",
       "contributions": ["code"]
+    },
+    {
+      "login": "Moriango",
+      "name": "Toddneal Stallworth",
+      "avatar_url": "https://avatars.githubusercontent.com/u/43554061?v=4",
+      "profile": "https://github.com/Moriango",
+      "contributions": ["doc"]
     }
   ],
   "contributorsPerLine": 7,
