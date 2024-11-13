@@ -189,7 +189,7 @@ actions.pick(actions.prompt_actions({
     selection = require("CopilotChat.select").visual,
 }))
 
--- Programatically set log level
+-- Programmatically set log level
 chat.log_level("debug")
 ```
 
