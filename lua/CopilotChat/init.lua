@@ -1,4 +1,5 @@
 local default_config = require('CopilotChat.config')
+local async = require('plenary.async')
 local log = require('plenary.log')
 local Copilot = require('CopilotChat.copilot')
 local Chat = require('CopilotChat.chat')
@@ -350,7 +351,9 @@ end
 
 --- Select a Copilot GPT model.
 function M.select_model()
-  state.copilot:list_models(function(models)
+  async.run(function()
+    local models = state.copilot:list_models()
+
     vim.schedule(function()
       vim.ui.select(models, {
         prompt = 'Select a model',
@@ -383,7 +386,24 @@ function M.ask(prompt, config, source)
     M.stop(true, config)
   end
 
-  state.last_system_prompt = system_prompt
+  local function get_error_message(err)
+    if type(err) == 'string' then
+      local message = err:match(':.+:(.+)') or err
+      message = message:match('^%s*(.-)%s*$')
+      return message
+    end
+    return tostring(err)
+  end
+
+  local function on_error(err)
+    vim.schedule(function()
+      append('\n\n' .. config.error_header .. config.separator .. '\n\n', config)
+      append('```\n' .. get_error_message(err) .. '\n```', config)
+      append('\n\n' .. config.question_header .. config.separator .. '\n\n', config)
+      state.chat:finish()
+    end)
+  end
+
   local selection = get_selection()
   local filetype = selection.filetype
     or (vim.api.nvim_buf_is_valid(state.source.bufnr) and vim.bo[state.source.bufnr].filetype)
@@ -392,6 +412,19 @@ function M.ask(prompt, config, source)
       vim.api.nvim_buf_is_valid(state.source.bufnr)
       and vim.api.nvim_buf_get_name(state.source.bufnr)
     )
+
+  if not filetype then
+    on_error('No filetype found for the current buffer')
+    return
+  end
+
+  if not filename then
+    on_error('No filename found for the current buffer')
+    return
+  end
+
+  state.last_system_prompt = system_prompt
+
   if selection.prompt_extra then
     updated_prompt = updated_prompt .. ' ' .. selection.prompt_extra
   end
@@ -411,25 +444,23 @@ function M.ask(prompt, config, source)
   end
   updated_prompt = string.gsub(updated_prompt, '@buffers?%s*', '')
 
-  local function on_error(err)
-    vim.schedule(function()
-      append('\n\n' .. config.error_header .. config.separator .. '\n\n', config)
-      append('```\n' .. err .. '\n```', config)
-      append('\n\n' .. config.question_header .. config.separator .. '\n\n', config)
-      state.chat:finish()
-    end)
-  end
+  async.run(function()
+    local query_ok, embeddings = pcall(context.find_for_query, state.copilot, {
+      context = selected_context,
+      prompt = updated_prompt,
+      selection = selection.lines,
+      filename = filename,
+      filetype = filetype,
+      bufnr = state.source.bufnr,
+    })
 
-  context.find_for_query(state.copilot, {
-    context = selected_context,
-    prompt = updated_prompt,
-    selection = selection.lines,
-    filename = filename,
-    filetype = filetype,
-    bufnr = state.source.bufnr,
-    on_error = on_error,
-    on_done = function(embeddings)
-      state.copilot:ask(updated_prompt, {
+    if not query_ok then
+      on_error(embeddings)
+      return
+    end
+
+    local ask_ok, response, token_count, token_max_count =
+      pcall(state.copilot.ask, state.copilot, updated_prompt, {
         selection = selection.lines,
         embeddings = embeddings,
         filename = filename,
@@ -439,29 +470,32 @@ function M.ask(prompt, config, source)
         system_prompt = system_prompt,
         model = config.model,
         temperature = config.temperature,
-        on_error = on_error,
-        on_done = function(response, token_count, token_max_count)
-          vim.schedule(function()
-            append('\n\n' .. config.question_header .. config.separator .. '\n\n', config)
-            state.response = response
-            if token_count and token_max_count and token_count > 0 then
-              state.chat:finish(token_count .. '/' .. token_max_count .. ' tokens used')
-            else
-              state.chat:finish()
-            end
-            if config.callback then
-              config.callback(response, state.source)
-            end
-          end)
-        end,
         on_progress = function(token)
           vim.schedule(function()
             append(token, config)
           end)
         end,
       })
-    end,
-  })
+
+    if not ask_ok then
+      on_error(response)
+      return
+    end
+
+    state.response = response
+
+    vim.schedule(function()
+      append('\n\n' .. config.question_header .. config.separator .. '\n\n', config)
+      if token_count and token_max_count and token_count > 0 then
+        state.chat:finish(token_count .. '/' .. token_max_count .. ' tokens used')
+      else
+        state.chat:finish()
+      end
+      if config.callback then
+        config.callback(response, state.source)
+      end
+    end)
+  end)
 end
 
 --- Stop current copilot output and optionally reset the chat ten show the help message.

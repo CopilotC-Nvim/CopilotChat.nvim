@@ -185,12 +185,11 @@ end
 ---@field filename string
 ---@field filetype string
 ---@field bufnr number
----@field on_done function
----@field on_error function?
 
 --- Find items for a query
 ---@param copilot CopilotChat.Copilot
 ---@param opts CopilotChat.context.find_for_query.opts
+---@return table<CopilotChat.copilot.embed>
 function M.find_for_query(copilot, opts)
   local context = opts.context
   local prompt = opts.prompt
@@ -198,8 +197,6 @@ function M.find_for_query(copilot, opts)
   local filename = opts.filename
   local filetype = opts.filetype
   local bufnr = opts.bufnr
-  local on_done = opts.on_done
-  local on_error = opts.on_error
 
   local outline = {}
   if context == 'buffers' then
@@ -221,49 +218,37 @@ function M.find_for_query(copilot, opts)
   end, outline)
 
   if #outline == 0 then
-    on_done({})
-    return
+    return {}
   end
 
-  copilot:embed(outline, {
-    on_error = on_error,
-    on_done = function(out)
-      out = vim.tbl_filter(function(item)
-        return item ~= nil
-      end, out)
-      if #out == 0 then
-        on_done({})
-        return
-      end
+  local out = copilot:embed(outline)
+  if #out == 0 then
+    return {}
+  end
 
-      log.debug(string.format('Got %s embeddings', #out))
-      copilot:embed({
-        {
-          prompt = prompt,
-          content = selection,
-          filename = filename,
-          filetype = filetype,
-        },
-      }, {
-        on_error = on_error,
-        on_done = function(query_out)
-          local query = query_out[1]
-          if not query then
-            on_done({})
-            return
-          end
-          log.debug('Prompt:', query.prompt)
-          log.debug('Content:', query.content)
-          local data = data_ranked_by_relatedness(query, out, 20)
-          log.debug('Ranked data:', #data)
-          for i, item in ipairs(data) do
-            log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
-          end
-          on_done(data)
-        end,
-      })
-    end,
+  log.debug(string.format('Got %s embeddings', #out))
+
+  local query_out = copilot:embed({
+    {
+      prompt = prompt,
+      content = selection,
+      filename = filename,
+      filetype = filetype,
+    },
   })
+
+  local query = query_out[1]
+  if not query then
+    return {}
+  end
+  log.debug('Prompt:', query.prompt)
+  log.debug('Content:', query.content)
+  local data = data_ranked_by_relatedness(query, out, 20)
+  log.debug('Ranked data:', #data)
+  for i, item in ipairs(data) do
+    log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
+  end
+  return data
 end
 
 return M
