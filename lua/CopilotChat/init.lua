@@ -482,6 +482,10 @@ function M.ask(prompt, config, source)
       return
     end
 
+    if not response then
+      return
+    end
+
     state.response = response
 
     vim.schedule(function()
