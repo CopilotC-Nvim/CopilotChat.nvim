@@ -14,33 +14,29 @@
 ---@field system_prompt string?
 ---@field model string?
 ---@field temperature number?
----@field on_done nil|fun(response: string, token_count: number?, token_max_count: number?):nil
 ---@field on_progress nil|fun(response: string):nil
----@field on_error nil|fun(err: string):nil
 
 ---@class CopilotChat.copilot.embed.opts
 ---@field model string?
 ---@field chunk_size number?
----@field on_done nil|fun(results: table):nil
----@field on_error nil|fun(err: string):nil
 
 ---@class CopilotChat.Copilot
----@field ask fun(self: CopilotChat.Copilot, prompt: string, opts: CopilotChat.copilot.ask.opts):nil
----@field embed fun(self: CopilotChat.Copilot, inputs: table, opts: CopilotChat.copilot.embed.opts):nil
+---@field ask fun(self: CopilotChat.Copilot, prompt: string, opts: CopilotChat.copilot.ask.opts):string,number,number
+---@field embed fun(self: CopilotChat.Copilot, inputs: table, opts: CopilotChat.copilot.embed.opts?):table<CopilotChat.copilot.embed>
 ---@field stop fun(self: CopilotChat.Copilot):boolean
 ---@field reset fun(self: CopilotChat.Copilot):boolean
 ---@field save fun(self: CopilotChat.Copilot, name: string, path: string):nil
 ---@field load fun(self: CopilotChat.Copilot, name: string, path: string):table
 ---@field running fun(self: CopilotChat.Copilot):boolean
----@field list_models fun(self: CopilotChat.Copilot, callback: fun(table):nil):nil
+---@field list_models fun(self: CopilotChat.Copilot):table
 
+local async = require('plenary.async')
 local log = require('plenary.log')
 local curl = require('plenary.curl')
 local prompts = require('CopilotChat.prompts')
 local tiktoken = require('CopilotChat.tiktoken')
 local utils = require('CopilotChat.utils')
 local class = utils.class
-local join = utils.join
 local temp_file = utils.temp_file
 local timeout = 30000
 local version_headers = {
@@ -53,6 +49,20 @@ local version_headers = {
   ['editor-plugin-version'] = 'CopilotChat.nvim/2.0.0',
   ['user-agent'] = 'CopilotChat.nvim/2.0.0',
 }
+
+local curl_get = async.wrap(function(url, opts, callback)
+  opts = vim.tbl_deep_extend('force', opts, { callback = callback })
+  curl.get(url, opts)
+end, 3)
+
+local curl_post = async.wrap(function(url, opts, callback)
+  opts = vim.tbl_deep_extend('force', opts, { callback = callback })
+  curl.post(url, opts)
+end, 3)
+
+local tiktoken_load = async.wrap(function(tokenizer, callback)
+  tiktoken.load(tokenizer, callback)
+end, 2)
 
 local function uuid()
   local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
@@ -180,12 +190,6 @@ local function generate_embeddings_message(embeddings)
   return out
 end
 
---- Check if the model can stream
---- @param model_name string: The model name to check
-local function can_stream(model_name)
-  return not vim.startswith(model_name, 'o1')
-end
-
 local function generate_ask_request(
   history,
   prompt,
@@ -193,14 +197,11 @@ local function generate_ask_request(
   selection,
   system_prompt,
   model,
-  temperature
+  temperature,
+  stream
 )
   local messages = {}
-
-  local system_role = 'system'
-  if not can_stream(model) then
-    system_role = 'user'
-  end
+  local system_role = stream and 'system' or 'user'
 
   if system_prompt ~= '' then
     table.insert(messages, {
@@ -232,7 +233,7 @@ local function generate_ask_request(
     role = 'user',
   })
 
-  if can_stream(model) then
+  if stream then
     return {
       intent = true,
       model = model,
@@ -273,23 +274,6 @@ local function generate_embedding_request(inputs, model)
   }
 end
 
-local function generate_headers(token, sessionid, machineid)
-  local headers = {
-    ['authorization'] = 'Bearer ' .. token,
-    ['x-request-id'] = uuid(),
-    ['vscode-sessionid'] = sessionid,
-    ['vscode-machineid'] = machineid,
-    ['copilot-integration-id'] = 'vscode-chat',
-    ['openai-organization'] = 'github-copilot',
-    ['openai-intent'] = 'conversation-panel',
-    ['content-type'] = 'application/json',
-  }
-  for key, value in pairs(version_headers) do
-    headers[key] = value
-  end
-  return headers
-end
-
 local function count_history_tokens(history)
   local count = 0
   for _, msg in ipairs(history) do
@@ -306,28 +290,22 @@ local Copilot = class(function(self, proxy, allow_insecure)
   self.token = nil
   self.sessionid = nil
   self.machineid = machine_id()
-  self.current_job = nil
   self.models = nil
-  self.clause_enabled = false
+  self.claude_enabled = false
+  self.is_running = false
 end)
 
-function Copilot:with_auth(on_done, on_error)
+function Copilot:authenticate()
   if not self.github_token then
-    local msg =
+    error(
       'No GitHub token found, please use `:Copilot auth` to set it up from copilot.lua or `:Copilot setup` for copilot.vim'
-    log.error(msg)
-    if on_error then
-      on_error(msg)
-    end
-    return
+    )
   end
 
   if
     not self.token or (self.token.expires_at and self.token.expires_at <= math.floor(os.time()))
   then
     local sessionid = uuid() .. tostring(math.floor(os.time() * 1000))
-
-    local url = 'https://api.github.com/copilot_internal/v2/token'
     local headers = {
       ['authorization'] = 'token ' .. self.github_token,
       ['accept'] = 'application/json',
@@ -336,145 +314,108 @@ function Copilot:with_auth(on_done, on_error)
       headers[key] = value
     end
 
-    curl.get(url, {
+    local response = curl_get('https://api.github.com/copilot_internal/v2/token', {
       timeout = timeout,
       headers = headers,
       proxy = self.proxy,
       insecure = self.allow_insecure,
-      on_error = function(err)
-        err = 'Failed to get response: ' .. vim.inspect(err)
-        log.error(err)
-        if on_error then
-          on_error(err)
-        end
-      end,
-      callback = function(response)
-        if response.status ~= 200 then
-          local msg = 'Failed to authenticate: ' .. tostring(response.status)
-          log.error(msg)
-          if on_error then
-            on_error(msg)
-          end
-          return
-        end
-
-        self.sessionid = sessionid
-        self.token = vim.json.decode(response.body)
-        on_done()
-      end,
     })
-  else
-    on_done()
+
+    if response.status ~= 200 then
+      error('Failed to authenticate: ' .. tostring(response.status))
+    end
+
+    self.sessionid = sessionid
+    self.token = vim.json.decode(response.body)
   end
+
+  local headers = {
+    ['authorization'] = 'Bearer ' .. self.token.token,
+    ['x-request-id'] = uuid(),
+    ['vscode-sessionid'] = self.sessionid,
+    ['vscode-machineid'] = self.machineid,
+    ['copilot-integration-id'] = 'vscode-chat',
+    ['openai-organization'] = 'github-copilot',
+    ['openai-intent'] = 'conversation-panel',
+    ['content-type'] = 'application/json',
+  }
+  for key, value in pairs(version_headers) do
+    headers[key] = value
+  end
+
+  return headers
 end
 
-function Copilot:with_models(on_done, on_error)
-  if self.models ~= nil then
-    on_done()
-    return
+function Copilot:fetch_models()
+  if self.models then
+    return self.models
   end
 
-  local url = 'https://api.githubcopilot.com/models'
-  local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
-  curl.get(url, {
+  local response = curl_get('https://api.githubcopilot.com/models', {
     timeout = timeout,
-    headers = headers,
+    headers = self:authenticate(),
     proxy = self.proxy,
     insecure = self.allow_insecure,
-    on_error = function(err)
-      err = 'Failed to get response: ' .. vim.inspect(err)
-      log.error(err)
-      if on_error then
-        on_error(err)
-      end
-    end,
-    callback = function(response)
-      if response.status ~= 200 then
-        local msg = 'Failed to fetch models: ' .. tostring(response.status)
-        log.error(msg)
-        if on_error then
-          on_error(msg)
-        end
-        return
-      end
-
-      -- Find chat models
-      local models = vim.json.decode(response.body)['data']
-      local out = {}
-      for _, model in ipairs(models) do
-        if model['capabilities']['type'] == 'chat' then
-          out[model['id']] = model
-        end
-      end
-
-      log.info('Models fetched')
-      self.models = out
-      on_done()
-    end,
   })
+
+  if response.status ~= 200 then
+    error('Failed to fetch models: ' .. tostring(response.status))
+  end
+
+  -- Find chat models
+  local models = vim.json.decode(response.body)['data']
+  local out = {}
+  for _, model in ipairs(models) do
+    if model['capabilities']['type'] == 'chat' then
+      out[model['id']] = model
+    end
+  end
+
+  log.info('Models fetched')
+  self.models = out
+  return out
 end
 
-function Copilot:with_claude(model, on_done, on_error)
-  if self.claude_enabled or not vim.startswith(model, 'claude') then
-    on_done()
-    return
+function Copilot:enable_claude()
+  if self.claude_enabled then
+    return true
   end
 
   local business_check = 'cannot enable policy inline for business users'
   local business_msg =
     'Claude is probably enabled (for business users needs to be enabled manually).'
 
-  local url = 'https://api.githubcopilot.com/models/claude-3.5-sonnet/policy'
-  local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
-  curl.post(url, {
+  local response = curl_post('https://api.githubcopilot.com/models/claude-3.5-sonnet/policy', {
     timeout = timeout,
-    headers = headers,
+    headers = self:authenticate(),
     proxy = self.proxy,
     insecure = self.allow_insecure,
-    on_error = function(err)
-      err = 'Failed to enable Claude: ' .. vim.inspect(err)
-      if string.find(err, business_check) then
-        self.claude_enabled = true
-        log.info(business_msg)
-        on_done()
-        return
-      end
-
-      log.error(err)
-      if on_error then
-        on_error(err)
-      end
-    end,
     body = temp_file('{"state": "enabled"}'),
-    callback = function(response)
-      if response.status ~= 200 then
-        if string.find(tostring(response.body), business_check) then
-          self.claude_enabled = true
-          log.info(business_msg)
-          on_done()
-          return
-        end
-
-        local msg = 'Failed to enable Claude: ' .. tostring(response.status)
-
-        log.error(msg)
-        if on_error then
-          on_error(msg)
-        end
-        return
-      end
-
-      self.claude_enabled = true
-      log.info('Claude enabled')
-      on_done()
-    end,
   })
+
+  -- Handle business user case
+  if response.status ~= 200 and string.find(tostring(response.body), business_check) then
+    self.claude_enabled = true
+    log.info(business_msg)
+    return true
+  end
+
+  -- Handle errors
+  if response.status ~= 200 then
+    error('Failed to enable Claude: ' .. tostring(response.status))
+  end
+
+  self.claude_enabled = true
+  log.info('Claude enabled')
+  return true
 end
 
 --- Ask a question to Copilot
 ---@param prompt string: The prompt to send to Copilot
 ---@param opts CopilotChat.copilot.ask.opts: Options for the request
 function Copilot:ask(prompt, opts)
+  self.is_running = true
+
   opts = opts or {}
   local embeddings = opts.embeddings or {}
   local filename = opts.filename or ''
@@ -485,9 +426,7 @@ function Copilot:ask(prompt, opts)
   local system_prompt = opts.system_prompt or prompts.COPILOT_INSTRUCTIONS
   local model = opts.model or 'gpt-4o-2024-05-13'
   local temperature = opts.temperature or 0.1
-  local on_done = opts.on_done
   local on_progress = opts.on_progress
-  local on_error = opts.on_error
 
   log.trace('System prompt: ' .. system_prompt)
   log.trace('Selection: ' .. selection)
@@ -498,224 +437,196 @@ function Copilot:ask(prompt, opts)
   log.debug('Model: ' .. model)
   log.debug('Temperature: ' .. temperature)
 
-  -- If we already have running job, cancel it and notify the user
-  if self.current_job then
-    self:stop()
+  local models = self:fetch_models()
+  local capabilities = models[model] and models[model].capabilities
+    or { limits = { max_prompt_tokens = 8192 }, tokenizer = 'cl100k_base' }
+  local max_tokens = capabilities.limits.max_prompt_tokens -- FIXME: Is max_prompt_tokens the right limit?
+  local tokenizer = capabilities.tokenizer
+  log.debug('Max tokens: ' .. max_tokens)
+  log.debug('Tokenizer: ' .. tokenizer)
+  tiktoken_load(tokenizer)
+
+  local selection_message =
+    generate_selection_message(filename, filetype, start_row, end_row, selection)
+  local embeddings_message = generate_embeddings_message(embeddings)
+
+  -- Count required tokens that we cannot reduce
+  local prompt_tokens = tiktoken.count(prompt)
+  local system_tokens = tiktoken.count(system_prompt)
+  local selection_tokens = tiktoken.count(selection_message)
+  local required_tokens = prompt_tokens + system_tokens + selection_tokens
+
+  -- Reserve space for first embedding if its smaller than half of max tokens
+  local reserved_tokens = 0
+  if #embeddings_message.files > 0 then
+    local file_tokens = tiktoken.count(embeddings_message.files[1])
+    if file_tokens < max_tokens / 2 then
+      reserved_tokens = tiktoken.count(embeddings_message.header) + file_tokens
+    end
   end
 
-  self:with_auth(function()
-    self:with_models(function()
-      local capabilities = self.models[model] and self.models[model].capabilities
-        or { limits = { max_prompt_tokens = 8192 }, tokenizer = 'cl100k_base' }
-      local max_tokens = capabilities.limits.max_prompt_tokens -- FIXME: Is max_prompt_tokens the right limit?
-      local tokenizer = capabilities.tokenizer
-      log.debug('Max tokens: ' .. max_tokens)
-      log.debug('Tokenizer: ' .. tokenizer)
+  -- Calculate how many tokens we can use for history
+  local history_limit = max_tokens - required_tokens - reserved_tokens
+  local history_tokens = count_history_tokens(self.history)
 
-      local selection_message =
-        generate_selection_message(filename, filetype, start_row, end_row, selection)
-      local embeddings_message = generate_embeddings_message(embeddings)
+  -- If we're over history limit, truncate history from the beginning
+  while history_tokens > history_limit and #self.history > 0 do
+    local removed = table.remove(self.history, 1)
+    history_tokens = history_tokens - tiktoken.count(removed.content)
+  end
 
-      tiktoken.load(tokenizer, function()
-        -- Count required tokens that we cannot reduce
-        local prompt_tokens = tiktoken.count(prompt)
-        local system_tokens = tiktoken.count(system_prompt)
-        local selection_tokens = tiktoken.count(selection_message)
-        local required_tokens = prompt_tokens + system_tokens + selection_tokens
+  -- Now add as many files as possible with remaining token budget
+  local remaining_tokens = max_tokens - required_tokens - history_tokens
+  if #embeddings_message.files > 0 then
+    remaining_tokens = remaining_tokens - tiktoken.count(embeddings_message.header)
+    local filtered_files = {}
+    for _, file in ipairs(embeddings_message.files) do
+      local file_tokens = tiktoken.count(file)
+      if remaining_tokens - file_tokens >= 0 then
+        remaining_tokens = remaining_tokens - file_tokens
+        table.insert(filtered_files, file)
+      else
+        break
+      end
+    end
+    embeddings_message.files = filtered_files
+  end
 
-        -- Reserve space for first embedding if its smaller than half of max tokens
-        local reserved_tokens = 0
-        if #embeddings_message.files > 0 then
-          local file_tokens = tiktoken.count(embeddings_message.files[1])
-          if file_tokens < max_tokens / 2 then
-            reserved_tokens = tiktoken.count(embeddings_message.header) + file_tokens
-          end
-        end
+  local last_message = nil
+  local errored = false
+  local full_response = ''
 
-        -- Calculate how many tokens we can use for history
-        local history_limit = max_tokens - required_tokens - reserved_tokens
-        local history_tokens = count_history_tokens(self.history)
+  local function handle_error(err)
+    errored = true
+    full_response = err
+  end
 
-        -- If we're over history limit, truncate history from the beginning
-        while history_tokens > history_limit and #self.history > 0 do
-          local removed = table.remove(self.history, 1)
-          history_tokens = history_tokens - tiktoken.count(removed.content)
-        end
+  local function stream_func(err, line)
+    if not line or errored then
+      return
+    end
 
-        -- Now add as many files as possible with remaining token budget
-        local remaining_tokens = max_tokens - required_tokens - history_tokens
-        if #embeddings_message.files > 0 then
-          remaining_tokens = remaining_tokens - tiktoken.count(embeddings_message.header)
-          local filtered_files = {}
-          for _, file in ipairs(embeddings_message.files) do
-            local file_tokens = tiktoken.count(file)
-            if remaining_tokens - file_tokens >= 0 then
-              remaining_tokens = remaining_tokens - file_tokens
-              table.insert(filtered_files, file)
-            else
-              break
-            end
-          end
-          embeddings_message.files = filtered_files
-        end
+    if not self.is_running then
+      handle_error('')
+      return
+    end
 
-        -- Generate the request
-        local url = 'https://api.githubcopilot.com/chat/completions'
-        local body = vim.json.encode(
-          generate_ask_request(
-            self.history,
-            prompt,
-            embeddings_message,
-            selection_message,
-            system_prompt,
-            model,
-            temperature
-          )
-        )
+    if err or vim.startswith(line, '{"error"') then
+      handle_error('Failed to get response: ' .. (err and vim.inspect(err) or line))
+      return
+    end
 
-        local errored = false
-        local last_message = nil
-        local full_response = ''
+    line = line:gsub('^%s*data: ', '')
+    if line == '' or line == '[DONE]' then
+      return
+    end
 
-        local function handle_error(error_msg)
-          if not errored then
-            errored = true
-            log.error(error_msg)
-            if self.current_job and on_error then
-              on_error(error_msg)
-            end
-          end
-        end
+    local ok, content = pcall(vim.json.decode, line, {
+      luanil = {
+        object = true,
+        array = true,
+      },
+    })
 
-        local function callback_func(response)
-          if not response then
-            handle_error('Failed to get response')
-            return
-          end
+    if not ok then
+      handle_error('Failed to parse response: ' .. vim.inspect(content) .. '\n' .. line)
+      return
+    end
 
-          if response.status ~= 200 then
-            handle_error(
-              'Failed to get response: ' .. tostring(response.status) .. '\n' .. response.body
-            )
-            return
-          end
+    if not content.choices or #content.choices == 0 then
+      return
+    end
 
-          log.trace('Full response: ' .. full_response)
-          log.debug('Last message: ' .. vim.inspect(last_message))
+    last_message = content
+    local choice = content.choices[1]
+    local is_full = choice.message ~= nil
+    content = is_full and choice.message.content or choice.delta.content
 
-          if on_done then
-            on_done(
-              full_response,
-              last_message and last_message.usage and last_message.usage.total_tokens,
-              max_tokens
-            )
-          end
+    if not content then
+      return
+    end
 
-          table.insert(self.history, {
-            content = prompt,
-            role = 'user',
-          })
+    if on_progress then
+      on_progress(content)
+    end
 
-          table.insert(self.history, {
-            content = full_response,
-            role = 'assistant',
-          })
-        end
+    full_response = full_response .. content
+  end
 
-        local function stream_func(err, line)
-          if not line or errored or not self.current_job then
-            return
-          end
+  local body = vim.json.encode(
+    generate_ask_request(
+      self.history,
+      prompt,
+      embeddings_message,
+      selection_message,
+      system_prompt,
+      model,
+      temperature,
+      not vim.startswith(model, 'o1')
+    )
+  )
 
-          if err or vim.startswith(line, '{"error"') then
-            handle_error('Failed to get response: ' .. (err and vim.inspect(err) or line))
-            return
-          end
+  if vim.startswith(model, 'claude') then
+    self:enable_claude(model)
+  end
 
-          line = line:gsub('^%s*data: ', '')
-          if line == '' or line == '[DONE]' then
-            return
-          end
+  local response = curl_post('https://api.githubcopilot.com/chat/completions', {
+    timeout = timeout,
+    headers = self:authenticate(),
+    body = temp_file(body),
+    proxy = self.proxy,
+    insecure = self.allow_insecure,
+    stream = stream_func,
+  })
 
-          local ok, content = pcall(vim.json.decode, line, {
-            luanil = {
-              object = true,
-              array = true,
-            },
-          })
+  if not response then
+    error('Failed to get response')
+    return
+  end
 
-          if not ok then
-            handle_error('Failed to parse response: ' .. vim.inspect(content) .. '\n' .. line)
-            return
-          end
+  if response.status ~= 200 then
+    error('Failed to get response: ' .. tostring(response.status) .. '\n' .. response.body)
+    return
+  end
 
-          if not content.choices or #content.choices == 0 then
-            return
-          end
+  log.trace('Full response: ' .. full_response)
+  log.debug('Last message: ' .. vim.inspect(last_message))
 
-          last_message = content
-          local choice = content.choices[1]
-          local is_full = choice.message ~= nil
-          content = is_full and choice.message.content or choice.delta.content
+  table.insert(self.history, {
+    content = prompt,
+    role = 'user',
+  })
 
-          if not content then
-            return
-          end
+  table.insert(self.history, {
+    content = full_response,
+    role = 'assistant',
+  })
 
-          if on_progress then
-            on_progress(content)
-          end
+  self.is_running = false
 
-          full_response = full_response .. content
-        end
-
-        self:with_claude(model, function()
-          self.current_job = curl
-            .post(url, {
-              timeout = timeout,
-              headers = generate_headers(self.token.token, self.sessionid, self.machineid),
-              body = temp_file(body),
-              proxy = self.proxy,
-              insecure = self.allow_insecure,
-              stream = stream_func,
-              callback = callback_func,
-              on_error = function(err)
-                err = 'Failed to get response: ' .. vim.inspect(err)
-                log.error(err)
-                if self.current_job and on_error then
-                  on_error(err)
-                end
-              end,
-            })
-            :after(function()
-              self.current_job = nil
-            end)
-        end, on_error)
-      end)
-    end, on_error)
-  end, on_error)
+  return full_response,
+    last_message and last_message.usage and last_message.usage.total_tokens,
+    max_tokens
 end
 
 --- List available models
----@param callback fun(table):nil
-function Copilot:list_models(callback)
-  self:with_auth(function()
-    self:with_models(function()
-      -- Group models by version and shortest ID
-      local version_map = {}
-      for id, model in pairs(self.models) do
-        local version = model.version
-        if not version_map[version] or #id < #version_map[version] then
-          version_map[version] = id
-        end
-      end
+function Copilot:list_models()
+  local models = self:fetch_models()
 
-      -- Map to IDs and sort
-      local result = vim.tbl_values(version_map)
-      table.sort(result)
-      callback(result)
-    end)
-  end)
+  -- Group models by version and shortest ID
+  local version_map = {}
+  for id, model in pairs(models) do
+    local version = model.version
+    if not version_map[version] or #id < #version_map[version] then
+      version_map[version] = id
+    end
+  end
+
+  -- Map to IDs and sort
+  local result = vim.tbl_values(version_map)
+  table.sort(result)
+
+  return result
 end
 
 --- Generate embeddings for the given inputs
@@ -725,98 +636,61 @@ function Copilot:embed(inputs, opts)
   opts = opts or {}
   local model = opts.model or 'copilot-text-embedding-ada-002'
   local chunk_size = opts.chunk_size or 15
-  local on_done = opts.on_done
-  local on_error = opts.on_error
 
   if not inputs or #inputs == 0 then
-    if on_done then
-      on_done({})
-    end
-    return
+    return {}
   end
-
-  local url = 'https://api.githubcopilot.com/embeddings'
 
   local chunks = {}
   for i = 1, #inputs, chunk_size do
     table.insert(chunks, vim.list_slice(inputs, i, i + chunk_size - 1))
   end
 
-  local jobs = {}
+  local out = {}
+
   for _, chunk in ipairs(chunks) do
-    local body = vim.json.encode(generate_embedding_request(chunk, model))
+    local response = curl_post('https://api.githubcopilot.com/embeddings', {
+      timeout = timeout,
+      headers = self:authenticate(),
+      body = temp_file(vim.json.encode(generate_embedding_request(chunk, model))),
+      proxy = self.proxy,
+      insecure = self.allow_insecure,
+    })
 
-    table.insert(jobs, function(resolve)
-      local headers = generate_headers(self.token.token, self.sessionid, self.machineid)
-      curl.post(url, {
-        timeout = timeout,
-        headers = headers,
-        body = temp_file(body),
-        proxy = self.proxy,
-        insecure = self.allow_insecure,
-        on_error = function(err)
-          err = 'Failed to get response: ' .. vim.inspect(err)
-          log.error(err)
-          resolve()
-        end,
-        callback = function(response)
-          if not response then
-            resolve()
-            return
-          end
+    if not response then
+      error('Failed to get response')
+      return
+    end
 
-          if response.status ~= 200 then
-            local err = 'Failed to get response: ' .. vim.inspect(response)
-            log.error(err)
-            resolve()
-            return
-          end
+    if response.status ~= 200 then
+      error('Failed to get response: ' .. tostring(response.status) .. '\n' .. response.body)
+      return
+    end
 
-          local ok, content = pcall(vim.json.decode, response.body, {
-            luanil = {
-              object = true,
-              array = true,
-            },
-          })
+    local ok, content = pcall(vim.json.decode, response.body, {
+      luanil = {
+        object = true,
+        array = true,
+      },
+    })
 
-          if not ok then
-            local err = vim.inspect(content)
-            log.error('Failed to parse response: ' .. err .. '\n' .. response.body)
-            resolve()
-            return
-          end
+    if not ok then
+      error('Failed to parse response: ' .. vim.inspect(content) .. '\n' .. response.body)
+      return
+    end
 
-          resolve(content.data)
-        end,
-      })
-    end)
+    for _, embedding in ipairs(content.data) do
+      table.insert(out, vim.tbl_extend('keep', chunk[embedding.index + 1], embedding))
+    end
   end
 
-  self:with_auth(function()
-    join(function(results)
-      local out = {}
-      for chunk_i, chunk_result in ipairs(results) do
-        if chunk_result then
-          for _, embedding in ipairs(chunk_result) do
-            local input = chunks[chunk_i][embedding.index + 1]
-            table.insert(out, vim.tbl_extend('keep', input, embedding))
-          end
-        end
-      end
-
-      if on_done then
-        on_done(out)
-      end
-    end, jobs)
-  end, on_error)
+  return out
 end
 
 --- Stop the running job
 function Copilot:stop()
-  if self.current_job then
-    local job = self.current_job
-    self.current_job = nil
-    job:shutdown()
+  if self.is_running then
+    self.is_running = false
     return true
   end
 
@@ -876,7 +750,7 @@ end
 --- Check if there is a running job
 ---@return boolean
 function Copilot:running()
-  return self.current_job ~= nil
+  return self.is_running
 end
 
 return Copilot

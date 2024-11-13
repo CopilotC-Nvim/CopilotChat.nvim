@@ -74,10 +74,6 @@ function M.load(tokenizer, on_done)
   end)
 end
 
-function M.available()
-  return tiktoken_core ~= nil
-end
-
 function M.encode(prompt)
   if not tiktoken_core then
     return nil
