@@ -1,4 +1,5 @@
 -- Mock packages
+package.loaded['plenary.async'] = {}
 package.loaded['plenary.curl'] = {}
 package.loaded['plenary.log'] = {}
 
