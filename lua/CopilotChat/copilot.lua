@@ -48,15 +48,30 @@ local version_headers = {
     .. vim.version().patch,
   ['editor-plugin-version'] = 'CopilotChat.nvim/2.0.0',
   ['user-agent'] = 'CopilotChat.nvim/2.0.0',
+  ['sec-fetch-site'] = 'none',
+  ['sec-fetch-mode'] = 'no-cors',
+  ['sec-fetch-dest'] = 'empty',
+  ['priority'] = 'u=4, i',
+  -- ['x-github-api-version'] = '2023-07-07',
 }
 
 local curl_get = async.wrap(function(url, opts, callback)
-  opts = vim.tbl_deep_extend('force', opts, { callback = callback })
+  opts = vim.tbl_deep_extend('force', opts, {
+    callback = callback,
+    on_error = function(err)
+      callback(nil, vim.inspect(err))
+    end,
+  })
   curl.get(url, opts)
 end, 3)
 
 local curl_post = async.wrap(function(url, opts, callback)
-  opts = vim.tbl_deep_extend('force', opts, { callback = callback })
+  opts = vim.tbl_deep_extend('force', opts, {
+    callback = callback,
+    on_error = function(err)
+      callback(nil, vim.inspect(err))
+    end,
+  })
   curl.post(url, opts)
 end, 3)
 
@@ -79,7 +94,8 @@ local function machine_id()
   local hex_chars = '0123456789abcdef'
   local hex = ''
   for _ = 1, length do
-    hex = hex .. hex_chars:sub(math.random(1, #hex_chars), math.random(1, #hex_chars))
+    local index = math.random(1, #hex_chars)
+    hex = hex .. hex_chars:sub(index, index)
   end
   return hex
 end
@@ -235,7 +251,6 @@ local function generate_ask_request(
 
   if stream then
     return {
-      intent = true,
       model = model,
       n = 1,
       stream = true,
@@ -293,6 +308,26 @@ local Copilot = class(function(self, proxy, allow_insecure)
   self.models = nil
   self.claude_enabled = false
   self.current_job = nil
+  self.extra_args = {
+    -- Retry failed requests twice
+    '--retry',
+    '2',
+    -- Wait 1 second between retries
+    '--retry-delay',
+    '1',
+    -- Maximum time for the request
+    '--max-time',
+    math.floor(timeout * 2 / 1000),
+    -- Timeout for initial connection
+    '--connect-timeout',
+    '10',
+    '--no-keepalive', -- Don't reuse connections
+    '--tcp-nodelay', -- Disable Nagle's algorithm for faster streaming
+    '--no-buffer', -- Disable output buffering for streaming
+    '--fail', -- Return error on HTTP errors (4xx, 5xx)
+    '--silent', -- Don't show progress meter
+    '--show-error', -- Show errors even when silent
+  }
 end)
 
 function Copilot:authenticate()
@@ -314,12 +349,17 @@ function Copilot:authenticate()
       headers[key] = value
     end
 
-    local response = curl_get('https://api.github.com/copilot_internal/v2/token', {
+    local response, err = curl_get('https://api.github.com/copilot_internal/v2/token', {
       timeout = timeout,
       headers = headers,
       proxy = self.proxy,
       insecure = self.allow_insecure,
+      raw = self.extra_args,
     })
+
+    if err then
+      error(err)
+    end
 
     if response.status ~= 200 then
       error('Failed to authenticate: ' .. tostring(response.status))
@@ -351,12 +391,17 @@ function Copilot:fetch_models()
     return self.models
   end
 
-  local response = curl_get('https://api.githubcopilot.com/models', {
+  local response, err = curl_get('https://api.githubcopilot.com/models', {
     timeout = timeout,
     headers = self:authenticate(),
     proxy = self.proxy,
     insecure = self.allow_insecure,
+    raw = self.extra_args,
   })
+
+  if err then
+    error(err)
+  end
 
   if response.status ~= 200 then
     error('Failed to fetch models: ' .. tostring(response.status))
@@ -385,13 +430,18 @@ function Copilot:enable_claude()
   local business_msg =
     'Claude is probably enabled (for business users needs to be enabled manually).'
 
-  local response = curl_post('https://api.githubcopilot.com/models/claude-3.5-sonnet/policy', {
+  local response, err = curl_post('https://api.githubcopilot.com/models/claude-3.5-sonnet/policy', {
     timeout = timeout,
     headers = self:authenticate(),
     proxy = self.proxy,
     insecure = self.allow_insecure,
     body = temp_file('{"state": "enabled"}'),
+    raw = self.extra_args,
   })
+
+  if err then
+    error(err)
+  end
 
   -- Handle business user case
   if response.status ~= 200 and string.find(tostring(response.body), business_check) then
@@ -494,29 +544,44 @@ function Copilot:ask(prompt, opts)
 
   local last_message = nil
   local errored = false
+  local finished = false
   local full_response = ''
 
-  local function handle_error(err)
-    errored = true
-    full_response = err
+  local function finish_stream(err, job)
+    if err then
+      errored = true
+      full_response = err
+    end
+
+    finished = true
+    vim.schedule(function()
+      job:shutdown()
+    end)
   end
 
-  local function stream_func(err, line)
-    if not line or errored then
+  local function stream_func(err, line, job)
+    if not line or errored or finished then
       return
     end
 
     if self.current_job ~= job_id then
+      finish_stream(nil, job)
       return
     end
 
     if err or vim.startswith(line, '{"error"') then
-      handle_error('Failed to get response: ' .. (err and vim.inspect(err) or line))
+      finish_stream('Failed to get response: ' .. (err and vim.inspect(err) or line), job)
       return
     end
 
-    line = line:gsub('^%s*data: ', '')
-    if line == '' or line == '[DONE]' then
+    if not vim.startswith(line, 'data: ') then
+      return
+    end
+
+    line = line:gsub('^%s*data:%s*', ''):gsub('%s*$', '')
+
+    if line == '[DONE]' then
+      finish_stream(nil, job)
       return
     end
 
@@ -528,7 +593,7 @@ function Copilot:ask(prompt, opts)
     })
 
     if not ok then
-      handle_error('Failed to parse response: ' .. vim.inspect(content) .. '\n' .. line)
+      finish_stream('Failed to parse response: ' .. vim.inspect(content) .. '\n' .. line, job)
       return
     end
 
@@ -538,8 +603,7 @@ function Copilot:ask(prompt, opts)
 
     last_message = content
     local choice = content.choices[1]
-    local is_full = choice.message ~= nil
-    content = is_full and choice.message.content or choice.delta.content
+    content = choice.message and choice.message.content or choice.delta and choice.delta.content
 
     if not content then
       return
@@ -569,13 +633,14 @@ function Copilot:ask(prompt, opts)
     self:enable_claude()
   end
 
-  local response = curl_post('https://api.githubcopilot.com/chat/completions', {
+  local response, err = curl_post('https://api.githubcopilot.com/chat/completions', {
     timeout = timeout,
     headers = self:authenticate(),
     body = temp_file(body),
     proxy = self.proxy,
     insecure = self.allow_insecure,
     stream = stream_func,
+    raw = self.extra_args,
   })
 
   if self.current_job ~= job_id then
@@ -583,6 +648,11 @@ function Copilot:ask(prompt, opts)
   end
 
   self.current_job = nil
+
+  if err then
+    error(err)
+    return
+  end
 
   if not response then
     error('Failed to get response')
@@ -662,13 +732,19 @@ function Copilot:embed(inputs, opts)
   local out = {}
 
   for _, chunk in ipairs(chunks) do
-    local response = curl_post('https://api.githubcopilot.com/embeddings', {
+    local response, err = curl_post('https://api.githubcopilot.com/embeddings', {
       timeout = timeout,
       headers = self:authenticate(),
       body = temp_file(vim.json.encode(generate_embedding_request(chunk, model))),
       proxy = self.proxy,
       insecure = self.allow_insecure,
+      raw = self.extra_args,
     })
+
+    if err then
+      error(err)
+      return
+    end
 
     if not response then
       error('Failed to get response')

@@ -396,6 +396,7 @@ function M.ask(prompt, config, source)
   end
 
   local function on_error(err)
+    log.error(err)
     vim.schedule(function()
       append('\n\n' .. config.error_header .. config.separator .. '\n\n', config)
       append('```\n' .. get_error_message(err) .. '\n```', config)
