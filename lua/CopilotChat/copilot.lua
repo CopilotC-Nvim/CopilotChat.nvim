@@ -292,7 +292,7 @@ local Copilot = class(function(self, proxy, allow_insecure)
   self.machineid = machine_id()
   self.models = nil
   self.claude_enabled = false
-  self.is_running = false
+  self.current_job = nil
 end)
 
 function Copilot:authenticate()
@@ -414,8 +414,6 @@ end
 ---@param prompt string: The prompt to send to Copilot
 ---@param opts CopilotChat.copilot.ask.opts: Options for the request
 function Copilot:ask(prompt, opts)
-  self.is_running = true
-
   opts = opts or {}
   local embeddings = opts.embeddings or {}
   local filename = opts.filename or ''
@@ -427,6 +425,8 @@ function Copilot:ask(prompt, opts)
   local model = opts.model or 'gpt-4o-2024-05-13'
   local temperature = opts.temperature or 0.1
   local on_progress = opts.on_progress
+  local job_id = uuid()
+  self.current_job = job_id
 
   log.trace('System prompt: ' .. system_prompt)
   log.trace('Selection: ' .. selection)
@@ -506,8 +506,7 @@ function Copilot:ask(prompt, opts)
       return
     end
 
-    if not self.is_running then
-      handle_error('')
+    if self.current_job ~= job_id then
       return
     end
 
@@ -567,7 +566,7 @@ function Copilot:ask(prompt, opts)
   )
 
   if vim.startswith(model, 'claude') then
-    self:enable_claude(model)
+    self:enable_claude()
   end
 
   local response = curl_post('https://api.githubcopilot.com/chat/completions', {
@@ -579,6 +578,12 @@ function Copilot:ask(prompt, opts)
     stream = stream_func,
   })
 
+  if self.current_job ~= job_id then
+    return nil, nil, nil
+  end
+
+  self.current_job = nil
+
   if not response then
     error('Failed to get response')
     return
@@ -586,6 +591,16 @@ function Copilot:ask(prompt, opts)
 
   if response.status ~= 200 then
     error('Failed to get response: ' .. tostring(response.status) .. '\n' .. response.body)
+    return
+  end
+
+  if errored then
+    error(full_response)
+    return
+  end
+
+  if full_response == '' then
+    error('Failed to get response: empty response')
     return
   end
 
@@ -601,8 +616,6 @@ function Copilot:ask(prompt, opts)
     content = full_response,
     role = 'assistant',
   })
-
-  self.is_running = false
 
   return full_response,
     last_message and last_message.usage and last_message.usage.total_tokens,
@@ -689,8 +702,8 @@ end
 
 --- Stop the running job
 function Copilot:stop()
-  if self.is_running then
-    self.is_running = false
+  if self.current_job ~= nil then
+    self.current_job = nil
     return true
   end
 
@@ -750,7 +763,7 @@ end
 --- Check if there is a running job
 ---@return boolean
 function Copilot:running()
-  return self.is_running
+  return self.current_job ~= nil
 end
 
 return Copilot
