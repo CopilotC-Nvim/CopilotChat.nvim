@@ -863,6 +863,7 @@ function M.setup(config)
             ctxlen = #selection.lines,
           }))
 
+          diff = diff .. '\n' .. M.config.separator .. '\n'
           state.diff:show(diff, filetype, 'diff', state.chat.winnr)
         end
       end)
@@ -873,6 +874,7 @@ function M.setup(config)
           return
         end
 
+        prompt = prompt .. '\n' .. M.config.separator .. '\n'
         state.system_prompt:show(prompt, 'markdown', 'markdown', state.chat.winnr)
       end)
 
@@ -884,9 +886,12 @@ function M.setup(config)
 
         local filetype = selection.filetype or vim.bo[state.source.bufnr].filetype
         local lines = selection.lines
-        if vim.trim(lines) ~= '' then
-          state.user_selection:show(lines, filetype, filetype, state.chat.winnr)
+        if vim.trim(lines) == '' then
+          return
         end
+
+        lines = lines .. '\n' .. M.config.separator .. '\n'
+        state.user_selection:show(lines, filetype, filetype, state.chat.winnr)
       end)
 
       vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
