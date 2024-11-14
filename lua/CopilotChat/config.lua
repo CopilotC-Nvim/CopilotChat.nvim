@@ -119,7 +119,6 @@ return {
     Review = {
       prompt = '/COPILOT_REVIEW Review the selected code.',
       callback = function(response, source)
-        local ns = vim.api.nvim_create_namespace('copilot_review')
         local diagnostics = {}
         for line in response:gmatch('[^\r\n]+') do
           if line:find('^line=') then
@@ -152,7 +151,11 @@ return {
             end
           end
         end
-        vim.diagnostic.set(ns, source.bufnr, diagnostics)
+        vim.diagnostic.set(
+          vim.api.nvim_create_namespace('copilot_diagnostics'),
+          source.bufnr,
+          diagnostics
+        )
       end,
     },
     Fix = {

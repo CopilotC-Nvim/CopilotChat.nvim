@@ -387,6 +387,8 @@ function M.ask(prompt, config, source)
 
   M.open(config, source)
 
+  vim.diagnostic.reset(vim.api.nvim_create_namespace('copilot_diagnostics'))
+
   if config.clear_chat_on_new_prompt then
     M.stop(true, config)
   end
