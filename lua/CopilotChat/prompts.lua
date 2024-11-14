@@ -90,6 +90,8 @@ line=<start_line>-<end_line>: <issue_description>
   
 If you find multiple issues on the same line, list each issue separately within the same feedback statement, using a semicolon to separate them.
 
+At the end of your review, add this: "**`To clear buffer highlights, please ask a different question.`**".
+
 Example feedback:
 line=3: The variable name 'x' is unclear. Comment next to variable declaration is unnecessary.
 line=8: Expression is overly complex. Break down the expression into simpler components.
