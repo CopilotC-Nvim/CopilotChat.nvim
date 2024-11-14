@@ -300,8 +300,6 @@ local function count_history_tokens(history)
 end
 
 local Copilot = class(function(self, proxy, allow_insecure)
-  self.proxy = proxy
-  self.allow_insecure = allow_insecure
   self.github_token = get_cached_token()
   self.history = {}
   self.token = nil
@@ -310,25 +308,30 @@ local Copilot = class(function(self, proxy, allow_insecure)
   self.models = nil
   self.claude_enabled = false
   self.current_job = nil
-  self.extra_args = {
-    -- Retry failed requests twice
-    '--retry',
-    '2',
-    -- Wait 1 second between retries
-    '--retry-delay',
-    '1',
-    -- Maximum time for the request
-    '--max-time',
-    math.floor(timeout * 2 / 1000),
-    -- Timeout for initial connection
-    '--connect-timeout',
-    '10',
-    '--no-keepalive', -- Don't reuse connections
-    '--tcp-nodelay', -- Disable Nagle's algorithm for faster streaming
-    '--no-buffer', -- Disable output buffering for streaming
-    '--fail', -- Return error on HTTP errors (4xx, 5xx)
-    '--silent', -- Don't show progress meter
-    '--show-error', -- Show errors even when silent
+  self.request_args = {
+    timeout = timeout,
+    proxy = proxy,
+    insecure = allow_insecure,
+    raw = {
+      -- Retry failed requests twice
+      '--retry',
+      '2',
+      -- Wait 1 second between retries
+      '--retry-delay',
+      '1',
+      -- Maximum time for the request
+      '--max-time',
+      math.floor(timeout * 2 / 1000),
+      -- Timeout for initial connection
+      '--connect-timeout',
+      '10',
+      '--no-keepalive', -- Don't reuse connections
+      '--tcp-nodelay', -- Disable Nagle's algorithm for faster streaming
+      '--no-buffer', -- Disable output buffering for streaming
+      '--fail', -- Return error on HTTP errors (4xx, 5xx)
+      '--silent', -- Don't show progress meter
+      '--show-error', -- Show errors even when silent
+    },
   }
 end)
 
@@ -351,13 +354,12 @@ function Copilot:authenticate()
       headers[key] = value
     end
 
-    local response, err = curl_get('https://api.github.com/copilot_internal/v2/token', {
-      timeout = timeout,
-      headers = headers,
-      proxy = self.proxy,
-      insecure = self.allow_insecure,
-      raw = self.extra_args,
-    })
+    local response, err = curl_get(
+      'https://api.github.com/copilot_internal/v2/token',
+      vim.tbl_extend('force', self.request_args, {
+        headers = headers,
+      })
+    )
 
     if err then
       error(err)
@@ -393,13 +395,12 @@ function Copilot:fetch_models()
     return self.models
   end
 
-  local response, err = curl_get('https://api.githubcopilot.com/models', {
-    timeout = timeout,
-    headers = self:authenticate(),
-    proxy = self.proxy,
-    insecure = self.allow_insecure,
-    raw = self.extra_args,
-  })
+  local response, err = curl_get(
+    'https://api.githubcopilot.com/models',
+    vim.tbl_extend('force', self.request_args, {
+      headers = self:authenticate(),
+    })
+  )
 
   if err then
     error(err)
@@ -432,14 +433,13 @@ function Copilot:enable_claude()
   local business_msg =
     'Claude is probably enabled (for business users needs to be enabled manually).'
 
-  local response, err = curl_post('https://api.githubcopilot.com/models/claude-3.5-sonnet/policy', {
-    timeout = timeout,
-    headers = self:authenticate(),
-    proxy = self.proxy,
-    insecure = self.allow_insecure,
-    body = temp_file('{"state": "enabled"}'),
-    raw = self.extra_args,
-  })
+  local response, err = curl_post(
+    'https://api.githubcopilot.com/models/claude-3.5-sonnet/policy',
+    vim.tbl_extend('force', self.request_args, {
+      headers = self:authenticate(),
+      body = vim.json.encode({ state = 'enabled' }),
+    })
+  )
 
   if err then
     error(err)
@@ -636,15 +636,14 @@ function Copilot:ask(prompt, opts)
     self:enable_claude()
   end
 
-  local response, err = curl_post('https://api.githubcopilot.com/chat/completions', {
-    timeout = timeout,
-    headers = self:authenticate(),
-    body = temp_file(body),
-    proxy = self.proxy,
-    insecure = self.allow_insecure,
-    stream = stream_func,
-    raw = self.extra_args,
-  })
+  local response, err = curl_post(
+    'https://api.githubcopilot.com/chat/completions',
+    vim.tbl_extend('force', self.request_args, {
+      headers = self:authenticate(),
+      body = temp_file(body),
+      stream = stream_func,
+    })
+  )
 
   if self.current_job ~= job_id then
     return nil, nil, nil
@@ -727,22 +726,18 @@ function Copilot:embed(inputs, opts)
     return {}
   end
 
-  local chunks = {}
-  for i = 1, #inputs, chunk_size do
-    table.insert(chunks, vim.list_slice(inputs, i, i + chunk_size - 1))
-  end
-
   local out = {}
 
-  for _, chunk in ipairs(chunks) do
-    local response, err = curl_post('https://api.githubcopilot.com/embeddings', {
-      timeout = timeout,
-      headers = self:authenticate(),
-      body = temp_file(vim.json.encode(generate_embedding_request(chunk, model))),
-      proxy = self.proxy,
-      insecure = self.allow_insecure,
-      raw = self.extra_args,
-    })
+  for i = 1, #inputs, chunk_size do
+    local chunk = vim.list_slice(inputs, i, i + chunk_size - 1)
+    local body = vim.json.encode(generate_embedding_request(chunk, model))
+    local response, err = curl_post(
+      'https://api.githubcopilot.com/embeddings',
+      vim.tbl_extend('force', self.request_args, {
+        headers = self:authenticate(),
+        body = temp_file(body),
+      })
+    )
 
     if err then
       error(err)
