@@ -214,6 +214,7 @@ local function generate_ask_request(
   system_prompt,
   model,
   temperature,
+  max_output_tokens,
   stream
 )
   local messages = {}
@@ -249,22 +250,23 @@ local function generate_ask_request(
     role = 'user',
   })
 
-  if stream then
-    return {
-      model = model,
-      n = 1,
-      stream = true,
-      temperature = temperature,
-      top_p = 1,
-      messages = messages,
-    }
-  else
-    return {
-      messages = messages,
-      stream = false,
-      model = model,
-    }
+  local out = {
+    messages = messages,
+    model = model,
+    stream = stream,
+  }
+
+  if max_output_tokens then
+    out.max_tokens = max_output_tokens
   end
+
+  if stream then
+    out.n = 1
+    out.temperature = temperature
+    out.top_p = 1
+  end
+
+  return out
 end
 
 local function generate_embedding_request(inputs, model)
@@ -489,8 +491,8 @@ function Copilot:ask(prompt, opts)
 
   local models = self:fetch_models()
   local capabilities = models[model] and models[model].capabilities
-    or { limits = { max_prompt_tokens = 8192 }, tokenizer = 'cl100k_base' }
   local max_tokens = capabilities.limits.max_prompt_tokens -- FIXME: Is max_prompt_tokens the right limit?
+  local max_output_tokens = capabilities.limits.max_output_tokens
   local tokenizer = capabilities.tokenizer
   log.debug('Max tokens: ' .. max_tokens)
   log.debug('Tokenizer: ' .. tokenizer)
@@ -625,6 +627,7 @@ function Copilot:ask(prompt, opts)
       system_prompt,
       model,
       temperature,
+      max_output_tokens,
       not vim.startswith(model, 'o1')
     )
   )
