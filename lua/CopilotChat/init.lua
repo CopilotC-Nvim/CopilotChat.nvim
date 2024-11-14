@@ -217,21 +217,26 @@ end
 --- Get the info for a key.
 ---@param name string
 ---@param key CopilotChat.config.mapping?
+---@param surround string|nil
 ---@return string
-local function key_to_info(name, key)
+local function key_to_info(name, key, surround)
   if not key then
     return ''
   end
 
+  if not surround then
+    surround = ''
+  end
+
   local out = ''
   if key.normal and key.normal ~= '' then
-    out = out .. "'" .. key.normal .. "' in normal mode"
+    out = out .. surround .. key.normal .. surround
   end
-  if key.insert and key.insert ~= '' then
+  if key.insert and key.insert ~= '' and key.insert ~= key.normal then
     if out ~= '' then
       out = out .. ' or '
     end
-    out = out .. "'" .. key.insert .. "' in insert mode"
+    out = out .. surround .. key.insert .. surround .. ' in insert mode'
   end
 
   if out == '' then
@@ -759,8 +764,13 @@ function M.setup(config)
           return a < b
         end)
         for _, name in ipairs(chat_keys) do
-          local key = M.config.mappings[name]
-          chat_help = chat_help .. key_to_info(name, key) .. '\n'
+          if name ~= 'close' then
+            local key = M.config.mappings[name]
+            local info = key_to_info(name, key, '`')
+            if info ~= '' then
+              chat_help = chat_help .. info .. '\n'
+            end
+          end
         end
         chat_help = chat_help .. M.config.separator .. '\n'
         state.help:show(chat_help, 'markdown', 'markdown', state.chat.winnr)
