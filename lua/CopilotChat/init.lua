@@ -395,7 +395,9 @@ function M.ask(prompt, config, source)
 
   local function get_error_message(err)
     if type(err) == 'string' then
-      local message = err:match(':.+:(.+)') or err
+      -- Match first occurrence of :something: and capture rest
+      local message = err:match('^[^:]+:[^:]+:(.+)') or err
+      -- Trim whitespace
       message = message:match('^%s*(.-)%s*$')
       return message
     end
