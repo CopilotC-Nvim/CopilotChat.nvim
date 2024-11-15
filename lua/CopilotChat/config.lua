@@ -5,15 +5,23 @@ local select = require('CopilotChat.select')
 --- @field bufnr number
 --- @field winnr number
 
+---@class CopilotChat.config.selection.diagnostic
+---@field message string
+---@field severity string
+---@field start_row number
+---@field start_col number
+---@field end_row number
+---@field end_col number
+
 ---@class CopilotChat.config.selection
 ---@field lines string
+---@field diagnostics table<CopilotChat.config.selection.diagnostic>?
 ---@field filename string?
 ---@field filetype string?
 ---@field start_row number?
 ---@field start_col number?
 ---@field end_row number?
 ---@field end_col number?
----@field prompt_extra string?
 
 ---@class CopilotChat.config.prompt
 ---@field prompt string?
@@ -106,15 +114,15 @@ return {
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
   callback = nil, -- Callback to use when ask response is received
 
-  -- default selection (visual or line)
+  -- default selection
   selection = function(source)
-    return select.visual(source) or select.line(source)
+    return select.visual(source) or select.buffer(source)
   end,
 
   -- default prompts
   prompts = {
     Explain = {
-      prompt = '/COPILOT_EXPLAIN Write an explanation for the active selection as paragraphs of text.',
+      prompt = '/COPILOT_EXPLAIN Write an explanation for the active selection and diagnostics as paragraphs of text.',
     },
     Review = {
       prompt = '/COPILOT_REVIEW Review the selected code.',
@@ -169,10 +177,6 @@ return {
     },
     Tests = {
       prompt = '/COPILOT_GENERATE Please generate tests for my code.',
-    },
-    FixDiagnostic = {
-      prompt = 'Please assist with the following diagnostic issue in file:',
-      selection = select.diagnostics,
     },
     Commit = {
       prompt = 'Write commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',

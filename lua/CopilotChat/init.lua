@@ -401,11 +401,11 @@ function M.ask(prompt, config, source)
       message = message:match('^%s*(.-)%s*$')
       return message
     end
-    return tostring(err)
+    return vim.inspect(err)
   end
 
   local function on_error(err)
-    log.error(err)
+    log.error(vim.inspect(err))
     vim.schedule(function()
       append('\n\n' .. config.error_header .. config.separator .. '\n\n', config)
       append('```\n' .. get_error_message(err) .. '\n```', config)
@@ -417,27 +417,14 @@ function M.ask(prompt, config, source)
   local selection = get_selection()
   local filetype = selection.filetype
     or (vim.api.nvim_buf_is_valid(state.source.bufnr) and vim.bo[state.source.bufnr].filetype)
+    or 'text'
   local filename = selection.filename
-    or (
-      vim.api.nvim_buf_is_valid(state.source.bufnr)
-      and vim.api.nvim_buf_get_name(state.source.bufnr)
-    )
-
-  if not filetype then
-    on_error('No filetype found for the current buffer')
-    return
-  end
-
-  if not filename then
-    on_error('No filename found for the current buffer')
-    return
-  end
+    or (vim.api.nvim_buf_is_valid(state.source.bufnr) and vim.api.nvim_buf_get_name(
+      state.source.bufnr
+    ))
+    or 'untitled'
 
   state.last_system_prompt = system_prompt
-
-  if selection.prompt_extra then
-    updated_prompt = updated_prompt .. ' ' .. selection.prompt_extra
-  end
 
   if state.copilot:stop() then
     append('\n\n' .. config.question_header .. config.separator .. '\n\n', config)
@@ -471,12 +458,10 @@ function M.ask(prompt, config, source)
 
     local ask_ok, response, token_count, token_max_count =
       pcall(state.copilot.ask, state.copilot, updated_prompt, {
-        selection = selection.lines,
+        selection = selection,
         embeddings = embeddings,
         filename = filename,
         filetype = filetype,
-        start_row = selection.start_row,
-        end_row = selection.end_row,
         system_prompt = system_prompt,
         model = config.model,
         temperature = config.temperature,
@@ -617,34 +602,34 @@ end
 --- Set up the plugin
 ---@param config CopilotChat.config|nil
 function M.setup(config)
-  -- Handle old mapping format and show error
-  local found_old_format = false
+  -- Handle changed configuration
   if config then
     if config.mappings then
       for name, key in pairs(config.mappings) do
         if type(key) == 'string' then
-          vim.notify(
-            'config.mappings.'
-              .. name
-              .. ": 'mappings' format have changed, please update your configuration, for now revering to default settings. See ':help CopilotChat-configuration' for current format",
-            vim.log.levels.ERROR
+          utils.deprecate(
+            'config.mappings.' .. name,
+            'config.mappings.' .. name .. '.normal and config.mappings.' .. name .. '.insert'
           )
-          found_old_format = true
+
+          config.mappings[name] = {
+            normal = key,
+          }
         end
       end
     end
 
     if config.yank_diff_register then
-      vim.notify(
-        'config.yank_diff_register: This option has been removed, please use mappings.yank_diff.register instead',
-        vim.log.levels.ERROR
-      )
+      utils.deprecate('config.yank_diff_register', 'config.mappings.yank_diff.register')
+      config.mappings.yank_diff.register = config.yank_diff_register
     end
   end
 
-  if found_old_format then
-    config.mappings = nil
-  end
+  -- Handle removed commands
+  vim.api.nvim_create_user_command('CopilotChatFixDiagnostic', function()
+    utils.deprecate('CopilotChatFixDiagnostic', 'CopilotChatFix')
+    M.ask('/Fix')
+  end, { force = true })
 
   M.config = vim.tbl_deep_extend('force', default_config, config or {})
   if M.config.model == 'gpt-4o' then
@@ -951,7 +936,6 @@ function M.setup(config)
   })
 
   vim.api.nvim_create_user_command('CopilotChatModel', function()
-    -- Show which model is being used in an alert
     vim.notify('Using model: ' .. M.config.model, vim.log.levels.INFO)
   end, { force = true })
 

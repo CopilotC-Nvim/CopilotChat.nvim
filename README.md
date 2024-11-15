@@ -114,13 +114,12 @@ Verify "[Copilot chat in the IDE](https://github.com/settings/copilot)" is enabl
 
 #### Commands coming from default prompts
 
-- `:CopilotChatExplain` - Write an explanation for the active selection as paragraphs of text
+- `:CopilotChatExplain` - Write an explanation for the active selection and diagnostics as paragraphs of text
 - `:CopilotChatReview` - Review the selected code
 - `:CopilotChatFix` - There is a problem in this code. Rewrite the code to show it with the bug fixed
 - `:CopilotChatOptimize` - Optimize the selected code to improve performance and readability
 - `:CopilotChatDocs` - Please add documentation comment for the selection
 - `:CopilotChatTests` - Please generate tests for my code
-- `:CopilotChatFixDiagnostic` - Please assist with the following diagnostic issue in file
 - `:CopilotChatCommit` - Write commit message for the change with commitizen convention
 - `:CopilotChatCommitStaged` - Write commit message for the change with commitizen convention
 
@@ -181,9 +180,6 @@ local response = chat.response()
 -- Pick a prompt using vim.ui.select
 local actions = require("CopilotChat.actions")
 
--- Pick help actions
-actions.pick(actions.help_actions())
-
 -- Pick prompt actions
 actions.pick(actions.prompt_actions({
     selection = require("CopilotChat.select").visual,
@@ -227,15 +223,15 @@ Also see [here](/lua/CopilotChat/config.lua):
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
   callback = nil, -- Callback to use when ask response is received
 
-  -- default selection (visual or line)
+  -- default selection
   selection = function(source)
-    return select.visual(source) or select.line(source)
+    return select.visual(source) or select.buffer(source)
   end,
 
   -- default prompts
   prompts = {
     Explain = {
-      prompt = '/COPILOT_EXPLAIN Write an explanation for the active selection as paragraphs of text.',
+      prompt = '/COPILOT_EXPLAIN Write an explanation for the active selection and diagnostics as paragraphs of text.',
     },
     Review = {
       prompt = '/COPILOT_REVIEW Review the selected code.',
@@ -254,10 +250,6 @@ Also see [here](/lua/CopilotChat/config.lua):
     },
     Tests = {
       prompt = '/COPILOT_GENERATE Please generate tests for my code.',
-    },
-    FixDiagnostic = {
-      prompt = 'Please assist with the following diagnostic issue in file:',
-      selection = select.diagnostics,
     },
     Commit = {
       prompt = 'Write commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
@@ -462,15 +454,6 @@ Requires [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) plug
 ```lua
 -- lazy.nvim keys
 
-  -- Show help actions with telescope
-  {
-    "<leader>cch",
-    function()
-      local actions = require("CopilotChat.actions")
-      require("CopilotChat.integrations.telescope").pick(actions.help_actions())
-    end,
-    desc = "CopilotChat - Help actions",
-  },
   -- Show prompts actions with telescope
   {
     "<leader>ccp",
@@ -494,15 +477,6 @@ Requires [fzf-lua](https://github.com/ibhagwan/fzf-lua) plugin to be installed.
 ```lua
 -- lazy.nvim keys
 
-  -- Show help actions with fzf-lua
-  {
-    "<leader>cch",
-    function()
-      local actions = require("CopilotChat.actions")
-      require("CopilotChat.integrations.fzflua").pick(actions.help_actions())
-    end,
-    desc = "CopilotChat - Help actions",
-  },
   -- Show prompts actions with fzf-lua
   {
     "<leader>ccp",
