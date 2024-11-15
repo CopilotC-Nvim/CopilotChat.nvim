@@ -559,9 +559,7 @@ function Copilot:ask(prompt, opts)
     end
 
     finished = true
-    vim.schedule(function()
-      job:shutdown()
-    end)
+    job:shutdown(0)
   end
 
   local function stream_func(err, line, job)
