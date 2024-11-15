@@ -69,6 +69,8 @@ local select = require('CopilotChat.select')
 ---@field allow_insecure boolean?
 ---@field system_prompt string?
 ---@field model string?
+---@field agent string?
+---@field context string?
 ---@field temperature number?
 ---@field question_header string?
 ---@field answer_header string?
@@ -80,7 +82,6 @@ local select = require('CopilotChat.select')
 ---@field auto_insert_mode boolean?
 ---@field clear_chat_on_new_prompt boolean?
 ---@field highlight_selection boolean?
----@field context string?
 ---@field history_path string?
 ---@field callback fun(response: string, source: CopilotChat.config.source)?
 ---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
@@ -94,8 +95,10 @@ return {
   allow_insecure = false, -- Allow insecure server connections
 
   system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use
-  model = 'gpt-4o', -- GPT model to use, see ':CopilotChatModels' for available models
-  temperature = 0.1, -- GPT temperature
+  model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models
+  agent = 'copilot', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
+  context = nil, -- Default context to use, 'buffers', 'buffer' or none (can be specified manually in prompt via #).
+  temperature = 0.1, -- GPT result temperature
 
   question_header = '## User ', -- Header to use for user questions
   answer_header = '## Copilot ', -- Header to use for AI answers
@@ -110,7 +113,6 @@ return {
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
   highlight_selection = true, -- Highlight selection
 
-  context = nil, -- Default context to use, 'buffers', 'buffer' or none (can be specified manually in prompt via @).
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
   callback = nil, -- Callback to use when ask response is received
 

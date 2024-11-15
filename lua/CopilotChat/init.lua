@@ -60,30 +60,13 @@ local function blend_color_with_neovim_bg(color_name, blend)
   return string.format('#%02x%02x%02x', r, g, b)
 end
 
-local function dedupe_strings(str)
-  if not str then
-    return str
-  end
-  local seen = {}
-  local result = {}
-  for s in str:gmatch('[^%s,]+') do
-    if not seen[s] then
-      seen[s] = true
-      table.insert(result, s)
-    end
-  end
-  return table.concat(result, ' ')
-end
-
 local function get_error_message(err)
   if type(err) == 'string' then
-    -- Match first occurrence of :something: and capture rest
     local message = err:match('^[^:]+:[^:]+:(.+)') or err
-    -- Trim whitespace
-    message = message:match('^%s*(.-)%s*$')
-    return dedupe_strings(message)
+    message = message:gsub('^%s*', '')
+    return message
   end
-  return dedupe_strings(vim.inspect(err))
+  return vim.inspect(err)
 end
 
 local function find_lines_between_separator(
@@ -182,58 +165,6 @@ local function append(str, config)
   end
 end
 
-local function complete()
-  local line = vim.api.nvim_get_current_line()
-  local col = vim.api.nvim_win_get_cursor(0)[2]
-  if col == 0 or #line == 0 then
-    return
-  end
-
-  local prefix, cmp_start = unpack(vim.fn.matchstrpos(line:sub(1, col), [[\(/\|@\)\k*$]]))
-  if not prefix then
-    return
-  end
-
-  local items = {}
-  local prompts_to_use = M.prompts()
-
-  for name, prompt in pairs(prompts_to_use) do
-    items[#items + 1] = {
-      word = '/' .. name,
-      kind = prompt.kind,
-      info = prompt.prompt,
-      menu = prompt.description or '',
-      icase = 1,
-      dup = 0,
-      empty = 0,
-    }
-  end
-
-  items[#items + 1] = {
-    word = '@buffers',
-    kind = 'context',
-    menu = 'Use all loaded buffers as context',
-    icase = 1,
-    dup = 0,
-    empty = 0,
-  }
-
-  items[#items + 1] = {
-    word = '@buffer',
-    kind = 'context',
-    menu = 'Use the current buffer as context',
-    icase = 1,
-    dup = 0,
-    empty = 0,
-  }
-
-  items = vim.tbl_filter(function(item)
-    return vim.startswith(item.word:lower(), prefix:lower())
-  end, items)
-
-  vim.fn.complete(cmp_start + 1, items)
-end
-
 local function get_selection()
   local bufnr = state.source.bufnr
   local winnr = state.source.winnr
@@ -300,6 +231,70 @@ local function key_to_info(name, key, surround)
   end
 
   return out
+end
+
+--- Get the completion info for the chat window, for use with custom completion providers
+---@return table
+function M.complete_info()
+  return {
+    triggers = { '@', '/', '#' },
+    pattern = [[\%(@\|/\|#\)\k*]],
+  }
+end
+
+--- Get the completion items for the chat window, for use with custom completion providers
+---@param callback function(table)
+function M.complete_items(callback)
+  async.run(function()
+    local agents = state.copilot:list_agents()
+    local items = {}
+    local prompts_to_use = M.prompts()
+
+    for name, prompt in pairs(prompts_to_use) do
+      items[#items + 1] = {
+        word = '/' .. name,
+        kind = prompt.kind,
+        info = prompt.prompt,
+        menu = prompt.description or '',
+        icase = 1,
+        dup = 0,
+        empty = 0,
+      }
+    end
+
+    for _, agent in ipairs(agents) do
+      items[#items + 1] = {
+        word = '@' .. agent,
+        kind = 'agent',
+        menu = 'Use the specified agent',
+        icase = 1,
+        dup = 0,
+        empty = 0,
+      }
+    end
+
+    items[#items + 1] = {
+      word = '#buffers',
+      kind = 'context',
+      menu = 'Include all loaded buffers in context',
+      icase = 1,
+      dup = 0,
+      empty = 0,
+    }
+
+    items[#items + 1] = {
+      word = '#buffer',
+      kind = 'context',
+      menu = 'Include the specified buffer in context',
+      icase = 1,
+      dup = 0,
+      empty = 0,
+    }
+
+    vim.schedule(function()
+      callback(items)
+    end)
+  end)
 end
 
 --- Get the prompts to use.
@@ -408,13 +403,44 @@ end
 function M.select_model()
   async.run(function()
     local models = state.copilot:list_models()
+    models = vim.tbl_map(function(model)
+      if model == M.config.model then
+        return model .. ' (selected)'
+      end
+
+      return model
+    end, models)
 
     vim.schedule(function()
       vim.ui.select(models, {
         prompt = 'Select a model',
       }, function(choice)
         if choice then
-          M.config.model = choice
+          M.config.model = choice:gsub(' %(selected%)', '')
+        end
+      end)
+    end)
+  end)
+end
+
+--- Select a Copilot agent.
+function M.select_agent()
+  async.run(function()
+    local agents = state.copilot:list_agents()
+    agents = vim.tbl_map(function(agent)
+      if agent == M.config.agent then
+        return agent .. ' (selected)'
+      end
+
+      return agent
+    end, agents)
+
+    vim.schedule(function()
+      vim.ui.select(agents, {
+        prompt = 'Select an agent',
+      }, function(choice)
+        if choice then
+          M.config.agent = choice:gsub(' %(selected%)', '')
         end
       end)
     end)
@@ -473,14 +499,24 @@ function M.ask(prompt, config, source)
   append('\n\n' .. config.answer_header .. config.separator .. '\n\n', config)
 
   local selected_context = config.context
-  if string.find(prompt, '@buffers') then
+  if string.find(prompt, '#buffers') then
     selected_context = 'buffers'
-  elseif string.find(prompt, '@buffer') then
+  elseif string.find(prompt, '#buffer') then
     selected_context = 'buffer'
   end
-  updated_prompt = string.gsub(updated_prompt, '@buffers?%s*', '')
+  updated_prompt = string.gsub(updated_prompt, '#buffers?%s*', '')
 
   async.run(function()
+    local agents = state.copilot:list_agents()
+    local current_agent = config.agent
+
+    for agent in updated_prompt:gmatch('@([%w_-]+)') do
+      if vim.tbl_contains(agents, agent) then
+        current_agent = agent
+        updated_prompt = updated_prompt:gsub('@' .. agent .. '%s*', '')
+      end
+    end
+
     local query_ok, embeddings = pcall(context.find_for_query, state.copilot, {
       context = selected_context,
       prompt = updated_prompt,
@@ -503,6 +539,7 @@ function M.ask(prompt, config, source)
         filetype = filetype,
         system_prompt = system_prompt,
         model = config.model,
+        agent = current_agent,
         temperature = config.temperature,
         on_progress = function(token)
           vim.schedule(function()
@@ -808,9 +845,31 @@ function M.setup(config)
         state.help:show(chat_help, 'markdown', 'markdown', state.chat.winnr)
       end)
 
-      map_key(M.config.mappings.complete, bufnr, complete)
       map_key(M.config.mappings.reset, bufnr, M.reset)
       map_key(M.config.mappings.close, bufnr, M.close)
+
+      map_key(M.config.mappings.complete, bufnr, function()
+        local info = M.complete_info()
+        local line = vim.api.nvim_get_current_line()
+        local col = vim.api.nvim_win_get_cursor(0)[2]
+        if col == 0 or #line == 0 then
+          return
+        end
+
+        local prefix, cmp_start = unpack(vim.fn.matchstrpos(line:sub(1, col), info.pattern))
+        if not prefix then
+          return
+        end
+
+        M.complete_items(function(items)
+          vim.fn.complete(
+            cmp_start + 1,
+            vim.tbl_filter(function(item)
+              return vim.startswith(item.word:lower(), prefix:lower())
+            end, items)
+          )
+        end)
+      end)
 
       map_key(M.config.mappings.submit_prompt, bufnr, function()
         local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
@@ -983,14 +1042,12 @@ function M.setup(config)
     range = true,
   })
 
-  vim.api.nvim_create_user_command('CopilotChatModel', function()
-    vim.notify('Using model: ' .. M.config.model, vim.log.levels.INFO)
-  end, { force = true })
-
   vim.api.nvim_create_user_command('CopilotChatModels', function()
     M.select_model()
   end, { force = true })
-
+  vim.api.nvim_create_user_command('CopilotChatAgents', function()
+    M.select_agent()
+  end, { force = true })
   vim.api.nvim_create_user_command('CopilotChatOpen', function()
     M.open()
   end, { force = true })

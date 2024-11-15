@@ -4,34 +4,30 @@ local chat = require('CopilotChat')
 local Source = {}
 
 function Source:get_trigger_characters()
-  return { '@', '/' }
+  return chat.complete_info().triggers
 end
 
 function Source:get_keyword_pattern()
-  return [[\%(@\|/\)\k*]]
+  return chat.complete_info().pattern
 end
 
 function Source:complete(params, callback)
-  local items = {}
-  local prompts_to_use = chat.prompts()
-
-  local prefix = string.lower(params.context.cursor_before_line:sub(params.offset))
-  local prefix_len = #prefix
-  local checkAdd = function(word)
-    if word:lower():sub(1, prefix_len) == prefix then
-      items[#items + 1] = {
-        label = word,
+  chat.complete_items(function(items)
+    items = vim.tbl_map(function(item)
+      return {
+        label = item.word,
         kind = cmp.lsp.CompletionItemKind.Keyword,
       }
-    end
-  end
-  for name, _ in pairs(prompts_to_use) do
-    checkAdd('/' .. name)
-  end
-  checkAdd('@buffers')
-  checkAdd('@buffer')
+    end, items)
 
-  callback({ items = items })
+    local prefix = string.lower(params.context.cursor_before_line:sub(params.offset))
+
+    callback({
+      items = vim.tbl_filter(function(item)
+        return vim.startswith(item.label:lower(), prefix:lower())
+      end, items),
+    })
+  end)
 end
 
 ---@param completion_item lsp.CompletionItem

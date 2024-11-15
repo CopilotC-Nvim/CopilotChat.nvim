@@ -110,7 +110,7 @@ Verify "[Copilot chat in the IDE](https://github.com/settings/copilot)" is enabl
 - `:CopilotChatLoad <name>?` - Load chat history from file
 - `:CopilotChatDebugInfo` - Show debug information
 - `:CopilotChatModels` - View and select available models. This is reset when a new instance is made. Please set your model in `init.lua` for persistence.
-- `:CopilotChatModel` - View the currently selected model.
+- `:CopilotChatAgents` - View and select available agents. This is reset when a new instance is made. Please set your agent in `init.lua` for persistence.
 
 #### Commands coming from default prompts
 
@@ -121,6 +121,39 @@ Verify "[Copilot chat in the IDE](https://github.com/settings/copilot)" is enabl
 - `:CopilotChatDocs` - Please add documentation comment for the selection
 - `:CopilotChatTests` - Please generate tests for my code
 - `:CopilotChatCommit` - Write commit message for the change with commitizen convention
+
+### Models, Agents and Contexts
+
+#### Models
+
+You can list available models with `:CopilotChatModels` command. Model determines the AI model used for the chat.  
+Default models are:
+
+- `gpt-4o` - This is the default Copilot Chat model. It is a versatile, multimodal model that excels in both text and image processing and is designed to provide fast, reliable responses. It also has superior performance in non-English languages. Gpt-4o is hosted on Azure.
+- `claude-3.5-sonnet` - This model excels at coding tasks across the entire software development lifecycle, from initial design to bug fixes, maintenance to optimizations. GitHub Copilot uses Claude 3.5 Sonnet hosted on Amazon Web Services.
+- `o1-preview` - This model is focused on advanced reasoning and solving complex problems, in particular in math and science. It responds more slowly than the gpt-4o model. You can make 10 requests to this model per day. o1-preview is hosted on Azure.
+- `o1-mini` - This is the faster version of the o1-preview model, balancing the use of complex reasoning with the need for faster responses. It is best suited for code generation and small context operations. You can make 50 requests to this model per day. o1-mini is hosted on Azure.
+
+For more information about models, see [here](https://docs.github.com/en/copilot/using-github-copilot/asking-github-copilot-questions-in-your-ide#ai-models-for-copilot-chat)  
+You can use more models from [here](https://github.com/marketplace/models) by using `@models` agent from [here](https://github.com/marketplace/models-github) (example: `@models Using Mistral-small, what is 1 + 11`)
+
+#### Agents
+
+Agents are used to determine the AI agent used for the chat. You can list available agents with `:CopilotChatAgents` command.  
+You can set the agent in the prompt by using `@` followed by the agent name.  
+Default "noop" agent is `copilot`.
+
+For more information about extension agents, see [here](https://docs.github.com/en/copilot/using-github-copilot/using-extensions-to-integrate-external-tools-with-copilot-chat)  
+You can install more agents from [here](https://github.com/marketplace?type=apps&copilot_app=true)
+
+#### Contexts
+
+Contexts are used to determine the context of the chat.  
+You can set the context in the prompt by using `#` followed by the context name.  
+Supported contexts are:
+
+- `buffers` - Includes all open buffers in chat context
+- `buffer` - Includes only the current buffer in chat context
 
 ### API
 
@@ -202,8 +235,10 @@ Also see [here](/lua/CopilotChat/config.lua):
   allow_insecure = false, -- Allow insecure server connections
 
   system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use
-  model = 'gpt-4o', -- GPT model to use, see ':CopilotChatModels' for available models
-  temperature = 0.1, -- GPT temperature
+  model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models
+  agent = 'copilot', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
+  context = nil, -- Default context to use, 'buffers', 'buffer' or none (can be specified manually in prompt via #).
+  temperature = 0.1, -- GPT result temperature
 
   question_header = '## User ', -- Header to use for user questions
   answer_header = '## Copilot ', -- Header to use for AI answers
@@ -218,7 +253,6 @@ Also see [here](/lua/CopilotChat/config.lua):
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
   highlight_selection = true, -- Highlight selection in the source buffer when in the chat window
 
-  context = nil, -- Default context to use, 'buffers', 'buffer' or none (can be specified manually in prompt via @).
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
   callback = nil, -- Callback to use when ask response is received
 
