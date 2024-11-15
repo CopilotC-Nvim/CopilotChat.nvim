@@ -52,7 +52,7 @@ function Spinner:start()
         math.max(0, vim.api.nvim_buf_line_count(self.bufnr) - 1),
         0,
         {
-          id = self.ns,
+          id = 1,
           hl_mode = 'combine',
           priority = 100,
           virt_text = vim.tbl_map(function(t)
@@ -77,7 +77,7 @@ function Spinner:finish()
   timer:stop()
   timer:close()
 
-  vim.api.nvim_buf_del_extmark(self.bufnr, self.ns, self.ns)
+  vim.api.nvim_buf_del_extmark(self.bufnr, self.ns, 1)
 end
 
 return Spinner

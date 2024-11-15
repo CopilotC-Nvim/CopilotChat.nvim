@@ -300,8 +300,8 @@ local function count_history_tokens(history)
 end
 
 local Copilot = class(function(self, proxy, allow_insecure)
-  self.github_token = get_cached_token()
   self.history = {}
+  self.github_token = nil
   self.token = nil
   self.sessionid = nil
   self.machineid = machine_id()
@@ -337,9 +337,12 @@ end)
 
 function Copilot:authenticate()
   if not self.github_token then
-    error(
-      'No GitHub token found, please use `:Copilot auth` to set it up from copilot.lua or `:Copilot setup` for copilot.vim'
-    )
+    self.github_token = get_cached_token()
+    if not self.github_token then
+      error(
+        'No GitHub token found, please use `:Copilot auth` to set it up from copilot.lua or `:Copilot setup` for copilot.vim'
+      )
+    end
   end
 
   if
