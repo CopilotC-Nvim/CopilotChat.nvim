@@ -630,6 +630,10 @@ function M.setup(config)
     utils.deprecate('CopilotChatFixDiagnostic', 'CopilotChatFix')
     M.ask('/Fix')
   end, { force = true })
+  vim.api.nvim_create_user_command('CopilotChatCommitStaged', function()
+    utils.deprecate('CopilotChatCommitStaged', 'CopilotChatCommit')
+    M.ask('/Commit')
+  end, { force = true })
 
   M.config = vim.tbl_deep_extend('force', default_config, config or {})
   if M.config.model == 'gpt-4o' then
