@@ -124,7 +124,7 @@ return {
   -- default prompts
   prompts = {
     Explain = {
-      prompt = '/COPILOT_EXPLAIN Write an explanation for the active selection and diagnostics as paragraphs of text.',
+      prompt = '/COPILOT_EXPLAIN Write an explanation for the selected code and diagnostics as paragraphs of text.',
     },
     Review = {
       prompt = '/COPILOT_REVIEW Review the selected code.',
@@ -175,7 +175,7 @@ return {
       prompt = '/COPILOT_GENERATE Optimize the selected code to improve performance and readability.',
     },
     Docs = {
-      prompt = '/COPILOT_GENERATE Please add documentation comment for the selection.',
+      prompt = '/COPILOT_GENERATE Please add documentation comments to the selected code.',
     },
     Tests = {
       prompt = '/COPILOT_GENERATE Please generate tests for my code.',
