@@ -156,26 +156,42 @@ local function get_cached_token()
   return nil
 end
 
-local function generate_selection_message(filename, filetype, selection)
+local function generate_line_numbers(content, start_row)
+  local lines = vim.split(content, '\n')
+  local total_lines = #lines
+  local max_length = #tostring(total_lines)
+  for i, line in ipairs(lines) do
+    local formatted_line_number = string.format('%' .. max_length .. 'd', i - 1 + (start_row or 1))
+    lines[i] = formatted_line_number .. ': ' .. line
+  end
+  content = table.concat(lines, '\n')
+  return content
+end
+
+local function generate_selection_messages(filename, filetype, selection)
   local content = selection.lines
 
   if not content or content == '' then
-    return ''
+    return {}
   end
 
+  local out = string.format('# FILE:%s CONTEXT\n', filename:upper())
+  out = out .. "User's active selection:\n"
   if selection.start_row and selection.start_row > 0 then
-    local lines = vim.split(content, '\n')
-    local total_lines = #lines
-    local max_length = #tostring(total_lines)
-    for i, line in ipairs(lines) do
-      local formatted_line_number =
-        string.format('%' .. max_length .. 'd', i - 1 + selection.start_row)
-      lines[i] = formatted_line_number .. ': ' .. line
-    end
-    content = table.concat(lines, '\n')
+    out = out
+      .. string.format(
+        'Excerpt from %s, lines %s to %s:\n',
+        filename,
+        selection.start_row,
+        selection.end_row
+      )
   end
-
-  local out = string.format('Active selection: `%s`\n```%s\n%s\n```', filename, filetype, content)
+  out = out
+    .. string.format(
+      '```%s\n%s\n```',
+      filetype,
+      generate_line_numbers(content, selection.start_row)
+    )
 
   if selection.diagnostics then
     local diagnostics = {}
@@ -201,14 +217,19 @@ local function generate_selection_message(filename, filetype, selection)
       end
     end
 
-    out =
-      string.format('%s\nDiagnostics: `%s`\n%s\n', out, filename, table.concat(diagnostics, '\n'))
+    out = out
+      .. string.format('\n# FILE:%s DIAGNOSTICS:\n%s', filename, table.concat(diagnostics, '\n'))
   end
 
-  return out
+  return {
+    {
+      content = out,
+      role = 'user',
+    },
+  }
 end
 
-local function generate_embeddings_message(embeddings)
+local function generate_embeddings_messages(embeddings)
   local files = {}
   for _, embedding in ipairs(embeddings) do
     local filename = embedding.filename
@@ -218,36 +239,33 @@ local function generate_embeddings_message(embeddings)
     table.insert(files[filename], embedding)
   end
 
-  local out = {
-    header = 'Open files:\n',
-    files = {},
-  }
+  local out = {}
 
   for filename, group in pairs(files) do
-    table.insert(
-      out.files,
-      string.format(
-        'File: `%s`\n```%s\n%s\n```\n',
-        filename,
+    table.insert(out, {
+      content = string.format(
+        '# FILE:%s CONTEXT\n```%s\n%s\n```',
+        filename:upper(),
         group[1].filetype,
-        table.concat(
+        generate_line_numbers(table.concat(
           vim.tbl_map(function(e)
             return vim.trim(e.content)
           end, group),
           '\n'
-        )
-      )
-    )
+        ))
+      ),
+      role = 'user',
+    })
   end
+
   return out
 end
 
 local function generate_ask_request(
   history,
   prompt,
-  embeddings,
-  selection,
   system_prompt,
+  generated_messages,
   model,
   temperature,
   max_output_tokens,
@@ -263,22 +281,12 @@ local function generate_ask_request(
     })
   end
 
-  for _, message in ipairs(history) do
+  for _, message in ipairs(generated_messages) do
     table.insert(messages, message)
   end
 
-  if embeddings and #embeddings.files > 0 then
-    table.insert(messages, {
-      content = embeddings.header .. table.concat(embeddings.files, ''),
-      role = system_role,
-    })
-  end
-
-  if selection ~= '' then
-    table.insert(messages, {
-      content = selection,
-      role = system_role,
-    })
+  for _, message in ipairs(history) do
+    table.insert(messages, message)
   end
 
   table.insert(messages, {
@@ -537,11 +545,12 @@ end
 ---@param opts CopilotChat.copilot.ask.opts: Options for the request
 function Copilot:ask(prompt, opts)
   opts = opts or {}
+  prompt = vim.trim(prompt)
   local embeddings = opts.embeddings or {}
   local filename = opts.filename or ''
   local filetype = opts.filetype or ''
   local selection = opts.selection or {}
-  local system_prompt = opts.system_prompt or prompts.COPILOT_INSTRUCTIONS
+  local system_prompt = vim.trim(opts.system_prompt or prompts.COPILOT_INSTRUCTIONS)
   local model = opts.model or 'gpt-4o-2024-05-13'
   local agent = opts.agent or 'copilot'
   local temperature = opts.temperature or 0.1
@@ -578,21 +587,26 @@ function Copilot:ask(prompt, opts)
   log.debug('Tokenizer: ' .. tokenizer)
   tiktoken_load(tokenizer)
 
-  local selection_message = generate_selection_message(filename, filetype, selection)
-  local embeddings_message = generate_embeddings_message(embeddings)
+  local generated_messages = {}
+  local selection_messages = generate_selection_messages(filename, filetype, selection)
+  local embeddings_messages = generate_embeddings_messages(embeddings)
+  local generated_tokens = 0
+  for _, message in ipairs(selection_messages) do
+    generated_tokens = generated_tokens + tiktoken.count(message.content)
+    table.insert(generated_messages, message)
+  end
 
   -- Count required tokens that we cannot reduce
   local prompt_tokens = tiktoken.count(prompt)
   local system_tokens = tiktoken.count(system_prompt)
-  local selection_tokens = tiktoken.count(selection_message)
-  local required_tokens = prompt_tokens + system_tokens + selection_tokens
+  local required_tokens = prompt_tokens + system_tokens + generated_tokens
 
   -- Reserve space for first embedding if its smaller than half of max tokens
   local reserved_tokens = 0
-  if #embeddings_message.files > 0 then
-    local file_tokens = tiktoken.count(embeddings_message.files[1])
+  if #embeddings_messages > 0 then
+    local file_tokens = tiktoken.count(embeddings_messages[1].content)
     if file_tokens < max_tokens / 2 then
-      reserved_tokens = tiktoken.count(embeddings_message.header) + file_tokens
+      reserved_tokens = file_tokens
     end
   end
 
@@ -608,20 +622,23 @@ function Copilot:ask(prompt, opts)
 
   -- Now add as many files as possible with remaining token budget
   local remaining_tokens = max_tokens - required_tokens - history_tokens
-  if #embeddings_message.files > 0 then
-    remaining_tokens = remaining_tokens - tiktoken.count(embeddings_message.header)
-    local filtered_files = {}
-    for _, file in ipairs(embeddings_message.files) do
-      local file_tokens = tiktoken.count(file)
-      if remaining_tokens - file_tokens >= 0 then
-        remaining_tokens = remaining_tokens - file_tokens
-        table.insert(filtered_files, file)
-      else
-        break
-      end
+  for _, message in ipairs(embeddings_messages) do
+    local tokens = tiktoken.count(message.content)
+    if remaining_tokens - tokens >= 0 then
+      remaining_tokens = remaining_tokens - tokens
+      table.insert(generated_messages, message)
+    else
+      break
     end
-    embeddings_message.files = filtered_files
   end
+
+  -- Prepend links to embeddings to the prompt
+  local embeddings_prompt = ''
+  for _, embedding in ipairs(embeddings) do
+    embeddings_prompt = embeddings_prompt
+      .. string.format('[#file:%s](#file:%s-context)\n', embedding.filename, embedding.filename)
+  end
+  prompt = embeddings_prompt .. prompt
 
   local last_message = nil
   local errored = false
@@ -716,9 +733,8 @@ function Copilot:ask(prompt, opts)
     generate_ask_request(
       self.history,
       prompt,
-      embeddings_message,
-      selection_message,
       system_prompt,
+      generated_messages,
       model,
       temperature,
       max_output_tokens,
