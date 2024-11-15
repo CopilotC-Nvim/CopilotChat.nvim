@@ -90,4 +90,8 @@ function M.return_to_normal_mode()
   end
 end
 
+function M.deprecate(old, new)
+  vim.deprecate(old, new, '3.0.0', 'CopilotChat.nvim', false)
+end
+
 return M

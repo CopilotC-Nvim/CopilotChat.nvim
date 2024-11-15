@@ -1,5 +1,32 @@
 local M = {}
 
+local function get_diagnostics_in_range(bufnr, start_line, end_line)
+  local diagnostics = vim.diagnostic.get(bufnr)
+  local range_diagnostics = {}
+  local severity = {
+    [1] = 'ERROR',
+    [2] = 'WARNING',
+    [3] = 'INFORMATION',
+    [4] = 'HINT',
+  }
+
+  for _, diagnostic in ipairs(diagnostics) do
+    local lnum = diagnostic.lnum + 1
+    if lnum >= start_line and lnum <= end_line then
+      table.insert(range_diagnostics, {
+        message = diagnostic.message,
+        severity = severity[diagnostic.severity],
+        start_row = lnum,
+        start_col = diagnostic.col + 1,
+        end_row = lnum,
+        end_col = diagnostic.end_col and (diagnostic.end_col + 1) or diagnostic.col + 1,
+      })
+    end
+  end
+
+  return #range_diagnostics > 0 and range_diagnostics or nil
+end
+
 local function get_selection_lines(bufnr, start_line, start_col, finish_line, finish_col, full_line)
   -- Exit if no actual selection
   if start_line == finish_line and start_col == finish_col then
@@ -68,6 +95,54 @@ function M.visual(source)
   return get_selection_lines(bufnr, start_line, start_col, finish_line, finish_col, false)
 end
 
+--- Select and process whole buffer
+--- @param source CopilotChat.config.source
+--- @return CopilotChat.config.selection|nil
+function M.buffer(source)
+  local bufnr = source.bufnr
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+
+  if not lines or #lines == 0 then
+    return nil
+  end
+
+  local out = {
+    lines = table.concat(lines, '\n'),
+    start_row = 1,
+    start_col = 1,
+    end_row = #lines,
+    end_col = #lines[#lines],
+  }
+
+  out.diagnostics = get_diagnostics_in_range(bufnr, out.start_row, out.end_row)
+  return out
+end
+
+--- Select and process current line
+--- @param source CopilotChat.config.source
+--- @return CopilotChat.config.selection|nil
+function M.line(source)
+  local bufnr = source.bufnr
+  local winnr = source.winnr
+  local cursor = vim.api.nvim_win_get_cursor(winnr)
+  local line = vim.api.nvim_buf_get_lines(bufnr, cursor[1] - 1, cursor[1], false)[1]
+
+  if not line then
+    return nil
+  end
+
+  local out = {
+    lines = line,
+    start_row = cursor[1],
+    start_col = 1,
+    end_row = cursor[1],
+    end_col = #line,
+  }
+
+  out.diagnostics = get_diagnostics_in_range(bufnr, out.start_row, out.end_row)
+  return out
+end
+
 --- Select and process contents of unnamed register ("). This register contains last deleted, changed or yanked content.
 --- @return CopilotChat.config.selection|nil
 function M.unnamed()
@@ -94,80 +169,6 @@ function M.clipboard()
   return {
     lines = lines,
   }
-end
-
---- Select and process whole buffer
---- @param source CopilotChat.config.source
---- @return CopilotChat.config.selection|nil
-function M.buffer(source)
-  local bufnr = source.bufnr
-  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-
-  if not lines or #lines == 0 then
-    return nil
-  end
-
-  return {
-    lines = table.concat(lines, '\n'),
-    start_row = 1,
-    start_col = 1,
-    end_row = #lines,
-    end_col = #lines[#lines],
-  }
-end
-
---- Select and process current line
---- @param source CopilotChat.config.source
---- @return CopilotChat.config.selection|nil
-function M.line(source)
-  local bufnr = source.bufnr
-  local winnr = source.winnr
-  local cursor = vim.api.nvim_win_get_cursor(winnr)
-  local line = vim.api.nvim_buf_get_lines(bufnr, cursor[1] - 1, cursor[1], false)[1]
-
-  if not line then
-    return nil
-  end
-
-  return {
-    lines = line,
-    start_row = cursor[1],
-    start_col = 1,
-    end_row = cursor[1],
-    end_col = #line,
-  }
-end
-
---- Select whole buffer and find diagnostics
---- It uses the built-in LSP client in Neovim to get the diagnostics.
---- @param source CopilotChat.config.source
---- @return CopilotChat.config.selection|nil
-function M.diagnostics(source)
-  local bufnr = source.bufnr
-  local winnr = source.winnr
-  local select_buffer = M.buffer(source)
-  if not select_buffer then
-    return nil
-  end
-
-  local cursor = vim.api.nvim_win_get_cursor(winnr)
-  local line_diagnostics = vim.diagnostic.get(bufnr, { lnum = cursor[1] - 1 })
-
-  if #line_diagnostics == 0 then
-    return nil
-  end
-
-  local diagnostics = {}
-  for _, diagnostic in ipairs(line_diagnostics) do
-    table.insert(diagnostics, diagnostic.message)
-  end
-
-  local result = table.concat(diagnostics, '. ')
-  result = result:gsub('^%s*(.-)%s*$', '%1'):gsub('\n', ' ')
-
-  local file_name = vim.api.nvim_buf_get_name(bufnr)
-  select_buffer.prompt_extra = file_name .. ':' .. cursor[1] .. '. ' .. result
-  return select_buffer
 end
 
 --- Select and process current git diff

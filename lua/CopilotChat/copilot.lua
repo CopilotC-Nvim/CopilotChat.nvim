@@ -5,7 +5,7 @@
 ---@field content string?
 
 ---@class CopilotChat.copilot.ask.opts
----@field selection string?
+---@field selection CopilotChat.config.selection?
 ---@field embeddings table<CopilotChat.copilot.embed>?
 ---@field filename string?
 ---@field filetype string?
@@ -152,24 +152,56 @@ local function get_cached_token()
   return nil
 end
 
-local function generate_selection_message(filename, filetype, start_row, end_row, selection)
-  if not selection or selection == '' then
+local function generate_selection_message(filename, filetype, selection)
+  local content = selection.lines
+
+  if not content or content == '' then
     return ''
   end
 
-  local content = selection
-  if start_row > 0 then
-    local lines = vim.split(selection, '\n')
+  if selection.start_row and selection.start_row > 0 then
+    local lines = vim.split(content, '\n')
     local total_lines = #lines
     local max_length = #tostring(total_lines)
     for i, line in ipairs(lines) do
-      local formatted_line_number = string.format('%' .. max_length .. 'd', i - 1 + start_row)
+      local formatted_line_number =
+        string.format('%' .. max_length .. 'd', i - 1 + selection.start_row)
       lines[i] = formatted_line_number .. ': ' .. line
     end
     content = table.concat(lines, '\n')
   end
 
-  return string.format('Active selection: `%s`\n```%s\n%s\n```', filename, filetype, content)
+  local out = string.format('Active selection: `%s`\n```%s\n%s\n```', filename, filetype, content)
+
+  if selection.diagnostics then
+    local diagnostics = {}
+    for _, diagnostic in ipairs(selection.diagnostics) do
+      local start_row = diagnostic.start_row
+      local end_row = diagnostic.end_row
+      if start_row == end_row then
+        table.insert(
+          diagnostics,
+          string.format('%s line=%d: %s', diagnostic.severity, start_row, diagnostic.message)
+        )
+      else
+        table.insert(
+          diagnostics,
+          string.format(
+            '%s line=%d-%d: %s',
+            diagnostic.severity,
+            start_row,
+            end_row,
+            diagnostic.message
+          )
+        )
+      end
+    end
+
+    out =
+      string.format('%s\nDiagnostics: `%s`\n%s\n', out, filename, table.concat(diagnostics, '\n'))
+  end
+
+  return out
 end
 
 local function generate_embeddings_message(embeddings)
@@ -473,9 +505,7 @@ function Copilot:ask(prompt, opts)
   local embeddings = opts.embeddings or {}
   local filename = opts.filename or ''
   local filetype = opts.filetype or ''
-  local selection = opts.selection or ''
-  local start_row = opts.start_row or 0
-  local end_row = opts.end_row or 0
+  local selection = opts.selection or {}
   local system_prompt = opts.system_prompt or prompts.COPILOT_INSTRUCTIONS
   local model = opts.model or 'gpt-4o-2024-05-13'
   local temperature = opts.temperature or 0.1
@@ -484,7 +514,7 @@ function Copilot:ask(prompt, opts)
   self.current_job = job_id
 
   log.trace('System prompt: ' .. system_prompt)
-  log.trace('Selection: ' .. selection)
+  log.trace('Selection: ' .. (selection.lines or ''))
   log.debug('Prompt: ' .. prompt)
   log.debug('Embeddings: ' .. #embeddings)
   log.debug('Filename: ' .. filename)
@@ -501,8 +531,7 @@ function Copilot:ask(prompt, opts)
   log.debug('Tokenizer: ' .. tokenizer)
   tiktoken_load(tokenizer)
 
-  local selection_message =
-    generate_selection_message(filename, filetype, start_row, end_row, selection)
+  local selection_message = generate_selection_message(filename, filetype, selection)
   local embeddings_message = generate_embeddings_message(embeddings)
 
   -- Count required tokens that we cannot reduce
