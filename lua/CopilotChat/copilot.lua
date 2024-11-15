@@ -59,7 +59,8 @@ local curl_get = async.wrap(function(url, opts, callback)
   opts = vim.tbl_deep_extend('force', opts, {
     callback = callback,
     on_error = function(err)
-      callback(nil, vim.inspect(err))
+      err = err and err.stderr or vim.inspect(err)
+      callback(nil, err)
     end,
   })
   curl.get(url, opts)
@@ -69,7 +70,8 @@ local curl_post = async.wrap(function(url, opts, callback)
   opts = vim.tbl_deep_extend('force', opts, {
     callback = callback,
     on_error = function(err)
-      callback(nil, vim.inspect(err))
+      err = err and err.stderr or vim.inspect(err)
+      callback(nil, err)
     end,
   })
   curl.post(url, opts)

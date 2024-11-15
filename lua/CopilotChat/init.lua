@@ -60,6 +60,32 @@ local function blend_color_with_neovim_bg(color_name, blend)
   return string.format('#%02x%02x%02x', r, g, b)
 end
 
+local function dedupe_strings(str)
+  if not str then
+    return str
+  end
+  local seen = {}
+  local result = {}
+  for s in str:gmatch('[^%s,]+') do
+    if not seen[s] then
+      seen[s] = true
+      table.insert(result, s)
+    end
+  end
+  return table.concat(result, ' ')
+end
+
+local function get_error_message(err)
+  if type(err) == 'string' then
+    -- Match first occurrence of :something: and capture rest
+    local message = err:match('^[^:]+:[^:]+:(.+)') or err
+    -- Trim whitespace
+    message = message:match('^%s*(.-)%s*$')
+    return dedupe_strings(message)
+  end
+  return dedupe_strings(vim.inspect(err))
+end
+
 local function find_lines_between_separator(lines, pattern, at_least_one)
   local line_count = #lines
   local separator_line_start = 1
@@ -391,17 +417,6 @@ function M.ask(prompt, config, source)
 
   if config.clear_chat_on_new_prompt then
     M.stop(true, config)
-  end
-
-  local function get_error_message(err)
-    if type(err) == 'string' then
-      -- Match first occurrence of :something: and capture rest
-      local message = err:match('^[^:]+:[^:]+:(.+)') or err
-      -- Trim whitespace
-      message = message:match('^%s*(.-)%s*$')
-      return message
-    end
-    return vim.inspect(err)
   end
 
   local function on_error(err)
