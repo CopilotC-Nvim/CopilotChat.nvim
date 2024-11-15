@@ -173,9 +173,8 @@ end
 
 --- Select and process current git diff
 --- @param source CopilotChat.config.source
---- @param staged boolean @If true, it will return the staged changes
 --- @return CopilotChat.config.selection|nil
-function M.gitdiff(source, staged)
+function M.gitdiff(source)
   local select_buffer = M.buffer(source)
   if not select_buffer then
     return nil
@@ -189,7 +188,7 @@ function M.gitdiff(source, staged)
   end
   dir = dir:gsub('.git$', '')
 
-  local cmd = 'git -C ' .. dir .. ' diff --no-color --no-ext-diff' .. (staged and ' --staged' or '')
+  local cmd = 'git -C ' .. dir .. ' diff --no-color --no-ext-diff --staged'
   local handle = io.popen(cmd)
   if not handle then
     return nil

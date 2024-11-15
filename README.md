@@ -121,7 +121,6 @@ Verify "[Copilot chat in the IDE](https://github.com/settings/copilot)" is enabl
 - `:CopilotChatDocs` - Please add documentation comment for the selection
 - `:CopilotChatTests` - Please generate tests for my code
 - `:CopilotChatCommit` - Write commit message for the change with commitizen convention
-- `:CopilotChatCommitStaged` - Write commit message for the change with commitizen convention
 
 ### API
 
@@ -254,12 +253,6 @@ Also see [here](/lua/CopilotChat/config.lua):
     Commit = {
       prompt = 'Write commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
       selection = select.gitdiff,
-    },
-    CommitStaged = {
-      prompt = 'Write commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
-      selection = function(source)
-        return select.gitdiff(source, true)
-      end,
     },
   },
 
