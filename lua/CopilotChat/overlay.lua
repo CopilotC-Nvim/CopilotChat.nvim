@@ -87,7 +87,7 @@ function Overlay:show_help(msg, offset)
   local help_ns = vim.api.nvim_create_namespace('copilot-chat-help')
   local line = vim.api.nvim_buf_line_count(self.bufnr) + offset
   vim.api.nvim_buf_set_extmark(self.bufnr, help_ns, math.max(0, line - 1), 0, {
-    id = help_ns,
+    id = 1,
     hl_mode = 'combine',
     priority = 100,
     virt_lines = vim.tbl_map(function(t)
