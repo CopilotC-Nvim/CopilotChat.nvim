@@ -13,6 +13,7 @@
 ---@field end_row number?
 ---@field system_prompt string?
 ---@field model string?
+---@field agent string?
 ---@field temperature number?
 ---@field on_progress nil|fun(response: string):nil
 
@@ -29,6 +30,7 @@
 ---@field load fun(self: CopilotChat.Copilot, name: string, path: string):table
 ---@field running fun(self: CopilotChat.Copilot):boolean
 ---@field list_models fun(self: CopilotChat.Copilot):table
+---@field list_agents fun(self: CopilotChat.Copilot):table
 
 local async = require('plenary.async')
 local log = require('plenary.log')
@@ -340,6 +342,7 @@ local Copilot = class(function(self, proxy, allow_insecure)
   self.sessionid = nil
   self.machineid = machine_id()
   self.models = nil
+  self.agents = nil
   self.claude_enabled = false
   self.current_job = nil
   self.request_args = {
@@ -362,9 +365,6 @@ local Copilot = class(function(self, proxy, allow_insecure)
       '--no-keepalive', -- Don't reuse connections
       '--tcp-nodelay', -- Disable Nagle's algorithm for faster streaming
       '--no-buffer', -- Disable output buffering for streaming
-      '--fail', -- Return error on HTTP errors (4xx, 5xx)
-      '--silent', -- Don't show progress meter
-      '--show-error', -- Show errors even when silent
     },
   }
 end)
@@ -461,6 +461,39 @@ function Copilot:fetch_models()
   return out
 end
 
+function Copilot:fetch_agents()
+  if self.agents then
+    return self.agents
+  end
+
+  local response, err = curl_get(
+    'https://api.githubcopilot.com/agents',
+    vim.tbl_extend('force', self.request_args, {
+      headers = self:authenticate(),
+    })
+  )
+
+  if err then
+    error(err)
+  end
+
+  if response.status ~= 200 then
+    error('Failed to fetch agents: ' .. tostring(response.status))
+  end
+
+  local agents = vim.json.decode(response.body)['agents']
+  local out = {}
+  for _, agent in ipairs(agents) do
+    out[agent['slug']] = agent
+  end
+
+  out['copilot'] = { name = 'Copilot', default = true }
+
+  log.info('Agents fetched')
+  self.agents = out
+  return out
+end
+
 function Copilot:enable_claude()
   if self.claude_enabled then
     return true
@@ -510,6 +543,7 @@ function Copilot:ask(prompt, opts)
   local selection = opts.selection or {}
   local system_prompt = opts.system_prompt or prompts.COPILOT_INSTRUCTIONS
   local model = opts.model or 'gpt-4o-2024-05-13'
+  local agent = opts.agent or 'copilot'
   local temperature = opts.temperature or 0.1
   local on_progress = opts.on_progress
   local job_id = uuid()
@@ -522,10 +556,21 @@ function Copilot:ask(prompt, opts)
   log.debug('Filename: ' .. filename)
   log.debug('Filetype: ' .. filetype)
   log.debug('Model: ' .. model)
+  log.debug('Agent: ' .. agent)
   log.debug('Temperature: ' .. temperature)
 
   local models = self:fetch_models()
-  local capabilities = models[model] and models[model].capabilities
+  local agents = self:fetch_agents()
+  local agent_config = agents[agent]
+  if not agent_config then
+    error('Agent not found: ' .. agent)
+  end
+  local model_config = models[model]
+  if not model_config then
+    error('Model not found: ' .. model)
+  end
+
+  local capabilities = model_config.capabilities
   local max_tokens = capabilities.limits.max_prompt_tokens -- FIXME: Is max_prompt_tokens the right limit?
   local max_output_tokens = capabilities.limits.max_output_tokens
   local tokenizer = capabilities.tokenizer
@@ -582,6 +627,7 @@ function Copilot:ask(prompt, opts)
   local errored = false
   local finished = false
   local full_response = ''
+  local full_references = ''
 
   local function finish_stream(err, job)
     if err then
@@ -631,6 +677,22 @@ function Copilot:ask(prompt, opts)
       return
     end
 
+    if content.copilot_references then
+      for _, reference in ipairs(content.copilot_references) do
+        local metadata = reference.metadata
+        if metadata and metadata.display_name and metadata.display_url then
+          full_references = full_references
+            .. '\n'
+            .. '['
+            .. metadata.display_name
+            .. ']'
+            .. '('
+            .. metadata.display_url
+            .. ')'
+        end
+      end
+    end
+
     if not content.choices or #content.choices == 0 then
       return
     end
@@ -668,8 +730,13 @@ function Copilot:ask(prompt, opts)
     self:enable_claude()
   end
 
+  local url = 'https://api.githubcopilot.com/chat/completions'
+  if not agent_config.default then
+    url = 'https://api.githubcopilot.com/agents/' .. agent .. '?chat'
+  end
+
   local response, err = curl_post(
-    'https://api.githubcopilot.com/chat/completions',
+    url,
     vim.tbl_extend('force', self.request_args, {
       headers = self:authenticate(),
       body = temp_file(body),
@@ -694,6 +761,25 @@ function Copilot:ask(prompt, opts)
   end
 
   if response.status ~= 200 then
+    if response.status == 401 then
+      local ok, content = pcall(vim.json.decode, response.body, {
+        luanil = {
+          object = true,
+          array = true,
+        },
+      })
+
+      if ok and content.authorize_url then
+        error(
+          'Failed to authenticate. Visit following url to authorize '
+            .. content.slug
+            .. ':\n'
+            .. content.authorize_url
+        )
+        return
+      end
+    end
+
     error('Failed to get response: ' .. tostring(response.status) .. '\n' .. response.body)
     return
   end
@@ -706,6 +792,14 @@ function Copilot:ask(prompt, opts)
   if full_response == '' then
     error('Failed to get response: empty response')
     return
+  end
+
+  if full_references ~= '' then
+    full_references = '\n\n**`References:`**' .. full_references
+    full_response = full_response .. full_references
+    if on_progress then
+      on_progress(full_references)
+    end
   end
 
   log.trace('Full response: ' .. full_response)
@@ -727,10 +821,10 @@ function Copilot:ask(prompt, opts)
 end
 
 --- List available models
+---@return table
 function Copilot:list_models()
   local models = self:fetch_models()
 
-  -- Group models by version and shortest ID
   local version_map = {}
   for id, model in pairs(models) do
     local version = model.version
@@ -739,10 +833,18 @@ function Copilot:list_models()
     end
   end
 
-  -- Map to IDs and sort
   local result = vim.tbl_values(version_map)
   table.sort(result)
+  return result
+end
 
+--- List available agents
+---@return table
+function Copilot:list_agents()
+  local agents = self:fetch_agents()
+
+  local result = vim.tbl_keys(agents)
+  table.sort(result)
   return result
 end
 
