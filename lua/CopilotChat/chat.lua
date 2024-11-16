@@ -1,8 +1,6 @@
 ---@class CopilotChat.Chat
 ---@field bufnr number
 ---@field winnr number
----@field separator string
----@field spinner CopilotChat.Spinner
 ---@field valid fun(self: CopilotChat.Chat)
 ---@field visible fun(self: CopilotChat.Chat)
 ---@field active fun(self: CopilotChat.Chat)
