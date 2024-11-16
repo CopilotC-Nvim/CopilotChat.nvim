@@ -277,6 +277,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/43554061?v=4",
       "profile": "https://github.com/Moriango",
       "contributions": ["doc"]
+    },
+    {
+      "login": "taketwo",
+      "name": "Sergey Alexandrov",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1241736?v=4",
+      "profile": "https://github.com/taketwo",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
