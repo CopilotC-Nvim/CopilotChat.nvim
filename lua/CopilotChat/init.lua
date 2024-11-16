@@ -407,7 +407,7 @@ function M.select_model()
 
     vim.schedule(function()
       vim.ui.select(models, {
-        prompt = 'Select a model',
+        prompt = 'Select a model> ',
       }, function(choice)
         if choice then
           M.config.model = choice:gsub(' %(selected%)', '')
@@ -431,7 +431,7 @@ function M.select_agent()
 
     vim.schedule(function()
       vim.ui.select(agents, {
-        prompt = 'Select an agent',
+        prompt = 'Select an agent> ',
       }, function(choice)
         if choice then
           M.config.agent = choice:gsub(' %(selected%)', '')
