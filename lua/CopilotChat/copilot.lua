@@ -440,6 +440,9 @@ function Copilot:fetch_models()
     return self.models
   end
 
+  local out = {}
+
+  -- Default models
   local response, err = curl_get(
     'https://api.githubcopilot.com/models',
     vim.tbl_extend('force', self.request_args, {
@@ -455,12 +458,43 @@ function Copilot:fetch_models()
     error('Failed to fetch models: ' .. tostring(response.status))
   end
 
-  -- Find chat models
   local models = vim.json.decode(response.body)['data']
-  local out = {}
   for _, model in ipairs(models) do
-    if model['capabilities']['type'] == 'chat' then
-      out[model['id']] = model
+    if model.capabilities.type == 'chat' then
+      out[model.id] = {
+        name = model.name,
+        version = model.version,
+        tokenizer = model.capabilities.tokenizer,
+        max_prompt_tokens = model.capabilities.limits.max_prompt_tokens,
+        max_output_tokens = model.capabilities.limits.max_output_tokens,
+        default = true,
+      }
+    end
+  end
+
+  -- Marketplace models
+  response, err = curl_get(
+    'https://models.inference.ai.azure.com/models',
+    vim.tbl_extend('force', self.request_args, {
+      headers = self:authenticate(),
+    })
+  )
+
+  if err then
+    error(err)
+  end
+
+  if response.status ~= 200 then
+    error('Failed to fetch models: ' .. tostring(response.status))
+  end
+
+  models = vim.json.decode(response.body)
+  for _, model in ipairs(models) do
+    if model.task == 'chat-completion' and not out[model.name] then
+      out[model.name] = {
+        name = model.friendly_name,
+        version = model.name:lower(),
+      }
     end
   end
 
@@ -579,10 +613,9 @@ function Copilot:ask(prompt, opts)
     error('Model not found: ' .. model)
   end
 
-  local capabilities = model_config.capabilities
-  local max_tokens = capabilities.limits.max_prompt_tokens -- FIXME: Is max_prompt_tokens the right limit?
-  local max_output_tokens = capabilities.limits.max_output_tokens
-  local tokenizer = capabilities.tokenizer
+  local max_tokens = model_config.max_prompt_tokens or 4096
+  local max_output_tokens = model_config.max_output_tokens
+  local tokenizer = model_config.tokenizer or 'o200k_base'
   log.debug('Max tokens: ' .. max_tokens)
   log.debug('Tokenizer: ' .. tokenizer)
   tiktoken_load(tokenizer)
@@ -747,6 +780,9 @@ function Copilot:ask(prompt, opts)
   end
 
   local url = 'https://api.githubcopilot.com/chat/completions'
+  if not model_config.default then
+    url = 'https://models.inference.ai.azure.com/chat/completions'
+  end
   if not agent_config.default then
     url = 'https://api.githubcopilot.com/agents/' .. agent .. '?chat'
   end
