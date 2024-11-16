@@ -851,7 +851,12 @@ function Copilot:list_models()
 
   local result = vim.tbl_values(version_map)
   table.sort(result)
-  return result
+
+  local out = {}
+  for _, id in ipairs(result) do
+    out[id] = models[id].name
+  end
+  return out
 end
 
 --- List available agents
@@ -861,7 +866,12 @@ function Copilot:list_agents()
 
   local result = vim.tbl_keys(agents)
   table.sort(result)
-  return result
+
+  local out = {}
+  for _, id in ipairs(result) do
+    out[id] = agents[id].description
+  end
+  return out
 end
 
 --- Generate embeddings for the given inputs
