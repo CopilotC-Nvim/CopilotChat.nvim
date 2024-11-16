@@ -155,13 +155,6 @@ local function update_prompts(prompt, system_prompt)
   return system_prompt, result
 end
 
---- Append a string to the chat window.
----@param str (string)
----@param config CopilotChat.config
-local function append(str, config)
-  state.chat:append(str)
-end
-
 local function get_selection()
   local bufnr = state.source.bufnr
   local winnr = state.source.winnr
@@ -463,9 +456,9 @@ function M.ask(prompt, config, source)
   local function on_error(err)
     log.error(vim.inspect(err))
     vim.schedule(function()
-      append('\n\n' .. config.error_header .. config.separator .. '\n\n', config)
-      append('```\n' .. get_error_message(err) .. '\n```', config)
-      append('\n\n' .. config.question_header .. config.separator .. '\n\n', config)
+      state.chat:append('\n\n' .. config.error_header .. config.separator .. '\n\n')
+      state.chat:append('```\n' .. get_error_message(err) .. '\n```')
+      state.chat:append('\n\n' .. config.question_header .. config.separator .. '\n\n')
       state.chat:finish()
     end)
   end
@@ -483,11 +476,11 @@ function M.ask(prompt, config, source)
   state.last_system_prompt = system_prompt
 
   if state.copilot:stop() then
-    append('\n\n' .. config.question_header .. config.separator .. '\n\n', config)
+    state.chat:append('\n\n' .. config.question_header .. config.separator .. '\n\n')
   end
 
-  append(updated_prompt, config)
-  append('\n\n' .. config.answer_header .. config.separator .. '\n\n', config)
+  state.chat:append(updated_prompt)
+  state.chat:append('\n\n' .. config.answer_header .. config.separator .. '\n\n')
 
   local selected_context = config.context
   local contexts = vim.tbl_keys(context.supported_contexts())
@@ -535,7 +528,7 @@ function M.ask(prompt, config, source)
         temperature = config.temperature,
         on_progress = function(token)
           vim.schedule(function()
-            append(token, config)
+            state.chat:append(token)
           end)
         end,
       })
@@ -552,7 +545,7 @@ function M.ask(prompt, config, source)
     state.response = response
 
     vim.schedule(function()
-      append('\n\n' .. config.question_header .. config.separator .. '\n\n', config)
+      state.chat:append('\n\n' .. config.question_header .. config.separator .. '\n\n')
       if token_count and token_max_count and token_count > 0 then
         state.chat:finish(token_count .. '/' .. token_max_count .. ' tokens used')
       else
@@ -583,9 +576,9 @@ function M.stop(reset, config)
     if reset then
       state.chat:clear()
     else
-      append('\n\n', config)
+      state.chat:append('\n\n')
     end
-    append(M.config.question_header .. M.config.separator .. '\n\n', config)
+    state.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
     state.chat:finish()
   end)
 end
@@ -634,20 +627,20 @@ function M.load(name, history_path)
   for i, message in ipairs(history) do
     if message.role == 'user' then
       if i > 1 then
-        append('\n\n', state.config)
+        state.chat:append('\n\n')
       end
-      append(M.config.question_header .. M.config.separator .. '\n\n', state.config)
-      append(message.content, state.config)
+      state.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
+      state.chat:append(message.content)
     elseif message.role == 'assistant' then
-      append('\n\n' .. M.config.answer_header .. M.config.separator .. '\n\n', state.config)
-      append(message.content, state.config)
+      state.chat:append('\n\n' .. M.config.answer_header .. M.config.separator .. '\n\n')
+      state.chat:append(message.content)
     end
   end
 
   if #history > 0 then
-    append('\n\n', state.config)
+    state.chat:append('\n\n')
   end
-  append(M.config.question_header .. M.config.separator .. '\n\n', state.config)
+  state.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
 
   state.chat:finish()
   M.open()
@@ -993,7 +986,7 @@ function M.setup(config)
         })
       end
 
-      append(M.config.question_header .. M.config.separator .. '\n\n', M.config)
+      state.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
       state.chat:finish()
     end
   )
