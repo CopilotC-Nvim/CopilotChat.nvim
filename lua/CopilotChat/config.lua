@@ -104,6 +104,7 @@ return {
   answer_header = '## Copilot ', -- Header to use for AI answers
   error_header = '## Error ', -- Header to use for errors
   separator = '───', -- Separator to use in chat
+  highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
 
   show_folds = true, -- Shows folds for sections in chat
   show_help = true, -- Shows help message as virtual lines when waiting for user input
