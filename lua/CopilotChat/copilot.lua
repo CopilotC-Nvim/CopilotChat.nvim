@@ -1,15 +1,14 @@
 ---@class CopilotChat.copilot.ask.opts
 ---@field selection CopilotChat.select.selection?
 ---@field embeddings table<CopilotChat.context.embed>?
----@field system_prompt string?
----@field model string?
----@field agent string?
+---@field system_prompt string
+---@field model string
+---@field agent string
 ---@field temperature number?
 ---@field no_history boolean?
 ---@field on_progress nil|fun(response: string):nil
 
 local log = require('plenary.log')
-local prompts = require('CopilotChat.prompts')
 local tiktoken = require('CopilotChat.tiktoken')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
@@ -37,7 +36,10 @@ local VERSION_HEADERS = {
   ['sec-fetch-mode'] = 'no-cors',
   ['sec-fetch-dest'] = 'empty',
   ['priority'] = 'u=4, i',
-  -- ['x-github-api-version'] = '2023-07-07',
+}
+local MODELS_VERSION_HEADERS = {
+  ['x-ms-useragent'] = VERSION_HEADERS['editor-version'],
+  ['x-ms-user-agent'] = VERSION_HEADERS['editor-version'],
 }
 
 --- Get the github oauth cached token
@@ -326,7 +328,7 @@ end)
 
 --- Authenticate with GitHub and get the required headers
 ---@return table<string, string>
-function Copilot:authenticate()
+function Copilot:authenticate(models)
   if not self.github_token then
     error(
       'No GitHub token found, please use `:Copilot auth` to set it up from copilot.lua or `:Copilot setup` for copilot.vim'
@@ -361,7 +363,15 @@ function Copilot:authenticate()
     self.token = vim.json.decode(response.body)
   end
 
-  local headers = {
+  if models then
+    return vim.tbl_extend('force', {
+      ['authorization'] = 'bearer ' .. self.github_token,
+      ['accept'] = 'application/json',
+      ['content-type'] = 'application/json',
+    }, MODELS_VERSION_HEADERS)
+  end
+
+  return vim.tbl_extend('force', {
     ['authorization'] = 'Bearer ' .. self.token.token,
     ['x-request-id'] = utils.uuid(),
     ['vscode-sessionid'] = self.sessionid,
@@ -370,12 +380,7 @@ function Copilot:authenticate()
     ['openai-organization'] = 'github-copilot',
     ['openai-intent'] = 'conversation-panel',
     ['content-type'] = 'application/json',
-  }
-  for key, value in pairs(VERSION_HEADERS) do
-    headers[key] = value
-  end
-
-  return headers
+  }, VERSION_HEADERS)
 end
 
 --- Fetch models from the Copilot API
@@ -387,31 +392,81 @@ function Copilot:fetch_models()
 
   notify.publish(notify.STATUS, 'Fetching models')
 
+  local out = {}
+
+  -- Github models
   local response, err = utils.curl_get(
     'https://api.githubcopilot.com/models',
     vim.tbl_extend('force', self.request_args, {
       headers = self:authenticate(),
     })
   )
-
   if err then
     error(err)
   end
-
   if response.status ~= 200 then
     error('Failed to fetch models: ' .. tostring(response.status))
   end
 
-  -- Find chat models
   local models = vim.json.decode(response.body)['data']
-  local out = {}
   for _, model in ipairs(models) do
     if not model['policy'] or model['policy']['state'] == 'enabled' then
       self.policies[model['id']] = true
     end
 
     if model['capabilities']['type'] == 'chat' then
-      out[model['id']] = model
+      out[model.id] = {
+        name = model.name,
+        provider = 'copilot',
+        version = model.version,
+        tokenizer = model.capabilities.tokenizer,
+        max_prompt_tokens = model.capabilities.limits.max_prompt_tokens,
+        max_output_tokens = model.capabilities.limits.max_output_tokens,
+      }
+    end
+  end
+
+  -- Marketplace models
+  response, err = utils.curl_post(
+    'https://api.catalog.azureml.ms/asset-gallery/v1.0/models',
+    vim.tbl_extend('force', self.request_args, {
+      headers = {
+        ['content-type'] = 'application/json',
+      },
+      body = [[
+        {
+          "filters": [
+            { "field": "freePlayground", "values": ["true"], "operator": "eq"},
+            { "field": "labels", "values": ["latest"], "operator": "eq"}
+          ],
+          "order": [
+            { "field": "displayName", "direction": "asc" }
+          ]
+        }
+      ]],
+    })
+  )
+  if err then
+    error(err)
+  end
+  if response.status ~= 200 then
+    error('Failed to fetch models: ' .. tostring(response.status))
+  end
+
+  models = vim.json.decode(response.body)['summaries']
+  for _, model in ipairs(models) do
+    if
+      not out[model.name:lower()] and vim.tbl_contains(model.inferenceTasks, 'chat-completion')
+    then
+      out[model.name] = {
+        name = model.displayName,
+        provider = 'github-models',
+        version = model.name .. '-' .. model.version,
+        max_prompt_tokens = model.modelLimits.textLimits.inputContextWindow,
+        max_output_tokens = model.modelLimits.textLimits.maxOutputTokens,
+      }
+
+      self.policies[model.name] = true
     end
   end
 
@@ -490,9 +545,9 @@ function Copilot:ask(prompt, opts)
   prompt = vim.trim(prompt)
   local embeddings = opts.embeddings or {}
   local selection = opts.selection or {}
-  local system_prompt = vim.trim(opts.system_prompt or prompts.COPILOT_INSTRUCTIONS)
-  local model = opts.model or 'gpt-4o-2024-05-13'
-  local agent = opts.agent or 'copilot'
+  local system_prompt = vim.trim(opts.system_prompt)
+  local model = opts.model
+  local agent = opts.agent
   local temperature = opts.temperature or 0.1
   local no_history = opts.no_history or false
   local on_progress = opts.on_progress
@@ -519,10 +574,9 @@ function Copilot:ask(prompt, opts)
     error('Model not found: ' .. model)
   end
 
-  local capabilities = model_config.capabilities
-  local max_tokens = capabilities.limits.max_prompt_tokens -- FIXME: Is max_prompt_tokens the right limit?
-  local max_output_tokens = capabilities.limits.max_output_tokens
-  local tokenizer = capabilities.tokenizer
+  local max_tokens = model_config.max_prompt_tokens
+  local max_output_tokens = model_config.max_output_tokens
+  local tokenizer = model_config.tokenizer or 'o200k_base'
   log.debug('Max tokens: ', max_tokens)
   log.debug('Tokenizer: ', tokenizer)
   tiktoken.load(tokenizer)
@@ -707,15 +761,21 @@ function Copilot:ask(prompt, opts)
   )
 
   self:enable_policy(model)
-  local url = 'https://api.githubcopilot.com/chat/completions'
-  if not agent_config.default then
-    url = 'https://api.githubcopilot.com/agents/' .. agent .. '?chat'
-  end
 
   local args = vim.tbl_extend('force', self.request_args, {
-    headers = self:authenticate(),
     body = temp_file(body),
   })
+  local url
+  if not agent_config.default then
+    url = 'https://api.githubcopilot.com/agents/' .. agent .. '?chat'
+    args.headers = self:authenticate()
+  elseif model_config.provider == 'github-models' then
+    url = 'https://models.inference.ai.azure.com/chat/completions'
+    args.headers = self:authenticate(true)
+  else
+    url = 'https://api.githubcopilot.com/chat/completions'
+    args.headers = self:authenticate()
+  end
 
   if is_stream then
     args.stream = stream_func
@@ -825,6 +885,7 @@ end
 function Copilot:list_models()
   local models = self:fetch_models()
 
+  -- First deduplicate by version, keeping shortest ID
   local version_map = {}
   for id, model in pairs(models) do
     local version = model.version
@@ -834,11 +895,18 @@ function Copilot:list_models()
   end
 
   local result = vim.tbl_values(version_map)
-  table.sort(result)
+  table.sort(result, function(a, b)
+    local a_model = models[a]
+    local b_model = models[b]
+    if a_model.provider ~= b_model.provider then
+      return a_model.provider < b_model.provider -- sort by version first
+    end
+    return a_model.version < b_model.version -- then by provider
+  end)
 
   local out = {}
   for _, id in ipairs(result) do
-    out[id] = models[id].name
+    table.insert(out, vim.tbl_extend('force', models[id], { id = id }))
   end
   return out
 end
