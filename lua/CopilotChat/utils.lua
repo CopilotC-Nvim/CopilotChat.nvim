@@ -30,12 +30,6 @@ function M.class(fn, parent)
   return out
 end
 
---- Get the log file path
----@return string
-function M.get_log_file_path()
-  return log.logfile
-end
-
 --- Check if the current version of neovim is stable
 ---@return boolean
 function M.is_stable()
