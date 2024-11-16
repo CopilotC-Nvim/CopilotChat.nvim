@@ -262,11 +262,11 @@ function M.complete_items(callback)
       }
     end
 
-    for _, agent in ipairs(agents) do
+    for agent, description in pairs(agents) do
       items[#items + 1] = {
         word = '@' .. agent,
         kind = 'agent',
-        menu = 'Use the specified agent',
+        menu = description,
         icase = 1,
         dup = 0,
         empty = 0,
@@ -402,7 +402,7 @@ end
 --- Select a Copilot GPT model.
 function M.select_model()
   async.run(function()
-    local models = state.copilot:list_models()
+    local models = vim.tbl_keys(state.copilot:list_models())
     models = vim.tbl_map(function(model)
       if model == M.config.model then
         return model .. ' (selected)'
@@ -426,7 +426,7 @@ end
 --- Select a Copilot agent.
 function M.select_agent()
   async.run(function()
-    local agents = state.copilot:list_agents()
+    local agents = vim.tbl_keys(state.copilot:list_agents())
     agents = vim.tbl_map(function(agent)
       if agent == M.config.agent then
         return agent .. ' (selected)'
@@ -507,7 +507,7 @@ function M.ask(prompt, config, source)
   updated_prompt = string.gsub(updated_prompt, '#buffers?%s*', '')
 
   async.run(function()
-    local agents = state.copilot:list_agents()
+    local agents = vim.tbl_keys(state.copilot:list_agents())
     local current_agent = config.agent
 
     for agent in updated_prompt:gmatch('@([%w_-]+)') do
