@@ -323,8 +323,8 @@ local function generate_embedding_request(inputs, model)
       if input.content then
         out = out
           .. string.format(
-            'File: `%s`\n```%s\n%s\n```',
-            input.filename,
+            '# FILE:%s CONTEXT\n```%s\n%s\n```',
+            input.filename:upper(),
             input.filetype,
             input.content
           )
@@ -495,7 +495,7 @@ function Copilot:fetch_agents()
     out[agent['slug']] = agent
   end
 
-  out['copilot'] = { name = 'Copilot', default = true }
+  out['copilot'] = { name = 'Copilot', default = true, description = 'Default noop agent' }
 
   log.info('Agents fetched')
   self.agents = out

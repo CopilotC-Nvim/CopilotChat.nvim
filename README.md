@@ -154,6 +154,7 @@ Supported contexts are:
 
 - `buffers` - Includes all open buffers in chat context
 - `buffer` - Includes only the current buffer in chat context
+- `files` - Includes all non-hidden filenames in the current workspace in chat context
 
 ### API
 
@@ -237,7 +238,7 @@ Also see [here](/lua/CopilotChat/config.lua):
   system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use
   model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models
   agent = 'copilot', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
-  context = nil, -- Default context to use, 'buffers', 'buffer' or none (can be specified manually in prompt via #).
+  context = nil, -- Default context to use, 'buffers', 'buffer', 'files' or none (can be specified manually in prompt via #).
   temperature = 0.1, -- GPT result temperature
 
   question_header = '## User ', -- Header to use for user questions

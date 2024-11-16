@@ -247,6 +247,7 @@ end
 function M.complete_items(callback)
   async.run(function()
     local agents = state.copilot:list_agents()
+    local contexts = context.supported_contexts()
     local items = {}
     local prompts_to_use = M.prompts()
 
@@ -273,23 +274,16 @@ function M.complete_items(callback)
       }
     end
 
-    items[#items + 1] = {
-      word = '#buffers',
-      kind = 'context',
-      menu = 'Include all loaded buffers in context',
-      icase = 1,
-      dup = 0,
-      empty = 0,
-    }
-
-    items[#items + 1] = {
-      word = '#buffer',
-      kind = 'context',
-      menu = 'Include the specified buffer in context',
-      icase = 1,
-      dup = 0,
-      empty = 0,
-    }
+    for prompt_context, description in pairs(contexts) do
+      items[#items + 1] = {
+        word = '#' .. prompt_context,
+        kind = 'context',
+        menu = description,
+        icase = 1,
+        dup = 0,
+        empty = 0,
+      }
+    end
 
     vim.schedule(function()
       callback(items)
@@ -499,12 +493,13 @@ function M.ask(prompt, config, source)
   append('\n\n' .. config.answer_header .. config.separator .. '\n\n', config)
 
   local selected_context = config.context
-  if string.find(prompt, '#buffers') then
-    selected_context = 'buffers'
-  elseif string.find(prompt, '#buffer') then
-    selected_context = 'buffer'
+  local contexts = vim.tbl_keys(context.supported_contexts())
+  for prompt_context in updated_prompt:gmatch('#([%w_-]+)') do
+    if vim.tbl_contains(contexts, prompt_context) then
+      selected_context = prompt_context
+      updated_prompt = string.gsub(updated_prompt, '#' .. prompt_context .. '%s*', '')
+    end
   end
-  updated_prompt = string.gsub(updated_prompt, '#buffers?%s*', '')
 
   async.run(function()
     local agents = vim.tbl_keys(state.copilot:list_agents())
@@ -712,14 +707,9 @@ function M.setup(config)
   end, { force = true })
 
   M.config = vim.tbl_deep_extend('force', default_config, config or {})
-  if M.config.model == 'gpt-4o' then
-    M.config.model = 'gpt-4o-2024-05-13'
-  end
 
   if state.copilot then
     state.copilot:stop()
-  else
-    debuginfo.setup()
   end
 
   state.copilot = Copilot(M.config.proxy, M.config.allow_insecure)
@@ -1062,6 +1052,9 @@ function M.setup(config)
   end, { force = true })
   vim.api.nvim_create_user_command('CopilotChatReset', function()
     M.reset()
+  end, { force = true })
+  vim.api.nvim_create_user_command('CopilotChatDebugInfo', function()
+    debuginfo.open()
   end, { force = true })
 
   local function complete_load()

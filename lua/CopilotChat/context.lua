@@ -1,3 +1,4 @@
+local async = require('plenary.async')
 local log = require('plenary.log')
 
 local M = {}
@@ -72,17 +73,83 @@ local function data_ranked_by_relatedness(query, data, top_n)
   return result
 end
 
+local get_context_data = async.wrap(function(context, bufnr, callback)
+  vim.schedule(function()
+    local outline = {}
+    if context == 'buffers' then
+      outline = vim.tbl_map(
+        M.build_outline,
+        vim.tbl_filter(function(b)
+          return vim.api.nvim_buf_is_loaded(b) and vim.fn.buflisted(b) == 1
+        end, vim.api.nvim_list_bufs())
+      )
+    elseif context == 'buffer' then
+      table.insert(outline, M.build_outline(bufnr))
+    elseif context == 'files' then
+      outline = M.build_file_map()
+    end
+
+    callback(outline)
+  end)
+end, 3)
+
+--- Get supported contexts
+---@return table<string>
+function M.supported_contexts()
+  return {
+    buffers = 'Includes all open buffers in chat context',
+    buffer = 'Includes only the current buffer in chat context',
+    files = 'Includes all non-hidden filenames in the current workspace in chat context',
+  }
+end
+
+--- Get list of all files in workspace
+---@return table<CopilotChat.copilot.embed>
+function M.build_file_map()
+  -- Use vim.fn.glob() to get all files
+  local files = vim.fn.glob('**/*', false, true)
+
+  -- Filter out directories
+  files = vim.tbl_filter(function(file)
+    return vim.fn.isdirectory(file) == 0
+  end, files)
+
+  if #files == 0 then
+    return {}
+  end
+
+  local out = {}
+
+  -- Create embeddings in chunks
+  local chunk_size = 100
+  for i = 1, #files, chunk_size do
+    local chunk = {}
+    for j = i, math.min(i + chunk_size - 1, #files) do
+      table.insert(chunk, files[j])
+    end
+
+    table.insert(out, {
+      content = table.concat(chunk, '\n'),
+      filename = 'file_map',
+      filetype = 'text',
+    })
+  end
+
+  return out
+end
+
 --- Build an outline for a buffer
 --- FIXME: Handle multiline function argument definitions when building the outline
 ---@param bufnr number
+---@param force_outline boolean? If true, always build the outline
 ---@return CopilotChat.copilot.embed?
-function M.build_outline(bufnr)
+function M.build_outline(bufnr, force_outline)
   local name = vim.api.nvim_buf_get_name(bufnr)
   local ft = vim.bo[bufnr].filetype
 
   -- If buffer is not too big, just return the content
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-  if #lines < big_file_threshold then
+  if not force_outline and #lines < big_file_threshold then
     return {
       content = table.concat(lines, '\n'),
       filename = name,
@@ -198,21 +265,7 @@ function M.find_for_query(copilot, opts)
   local filetype = opts.filetype
   local bufnr = opts.bufnr
 
-  local outline = {}
-  if context == 'buffers' then
-    -- For multiple buffers, only make outlines
-    outline = vim.tbl_map(
-      function(b)
-        return M.build_outline(b)
-      end,
-      vim.tbl_filter(function(b)
-        return vim.api.nvim_buf_is_loaded(b) and vim.fn.buflisted(b) == 1
-      end, vim.api.nvim_list_bufs())
-    )
-  elseif context == 'buffer' then
-    table.insert(outline, M.build_outline(bufnr))
-  end
-
+  local outline = get_context_data(context, bufnr)
   outline = vim.tbl_filter(function(item)
     return item ~= nil
   end, outline)
