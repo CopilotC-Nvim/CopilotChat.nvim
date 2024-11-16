@@ -40,6 +40,7 @@ local Chat = class(function(self, help, auto_insert, on_buf_create)
   self.spinner = nil
   self.separator = nil
   self.auto_follow_cursor = true
+  self.highlight_headers = true
   self.layout = nil
 
   vim.treesitter.language.register('markdown', 'copilot-chat')
@@ -72,9 +73,10 @@ function Chat:visible()
 end
 
 function Chat:render()
-  if not self:visible() then
+  if not self.highlight_headers or not self:visible() then
     return
   end
+
   vim.api.nvim_buf_clear_namespace(self.bufnr, self.header_ns, 0, -1)
   local lines = vim.api.nvim_buf_get_lines(self.bufnr, 0, -1, false)
   for l, line in ipairs(lines) do
@@ -219,6 +221,7 @@ function Chat:open(config)
   self.layout = layout
   self.separator = config.separator
   self.auto_follow_cursor = config.auto_follow_cursor
+  self.highlight_headers = config.highlight_headers
 
   vim.wo[self.winnr].wrap = true
   vim.wo[self.winnr].linebreak = true

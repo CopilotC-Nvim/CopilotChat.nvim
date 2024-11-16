@@ -241,6 +241,7 @@ Also see [here](/lua/CopilotChat/config.lua):
   answer_header = '## Copilot ', -- Header to use for AI answers
   error_header = '## Error ', -- Header to use for errors
   separator = '───', -- Separator to use in chat
+  highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
 
   show_folds = true, -- Shows folds for sections in chat
   show_help = true, -- Shows help message as virtual lines when waiting for user input
@@ -546,8 +547,15 @@ require('CopilotChat').setup({
 Requires [render-markdown](https://github.com/MeanderingProgrammer/render-markdown.nvim) plugin to be installed.
 
 ```lua
+-- Registers copilot-chat filetype for markdown rendering
 require('render-markdown').setup({
   file_types = { 'markdown', 'copilot-chat' },
+})
+
+-- You might also want to disable default header highlighting for copilot chat when doing this
+require('CopilotChat').setup({
+  highlight_headers = false,
+  -- rest of your config
 })
 ```
 
