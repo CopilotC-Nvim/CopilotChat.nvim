@@ -86,37 +86,61 @@ local function get_error_message(err)
   return dedupe_strings(vim.inspect(err))
 end
 
-local function find_lines_between_separator(lines, pattern, at_least_one)
+local function find_lines_between_separator(
+  lines,
+  start_line,
+  start_pattern,
+  end_pattern,
+  allow_end_of_file
+)
+  if not end_pattern then
+    end_pattern = start_pattern
+  end
+
   local line_count = #lines
+  local current_line = vim.api.nvim_win_get_cursor(0)[1] - start_line
   local separator_line_start = 1
   local separator_line_finish = line_count
   local found_one = false
 
-  -- Find the last occurrence of the separator
-  for i = line_count, 1, -1 do -- Reverse the loop to start from the end
+  -- Find starting separator line
+  for i = current_line, 1, -1 do
     local line = lines[i]
-    if string.find(line, pattern) then
-      if i < (separator_line_finish + 1) and (not at_least_one or found_one) then
-        separator_line_start = i + 1
-        break -- Exit the loop as soon as the condition is met
+
+    if line and string.match(line, start_pattern) then
+      separator_line_start = i + 1
+
+      for x = separator_line_start, line_count do
+        local next_line = lines[x]
+        if next_line and string.match(next_line, end_pattern) then
+          separator_line_finish = x - 1
+          found_one = true
+          break
+        end
+        if allow_end_of_file and x == line_count then
+          separator_line_finish = x
+          found_one = true
+          break
+        end
       end
 
-      found_one = true
-      separator_line_finish = i - 1
+      if found_one then
+        break
+      end
     end
   end
 
-  if at_least_one and not found_one then
-    return {}, 1, 1, 0
+  if not found_one then
+    return {}, 1, 1
   end
 
-  -- Extract everything between the last and next separator
+  -- Extract everything between the last and next separator or end of file
   local result = {}
   for i = separator_line_start, separator_line_finish do
     table.insert(result, lines[i])
   end
 
-  return result, separator_line_start, separator_line_finish, line_count
+  return result, separator_line_start, separator_line_finish
 end
 
 local function update_prompts(prompt, system_prompt)
@@ -790,14 +814,15 @@ function M.setup(config)
 
       map_key(M.config.mappings.submit_prompt, bufnr, function()
         local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-        local lines, start_line, end_line, line_count =
-          find_lines_between_separator(chat_lines, M.config.separator .. '$')
+        local lines, start_line, end_line =
+          find_lines_between_separator(chat_lines, 0, M.config.separator .. '$', nil, true)
         local input = vim.trim(table.concat(lines, '\n'))
         if input ~= '' then
           -- If we are entering the input at the end, replace it
-          if line_count == end_line then
+          if #chat_lines == end_line then
             vim.api.nvim_buf_set_lines(bufnr, start_line, end_line, false, { '' })
           end
+
           M.ask(input, state.config, state.source)
         end
       end)
@@ -809,9 +834,10 @@ function M.setup(config)
         end
 
         local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-        local section_lines =
-          find_lines_between_separator(chat_lines, M.config.separator .. '$', true)
-        local lines = find_lines_between_separator(section_lines, '^```%w*$', true)
+        local section_lines, start_line =
+          find_lines_between_separator(chat_lines, 0, M.config.separator .. '$')
+        local lines =
+          find_lines_between_separator(section_lines, start_line - 1, '^```%w+$', '^```$')
         if #lines > 0 then
           vim.api.nvim_buf_set_text(
             state.source.bufnr,
@@ -831,9 +857,10 @@ function M.setup(config)
         end
 
         local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-        local section_lines =
-          find_lines_between_separator(chat_lines, M.config.separator .. '$', true)
-        local lines = find_lines_between_separator(section_lines, '^```%w*$', true)
+        local section_lines, start_line =
+          find_lines_between_separator(chat_lines, 0, M.config.separator .. '$')
+        local lines =
+          find_lines_between_separator(section_lines, start_line - 1, '^```%w+$', '^```$')
         if #lines > 0 then
           local content = table.concat(lines, '\n')
           vim.fn.setreg(M.config.mappings.yank_diff.register, content)
@@ -847,10 +874,12 @@ function M.setup(config)
         end
 
         local chat_lines = vim.api.nvim_buf_get_lines(state.chat.bufnr, 0, -1, false)
-        local section_lines =
-          find_lines_between_separator(chat_lines, M.config.separator .. '$', true)
-        local lines =
-          table.concat(find_lines_between_separator(section_lines, '^```%w*$', true), '\n')
+        local section_lines, start_line =
+          find_lines_between_separator(chat_lines, 0, M.config.separator .. '$')
+        local lines = table.concat(
+          find_lines_between_separator(section_lines, start_line - 1, '^```%w+$', '^```$'),
+          '\n'
+        )
         if vim.trim(lines) ~= '' then
           state.last_code_output = lines
 
