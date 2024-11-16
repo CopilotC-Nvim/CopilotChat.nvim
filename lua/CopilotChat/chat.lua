@@ -2,6 +2,7 @@
 ---@field bufnr number
 ---@field winnr number
 ---@field separator string
+---@field auto_follow_cursor boolean
 ---@field spinner CopilotChat.Spinner
 ---@field valid fun(self: CopilotChat.Chat)
 ---@field visible fun(self: CopilotChat.Chat)
@@ -41,6 +42,7 @@ local Chat = class(function(self, help, auto_insert, on_buf_create)
   self.winnr = nil
   self.spinner = nil
   self.separator = nil
+  self.auto_follow_cursor = true
   self.layout = nil
 
   vim.treesitter.language.register('markdown', 'copilot-chat')
@@ -129,6 +131,16 @@ function Chat:append(str)
     self.spinner:start()
   end
 
+  -- Decide if we should follow cursor after appending text.
+  -- Note that winnr may be nil if the chat window is not open yet.
+  local should_follow_cursor = self.auto_follow_cursor
+  if self.auto_follow_cursor and self.winnr then
+    local current_pos = vim.api.nvim_win_get_cursor(self.winnr)
+    local line_count = vim.api.nvim_buf_line_count(self.bufnr)
+    -- If we are at the last line of the buffer, then we should follow cursor.
+    should_follow_cursor = current_pos[1] == line_count
+  end
+
   local last_line, last_column, _ = self:last()
   vim.api.nvim_buf_set_text(
     self.bufnr,
@@ -139,6 +151,10 @@ function Chat:append(str)
     vim.split(str, '\n')
   )
   self:render()
+
+  if should_follow_cursor then
+    self:follow()
+  end
 end
 
 function Chat:clear()
@@ -206,6 +222,7 @@ function Chat:open(config)
 
   self.layout = layout
   self.separator = config.separator
+  self.auto_follow_cursor = config.auto_follow_cursor
 
   vim.wo[self.winnr].wrap = true
   vim.wo[self.winnr].linebreak = true
