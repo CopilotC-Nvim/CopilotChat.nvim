@@ -3,7 +3,6 @@ local log = require('plenary.log')
 local default_config = require('CopilotChat.config')
 local Copilot = require('CopilotChat.copilot')
 local context = require('CopilotChat.context')
-local prompts = require('CopilotChat.prompts')
 local utils = require('CopilotChat.utils')
 
 local M = {}
@@ -294,7 +293,10 @@ local function resolve_agent(prompt, config)
 end
 
 local function resolve_model(prompt, config)
-  local models = vim.tbl_keys(state.copilot:list_models())
+  local models = vim.tbl_map(function(model)
+    return model.id
+  end, state.copilot:list_models())
+
   local selected_model = config.model
   prompt = prompt:gsub('%$' .. WORD, function(match)
     if vim.tbl_contains(models, match) then
@@ -523,6 +525,7 @@ function M.complete_items(callback)
 
       items[#items + 1] = {
         word = '/' .. name,
+        abbr = name,
         kind = kind,
         info = info,
         menu = prompt.description or '',
@@ -532,11 +535,12 @@ function M.complete_items(callback)
       }
     end
 
-    for name, description in pairs(models) do
+    for _, model in ipairs(models) do
       items[#items + 1] = {
-        word = '$' .. name,
-        kind = 'model',
-        menu = description,
+        word = '$' .. model.id,
+        abbr = model.id,
+        kind = model.provider,
+        menu = model.name,
         icase = 1,
         dup = 0,
         empty = 0,
@@ -546,6 +550,7 @@ function M.complete_items(callback)
     for name, description in pairs(agents) do
       items[#items + 1] = {
         word = '@' .. name,
+        abbr = name,
         kind = 'agent',
         menu = description,
         icase = 1,
@@ -557,6 +562,7 @@ function M.complete_items(callback)
     for name, value in pairs(M.config.contexts) do
       items[#items + 1] = {
         word = '#' .. name,
+        abbr = name,
         kind = 'context',
         menu = value.description or '',
         icase = 1,
@@ -581,12 +587,6 @@ end
 ---@return table<string, CopilotChat.config.prompt>
 function M.prompts()
   local prompts_to_use = {}
-
-  for name, prompt in pairs(prompts) do
-    prompts_to_use[name] = {
-      system_prompt = prompt,
-    }
-  end
 
   for name, prompt in pairs(M.config.prompts) do
     local val = prompt
@@ -649,21 +649,29 @@ end
 --- Select default Copilot GPT model.
 function M.select_model()
   async.run(function()
-    local models = vim.tbl_keys(state.copilot:list_models())
-    models = vim.tbl_map(function(model)
-      if model == M.config.model then
-        return model .. ' (selected)'
-      end
-
-      return model
+    local models = state.copilot:list_models()
+    local choices = vim.tbl_map(function(model)
+      return {
+        id = model.id,
+        name = model.name,
+        provider = model.provider,
+        selected = model.id == M.config.model,
+      }
     end, models)
 
     async.util.scheduler()
-    vim.ui.select(models, {
+    vim.ui.select(choices, {
       prompt = 'Select a model> ',
+      format_item = function(item)
+        local out = string.format('%s (%s)', item.id, item.provider)
+        if item.selected then
+          out = '* ' .. out
+        end
+        return out
+      end,
     }, function(choice)
       if choice then
-        M.config.model = choice:gsub(' %(selected%)', '')
+        M.config.model = choice.id
       end
     end)
   end)

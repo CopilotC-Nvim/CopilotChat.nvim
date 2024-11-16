@@ -239,16 +239,8 @@ You can also set default sticky prompts in the configuration:
 
 You can list available models with `:CopilotChatModels` command. Model determines the AI model used for the chat.  
 You can set the model in the prompt by using `$` followed by the model name or default model via config using `model` key.  
-Default models are:
-
-- `gpt-4o` - This is the default Copilot Chat model. It is a versatile, multimodal model that excels in both text and image processing and is designed to provide fast, reliable responses. It also has superior performance in non-English languages.
-- `claude-3.5-sonnet` - This model excels at coding tasks across the entire software development lifecycle, from initial design to bug fixes, maintenance to optimizations. Claude is **not available everywhere** so if you do not see it, try github codespaces or VPN.
-- `gemini-2.0-flash-001` - This model has strong coding, math, and reasoning capabilities that makes it well suited to assist with software development.
-- `o1` - This model is focused on advanced reasoning and solving complex problems, in particular in math and science. It responds more slowly than the GPT 4o model. You can make 10 requests to this model per day.
-- `o3-mini` - This model is the next generation of reasoning models, following from o1 and o1-mini. The o3-mini model outperforms o1 on coding benchmarks with response times that are comparable to o1-mini, providing improved quality at nearly the same latency. It is best suited for code generation and small context operations. You can make 50 requests to this model every 12 hours.
-
-For more information about models, see [here](https://docs.github.com/en/copilot/using-github-copilot/asking-github-copilot-questions-in-your-ide#ai-models-for-copilot-chat)  
-You can use more models from [here](https://github.com/marketplace/models) by using `@models` agent from [here](https://github.com/marketplace/models-github) (example: `@models Using Mistral-small, what is 1 + 11`)
+For list of models supported by Copilot Chat see [here](https://docs.github.com/en/copilot/using-github-copilot/ai-models/changing-the-ai-model-for-copilot-chat#ai-models-for-copilot-chat).  
+This plugin also supports Github Marketplace Models. These have fairly low limits but are useful for experimentation. For more information see [here](https://github.com/marketplace/models).
 
 ## Agents
 

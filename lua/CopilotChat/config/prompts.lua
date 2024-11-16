@@ -1,6 +1,7 @@
----@class CopilotChat.prompts
-
-local M = {}
+---@class CopilotChat.config.prompt : CopilotChat.config.shared
+---@field prompt string?
+---@field description string?
+---@field mapping string?
 
 local base = string.format(
   [[
@@ -16,11 +17,11 @@ The user is working on a %s machine. Please respond with system specific command
   vim.loop.os_uname().sysname
 )
 
-M.COPILOT_INSTRUCTIONS = [[
+local COPILOT_INSTRUCTIONS = [[
 You are a code-focused AI programming assistant that specializes in practical software engineering solutions.
 ]] .. base
 
-M.COPILOT_EXPLAIN = [[
+local COPILOT_EXPLAIN = [[
 You are a programming instructor focused on clear, practical explanations.
 When explaining code:
 - Balance high-level concepts with implementation details
@@ -28,7 +29,7 @@ When explaining code:
 - Address any code diagnostics or warnings
 ]] .. base
 
-M.COPILOT_REVIEW = M.COPILOT_INSTRUCTIONS
+local COPILOT_REVIEW = COPILOT_INSTRUCTIONS
   .. [[
 Review the code for readability and maintainability issues. Report problems in this format:
 line=<line_number>: <issue_description>
@@ -48,7 +49,7 @@ End with: "**`To clear buffer highlights, please ask a different question.`**"
 If no issues found, confirm the code is well-written.
 ]]
 
-M.COPILOT_GENERATE = M.COPILOT_INSTRUCTIONS
+local COPILOT_GENERATE = COPILOT_INSTRUCTIONS
   .. [[
 Your task is to modify the provided code according to the user's request. Follow these instructions precisely:
 
@@ -78,4 +79,77 @@ Your task is to modify the provided code according to the user's request. Follow
 Remember: Your response should ONLY contain file headers with line numbers and code blocks for direct replacement.
 ]]
 
-return M
+return {
+  COPILOT_INSTRUCTIONS = {
+    system_prompt = COPILOT_INSTRUCTIONS,
+  },
+  COPILOT_EXPLAIN = {
+    system_prompt = COPILOT_EXPLAIN,
+  },
+  COPILOT_REVIEW = {
+    system_prompt = COPILOT_REVIEW,
+  },
+  COPILOT_GENERATE = {
+    system_prompt = COPILOT_GENERATE,
+  },
+  Explain = {
+    prompt = '> /COPILOT_EXPLAIN\n\nWrite an explanation for the selected code as paragraphs of text.',
+  },
+  Review = {
+    prompt = '> /COPILOT_REVIEW\n\nReview the selected code.',
+    callback = function(response, source)
+      local diagnostics = {}
+      for line in response:gmatch('[^\r\n]+') do
+        if line:find('^line=') then
+          local start_line = nil
+          local end_line = nil
+          local message = nil
+          local single_match, message_match = line:match('^line=(%d+): (.*)$')
+          if not single_match then
+            local start_match, end_match, m_message_match = line:match('^line=(%d+)-(%d+): (.*)$')
+            if start_match and end_match then
+              start_line = tonumber(start_match)
+              end_line = tonumber(end_match)
+              message = m_message_match
+            end
+          else
+            start_line = tonumber(single_match)
+            end_line = start_line
+            message = message_match
+          end
+
+          if start_line and end_line then
+            table.insert(diagnostics, {
+              lnum = start_line - 1,
+              end_lnum = end_line - 1,
+              col = 0,
+              message = message,
+              severity = vim.diagnostic.severity.WARN,
+              source = 'Copilot Review',
+            })
+          end
+        end
+      end
+      vim.diagnostic.set(
+        vim.api.nvim_create_namespace('copilot_diagnostics'),
+        source.bufnr,
+        diagnostics
+      )
+    end,
+  },
+  Fix = {
+    prompt = '> /COPILOT_GENERATE\n\nThere is a problem in this code. Rewrite the code to show it with the bug fixed.',
+  },
+  Optimize = {
+    prompt = '> /COPILOT_GENERATE\n\nOptimize the selected code to improve performance and readability.',
+  },
+  Docs = {
+    prompt = '> /COPILOT_GENERATE\n\nPlease add documentation comments to the selected code.',
+  },
+  Tests = {
+    prompt = '> /COPILOT_GENERATE\n\nPlease generate tests for my code.',
+  },
+  Commit = {
+    prompt = '> #git:staged\n\nWrite commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
+  },
+}
