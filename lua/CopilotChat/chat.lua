@@ -43,6 +43,8 @@ local Chat = class(function(self, help, auto_insert, on_buf_create)
   self.separator = nil
   self.layout = nil
 
+  vim.treesitter.language.register('markdown', 'copilot-chat')
+
   self.buf_create = function()
     local bufnr = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_buf_set_name(bufnr, 'copilot-chat')

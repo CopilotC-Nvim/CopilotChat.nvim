@@ -509,6 +509,21 @@ require('CopilotChat').setup({
 
 </details>
 
+<details>
+<summary>render-markdown integration</summary>
+
+Requires [render-markdown](https://github.com/MeanderingProgrammer/render-markdown.nvim) plugin to be installed.
+
+```lua
+require('render-markdown').setup({
+  file_types = { 'markdown', 'copilot-chat' },
+})
+```
+
+![image](https://github.com/user-attachments/assets/d8dc16f8-3f61-43fa-bfb9-83f240ae30e8)
+
+</details>
+
 ## Roadmap (Wishlist)
 
 - Use indexed vector database with current workspace for better context selection
