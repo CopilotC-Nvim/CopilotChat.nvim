@@ -2,7 +2,6 @@
 ---@field bufnr number
 ---@field winnr number
 ---@field separator string
----@field auto_follow_cursor boolean
 ---@field spinner CopilotChat.Spinner
 ---@field valid fun(self: CopilotChat.Chat)
 ---@field visible fun(self: CopilotChat.Chat)
@@ -132,12 +131,11 @@ function Chat:append(str)
   end
 
   -- Decide if we should follow cursor after appending text.
-  -- Note that winnr may be nil if the chat window is not open yet.
   local should_follow_cursor = self.auto_follow_cursor
-  if self.auto_follow_cursor and self.winnr then
+  if self.auto_follow_cursor and self:visible() then
     local current_pos = vim.api.nvim_win_get_cursor(self.winnr)
     local line_count = vim.api.nvim_buf_line_count(self.bufnr)
-    -- If we are at the last line of the buffer, then we should follow cursor.
+    -- Follow only if the cursor is currently at the last line.
     should_follow_cursor = current_pos[1] == line_count
   end
 
