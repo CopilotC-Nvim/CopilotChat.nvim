@@ -83,6 +83,7 @@ local select = require('CopilotChat.select')
 ---@field answer_header string?
 ---@field error_header string?
 ---@field separator string?
+---@field chat_autocomplete boolean?
 ---@field show_folds boolean?
 ---@field show_help boolean?
 ---@field auto_follow_cursor boolean?
@@ -114,6 +115,7 @@ return {
   error_header = '## Error ', -- Header to use for errors
   separator = '───', -- Separator to use in chat
 
+  chat_autocomplete = true, -- Enable chat autocompletion (when disabled, requires manual `mappings.complete` trigger)
   show_folds = true, -- Shows folds for sections in chat
   show_help = true, -- Shows help message as virtual lines when waiting for user input
   auto_follow_cursor = true, -- Auto-follow cursor in chat

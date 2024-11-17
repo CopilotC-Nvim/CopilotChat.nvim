@@ -44,22 +44,6 @@ local state = {
   help = nil,
 }
 
-local function blend_color_with_neovim_bg(color_name, blend)
-  local color_int = vim.api.nvim_get_hl(0, { name = color_name }).fg
-  local bg_int = vim.api.nvim_get_hl(0, { name = 'Normal' }).bg
-
-  if not color_int or not bg_int then
-    return
-  end
-
-  local color = { (color_int / 65536) % 256, (color_int / 256) % 256, color_int % 256 }
-  local bg = { (bg_int / 65536) % 256, (bg_int / 256) % 256, bg_int % 256 }
-  local r = math.floor((color[1] * blend + bg[1] * (100 - blend)) / 100)
-  local g = math.floor((color[2] * blend + bg[2] * (100 - blend)) / 100)
-  local b = math.floor((color[3] * blend + bg[3] * (100 - blend)) / 100)
-  return string.format('#%02x%02x%02x', r, g, b)
-end
-
 local function find_lines_between_separator(
   lines,
   current_line,
@@ -260,6 +244,47 @@ local function key_to_info(name, key, surround)
   return out
 end
 
+local function trigger_complete()
+  local info = M.complete_info()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local line = vim.api.nvim_get_current_line()
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local row = cursor[1]
+  local col = cursor[2]
+  if col == 0 or #line == 0 then
+    return
+  end
+
+  local prefix, cmp_start = unpack(vim.fn.matchstrpos(line:sub(1, col), info.pattern))
+  if not prefix then
+    return
+  end
+
+  if vim.startswith(prefix, '#') and vim.endswith(prefix, ':') then
+    local found_context = M.config.contexts[prefix:sub(2, -2)]
+    if found_context and found_context.input then
+      found_context.input(function(value)
+        if not value then
+          return
+        end
+
+        vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { tostring(value) })
+      end)
+    end
+
+    return
+  end
+
+  M.complete_items(function(items)
+    vim.fn.complete(
+      cmp_start + 1,
+      vim.tbl_filter(function(item)
+        return vim.startswith(item.word:lower(), prefix:lower())
+      end, items)
+    )
+  end)
+end
+
 --- Get the completion info for the chat window, for use with custom completion providers
 ---@return table
 function M.complete_info()
@@ -275,8 +300,8 @@ function M.complete_items(callback)
   async.run(function()
     local models = state.copilot:list_models()
     local agents = state.copilot:list_agents()
-    local items = {}
     local prompts_to_use = M.prompts()
+    local items = {}
 
     for name, prompt in pairs(prompts_to_use) do
       items[#items + 1] = {
@@ -322,6 +347,10 @@ function M.complete_items(callback)
         empty = 0,
       }
     end
+
+    table.sort(items, function(a, b)
+      return a.kind < b.kind
+    end)
 
     vim.schedule(function()
       callback(items)
@@ -784,9 +813,17 @@ function M.setup(config)
   end
 
   local hl_ns = vim.api.nvim_create_namespace('copilot-chat-highlights')
-  vim.api.nvim_set_hl(hl_ns, '@diff.plus', { bg = blend_color_with_neovim_bg('DiffAdd', 20) })
-  vim.api.nvim_set_hl(hl_ns, '@diff.minus', { bg = blend_color_with_neovim_bg('DiffDelete', 20) })
-  vim.api.nvim_set_hl(hl_ns, '@diff.delta', { bg = blend_color_with_neovim_bg('DiffChange', 20) })
+  vim.api.nvim_set_hl(hl_ns, '@diff.plus', { bg = utils.blend_color_with_neovim_bg('DiffAdd', 20) })
+  vim.api.nvim_set_hl(
+    hl_ns,
+    '@diff.minus',
+    { bg = utils.blend_color_with_neovim_bg('DiffDelete', 20) }
+  )
+  vim.api.nvim_set_hl(
+    hl_ns,
+    '@diff.delta',
+    { bg = utils.blend_color_with_neovim_bg('DiffChange', 20) }
+  )
   vim.api.nvim_set_hl(0, 'CopilotChatSpinner', { link = 'CursorColumn', default = true })
   vim.api.nvim_set_hl(0, 'CopilotChatHelp', { link = 'DiagnosticInfo', default = true })
   vim.api.nvim_set_hl(0, 'CopilotChatSelection', { link = 'Visual', default = true })
@@ -906,46 +943,23 @@ function M.setup(config)
 
       map_key(M.config.mappings.reset, bufnr, M.reset)
       map_key(M.config.mappings.close, bufnr, M.close)
+      map_key(M.config.mappings.complete, bufnr, trigger_complete)
 
-      map_key(M.config.mappings.complete, bufnr, function()
-        local info = M.complete_info()
-        local line = vim.api.nvim_get_current_line()
-        local cursor = vim.api.nvim_win_get_cursor(0)
-        local row = cursor[1]
-        local col = cursor[2]
-        if col == 0 or #line == 0 then
-          return
-        end
+      if M.config.chat_autocomplete then
+        vim.api.nvim_create_autocmd('TextChangedI', {
+          buffer = bufnr,
+          callback = function()
+            local line = vim.api.nvim_get_current_line()
+            local cursor = vim.api.nvim_win_get_cursor(0)
+            local col = cursor[2]
+            local char = line:sub(col, col)
 
-        local prefix, cmp_start = unpack(vim.fn.matchstrpos(line:sub(1, col), info.pattern))
-        if not prefix then
-          return
-        end
-
-        if vim.startswith(prefix, '#') and vim.endswith(prefix, ':') then
-          local found_context = M.config.contexts[prefix:sub(2, -2)]
-          if found_context and found_context.input then
-            found_context.input(function(value)
-              if not value then
-                return
-              end
-
-              vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { tostring(value) })
-            end)
-          end
-
-          return
-        end
-
-        M.complete_items(function(items)
-          vim.fn.complete(
-            cmp_start + 1,
-            vim.tbl_filter(function(item)
-              return vim.startswith(item.word:lower(), prefix:lower())
-            end, items)
-          )
-        end)
-      end)
+            if vim.tbl_contains(M.complete_info().triggers, char) then
+              utils.debounce(trigger_complete, 100)
+            end
+          end,
+        })
+      end
 
       map_key(M.config.mappings.submit_prompt, bufnr, function()
         local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
