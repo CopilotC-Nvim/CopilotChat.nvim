@@ -872,6 +872,7 @@ function M.setup(config)
         chat_help = chat_help .. '`@<agent>` to select an agent\n'
         chat_help = chat_help .. '`#<context>` to select a context\n'
         chat_help = chat_help .. '`/<prompt>` to select a prompt\n'
+        chat_help = chat_help .. '`$<model>` to select a model\n'
         chat_help = chat_help .. '`> <text>` to make a sticky prompt (copied to next prompt)\n'
 
         chat_help = chat_help .. '\n**`Mappings`**\n'
