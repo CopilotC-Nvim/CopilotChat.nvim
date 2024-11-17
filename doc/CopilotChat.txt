@@ -343,28 +343,24 @@ Also see here </lua/CopilotChat/config.lua>:
       -- default contexts
       contexts = {
         buffer = {
+          description = 'Includes only the current buffer in chat context. Supports input.',
           -- see config.lua for implementation
-          input = function(callback) end,
-          resolve = function(input, source) end,
         },
         buffers = {
+          description = 'Includes all open buffers in chat context.',
           -- see config.lua for implementation
-          resolve = function(input, source) end,
         },
         file = {
+          description = 'Includes content of provided file in chat context. Supports input.',
           -- see config.lua for implementation
-          input = function(callback) end,
-          resolve = function(input, source) end,
         },
         files = {
+          description = 'Includes all non-hidden filenames in the current workspace in chat context. Supports input.',
           -- see config.lua for implementation
-          input = function(callback) end,
-          resolve = function(input, source) end,
         },
         git = {
+          description = 'Includes current git diff in chat context. Supports input.',
           -- see config.lua for implementation
-          input = function(callback) end,
-          resolve = function(input, source) end,
         },
       },
     
@@ -374,9 +370,8 @@ Also see here </lua/CopilotChat/config.lua>:
           prompt = '> /COPILOT_EXPLAIN\n\nWrite an explanation for the selected code and diagnostics as paragraphs of text.',
         },
         Review = {
-          -- see config.lua for implementation
           prompt = '> /COPILOT_REVIEW\n\nReview the selected code.',
-          callback = function(response, source) end,
+          -- see config.lua for implementation
         },
         Fix = {
           prompt = '> /COPILOT_GENERATE\n\nThere is a problem in this code. Rewrite the code to show it with the bug fixed.',
@@ -413,7 +408,6 @@ Also see here </lua/CopilotChat/config.lua>:
       -- default mappings
       mappings = {
         complete = {
-          detail = 'Use @<Tab> or /<Tab> for options.',
           insert ='<Tab>',
         },
         close = {
