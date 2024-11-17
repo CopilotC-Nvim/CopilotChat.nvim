@@ -139,21 +139,54 @@ COMMANDS ~
 - `:CopilotChatAgents` - View and select available agents. This is reset when a new instance is made. Please set your agent in `init.lua` for persistence.
 
 
-COMMANDS COMING FROM DEFAULT PROMPTS
+PROMPTS ~
 
-- `:CopilotChatExplain` - Write an explanation for the selected code and diagnostics as paragraphs of text
-- `:CopilotChatReview` - Review the selected code
-- `:CopilotChatFix` - There is a problem in this code. Rewrite the code to show it with the bug fixed
-- `:CopilotChatOptimize` - Optimize the selected code to improve performance and readability
-- `:CopilotChatDocs` - Please add documentation comments to the selected code
-- `:CopilotChatTests` - Please generate tests for my code
-- `:CopilotChatCommit` - Write commit message for the change with commitizen convention
+You can ask Copilot to do various tasks with prompts. You can reference prompts
+with `/PromptName` in chat or call with command `:CopilotChat<PromptName>`.
+Default prompts are:
+
+- `Explain` - Write an explanation for the selected code and diagnostics as paragraphs of text
+- `Review` - Review the selected code
+- `Fix` - There is a problem in this code. Rewrite the code to show it with the bug fixed
+- `Optimize` - Optimize the selected code to improve performance and readability
+- `Docs` - Please add documentation comments to the selected code
+- `Tests` - Please generate tests for my code
+- `Commit` - Write commit message for the change with commitizen convention
 
 
-MODELS, AGENTS AND CONTEXTS ~
+SYSTEM PROMPTS ~
+
+System prompts specify the behavior of the AI model. You can reference system
+prompts with `/PROMPT_NAME` in chat. Default system prompts are:
+
+- `COPILOT_INSTRUCTIONS` - Base GitHub Copilot instructions
+- `COPILOT_EXPLAIN` - On top of the base instructions adds coding tutor behavior
+- `COPILOT_REVIEW` - On top of the base instructions adds code review behavior with instructions on how to generate diagnostics
+- `COPILOT_GENERATE` - On top of the base instructions adds code generation behavior, with predefined formatting and generation rules
 
 
-MODELS
+STICKY PROMPTS ~
+
+You can set sticky prompt in chat by prefixing the text with `>` using markdown
+blockquote syntax. The sticky prompt will be copied at start of every new
+prompt in chat window. You can freely edit the sticky prompt, only rule is `>`
+prefix at beginning of line. This is useful for preserving stuff like context
+and agent selection (see below). Example usage:
+
+>markdown
+    > #files
+    
+    List all files in the workspace
+<
+
+>markdown
+    > @models Using Mistral-small
+    
+    What is 1 + 11
+<
+
+
+MODELS ~
 
 You can list available models with `:CopilotChatModels` command. Model
 determines the AI model used for the chat. Default models are:
@@ -170,7 +203,7 @@ using `@models` agent from here <https://github.com/marketplace/models-github>
 (example: `@models Using Mistral-small, what is 1 + 11`)
 
 
-AGENTS
+AGENTS ~
 
 Agents are used to determine the AI agent used for the chat. You can list
 available agents with `:CopilotChatAgents` command. You can set the agent in
@@ -183,7 +216,7 @@ You can install more agents from here
 <https://github.com/marketplace?type=apps&copilot_app=true>
 
 
-CONTEXTS
+CONTEXTS ~
 
 Contexts are used to determine the context of the chat. You can set the context
 in the prompt by using `#` followed by the context name. Supported contexts
@@ -306,25 +339,25 @@ Also see here </lua/CopilotChat/config.lua>:
       -- default prompts
       prompts = {
         Explain = {
-          prompt = '/COPILOT_EXPLAIN Write an explanation for the selected code and diagnostics as paragraphs of text.',
+          prompt = '> /COPILOT_EXPLAIN\n\nWrite an explanation for the selected code and diagnostics as paragraphs of text.',
         },
         Review = {
-          prompt = '/COPILOT_REVIEW Review the selected code.',
+          prompt = '> /COPILOT_REVIEW\n\nReview the selected code.',
           callback = function(response, source)
             -- see config.lua for implementation
           end,
         },
         Fix = {
-          prompt = '/COPILOT_GENERATE There is a problem in this code. Rewrite the code to show it with the bug fixed.',
+          prompt = '> /COPILOT_GENERATE\n\nThere is a problem in this code. Rewrite the code to show it with the bug fixed.',
         },
         Optimize = {
-          prompt = '/COPILOT_GENERATE Optimize the selected code to improve performance and readability.',
+          prompt = '> /COPILOT_GENERATE\n\nOptimize the selected code to improve performance and readability.',
         },
         Docs = {
-          prompt = '/COPILOT_GENERATE Please add documentation comments to the selected code.',
+          prompt = '> /COPILOT_GENERATE\n\nPlease add documentation comments to the selected code.',
         },
         Tests = {
-          prompt = '/COPILOT_GENERATE Please generate tests for my code.',
+          prompt = '> /COPILOT_GENERATE\n\nPlease generate tests for my code.',
         },
         Commit = {
           prompt = 'Write commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
@@ -364,6 +397,10 @@ Also see here </lua/CopilotChat/config.lua>:
         submit_prompt = {
           normal = '<CR>',
           insert = '<C-s>'
+        },
+        toggle_sticky = {
+          detail = 'Makes line under cursor sticky or deletes sticky line.',
+          normal = 'gr',
         },
         accept_diff = {
           normal = '<C-y>',
