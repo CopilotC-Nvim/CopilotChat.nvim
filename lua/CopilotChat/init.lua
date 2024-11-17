@@ -531,7 +531,7 @@ function M.ask(prompt, config)
     or 'untitled'
 
   local embeddings = {}
-  for prompt_context in prompt:gmatch('#([^%s]+)') do
+  local function parse_context(prompt_context)
     local split = vim.split(prompt_context, ':')
     local context_name = split[1]
     local context_input = split[2]
@@ -546,6 +546,14 @@ function M.ask(prompt, config)
 
       prompt = prompt:gsub('#' .. prompt_context .. '%s*', '')
     end
+  end
+
+  if config.context then
+    parse_context(config.context)
+  end
+
+  for prompt_context in prompt:gmatch('#([^%s]+)') do
+    parse_context(prompt_context)
   end
 
   async.run(function()
