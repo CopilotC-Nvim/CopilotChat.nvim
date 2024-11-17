@@ -18,8 +18,9 @@ local plugin_name = 'CopilotChat.nvim'
 --- @field source CopilotChat.config.source?
 --- @field config CopilotChat.config?
 --- @field last_system_prompt string?
+--- @field last_prompt string?
+--- @field last_response string?
 --- @field last_code_output string?
---- @field response string?
 --- @field diff CopilotChat.Overlay?
 --- @field system_prompt CopilotChat.Overlay?
 --- @field user_selection CopilotChat.Overlay?
@@ -30,12 +31,11 @@ local state = {
   source = nil,
   config = nil,
 
-  -- Tracking for overlays
+  -- State tracking
   last_system_prompt = nil,
+  last_prompt = nil,
+  last_response = nil,
   last_code_output = nil,
-
-  -- Response for mappings
-  response = nil,
 
   -- Overlays
   diff = nil,
@@ -58,15 +58,6 @@ local function blend_color_with_neovim_bg(color_name, blend)
   local g = math.floor((color[2] * blend + bg[2] * (100 - blend)) / 100)
   local b = math.floor((color[3] * blend + bg[3] * (100 - blend)) / 100)
   return string.format('#%02x%02x%02x', r, g, b)
-end
-
-local function get_error_message(err)
-  if type(err) == 'string' then
-    local message = err:match('^[^:]+:[^:]+:(.+)') or err
-    message = message:gsub('^%s*', '')
-    return message
-  end
-  return vim.inspect(err)
 end
 
 local function find_lines_between_separator(
@@ -169,6 +160,53 @@ local function get_selection()
   return {}
 end
 
+local function finish(config, message, hide_help, start_of_chat)
+  if not start_of_chat then
+    state.chat:append('\n\n')
+  end
+
+  state.chat:append(config.question_header .. config.separator .. '\n\n')
+
+  local offset = 0
+
+  if state.last_prompt then
+    for sticky_line in state.last_prompt:gmatch('(>%s+[^\n]+)') do
+      state.chat:append(sticky_line .. '\n')
+      -- Account for sticky line
+      offset = offset + 1
+    end
+
+    if offset > 0 then
+      state.chat:append('\n')
+      -- Account for new line after sticky lines
+      offset = offset + 1
+    end
+  end
+
+  -- Account for double new line after separator
+  offset = offset + 2
+
+  if not hide_help then
+    state.chat:finish(message, offset)
+  end
+end
+
+local function show_error(err, config)
+  log.error(vim.inspect(err))
+
+  if type(err) == 'string' then
+    local message = err:match('^[^:]+:[^:]+:(.+)') or err
+    message = message:gsub('^%s*', '')
+    err = message
+  else
+    err = vim.inspect(err)
+  end
+
+  state.chat:append('\n\n' .. config.error_header .. config.separator .. '\n\n')
+  state.chat:append('```\n' .. err .. '\n```')
+  finish(config)
+end
+
 --- Map a key to a function.
 ---@param key CopilotChat.config.mapping
 ---@param bufnr number
@@ -178,7 +216,7 @@ local function map_key(key, bufnr, fn)
     return
   end
   if key.normal and key.normal ~= '' then
-    vim.keymap.set('n', key.normal, fn, { buffer = bufnr })
+    vim.keymap.set('n', key.normal, fn, { buffer = bufnr, nowait = true })
   end
   if key.insert and key.insert ~= '' then
     vim.keymap.set('i', key.insert, fn, { buffer = bufnr })
@@ -380,7 +418,7 @@ end
 
 --- @returns string
 function M.response()
-  return state.response
+  return state.last_response
 end
 
 --- Select a Copilot GPT model.
@@ -437,31 +475,28 @@ end
 ---@param source CopilotChat.config.source?
 function M.ask(prompt, config, source)
   config = vim.tbl_deep_extend('force', M.config, config or {})
-  prompt = prompt or ''
-  local system_prompt, updated_prompt = update_prompts(prompt, config.system_prompt)
-  updated_prompt = vim.trim(updated_prompt)
-  if updated_prompt == '' then
-    M.open(config, source)
+  vim.diagnostic.reset(vim.api.nvim_create_namespace('copilot_diagnostics'))
+  M.open(config, source)
+
+  prompt = vim.trim(prompt or '')
+  if prompt == '' then
     return
   end
 
-  M.open(config, source)
-
-  vim.diagnostic.reset(vim.api.nvim_create_namespace('copilot_diagnostics'))
-
   if config.clear_chat_on_new_prompt then
     M.stop(true, config)
+  elseif state.copilot:stop() then
+    finish(config, nil, true)
   end
 
-  local function on_error(err)
-    log.error(vim.inspect(err))
-    vim.schedule(function()
-      state.chat:append('\n\n' .. config.error_header .. config.separator .. '\n\n')
-      state.chat:append('```\n' .. get_error_message(err) .. '\n```')
-      state.chat:append('\n\n' .. config.question_header .. config.separator .. '\n\n')
-      state.chat:finish()
-    end)
-  end
+  state.chat:append(prompt)
+  state.chat:append('\n\n' .. config.answer_header .. config.separator .. '\n\n')
+
+  local system_prompt, updated_prompt = update_prompts(prompt or '', config.system_prompt)
+  state.last_system_prompt = system_prompt
+  state.last_prompt = prompt
+  prompt = updated_prompt
+  prompt = string.gsub(prompt, '(^|\n)>%s+', '%1')
 
   local selection = get_selection()
   local filetype = selection.filetype
@@ -473,38 +508,28 @@ function M.ask(prompt, config, source)
     ))
     or 'untitled'
 
-  state.last_system_prompt = system_prompt
-
-  if state.copilot:stop() then
-    state.chat:append('\n\n' .. config.question_header .. config.separator .. '\n\n')
-  end
-
-  state.chat:append(updated_prompt)
-  state.chat:append('\n\n' .. config.answer_header .. config.separator .. '\n\n')
-
-  local selected_context = config.context
   local contexts = vim.tbl_keys(context.supported_contexts())
-  for prompt_context in updated_prompt:gmatch('#([%w_-]+)') do
+  local selected_context = config.context
+  for prompt_context in prompt:gmatch('#([%w_-]+)') do
     if vim.tbl_contains(contexts, prompt_context) then
       selected_context = prompt_context
-      updated_prompt = string.gsub(updated_prompt, '#' .. prompt_context .. '%s*', '')
+      prompt = string.gsub(prompt, '#' .. prompt_context .. '%s*', '')
     end
   end
 
   async.run(function()
     local agents = vim.tbl_keys(state.copilot:list_agents())
-    local current_agent = config.agent
-
-    for agent in updated_prompt:gmatch('@([%w_-]+)') do
+    local selected_agent = config.agent
+    for agent in prompt:gmatch('@([%w_-]+)') do
       if vim.tbl_contains(agents, agent) then
-        current_agent = agent
-        updated_prompt = updated_prompt:gsub('@' .. agent .. '%s*', '')
+        selected_agent = agent
+        prompt = prompt:gsub('@' .. agent .. '%s*', '')
       end
     end
 
     local query_ok, embeddings = pcall(context.find_for_query, state.copilot, {
       context = selected_context,
-      prompt = updated_prompt,
+      prompt = prompt,
       selection = selection.lines,
       filename = filename,
       filetype = filetype,
@@ -512,19 +537,21 @@ function M.ask(prompt, config, source)
     })
 
     if not query_ok then
-      on_error(embeddings)
+      vim.schedule(function()
+        show_error(embeddings, config)
+      end)
       return
     end
 
     local ask_ok, response, token_count, token_max_count =
-      pcall(state.copilot.ask, state.copilot, updated_prompt, {
+      pcall(state.copilot.ask, state.copilot, prompt, {
         selection = selection,
         embeddings = embeddings,
         filename = filename,
         filetype = filetype,
         system_prompt = system_prompt,
         model = config.model,
-        agent = current_agent,
+        agent = selected_agent,
         temperature = config.temperature,
         on_progress = function(token)
           vim.schedule(function()
@@ -534,7 +561,9 @@ function M.ask(prompt, config, source)
       })
 
     if not ask_ok then
-      on_error(response)
+      vim.schedule(function()
+        show_error(response, config)
+      end)
       return
     end
 
@@ -542,15 +571,15 @@ function M.ask(prompt, config, source)
       return
     end
 
-    state.response = response
+    state.last_response = response
 
     vim.schedule(function()
-      state.chat:append('\n\n' .. config.question_header .. config.separator .. '\n\n')
       if token_count and token_max_count and token_count > 0 then
-        state.chat:finish(token_count .. '/' .. token_max_count .. ' tokens used')
+        finish(config, token_count .. '/' .. token_max_count .. ' tokens used')
       else
-        state.chat:finish()
+        finish(config)
       end
+
       if config.callback then
         config.callback(response, state.source)
       end
@@ -563,7 +592,6 @@ end
 ---@param config CopilotChat.config?
 function M.stop(reset, config)
   config = vim.tbl_deep_extend('force', M.config, config or {})
-  state.response = nil
   local stopped = reset and state.copilot:reset() or state.copilot:stop()
   local wrap = vim.schedule
   if not stopped then
@@ -575,11 +603,13 @@ function M.stop(reset, config)
   wrap(function()
     if reset then
       state.chat:clear()
-    else
-      state.chat:append('\n\n')
+      state.last_system_prompt = nil
+      state.last_prompt = nil
+      state.last_response = nil
+      state.last_code_output = nil
     end
-    state.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
-    state.chat:finish()
+
+    finish(config, nil, nil, reset)
   end)
 end
 
@@ -637,12 +667,7 @@ function M.load(name, history_path)
     end
   end
 
-  if #history > 0 then
-    state.chat:append('\n\n')
-  end
-  state.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
-
-  state.chat:finish()
+  finish(M.config, nil, nil, #history == 0)
   M.open()
 end
 
@@ -803,7 +828,13 @@ function M.setup(config)
     M.config.auto_insert_mode,
     function(bufnr)
       map_key(M.config.mappings.show_help, bufnr, function()
-        local chat_help = ''
+        local chat_help = '**`Special tokens`**\n'
+        chat_help = chat_help .. '`@<agent>` to select an agent\n'
+        chat_help = chat_help .. '`#<context>` to select a context\n'
+        chat_help = chat_help .. '`/<prompt>` to select a prompt\n'
+        chat_help = chat_help .. '`> <text>` to make a sticky prompt (copied to next prompt)\n'
+
+        chat_help = chat_help .. '\n**`Mappings`**\n'
         local chat_keys = vim.tbl_keys(M.config.mappings)
         table.sort(chat_keys, function(a, b)
           a = M.config.mappings[a]
@@ -863,6 +894,49 @@ function M.setup(config)
           end
 
           M.ask(input, state.config, state.source)
+        end
+      end)
+
+      map_key(M.config.mappings.toggle_sticky, bufnr, function()
+        local current_line = vim.trim(vim.api.nvim_get_current_line())
+        if current_line == '' then
+          return
+        end
+
+        local cursor = vim.api.nvim_win_get_cursor(0)
+        local cur_line = cursor[1]
+        vim.api.nvim_buf_set_lines(bufnr, cur_line - 1, cur_line, false, {})
+
+        local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+        local _, start_line, end_line =
+          find_lines_between_separator(chat_lines, 0, M.config.separator .. '$', nil, true)
+
+        if vim.startswith(current_line, '> ') then
+          return
+        end
+
+        if start_line then
+          local insert_line = start_line
+          local first_one = true
+
+          for i = insert_line, end_line do
+            local line = chat_lines[i]
+            if line and vim.trim(line) ~= '' then
+              if vim.startswith(line, '> ') then
+                first_one = false
+              else
+                break
+              end
+            elseif i >= start_line + 1 then
+              break
+            end
+
+            insert_line = insert_line + 1
+          end
+
+          local lines = first_one and { '> ' .. current_line, '' } or { '> ' .. current_line }
+          vim.api.nvim_buf_set_lines(bufnr, insert_line - 1, insert_line - 1, false, lines)
+          vim.api.nvim_win_set_cursor(0, cursor)
         end
       end)
 
@@ -986,8 +1060,7 @@ function M.setup(config)
         })
       end
 
-      state.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
-      state.chat:finish()
+      finish(M.config, nil, nil, true)
     end
   )
 

@@ -85,8 +85,4 @@ Your task is to modify the provided code according to the user's request. Follow
 Remember that Your response SHOULD CONTAIN ONLY THE MODIFIED CODE to be used as DIRECT REPLACEMENT to the original file.
 ]]
 
-M.SHOW_CONTEXT = [[
-At the beginning of your response show code outline from all the provided files coming from Context and Active Selection.
-]]
-
 return M

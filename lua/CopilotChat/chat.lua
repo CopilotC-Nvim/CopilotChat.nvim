@@ -11,7 +11,7 @@
 ---@field close fun(self: CopilotChat.Chat, bufnr: number?)
 ---@field focus fun(self: CopilotChat.Chat)
 ---@field follow fun(self: CopilotChat.Chat)
----@field finish fun(self: CopilotChat.Chat, msg: string?)
+---@field finish fun(self: CopilotChat.Chat, msg: string?, offset: number?)
 ---@field delete fun(self: CopilotChat.Chat)
 
 local Overlay = require('CopilotChat.overlay')
@@ -280,9 +280,13 @@ function Chat:follow()
   vim.api.nvim_win_set_cursor(self.winnr, { last_line + 1, last_column })
 end
 
-function Chat:finish(msg)
+function Chat:finish(msg, offset)
   if not self.spinner then
     return
+  end
+
+  if not offset then
+    offset = 0
   end
 
   self.spinner:finish()
@@ -295,7 +299,7 @@ function Chat:finish(msg)
     msg = self.help
   end
 
-  self:show_help(msg, -2)
+  self:show_help(msg, -offset)
   if self.auto_insert and self:active() then
     vim.cmd('startinsert')
   end
