@@ -153,6 +153,7 @@ What is 1 + 11
 ### Models
 
 You can list available models with `:CopilotChatModels` command. Model determines the AI model used for the chat.  
+You can set the model in the prompt by using `$` followed by the model name.  
 Default models are:
 
 - `gpt-4o` - This is the default Copilot Chat model. It is a versatile, multimodal model that excels in both text and image processing and is designed to provide fast, reliable responses. It also has superior performance in non-English languages. Gpt-4o is hosted on Azure.
@@ -176,11 +177,14 @@ You can install more agents from [here](https://github.com/marketplace?type=apps
 
 Contexts are used to determine the context of the chat.  
 You can set the context in the prompt by using `#` followed by the context name.  
-Supported contexts are:
+If context supports input, you can set the input in the prompt by using `:` followed by the input (or pressing `complete` key after `:`).  
+Default contexts are:
 
+- `buffer` - Includes only the current buffer in chat context. Supports input.
 - `buffers` - Includes all open buffers in chat context
-- `buffer` - Includes only the current buffer in chat context
-- `files` - Includes all non-hidden filenames in the current workspace in chat context
+- `file` - Includes content of provided file in chat context. Supports input.
+- `files` - Includes all non-hidden filenames in the current workspace in chat context. Supports input.
+- `git` - Includes current git diff in chat context. Supports input.
 
 ### API
 
@@ -261,17 +265,16 @@ Also see [here](/lua/CopilotChat/config.lua):
   proxy = nil, -- [protocol://]host[:port] Use this proxy
   allow_insecure = false, -- Allow insecure server connections
 
-  system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use
-  model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models
+  system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use (can be specified manually in prompt via /).
+  model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   agent = 'copilot', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
-  context = nil, -- Default context to use, 'buffers', 'buffer', 'files' or none (can be specified manually in prompt via #).
+  context = nil, -- Default context to use (can be specified manually in prompt via #).
   temperature = 0.1, -- GPT result temperature
 
   question_header = '## User ', -- Header to use for user questions
   answer_header = '## Copilot ', -- Header to use for AI answers
   error_header = '## Error ', -- Header to use for errors
   separator = '───', -- Separator to use in chat
-  highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
 
   show_folds = true, -- Shows folds for sections in chat
   show_help = true, -- Shows help message as virtual lines when waiting for user input
@@ -280,6 +283,7 @@ Also see [here](/lua/CopilotChat/config.lua):
   insert_at_end = false, -- Move cursor to end of buffer when inserting text
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
   highlight_selection = true, -- Highlight selection in the source buffer when in the chat window
+  highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
 
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
   callback = nil, -- Callback to use when ask response is received
@@ -289,16 +293,43 @@ Also see [here](/lua/CopilotChat/config.lua):
     return select.visual(source) or select.buffer(source)
   end,
 
+  -- default contexts
+  contexts = {
+    buffer = {
+      -- see config.lua for implementation
+      input = function(callback) end,
+      resolve = function(input, source) end,
+    },
+    buffers = {
+      -- see config.lua for implementation
+      resolve = function(input, source) end,
+    },
+    file = {
+      -- see config.lua for implementation
+      input = function(callback) end,
+      resolve = function(input, source) end,
+    },
+    files = {
+      -- see config.lua for implementation
+      input = function(callback) end,
+      resolve = function(input, source) end,
+    },
+    git = {
+      -- see config.lua for implementation
+      input = function(callback) end,
+      resolve = function(input, source) end,
+    },
+  },
+
   -- default prompts
   prompts = {
     Explain = {
       prompt = '> /COPILOT_EXPLAIN\n\nWrite an explanation for the selected code and diagnostics as paragraphs of text.',
     },
     Review = {
+      -- see config.lua for implementation
       prompt = '> /COPILOT_REVIEW\n\nReview the selected code.',
-      callback = function(response, source)
-        -- see config.lua for implementation
-      end,
+      callback = function(response, source) end,
     },
     Fix = {
       prompt = '> /COPILOT_GENERATE\n\nThere is a problem in this code. Rewrite the code to show it with the bug fixed.',
@@ -313,8 +344,7 @@ Also see [here](/lua/CopilotChat/config.lua):
       prompt = '> /COPILOT_GENERATE\n\nPlease generate tests for my code.',
     },
     Commit = {
-      prompt = 'Write commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
-      selection = select.gitdiff,
+      prompt = '> #git:staged\n\nWrite commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
     },
   },
 

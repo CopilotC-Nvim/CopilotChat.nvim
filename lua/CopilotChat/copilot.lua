@@ -638,7 +638,9 @@ function Copilot:ask(prompt, opts)
     embeddings_prompt = embeddings_prompt
       .. string.format('[#file:%s](#file:%s-context)\n', embedding.filename, embedding.filename)
   end
-  prompt = embeddings_prompt .. prompt
+  if embeddings_prompt ~= '' then
+    prompt = embeddings_prompt .. '\n' .. prompt
+  end
 
   local last_message = nil
   local errored = false

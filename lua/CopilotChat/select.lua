@@ -171,38 +171,4 @@ function M.clipboard()
   }
 end
 
---- Select and process current git diff
---- @param source CopilotChat.config.source
---- @return CopilotChat.config.selection|nil
-function M.gitdiff(source)
-  local select_buffer = M.buffer(source)
-  if not select_buffer then
-    return nil
-  end
-
-  local bufname = vim.api.nvim_buf_get_name(source.bufnr)
-  local file_path = bufname:gsub('^%w+://', '')
-  local dir = vim.fn.fnamemodify(file_path, ':h')
-  if not dir or dir == '' then
-    return nil
-  end
-  dir = dir:gsub('.git$', '')
-
-  local cmd = 'git -C ' .. dir .. ' diff --no-color --no-ext-diff --staged'
-  local handle = io.popen(cmd)
-  if not handle then
-    return nil
-  end
-
-  local result = handle:read('*a')
-  handle:close()
-  if not result or result == '' then
-    return nil
-  end
-
-  select_buffer.filetype = 'diff'
-  select_buffer.lines = result
-  return select_buffer
-end
-
 return M
