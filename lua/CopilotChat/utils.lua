@@ -1,4 +1,3 @@
-local log = require('plenary.log')
 local M = {}
 
 --- Create class
@@ -74,6 +73,23 @@ function M.table_equals(a, b)
   return true
 end
 
+--- Blend a color with the neovim background
+function M.blend_color_with_neovim_bg(color_name, blend)
+  local color_int = vim.api.nvim_get_hl(0, { name = color_name }).fg
+  local bg_int = vim.api.nvim_get_hl(0, { name = 'Normal' }).bg
+
+  if not color_int or not bg_int then
+    return
+  end
+
+  local color = { (color_int / 65536) % 256, (color_int / 256) % 256, color_int % 256 }
+  local bg = { (bg_int / 65536) % 256, (bg_int / 256) % 256, bg_int % 256 }
+  local r = math.floor((color[1] * blend + bg[1] * (100 - blend)) / 100)
+  local g = math.floor((color[2] * blend + bg[2] * (100 - blend)) / 100)
+  local b = math.floor((color[3] * blend + bg[3] * (100 - blend)) / 100)
+  return string.format('#%02x%02x%02x', r, g, b)
+end
+
 --- Return to normal mode
 function M.return_to_normal_mode()
   local mode = vim.fn.mode():lower()
@@ -84,8 +100,17 @@ function M.return_to_normal_mode()
   end
 end
 
+--- Mark a function as deprecated
 function M.deprecate(old, new)
-  vim.deprecate(old, new, '3.0.0', 'CopilotChat.nvim', false)
+  vim.deprecate(old, new, '3.0.X', 'CopilotChat.nvim', false)
+end
+
+--- Debounce a function
+function M.debounce(fn, delay)
+  if M.timer then
+    M.timer:stop()
+  end
+  M.timer = vim.defer_fn(fn, delay)
 end
 
 return M

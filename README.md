@@ -276,6 +276,7 @@ Also see [here](/lua/CopilotChat/config.lua):
   error_header = '## Error ', -- Header to use for errors
   separator = '───', -- Separator to use in chat
 
+  chat_autocomplete = true, -- Enable chat autocompletion (when disabled, requires manual `mappings.complete` trigger)
   show_folds = true, -- Shows folds for sections in chat
   show_help = true, -- Shows help message as virtual lines when waiting for user input
   auto_follow_cursor = true, -- Auto-follow cursor in chat
@@ -572,30 +573,6 @@ Requires [fzf-lua](https://github.com/ibhagwan/fzf-lua) plugin to be installed.
 ```
 
 ![image](https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/743455bb-9517-48a8-a7a1-81215dc3b747)
-
-</details>
-
-<details>
-<summary>nvim-cmp integration</summary>
-
-Requires [nvim-cmp](https://github.com/hrsh7th/nvim-cmp) plugin to be installed (and properly configured).
-
-```lua
--- Registers copilot-chat source and enables it for copilot-chat filetype (so copilot chat window)
-require("CopilotChat.integrations.cmp").setup()
-
--- You might also want to disable default <tab> complete mapping for copilot chat when doing this
-require('CopilotChat').setup({
-  mappings = {
-    complete = {
-      insert = '',
-    },
-  },
-  -- rest of your config
-})
-```
-
-![image](https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/063fc99f-a4b2-4187-a065-0fdd287ebee2)
 
 </details>
 
