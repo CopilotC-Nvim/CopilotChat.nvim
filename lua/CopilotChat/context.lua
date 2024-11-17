@@ -1,4 +1,3 @@
-local async = require('plenary.async')
 local log = require('plenary.log')
 
 local M = {}
@@ -42,6 +41,7 @@ local off_side_rule_languages = {
 }
 
 local big_file_threshold = 500
+local selection_threshold = 200
 
 local function spatial_distance_cosine(a, b)
   local dot_product = 0
@@ -73,46 +73,13 @@ local function data_ranked_by_relatedness(query, data, top_n)
   return result
 end
 
-local get_context_data = async.wrap(function(context, bufnr, callback)
-  vim.schedule(function()
-    local outline = {}
-    if context == 'buffers' then
-      outline = vim.tbl_map(
-        M.build_outline,
-        vim.tbl_filter(function(b)
-          return vim.api.nvim_buf_is_loaded(b) and vim.fn.buflisted(b) == 1
-        end, vim.api.nvim_list_bufs())
-      )
-    elseif context == 'buffer' then
-      table.insert(outline, M.build_outline(bufnr))
-    elseif context == 'files' then
-      outline = M.build_file_map()
-    end
-
-    callback(outline)
-  end)
-end, 3)
-
---- Get supported contexts
----@return table<string>
-function M.supported_contexts()
-  return {
-    buffers = 'Includes all open buffers in chat context',
-    buffer = 'Includes only the current buffer in chat context',
-    files = 'Includes all non-hidden filenames in the current workspace in chat context',
-  }
-end
-
 --- Get list of all files in workspace
+---@param pattern string?
 ---@return table<CopilotChat.copilot.embed>
-function M.build_file_map()
-  -- Use vim.fn.glob() to get all files
-  local files = vim.fn.glob('**/*', false, true)
-
-  -- Filter out directories
-  files = vim.tbl_filter(function(file)
+function M.files(pattern)
+  local files = vim.tbl_filter(function(file)
     return vim.fn.isdirectory(file) == 0
-  end, files)
+  end, vim.fn.glob(pattern or '**/*', false, true))
 
   if #files == 0 then
     return {}
@@ -138,18 +105,33 @@ function M.build_file_map()
   return out
 end
 
+--- Get the content of a file
+---@param filename string
+---@return CopilotChat.copilot.embed?
+function M.file(filename)
+  local content = vim.fn.readfile(filename)
+  if #content == 0 then
+    return
+  end
+
+  return {
+    content = table.concat(content, '\n'),
+    filename = filename,
+    filetype = vim.filetype.match({ filename = filename }),
+  }
+end
+
 --- Build an outline for a buffer
 --- FIXME: Handle multiline function argument definitions when building the outline
 ---@param bufnr number
----@param force_outline boolean? If true, always build the outline
 ---@return CopilotChat.copilot.embed?
-function M.build_outline(bufnr, force_outline)
+function M.outline(bufnr)
   local name = vim.api.nvim_buf_get_name(bufnr)
   local ft = vim.bo[bufnr].filetype
 
   -- If buffer is not too big, just return the content
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-  if not force_outline and #lines < big_file_threshold then
+  if #lines < big_file_threshold then
     return {
       content = table.concat(lines, '\n'),
       filename = name,
@@ -245,38 +227,72 @@ function M.build_outline(bufnr, force_outline)
   }
 end
 
+--- Get current git diff
+---@param type string?
+---@param bufnr number
+function M.gitdiff(type, bufnr)
+  type = type or 'unstaged'
+  local bufname = vim.api.nvim_buf_get_name(bufnr)
+  local file_path = bufname:gsub('^%w+://', '')
+  local dir = vim.fn.fnamemodify(file_path, ':h')
+  if not dir or dir == '' then
+    return nil
+  end
+  dir = dir:gsub('.git$', '')
+
+  local cmd = 'git -C ' .. dir .. ' diff --no-color --no-ext-diff'
+
+  if type == 'staged' then
+    cmd = cmd .. ' --staged'
+  end
+
+  local handle = io.popen(cmd)
+  if not handle then
+    return nil
+  end
+
+  local result = handle:read('*a')
+  handle:close()
+  if not result or result == '' then
+    return nil
+  end
+
+  return {
+    content = result,
+    filename = 'git_diff_' .. type,
+    filetype = 'diff',
+  }
+end
+
 ---@class CopilotChat.context.find_for_query.opts
----@field context string?
+---@field embeddings table<CopilotChat.copilot.embed>
 ---@field prompt string
 ---@field selection string?
 ---@field filename string
 ---@field filetype string
----@field bufnr number
 
---- Find items for a query
+--- Filter embeddings based on the query
 ---@param copilot CopilotChat.Copilot
 ---@param opts CopilotChat.context.find_for_query.opts
 ---@return table<CopilotChat.copilot.embed>
-function M.find_for_query(copilot, opts)
-  local context = opts.context
+function M.filter_embeddings(copilot, opts)
+  local embeddings = opts.embeddings
   local prompt = opts.prompt
   local selection = opts.selection
   local filename = opts.filename
   local filetype = opts.filetype
-  local bufnr = opts.bufnr
 
-  local outline = get_context_data(context, bufnr)
-  outline = vim.tbl_filter(function(item)
-    return item ~= nil
-  end, outline)
-
-  if #outline == 0 then
+  local out = copilot:embed(embeddings)
+  if #out == 0 then
     return {}
   end
 
-  local out = copilot:embed(outline)
-  if #out == 0 then
-    return {}
+  -- If selection is too big, truncate it
+  if selection then
+    local lines = vim.split(selection, '\n')
+    selection = #lines > selection_threshold
+        and table.concat(vim.list_slice(lines, 1, selection_threshold), '\n')
+      or selection
   end
 
   log.debug(string.format('Got %s embeddings', #out))
@@ -294,13 +310,16 @@ function M.find_for_query(copilot, opts)
   if not query then
     return {}
   end
+
+  local data = data_ranked_by_relatedness(query, out, 20)
+
   log.debug('Prompt:', query.prompt)
   log.debug('Content:', query.content)
-  local data = data_ranked_by_relatedness(query, out, 20)
   log.debug('Ranked data:', #data)
   for i, item in ipairs(data) do
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
   end
+
   return data
 end
 

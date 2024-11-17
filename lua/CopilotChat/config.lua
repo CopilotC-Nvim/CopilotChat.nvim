@@ -1,4 +1,5 @@
 local prompts = require('CopilotChat.prompts')
+local context = require('CopilotChat.context')
 local select = require('CopilotChat.select')
 
 --- @class CopilotChat.config.source
@@ -22,6 +23,11 @@ local select = require('CopilotChat.select')
 ---@field start_col number?
 ---@field end_row number?
 ---@field end_col number?
+
+---@class CopilotChat.config.context
+---@field description string?
+---@field input fun(callback: fun(input: string?))?
+---@field resolve fun(input: string?, source: CopilotChat.config.source):table<CopilotChat.copilot.embed>
 
 ---@class CopilotChat.config.prompt
 ---@field prompt string?
@@ -83,9 +89,11 @@ local select = require('CopilotChat.select')
 ---@field auto_insert_mode boolean?
 ---@field clear_chat_on_new_prompt boolean?
 ---@field highlight_selection boolean?
+---@field highlight_headers boolean?
 ---@field history_path string?
 ---@field callback fun(response: string, source: CopilotChat.config.source)?
 ---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
+---@field contexts table<string, CopilotChat.config.context>?
 ---@field prompts table<string, CopilotChat.config.prompt|string>?
 ---@field window CopilotChat.config.window?
 ---@field mappings CopilotChat.config.mappings?
@@ -95,17 +103,16 @@ return {
   proxy = nil, -- [protocol://]host[:port] Use this proxy
   allow_insecure = false, -- Allow insecure server connections
 
-  system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use
-  model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models
+  system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use (can be specified manually in prompt via /).
+  model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   agent = 'copilot', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
-  context = nil, -- Default context to use, 'buffers', 'buffer', 'files' or none (can be specified manually in prompt via #).
+  context = nil, -- Default context to use (can be specified manually in prompt via #).
   temperature = 0.1, -- GPT result temperature
 
   question_header = '## User ', -- Header to use for user questions
   answer_header = '## Copilot ', -- Header to use for AI answers
   error_header = '## Error ', -- Header to use for errors
   separator = '───', -- Separator to use in chat
-  highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
 
   show_folds = true, -- Shows folds for sections in chat
   show_help = true, -- Shows help message as virtual lines when waiting for user input
@@ -114,6 +121,7 @@ return {
   insert_at_end = false, -- Move cursor to end of buffer when inserting text
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
   highlight_selection = true, -- Highlight selection
+  highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
 
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
   callback = nil, -- Callback to use when ask response is received
@@ -122,6 +130,76 @@ return {
   selection = function(source)
     return select.visual(source) or select.buffer(source)
   end,
+
+  -- default contexts
+  contexts = {
+    buffer = {
+      description = 'Includes only the current buffer in chat context. Supports input.',
+      input = function(callback)
+        vim.ui.select(vim.api.nvim_list_bufs(), {
+          prompt = 'Select a buffer> ',
+        }, callback)
+      end,
+      resolve = function(input, source)
+        return {
+          context.outline(input and tonumber(input) or source.bufnr),
+        }
+      end,
+    },
+    buffers = {
+      description = 'Includes all open buffers in chat context.',
+      resolve = function()
+        return vim.tbl_map(
+          context.outline,
+          vim.tbl_filter(function(b)
+            return vim.api.nvim_buf_is_loaded(b) and vim.fn.buflisted(b) == 1
+          end, vim.api.nvim_list_bufs())
+        )
+      end,
+    },
+    file = {
+      description = 'Includes content of provided file in chat context. Supports input.',
+      input = function(callback)
+        local files = vim.tbl_filter(function(file)
+          return vim.fn.isdirectory(file) == 0
+        end, vim.fn.glob('**/*', false, true))
+
+        vim.ui.select(files, {
+          prompt = 'Select a file> ',
+        }, callback)
+      end,
+      resolve = function(input)
+        return {
+          context.file(input),
+        }
+      end,
+    },
+    files = {
+      description = 'Includes all non-hidden filenames in the current workspace in chat context. Supports input.',
+      input = function(callback)
+        vim.ui.input({
+          prompt = 'Enter a file pattern> ',
+          default = '**/*',
+        }, callback)
+      end,
+      resolve = function(input)
+        return context.files(input)
+      end,
+    },
+    git = {
+      description = 'Includes current git diff in chat context. Supports input.',
+      input = function(callback)
+        vim.ui.select({ 'unstaged', 'staged' }, {
+          prompt = 'Select diff type> ',
+        }, callback)
+      end,
+      resolve = function(input, source)
+        return {
+          context.gitdiff(input, source.bufnr),
+        }
+      end,
+    },
+  },
 
   -- default prompts
   prompts = {
@@ -183,8 +261,7 @@ return {
       prompt = '> /COPILOT_GENERATE\n\nPlease generate tests for my code.',
     },
     Commit = {
-      prompt = 'Write commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
-      selection = select.gitdiff,
+      prompt = '> #git:staged\n\nWrite commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
     },
   },
 

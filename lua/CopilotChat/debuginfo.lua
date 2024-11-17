@@ -18,7 +18,7 @@ function M.open()
     '',
   }
 
-  local outline = context.build_outline(vim.api.nvim_get_current_buf(), true)
+  local outline = context.outline(vim.api.nvim_get_current_buf())
   if outline then
     table.insert(lines, 'Current buffer outline:')
     table.insert(lines, '`' .. outline.filename .. '`')
@@ -30,7 +30,7 @@ function M.open()
     table.insert(lines, '```')
   end
 
-  local files = context.build_file_map()
+  local files = context.files()
   if files then
     table.insert(lines, 'Current workspace file map:')
     table.insert(lines, '```text')

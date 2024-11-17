@@ -264,8 +264,8 @@ end
 ---@return table
 function M.complete_info()
   return {
-    triggers = { '@', '/', '#' },
-    pattern = [[\%(@\|/\|#\)\k*]],
+    triggers = { '@', '/', '#', '$' },
+    pattern = [[\%(@\|/\|#\|\$\)\S*]],
   }
 end
 
@@ -273,8 +273,8 @@ end
 ---@param callback function(table)
 function M.complete_items(callback)
   async.run(function()
+    local models = state.copilot:list_models()
     local agents = state.copilot:list_agents()
-    local contexts = context.supported_contexts()
     local items = {}
     local prompts_to_use = M.prompts()
 
@@ -290,9 +290,20 @@ function M.complete_items(callback)
       }
     end
 
-    for agent, description in pairs(agents) do
+    for name, description in pairs(models) do
       items[#items + 1] = {
-        word = '@' .. agent,
+        word = '$' .. name,
+        kind = 'model',
+        menu = description,
+        icase = 1,
+        dup = 0,
+        empty = 0,
+      }
+    end
+
+    for name, description in pairs(agents) do
+      items[#items + 1] = {
+        word = '@' .. name,
         kind = 'agent',
         menu = description,
         icase = 1,
@@ -301,11 +312,11 @@ function M.complete_items(callback)
       }
     end
 
-    for prompt_context, description in pairs(contexts) do
+    for name, value in pairs(M.config.contexts) do
       items[#items + 1] = {
-        word = '#' .. prompt_context,
+        word = '#' .. name,
         kind = 'context',
-        menu = description,
+        menu = value.description or '',
         icase = 1,
         dup = 0,
         empty = 0,
@@ -519,27 +530,45 @@ function M.ask(prompt, config)
     ))
     or 'untitled'
 
-  local contexts = vim.tbl_keys(context.supported_contexts())
-  local selected_context = config.context
-  for prompt_context in prompt:gmatch('#([%w_-]+)') do
-    if vim.tbl_contains(contexts, prompt_context) then
-      selected_context = prompt_context
-      prompt = string.gsub(prompt, '#' .. prompt_context .. '%s*', '')
+  local embeddings = {}
+  for prompt_context in prompt:gmatch('#([^%s]+)') do
+    local split = vim.split(prompt_context, ':')
+    local context_name = split[1]
+    local context_input = split[2]
+    local context_value = config.contexts[context_name]
+
+    if context_value then
+      for _, embedding in ipairs(context_value.resolve(context_input, state.source)) do
+        if embedding then
+          table.insert(embeddings, embedding)
+        end
+      end
+
+      prompt = prompt:gsub('#' .. prompt_context .. '%s*', '')
     end
   end
 
   async.run(function()
     local agents = vim.tbl_keys(state.copilot:list_agents())
     local selected_agent = config.agent
-    for agent in prompt:gmatch('@([%w_-]+)') do
+    for agent in prompt:gmatch('@([^%s]+)') do
       if vim.tbl_contains(agents, agent) then
         selected_agent = agent
         prompt = prompt:gsub('@' .. agent .. '%s*', '')
       end
     end
 
-    local query_ok, embeddings = pcall(context.find_for_query, state.copilot, {
-      context = selected_context,
+    local models = vim.tbl_keys(state.copilot:list_models())
+    local selected_model = config.model
+    for model in prompt:gmatch('%$([^%s]+)') do
+      if vim.tbl_contains(models, model) then
+        selected_model = model
+        prompt = prompt:gsub('%$' .. model .. '%s*', '')
+      end
+    end
+
+    local query_ok, filtered_embeddings = pcall(context.filter_embeddings, state.copilot, {
+      embeddings = embeddings,
       prompt = prompt,
       selection = selection.lines,
       filename = filename,
@@ -549,7 +578,7 @@ function M.ask(prompt, config)
 
     if not query_ok then
       vim.schedule(function()
-        show_error(embeddings, config)
+        show_error(filtered_embeddings, config)
       end)
       return
     end
@@ -557,11 +586,11 @@ function M.ask(prompt, config)
     local ask_ok, response, token_count, token_max_count =
       pcall(state.copilot.ask, state.copilot, prompt, {
         selection = selection,
-        embeddings = embeddings,
+        embeddings = filtered_embeddings,
         filename = filename,
         filetype = filetype,
         system_prompt = system_prompt,
-        model = config.model,
+        model = selected_model,
         agent = selected_agent,
         temperature = config.temperature,
         on_progress = function(token)
@@ -873,13 +902,30 @@ function M.setup(config)
       map_key(M.config.mappings.complete, bufnr, function()
         local info = M.complete_info()
         local line = vim.api.nvim_get_current_line()
-        local col = vim.api.nvim_win_get_cursor(0)[2]
+        local cursor = vim.api.nvim_win_get_cursor(0)
+        local row = cursor[1]
+        local col = cursor[2]
         if col == 0 or #line == 0 then
           return
         end
 
         local prefix, cmp_start = unpack(vim.fn.matchstrpos(line:sub(1, col), info.pattern))
         if not prefix then
+          return
+        end
+
+        if vim.startswith(prefix, '#') and vim.endswith(prefix, ':') then
+          local found_context = M.config.contexts[prefix:sub(2, -2)]
+          if found_context and found_context.input then
+            found_context.input(function(value)
+              if not value then
+                return
+              end
+
+              vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { tostring(value) })
+            end)
+          end
+
           return
         end
 
