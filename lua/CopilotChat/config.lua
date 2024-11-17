@@ -283,7 +283,6 @@ return {
   -- default mappings
   mappings = {
     complete = {
-      detail = 'Use @<Tab> or /<Tab> for options.',
       insert = '<Tab>',
     },
     close = {
