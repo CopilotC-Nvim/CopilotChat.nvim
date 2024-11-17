@@ -54,6 +54,7 @@ local select = require('CopilotChat.select')
 ---@field close CopilotChat.config.mapping?
 ---@field reset CopilotChat.config.mapping?
 ---@field submit_prompt CopilotChat.config.mapping?
+---@field toggle_sticky CopilotChat.config.mapping?
 ---@field accept_diff CopilotChat.config.mapping?
 ---@field yank_diff CopilotChat.config.mapping?
 ---@field show_diff CopilotChat.config.mapping?
@@ -125,10 +126,10 @@ return {
   -- default prompts
   prompts = {
     Explain = {
-      prompt = '/COPILOT_EXPLAIN Write an explanation for the selected code and diagnostics as paragraphs of text.',
+      prompt = '> /COPILOT_EXPLAIN\n\nWrite an explanation for the selected code and diagnostics as paragraphs of text.',
     },
     Review = {
-      prompt = '/COPILOT_REVIEW Review the selected code.',
+      prompt = '> /COPILOT_REVIEW\n\nReview the selected code.',
       callback = function(response, source)
         local diagnostics = {}
         for line in response:gmatch('[^\r\n]+') do
@@ -170,16 +171,16 @@ return {
       end,
     },
     Fix = {
-      prompt = '/COPILOT_GENERATE There is a problem in this code. Rewrite the code to show it with the bug fixed.',
+      prompt = '> /COPILOT_GENERATE\n\nThere is a problem in this code. Rewrite the code to show it with the bug fixed.',
     },
     Optimize = {
-      prompt = '/COPILOT_GENERATE Optimize the selected code to improve performance and readability.',
+      prompt = '> /COPILOT_GENERATE\n\nOptimize the selected code to improve performance and readability.',
     },
     Docs = {
-      prompt = '/COPILOT_GENERATE Please add documentation comments to the selected code.',
+      prompt = '> /COPILOT_GENERATE\n\nPlease add documentation comments to the selected code.',
     },
     Tests = {
-      prompt = '/COPILOT_GENERATE Please generate tests for my code.',
+      prompt = '> /COPILOT_GENERATE\n\nPlease generate tests for my code.',
     },
     Commit = {
       prompt = 'Write commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
@@ -219,6 +220,10 @@ return {
     submit_prompt = {
       normal = '<CR>',
       insert = '<C-s>',
+    },
+    toggle_sticky = {
+      detail = 'Makes line under cursor sticky or deletes sticky line.',
+      normal = 'gr',
     },
     accept_diff = {
       normal = '<C-y>',
