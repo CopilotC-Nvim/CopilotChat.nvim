@@ -41,7 +41,7 @@ local off_side_rule_languages = {
 }
 
 local big_file_threshold = 500
-local multi_file_threshold = 3
+local multi_file_threshold = 2
 
 local function spatial_distance_cosine(a, b)
   local dot_product = 0
@@ -269,25 +269,19 @@ end
 ---@param embeddings table<CopilotChat.copilot.embed>
 ---@return table<CopilotChat.copilot.embed>
 function M.filter_embeddings(copilot, embeddings)
-  -- If there is only query embedding or we are under the threshold, return embeddings without query
+  -- If we dont need to embed anything, just return the embeddings without query
   if #embeddings <= (1 + multi_file_threshold) then
     table.remove(embeddings, 1)
     return embeddings
   end
 
+  -- Get embeddings
   local out = copilot:embed(embeddings)
-  if #out <= 1 then
-    return {}
-  end
-
   log.debug(string.format('Got %s embeddings', #out))
 
-  local query = table.remove(out, 1)
-  log.debug('Query Prompt:', query.prompt)
-
-  local data = data_ranked_by_relatedness(query, out, 20)
+  -- Rate embeddings by relatedness to the query
+  local data = data_ranked_by_relatedness(table.remove(out, 1), out, 20)
   log.debug('Ranked data:', #data)
-
   for i, item in ipairs(data) do
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
   end
