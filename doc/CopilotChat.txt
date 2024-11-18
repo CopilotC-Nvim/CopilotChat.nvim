@@ -25,12 +25,39 @@ Table of Contents                              *CopilotChat-table-of-contents*
 
   [!NOTE] Plugin was rewritten to Lua from Python. Please check the migration
   guide from version 1 to version 2 </MIGRATION.md> for more information.
+- |CopilotChat-prerequisites|
+- |CopilotChat-installation|
+    - |CopilotChat-lazy.nvim|
+    - |CopilotChat-vim-plug|
+    - |CopilotChat-manual|
+    - |CopilotChat-post-installation|
+- |CopilotChat-usage|
+    - |CopilotChat-commands|
+    - |CopilotChat-prompts|
+    - |CopilotChat-system-prompts|
+    - |CopilotChat-sticky-prompts|
+    - |CopilotChat-models|
+    - |CopilotChat-agents|
+    - |CopilotChat-contexts|
+    - |CopilotChat-selections|
+    - |CopilotChat-api|
+- |CopilotChat-configuration|
+    - |CopilotChat-default-configuration|
+    - |CopilotChat-customizing-buffers|
+- |CopilotChat-tips|
+- |CopilotChat-roadmap-(wishlist)|
+- |CopilotChat-development|
+- |CopilotChat-contributors-✨|
+
 
 PREREQUISITES                                      *CopilotChat-prerequisites*
 
 Ensure you have the following installed:
 
 - **Neovim stable (0.9.5) or nightly**.
+
+Verify "Copilot chat in the IDE <https://github.com/settings/copilot>" is
+enabled.
 
 Optional:
 
@@ -113,12 +140,6 @@ MANUAL ~
 
 See @deathbeam for configuration
 <https://github.com/deathbeam/dotfiles/blob/master/nvim/.config/nvim/lua/config/copilot.lua#L14>
-
-
-POST-INSTALLATION ~
-
-Verify "Copilot chat in the IDE <https://github.com/settings/copilot>" is
-enabled.
 
 
 USAGE                                                      *CopilotChat-usage*
