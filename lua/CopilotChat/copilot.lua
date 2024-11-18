@@ -104,6 +104,10 @@ local function machine_id()
   return hex
 end
 
+local function quick_hash(str)
+  return #str .. str:sub(1, 32) .. str:sub(-32)
+end
+
 local function find_config_path()
   local config = vim.fn.expand('$XDG_CONFIG_HOME')
   if config and vim.fn.isdirectory(config) > 0 then
@@ -346,6 +350,7 @@ end
 
 local Copilot = class(function(self, proxy, allow_insecure)
   self.history = {}
+  self.embedding_cache = {}
   self.github_token = nil
   self.token = nil
   self.sessionid = nil
@@ -881,18 +886,34 @@ end
 ---@param inputs table<CopilotChat.copilot.embed>: The inputs to embed
 ---@param opts CopilotChat.copilot.embed.opts: Options for the request
 function Copilot:embed(inputs, opts)
-  opts = opts or {}
-  local model = opts.model or 'text-embedding-3-small'
-  local chunk_size = opts.chunk_size or 15
-
   if not inputs or #inputs == 0 then
     return {}
   end
 
+  -- Check which embeddings need to be fetched
+  local cached_embeddings = {}
+  local uncached_embeddings = {}
+  for _, embed in ipairs(inputs) do
+    if embed.content then
+      local key = embed.filename .. quick_hash(embed.content)
+      if self.embedding_cache[key] then
+        table.insert(cached_embeddings, self.embedding_cache[key])
+      else
+        table.insert(uncached_embeddings, embed)
+      end
+    else
+      table.insert(uncached_embeddings, embed)
+    end
+  end
+
+  opts = opts or {}
+  local model = opts.model or 'text-embedding-3-small'
+  local chunk_size = opts.chunk_size or 15
+
   local out = {}
 
-  for i = 1, #inputs, chunk_size do
-    local chunk = vim.list_slice(inputs, i, i + chunk_size - 1)
+  for i = 1, #uncached_embeddings, chunk_size do
+    local chunk = vim.list_slice(uncached_embeddings, i, i + chunk_size - 1)
     local body = vim.json.encode(generate_embedding_request(chunk, model))
     local response, err = curl_post(
       'https://api.githubcopilot.com/embeddings',
@@ -934,7 +955,16 @@ function Copilot:embed(inputs, opts)
     end
   end
 
-  return out
+  -- Cache embeddings
+  for _, embedding in ipairs(out) do
+    if embedding.content then
+      local key = embedding.filename .. quick_hash(embedding.content)
+      self.embedding_cache[key] = embedding
+    end
+  end
+
+  -- Merge cached embeddings and newly fetched embeddings and return
+  return vim.list_extend(out, cached_embeddings)
 end
 
 --- Stop the running job
@@ -951,6 +981,7 @@ end
 function Copilot:reset()
   local stopped = self:stop()
   self.history = {}
+  self.embedding_cache = {}
   return stopped
 end
 
