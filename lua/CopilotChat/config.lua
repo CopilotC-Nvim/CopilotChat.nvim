@@ -136,11 +136,27 @@ return {
   -- default contexts
   contexts = {
     buffer = {
-      description = 'Includes only the current buffer in chat context. Supports input.',
+      description = 'Includes specified buffer in chat context (default current). Supports input.',
       input = function(callback)
-        vim.ui.select(vim.api.nvim_list_bufs(), {
-          prompt = 'Select a buffer> ',
-        }, callback)
+        vim.ui.select(
+          vim.tbl_map(
+            function(buf)
+              return { id = buf, name = vim.api.nvim_buf_get_name(buf) }
+            end,
+            vim.tbl_filter(function(buf)
+              return vim.api.nvim_buf_is_loaded(buf) and vim.fn.buflisted(buf) == 1
+            end, vim.api.nvim_list_bufs())
+          ),
+          {
+            prompt = 'Select a buffer> ',
+            format_item = function(item)
+              return item.name
+            end,
+          },
+          function(choice)
+            callback(choice and choice.id)
+          end
+        )
       end,
       resolve = function(input, source)
         return {
@@ -149,12 +165,20 @@ return {
       end,
     },
     buffers = {
-      description = 'Includes all open buffers in chat context.',
-      resolve = function()
+      description = 'Includes all buffers in chat context (default listed). Supports input.',
+      input = function(callback)
+        vim.ui.select({ 'listed', 'visible' }, {
+          prompt = 'Select buffer scope> ',
+        }, callback)
+      end,
+      resolve = function(input)
+        input = input or 'listed'
         return vim.tbl_map(
           context.outline,
           vim.tbl_filter(function(b)
-            return vim.api.nvim_buf_is_loaded(b) and vim.fn.buflisted(b) == 1
+            return vim.api.nvim_buf_is_loaded(b)
+              and vim.fn.buflisted(b) == 1
+              and (input == 'listed' or #vim.fn.win_findbuf(b) > 0)
           end, vim.api.nvim_list_bufs())
         )
       end,
@@ -189,7 +213,7 @@ return {
       end,
     },
     git = {
-      description = 'Includes current git diff in chat context. Supports input.',
+      description = 'Includes current git diff in chat context (default unstaged). Supports input.',
       input = function(callback)
         vim.ui.select({ 'unstaged', 'staged' }, {
           prompt = 'Select diff type> ',
