@@ -873,7 +873,6 @@ function M.setup(config)
   end
   state.chat = Chat(
     M.config.show_help and key_to_info('show_help', M.config.mappings.show_help),
-    M.config.auto_insert_mode,
     function(bufnr)
       map_key(M.config.mappings.show_help, bufnr, function()
         local chat_help = '**`Special tokens`**\n'
