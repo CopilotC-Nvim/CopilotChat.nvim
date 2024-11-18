@@ -645,9 +645,11 @@ require('render-markdown').setup({
   file_types = { 'markdown', 'copilot-chat' },
 })
 
--- You might also want to disable default header highlighting for copilot chat when doing this
+-- You might also want to disable default header highlighting for copilot chat when doing this and set error header style and separator
 require('CopilotChat').setup({
   highlight_headers = false,
+  separator = '---',
+  error_header = '> [!ERROR] Error',
   -- rest of your config
 })
 ```
