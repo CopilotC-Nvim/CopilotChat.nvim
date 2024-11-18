@@ -80,7 +80,7 @@ Your task is to modify the provided code according to the user's request. Follow
 
 8. If the response do not fits in a single message, split the response into multiple messages.
 
-9. Above every returned code snippet, add `[file:<file_name> ](<file_path>) line:<start_line>-<end_line>`
+9. Directly above every returned code snippet, add `[file:<file_name>](<file_path>) line:<start_line>-<end_line>`. Example: `[file:copilot.lua](nvim/.config/nvim/lua/config/copilot.lua) line:1-98`. This is markdown link syntax, so make sure to follow it.
 
 Remember that Your response SHOULD CONTAIN ONLY THE MODIFIED CODE to be used as DIRECT REPLACEMENT to the original file.
 ]]

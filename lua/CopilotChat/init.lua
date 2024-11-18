@@ -3,6 +3,7 @@ local async = require('plenary.async')
 local log = require('plenary.log')
 local Copilot = require('CopilotChat.copilot')
 local Chat = require('CopilotChat.chat')
+local Diff = require('CopilotChat.diff')
 local Overlay = require('CopilotChat.overlay')
 local context = require('CopilotChat.context')
 local prompts = require('CopilotChat.prompts')
@@ -20,8 +21,7 @@ local plugin_name = 'CopilotChat.nvim'
 --- @field last_system_prompt string?
 --- @field last_prompt string?
 --- @field last_response string?
---- @field last_code_output string?
---- @field diff CopilotChat.Overlay?
+--- @field diff CopilotChat.Diff?
 --- @field system_prompt CopilotChat.Overlay?
 --- @field user_selection CopilotChat.Overlay?
 --- @field help CopilotChat.Overlay?
@@ -35,7 +35,6 @@ local state = {
   last_system_prompt = nil,
   last_prompt = nil,
   last_response = nil,
-  last_code_output = nil,
 
   -- Overlays
   diff = nil,
@@ -43,62 +42,6 @@ local state = {
   user_selection = nil,
   help = nil,
 }
-
-local function find_lines_between_separator(
-  lines,
-  current_line,
-  start_pattern,
-  end_pattern,
-  allow_end_of_file
-)
-  if not end_pattern then
-    end_pattern = start_pattern
-  end
-
-  local line_count = #lines
-  local separator_line_start = 1
-  local separator_line_finish = line_count
-  local found_one = false
-
-  -- Find starting separator line
-  for i = current_line, 1, -1 do
-    local line = lines[i]
-
-    if line and string.match(line, start_pattern) then
-      separator_line_start = i + 1
-
-      for x = separator_line_start, line_count do
-        local next_line = lines[x]
-        if next_line and string.match(next_line, end_pattern) then
-          separator_line_finish = x - 1
-          found_one = true
-          break
-        end
-        if allow_end_of_file and x == line_count then
-          separator_line_finish = x
-          found_one = true
-          break
-        end
-      end
-
-      if found_one then
-        break
-      end
-    end
-  end
-
-  if not found_one then
-    return {}, 1, 1
-  end
-
-  -- Extract everything between the last and next separator or end of file
-  local result = {}
-  for i = separator_line_start, separator_line_finish do
-    table.insert(result, lines[i])
-  end
-
-  return result, separator_line_start, separator_line_finish
-end
 
 local function update_prompts(prompt, system_prompt)
   local prompts_to_use = M.prompts()
@@ -141,6 +84,46 @@ local function get_selection()
     return state.config.selection(state.source) or {}
   end
   return {}
+end
+
+local function get_diff()
+  local chat_lines = vim.api.nvim_buf_get_lines(state.chat.bufnr, 0, -1, false)
+  local current_line = vim.api.nvim_win_get_cursor(0)[1]
+  local section, section_start =
+    utils.find_lines(chat_lines, current_line, M.config.separator .. '$')
+  local change, change_start =
+    utils.find_lines(section, current_line - section_start, '^```%w+$', '^```$')
+  local selection = get_selection()
+
+  local reference = nil
+  local start_line = nil
+  local end_line = nil
+  local filetype = nil
+
+  if selection then
+    reference = selection.lines
+    start_line = selection.start_row
+    end_line = selection.end_row
+    filetype = selection.filetype
+  end
+
+  if #change > 0 then
+    local header = section[change_start - 2]
+    if header then
+      local header_start_line, header_end_line = header:match('%[file:.+%]%(.+%) line:(%d+)-(%d+)')
+      if header_start_line and header_end_line then
+        start_line = tonumber(header_start_line) or 1
+        end_line = tonumber(header_end_line) or start_line
+        reference = table.concat(
+          vim.api.nvim_buf_get_lines(state.source.bufnr, start_line - 1, end_line, false),
+          '\n'
+        )
+      end
+    end
+  end
+
+  filetype = filetype or vim.bo[state.source.bufnr].filetype or 'text'
+  return table.concat(change, '\n'), reference, start_line, end_line, filetype
 end
 
 local function finish(config, message, hide_help, start_of_chat)
@@ -538,7 +521,7 @@ function M.ask(prompt, config)
   -- Clear the current input prompt before asking a new question
   local chat_lines = vim.api.nvim_buf_get_lines(state.chat.bufnr, 0, -1, false)
   local _, start_line, end_line =
-    find_lines_between_separator(chat_lines, #chat_lines, M.config.separator .. '$', nil, true)
+    utils.find_lines(chat_lines, #chat_lines, M.config.separator .. '$', nil, true)
   if #chat_lines == end_line then
     vim.api.nvim_buf_set_lines(state.chat.bufnr, start_line, end_line, false, { '' })
   end
@@ -571,14 +554,13 @@ function M.ask(prompt, config)
   local function parse_context(prompt_context)
     local split = vim.split(prompt_context, ':')
     local context_name = table.remove(split, 1)
-    local context_input = table.concat(split, ':')
+    local context_input = vim.trim(table.concat(split, ':'))
     local context_value = config.contexts[context_name]
-    if vim.trim(context_input) == '' then
-      context_input = nil
-    end
 
     if context_value then
-      for _, embedding in ipairs(context_value.resolve(context_input, state.source)) do
+      for _, embedding in
+        ipairs(context_value.resolve(context_input == '' and nil or context_input, state.source))
+      do
         if embedding then
           table.insert(embeddings, embedding)
         end
@@ -690,7 +672,6 @@ function M.stop(reset, config)
       state.last_system_prompt = nil
       state.last_prompt = nil
       state.last_response = nil
-      state.last_code_output = nil
     end
 
     finish(config, nil, nil, reset)
@@ -819,18 +800,6 @@ function M.setup(config)
     M.log_level(M.config.log_level)
   end
 
-  local hl_ns = vim.api.nvim_create_namespace('copilot-chat-highlights')
-  vim.api.nvim_set_hl(hl_ns, '@diff.plus', { bg = utils.blend_color_with_neovim_bg('DiffAdd', 20) })
-  vim.api.nvim_set_hl(
-    hl_ns,
-    '@diff.minus',
-    { bg = utils.blend_color_with_neovim_bg('DiffDelete', 20) }
-  )
-  vim.api.nvim_set_hl(
-    hl_ns,
-    '@diff.delta',
-    { bg = utils.blend_color_with_neovim_bg('DiffChange', 20) }
-  )
   vim.api.nvim_set_hl(0, 'CopilotChatSpinner', { link = 'CursorColumn', default = true })
   vim.api.nvim_set_hl(0, 'CopilotChatHelp', { link = 'DiagnosticInfo', default = true })
   vim.api.nvim_set_hl(0, 'CopilotChatSelection', { link = 'Visual', default = true })
@@ -854,40 +823,31 @@ function M.setup(config)
   if state.diff then
     state.diff:delete()
   end
-  state.diff = Overlay('copilot-diff', hl_ns, diff_help, function(bufnr)
+  state.diff = Diff(diff_help, function(bufnr)
     map_key(M.config.mappings.close, bufnr, function()
       state.diff:restore(state.chat.winnr, state.chat.bufnr)
     end)
 
     map_key(M.config.mappings.accept_diff, bufnr, function()
-      local current = state.last_code_output
-      if not current then
+      local change, _, start_line, end_line = state.diff:get_diff()
+      if not start_line or not end_line or vim.trim(change) == '' then
         return
       end
 
-      local selection = get_selection()
-      if not selection.start_row or not selection.end_row then
-        return
-      end
-
-      local lines = vim.split(current, '\n')
-      if #lines > 0 then
-        vim.api.nvim_buf_set_text(
-          state.source.bufnr,
-          selection.start_row - 1,
-          selection.start_col - 1,
-          selection.end_row - 1,
-          selection.end_col,
-          lines
-        )
-      end
+      vim.api.nvim_buf_set_lines(
+        state.source.bufnr,
+        start_line - 1,
+        end_line,
+        false,
+        vim.split(change, '\n')
+      )
     end)
   end)
 
   if state.system_prompt then
     state.system_prompt:delete()
   end
-  state.system_prompt = Overlay('copilot-system-prompt', hl_ns, overlay_help, function(bufnr)
+  state.system_prompt = Overlay('copilot-system-prompt', overlay_help, function(bufnr)
     map_key(M.config.mappings.close, bufnr, function()
       state.system_prompt:restore(state.chat.winnr, state.chat.bufnr)
     end)
@@ -896,7 +856,7 @@ function M.setup(config)
   if state.user_selection then
     state.user_selection:delete()
   end
-  state.user_selection = Overlay('copilot-user-selection', hl_ns, overlay_help, function(bufnr)
+  state.user_selection = Overlay('copilot-user-selection', overlay_help, function(bufnr)
     map_key(M.config.mappings.close, bufnr, function()
       state.user_selection:restore(state.chat.winnr, state.chat.bufnr)
     end)
@@ -905,7 +865,7 @@ function M.setup(config)
   if state.help then
     state.help:delete()
   end
-  state.help = Overlay('copilot-help', hl_ns, overlay_help, function(bufnr)
+  state.help = Overlay('copilot-help', overlay_help, function(bufnr)
     map_key(M.config.mappings.close, bufnr, function()
       state.help:restore(state.chat.winnr, state.chat.bufnr)
     end)
@@ -945,7 +905,7 @@ function M.setup(config)
           end
         end
         chat_help = chat_help .. M.config.separator .. '\n'
-        state.help:show(chat_help, 'markdown', 'markdown', state.chat.winnr)
+        state.help:show(chat_help, 'markdown', state.chat.winnr)
       end)
 
       map_key(M.config.mappings.reset, bufnr, M.reset)
@@ -971,13 +931,8 @@ function M.setup(config)
       map_key(M.config.mappings.submit_prompt, bufnr, function()
         local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
         local current_line = vim.api.nvim_win_get_cursor(0)[1]
-        local lines = find_lines_between_separator(
-          chat_lines,
-          current_line,
-          M.config.separator .. '$',
-          nil,
-          true
-        )
+        local lines =
+          utils.find_lines(chat_lines, current_line, M.config.separator .. '$', nil, true)
         M.ask(vim.trim(table.concat(lines, '\n')), state.config)
       end)
 
@@ -993,7 +948,7 @@ function M.setup(config)
 
         local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
         local _, start_line, end_line =
-          find_lines_between_separator(chat_lines, cur_line, M.config.separator .. '$', nil, true)
+          utils.find_lines(chat_lines, cur_line, M.config.separator .. '$', nil, true)
 
         if vim.startswith(current_line, '> ') then
           return
@@ -1025,93 +980,36 @@ function M.setup(config)
       end)
 
       map_key(M.config.mappings.accept_diff, bufnr, function()
-        local selection = get_selection()
-        if not selection or not selection.start_row or not selection.end_row then
+        local change, _, start_line, end_line = get_diff()
+        if not start_line or not end_line or vim.trim(change) == '' then
           return
         end
 
-        local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-        local current_line = vim.api.nvim_win_get_cursor(0)[1]
-        local section_lines, start_line =
-          find_lines_between_separator(chat_lines, current_line, M.config.separator .. '$')
-        local lines = find_lines_between_separator(
-          section_lines,
-          current_line - start_line - 1,
-          '^```%w+$',
-          '^```$'
+        vim.api.nvim_buf_set_lines(
+          state.source.bufnr,
+          start_line - 1,
+          end_line,
+          false,
+          vim.split(change, '\n')
         )
-        if #lines > 0 then
-          vim.api.nvim_buf_set_text(
-            state.source.bufnr,
-            selection.start_row - 1,
-            selection.start_col - 1,
-            selection.end_row - 1,
-            selection.end_col,
-            lines
-          )
-        end
       end)
 
       map_key(M.config.mappings.yank_diff, bufnr, function()
-        local selection = get_selection()
-        if not selection or not selection.lines then
+        local change = get_diff()
+        if vim.trim(change) == '' then
           return
         end
 
-        local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-        local current_line = vim.api.nvim_win_get_cursor(0)[1]
-        local section_lines, start_line =
-          find_lines_between_separator(chat_lines, current_line, M.config.separator .. '$')
-        local lines = find_lines_between_separator(
-          section_lines,
-          current_line - start_line - 1,
-          '^```%w+$',
-          '^```$'
-        )
-        if #lines > 0 then
-          local content = table.concat(lines, '\n')
-          vim.fn.setreg(M.config.mappings.yank_diff.register, content)
-        end
+        vim.fn.setreg(M.config.mappings.yank_diff.register, change)
       end)
 
       map_key(M.config.mappings.show_diff, bufnr, function()
-        local selection = get_selection()
-        if not selection or not selection.lines then
+        local change, reference, start_line, end_line, filetype = get_diff()
+        if vim.trim(change) == '' or not reference then
           return
         end
 
-        local chat_lines = vim.api.nvim_buf_get_lines(state.chat.bufnr, 0, -1, false)
-        local current_line = vim.api.nvim_win_get_cursor(0)[1]
-        local section_lines, start_line =
-          find_lines_between_separator(chat_lines, current_line, M.config.separator .. '$')
-        local lines = table.concat(
-          find_lines_between_separator(
-            section_lines,
-            current_line - start_line - 1,
-            '^```%w+$',
-            '^```$'
-          ),
-          '\n'
-        )
-        if vim.trim(lines) ~= '' then
-          state.last_code_output = lines
-
-          local filetype = selection.filetype or vim.bo[state.source.bufnr].filetype
-
-          local diff = tostring(vim.diff(selection.lines, lines, {
-            result_type = 'unified',
-            ignore_blank_lines = true,
-            ignore_whitespace = true,
-            ignore_whitespace_change = true,
-            ignore_whitespace_change_at_eol = true,
-            ignore_cr_at_eol = true,
-            algorithm = 'myers',
-            ctxlen = #selection.lines,
-          }))
-
-          diff = diff .. '\n' .. M.config.separator .. '\n'
-          state.diff:show(diff, filetype, 'diff', state.chat.winnr)
-        end
+        state.diff:show(change, reference, start_line, end_line, filetype, state.chat.winnr)
       end)
 
       map_key(M.config.mappings.show_system_prompt, bufnr, function()
@@ -1121,7 +1019,7 @@ function M.setup(config)
         end
 
         prompt = prompt .. '\n' .. M.config.separator .. '\n'
-        state.system_prompt:show(prompt, 'markdown', 'markdown', state.chat.winnr)
+        state.system_prompt:show(prompt, 'markdown', state.chat.winnr)
       end)
 
       map_key(M.config.mappings.show_user_selection, bufnr, function()
@@ -1137,7 +1035,7 @@ function M.setup(config)
         end
 
         lines = lines .. '\n' .. M.config.separator .. '\n'
-        state.user_selection:show(lines, filetype, filetype, state.chat.winnr)
+        state.user_selection:show(lines, filetype, state.chat.winnr)
       end)
 
       vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
