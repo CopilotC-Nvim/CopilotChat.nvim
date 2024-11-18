@@ -30,15 +30,15 @@ function CopilotChatFoldExpr(lnum, separator)
   return '='
 end
 
-local Chat = class(function(self, help, auto_insert, on_buf_create)
+local Chat = class(function(self, help, on_buf_create)
   self.header_ns = vim.api.nvim_create_namespace('copilot-chat-headers')
   self.help = help
-  self.auto_insert = auto_insert
   self.on_buf_create = on_buf_create
   self.bufnr = nil
   self.winnr = nil
   self.spinner = nil
   self.separator = nil
+  self.auto_insert = false
   self.auto_follow_cursor = true
   self.highlight_headers = true
   self.layout = nil
@@ -220,6 +220,7 @@ function Chat:open(config)
 
   self.layout = layout
   self.separator = config.separator
+  self.auto_insert = config.auto_insert
   self.auto_follow_cursor = config.auto_follow_cursor
   self.highlight_headers = config.highlight_headers
 
