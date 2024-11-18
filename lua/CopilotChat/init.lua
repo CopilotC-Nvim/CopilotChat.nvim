@@ -174,7 +174,7 @@ local function finish(config, message, hide_help, start_of_chat)
   end
 end
 
-local function show_error(err, config)
+local function show_error(err, config, append_newline)
   log.error(vim.inspect(err))
 
   if type(err) == 'string' then
@@ -185,8 +185,11 @@ local function show_error(err, config)
     err = vim.inspect(err)
   end
 
-  state.chat:append('\n\n' .. config.error_header .. config.separator .. '\n\n')
-  state.chat:append('```\n' .. err .. '\n```')
+  if append_newline then
+    state.chat:append('\n')
+  end
+
+  state.chat:append(config.error_header .. '\n```error\n' .. err .. '\n```')
   finish(config)
 end
 
@@ -604,6 +607,7 @@ function M.ask(prompt, config)
     end
 
     local models = vim.tbl_keys(state.copilot:list_models())
+    local has_output = false
     local selected_model = config.model
     for model in prompt:gmatch('%$([^%s]+)') do
       if vim.tbl_contains(models, model) then
@@ -617,7 +621,7 @@ function M.ask(prompt, config)
 
     if not query_ok then
       vim.schedule(function()
-        show_error(filtered_embeddings, config)
+        show_error(filtered_embeddings, config, has_output)
       end)
       return
     end
@@ -635,13 +639,14 @@ function M.ask(prompt, config)
         on_progress = function(token)
           vim.schedule(function()
             state.chat:append(token)
+            has_output = true
           end)
         end,
       })
 
     if not ask_ok then
       vim.schedule(function()
-        show_error(response, config)
+        show_error(response, config, has_output)
       end)
       return
     end
