@@ -232,7 +232,7 @@ You can define custom contexts like this:
         elseif input == 'napoleon' then
           birthday = birthday .. ' birthday is August 15, 1769'
         end
-        
+
         return {
           {
             content = birthday,
