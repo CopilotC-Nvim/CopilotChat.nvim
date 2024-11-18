@@ -315,6 +315,7 @@ end
 
 local function generate_embedding_request(inputs, model)
   return {
+    dimensions = 512,
     input = vim.tbl_map(function(input)
       local out = ''
       if input.prompt then
@@ -323,8 +324,8 @@ local function generate_embedding_request(inputs, model)
       if input.content then
         out = out
           .. string.format(
-            '# FILE:%s CONTEXT\n```%s\n%s\n```',
-            input.filename:upper(),
+            'File: `%s`\n```%s\n%s\n```',
+            input.filename,
             input.filetype,
             input.content
           )
@@ -881,7 +882,7 @@ end
 ---@param opts CopilotChat.copilot.embed.opts: Options for the request
 function Copilot:embed(inputs, opts)
   opts = opts or {}
-  local model = opts.model or 'copilot-text-embedding-ada-002'
+  local model = opts.model or 'text-embedding-3-small'
   local chunk_size = opts.chunk_size or 15
 
   if not inputs or #inputs == 0 then

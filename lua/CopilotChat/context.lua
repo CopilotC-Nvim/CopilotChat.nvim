@@ -41,7 +41,7 @@ local off_side_rule_languages = {
 }
 
 local big_file_threshold = 500
-local selection_threshold = 200
+local multi_file_threshold = 3
 
 local function spatial_distance_cosine(a, b)
   local dot_product = 0
@@ -264,58 +264,30 @@ function M.gitdiff(type, bufnr)
   }
 end
 
----@class CopilotChat.context.find_for_query.opts
----@field embeddings table<CopilotChat.copilot.embed>
----@field prompt string
----@field selection string?
----@field filename string
----@field filetype string
-
 --- Filter embeddings based on the query
 ---@param copilot CopilotChat.Copilot
----@param opts CopilotChat.context.find_for_query.opts
+---@param embeddings table<CopilotChat.copilot.embed>
 ---@return table<CopilotChat.copilot.embed>
-function M.filter_embeddings(copilot, opts)
-  local embeddings = opts.embeddings
-  local prompt = opts.prompt
-  local selection = opts.selection
-  local filename = opts.filename
-  local filetype = opts.filetype
-
-  local out = copilot:embed(embeddings)
-  if #out == 0 then
-    return {}
+function M.filter_embeddings(copilot, embeddings)
+  -- If there is only query embedding or we are under the threshold, return embeddings without query
+  if #embeddings <= (1 + multi_file_threshold) then
+    table.remove(embeddings, 1)
+    return embeddings
   end
 
-  -- If selection is too big, truncate it
-  if selection then
-    local lines = vim.split(selection, '\n')
-    selection = #lines > selection_threshold
-        and table.concat(vim.list_slice(lines, 1, selection_threshold), '\n')
-      or selection
+  local out = copilot:embed(embeddings)
+  if #out <= 1 then
+    return {}
   end
 
   log.debug(string.format('Got %s embeddings', #out))
 
-  local query_out = copilot:embed({
-    {
-      prompt = prompt,
-      content = selection,
-      filename = filename,
-      filetype = filetype,
-    },
-  })
-
-  local query = query_out[1]
-  if not query then
-    return {}
-  end
+  local query = table.remove(out, 1)
+  log.debug('Query Prompt:', query.prompt)
 
   local data = data_ranked_by_relatedness(query, out, 20)
-
-  log.debug('Prompt:', query.prompt)
-  log.debug('Content:', query.content)
   log.debug('Ranked data:', #data)
+
   for i, item in ipairs(data) do
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
   end

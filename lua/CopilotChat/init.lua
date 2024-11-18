@@ -559,7 +559,12 @@ function M.ask(prompt, config)
     ))
     or 'untitled'
 
-  local embeddings = {}
+  local embeddings = {
+    {
+      prompt = prompt,
+    },
+  }
+
   local function parse_context(prompt_context)
     local split = vim.split(prompt_context, ':')
     local context_name = table.remove(split, 1)
@@ -604,14 +609,8 @@ function M.ask(prompt, config)
       end
     end
 
-    local query_ok, filtered_embeddings = pcall(context.filter_embeddings, state.copilot, {
-      embeddings = embeddings,
-      prompt = prompt,
-      selection = selection.lines,
-      filename = filename,
-      filetype = filetype,
-      bufnr = state.source.bufnr,
-    })
+    local query_ok, filtered_embeddings =
+      pcall(context.filter_embeddings, state.copilot, embeddings)
 
     if not query_ok then
       vim.schedule(function()
