@@ -2,7 +2,7 @@
 ---@field bufnr number
 ---@field valid fun(self: CopilotChat.Overlay)
 ---@field validate fun(self: CopilotChat.Overlay)
----@field show fun(self: CopilotChat.Overlay, text: string, filetype: string, syntax: string, winnr: number)
+---@field show fun(self: CopilotChat.Overlay, text: string, filetype: string, winnr: number)
 ---@field restore fun(self: CopilotChat.Overlay, winnr: number, bufnr: number)
 ---@field delete fun(self: CopilotChat.Overlay)
 ---@field show_help fun(self: CopilotChat.Overlay, msg: string, offset: number)
@@ -10,8 +10,7 @@
 local utils = require('CopilotChat.utils')
 local class = utils.class
 
-local Overlay = class(function(self, name, hl_ns, help, on_buf_create)
-  self.hl_ns = hl_ns
+local Overlay = class(function(self, name, help, on_buf_create)
   self.help = help
   self.on_buf_create = on_buf_create
   self.bufnr = nil
@@ -39,19 +38,18 @@ function Overlay:validate()
   self.on_buf_create(self.bufnr)
 end
 
-function Overlay:show(text, filetype, syntax, winnr)
+function Overlay:show(text, filetype, winnr, syntax)
   self:validate()
-
   vim.api.nvim_win_set_buf(winnr, self.bufnr)
-
   vim.bo[self.bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, vim.split(text, '\n'))
   vim.bo[self.bufnr].modifiable = false
   self:show_help(self.help, -1)
   vim.api.nvim_win_set_cursor(winnr, { vim.api.nvim_buf_line_count(self.bufnr), 0 })
 
+  syntax = syntax or filetype
+
   -- Dual mode with treesitter (for diffs for example)
-  vim.api.nvim_win_set_hl_ns(winnr, self.hl_ns)
   local ok, parser = pcall(vim.treesitter.get_parser, self.bufnr, syntax)
   if ok and parser then
     vim.treesitter.start(self.bufnr, syntax)
@@ -62,9 +60,7 @@ function Overlay:show(text, filetype, syntax, winnr)
 end
 
 function Overlay:restore(winnr, bufnr)
-  self.current = nil
   vim.api.nvim_win_set_buf(winnr, bufnr or 0)
-  vim.api.nvim_win_set_hl_ns(winnr, 0)
 end
 
 function Overlay:delete()

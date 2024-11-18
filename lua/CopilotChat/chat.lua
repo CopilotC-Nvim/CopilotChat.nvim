@@ -32,6 +32,7 @@ end
 
 local Chat = class(function(self, help, on_buf_create)
   self.header_ns = vim.api.nvim_create_namespace('copilot-chat-headers')
+  self.name = 'copilot-chat'
   self.help = help
   self.on_buf_create = on_buf_create
   self.bufnr = nil
@@ -43,12 +44,12 @@ local Chat = class(function(self, help, on_buf_create)
   self.highlight_headers = true
   self.layout = nil
 
-  vim.treesitter.language.register('markdown', 'copilot-chat')
+  vim.treesitter.language.register('markdown', self.name)
 
   self.buf_create = function()
     local bufnr = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_name(bufnr, 'copilot-chat')
-    vim.bo[bufnr].filetype = 'copilot-chat'
+    vim.api.nvim_buf_set_name(bufnr, self.name)
+    vim.bo[bufnr].filetype = self.name
     vim.bo[bufnr].syntax = 'markdown'
     vim.bo[bufnr].textwidth = 0
     local ok, parser = pcall(vim.treesitter.get_parser, bufnr, 'markdown')
