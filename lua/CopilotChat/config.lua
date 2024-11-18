@@ -141,7 +141,7 @@ return {
         vim.ui.select(
           vim.tbl_map(
             function(buf)
-              return { id = buf, name = vim.api.nvim_buf_get_name(buf) }
+              return { id = buf, name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ':p:.') }
             end,
             vim.tbl_filter(function(buf)
               return vim.api.nvim_buf_is_loaded(buf) and vim.fn.buflisted(buf) == 1
