@@ -32,7 +32,7 @@ return {
     "CopilotC-Nvim/CopilotChat.nvim",
     branch = "canary",
     dependencies = {
-      { "zbirenbaum/copilot.lua" }, -- or github/copilot.vim
+      { "github/copilot.vim" }, -- or zbirenbaum/copilot.lua
       { "nvim-lua/plenary.nvim" }, -- for curl, log wrapper
     },
     build = "make tiktoken", -- Only on MacOS or Linux
@@ -52,7 +52,7 @@ Similar to the lazy setup, you can use the following configuration:
 
 ```vim
 call plug#begin()
-Plug 'zbirenbaum/copilot.lua'
+Plug 'github/copilot.vim'
 Plug 'nvim-lua/plenary.nvim'
 Plug 'CopilotC-Nvim/CopilotChat.nvim', { 'branch': 'canary' }
 call plug#end()
@@ -72,7 +72,7 @@ EOF
 mkdir -p ~/.config/nvim/pack/copilotchat/start
 cd ~/.config/nvim/pack/copilotchat/start
 
-git clone https://github.com/zbirenbaum/copilot.lua
+git clone https://github.com/github/copilot.vim
 git clone https://github.com/nvim-lua/plenary.nvim
 
 git clone -b canary https://github.com/CopilotC-Nvim/CopilotChat.nvim
@@ -121,6 +121,21 @@ Default prompts are:
 - `Tests` - Please generate tests for my code
 - `Commit` - Write commit message for the change with commitizen convention
 
+You can define custom prompts like this (only `prompt` is required):
+
+```lua
+{
+  prompts = {
+    MyCustomPrompt = {
+      prompt = 'Explain how it works.',
+      system_prompt = 'You are very good at explaining stuff',
+      mapping = '<leader>ccmc',
+      description = 'My custom prompt description',
+    }
+  }
+}
+```
+
 ### System Prompts
 
 System prompts specify the behavior of the AI model. You can reference system prompts with `/PROMPT_NAME` in chat.
@@ -130,6 +145,18 @@ Default system prompts are:
 - `COPILOT_EXPLAIN` - On top of the base instructions adds coding tutor behavior
 - `COPILOT_REVIEW` - On top of the base instructions adds code review behavior with instructions on how to generate diagnostics
 - `COPILOT_GENERATE` - On top of the base instructions adds code generation behavior, with predefined formatting and generation rules
+
+You can define custom system prompts like this (works same as `prompts` so you can combine prompt and system prompt definitions):
+
+```lua
+{
+  prompts = {
+    Yarrr = {
+      system_prompt = 'You are fascinated by pirates, so please respond in pirate speak.',
+    }
+  }
+}
+```
 
 ### Sticky Prompts
 
@@ -185,6 +212,39 @@ Default contexts are:
 - `file` - Includes content of provided file in chat context. Supports input.
 - `files` - Includes all non-hidden filenames in the current workspace in chat context. Supports input.
 - `git` - Includes current git diff in chat context (default unstaged). Supports input.
+
+You can define custom contexts like this:
+
+```lua
+{
+  contexts = {
+    birthday = {
+      input = function(callback)
+        vim.ui.select({ 'user', 'napoleon' }, {
+          prompt = 'Select birthday> ',
+        }, callback)
+      end,
+      resolve = function(input)
+        input = input or 'user'
+        local birthday = input
+        if input == 'user' then
+          birthday = birthday .. ' birthday is April 1, 1990'
+        elseif input == 'napoleon' then
+          birthday = birthday .. ' birthday is August 15, 1769'
+        end
+
+        return {
+          {
+            content = birthday,
+            filename = input .. '_birthday',
+            filetype = 'text',
+          }
+        }
+      end
+    }
+  }
+}
+```
 
 ### API
 
@@ -395,66 +455,6 @@ Also see [here](/lua/CopilotChat/config.lua):
   },
 }
 ```
-
-For further reference, you can view @jellydn's [configuration](https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/copilot-chat-v2.lua).
-
-### Defining a prompt with command and keymap
-
-This will define prompt that you can reference with `/MyCustomPrompt` in chat, call with `:CopilotChatMyCustomPrompt` or use the keymap `<leader>ccmc`.
-It will use visual selection as default selection. If you are using `lazy.nvim` and are already lazy loading based on `Commands` make sure to include the prompt
-commands and keymaps in `cmd` and `keys` respectively.
-
-```lua
-{
-  prompts = {
-    MyCustomPrompt = {
-      prompt = 'Explain how it works.',
-      mapping = '<leader>ccmc',
-      description = 'My custom prompt description',
-      selection = require('CopilotChat.select').visual,
-    },
-  },
-}
-```
-
-### Referencing system or user prompts
-
-You can reference system or user prompts in your configuration or in chat with `/PROMPT_NAME` slash notation.
-For collection of default `COPILOT_` (system) and `USER_` (user) prompts, see [here](/lua/CopilotChat/prompts.lua).
-
-```lua
-{
-  prompts = {
-    MyCustomPrompt = {
-      prompt = '/COPILOT_EXPLAIN Explain how it works.',
-    },
-    MyCustomPrompt2 = {
-      prompt = '/MyCustomPrompt Include some additional context.',
-    },
-  },
-}
-```
-
-### Custom system prompts
-
-You can define custom system prompts by using `system_prompt` property when passing config around.
-
-```lua
-{
-  system_prompt = 'Your name is Github Copilot and you are a AI assistant for developers.',
-  prompts = {
-    Johnny = {
-      system_prompt = 'Your name is Johny Microsoft and you are not an AI assistant for developers.',
-      prompt = 'Explain how it works.',
-    },
-    Yarrr = {
-      system_prompt = 'You are fascinated by pirates, so please respond in pirate speak.'
-    },
-  },
-}
-```
-
-To use any of your custom prompts, simply do `:CopilotChat<prompt name>`. E.g. `:CopilotChatJohnny` or `:CopilotChatYarrr What is a sorting algo?`. Tab autocomplete will help you out.
 
 ### Customizing buffers
 
