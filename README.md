@@ -9,11 +9,37 @@
 > [!NOTE]
 > Plugin was rewritten to Lua from Python. Please check the [migration guide from version 1 to version 2](/MIGRATION.md) for more information.
 
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+  - [Lazy.nvim](#lazy.nvim)
+  - [Vim-Plug](#vim-plug)
+  - [Manual](#manual)
+  - [Post-Installation](#post-installation)
+- [Usage](#usage)
+  - [Commands](#commands)
+  - [Prompts](#prompts)
+  - [System Prompts](#system-prompts)
+  - [Sticky Prompts](#sticky-prompts)
+  - [Models](#models)
+  - [Agents](#agents)
+  - [Contexts](#contexts)
+  - [Selections](#selections)
+  - [API](#api)
+- [Configuration](#configuration)
+  - [Default configuration](#default-configuration)
+  - [Customizing buffers](#customizing-buffers)
+- [Tips](#tips)
+- [Roadmap (Wishlist)](#roadmap-wishlist)
+- [Development](#development)
+- [Contributors ✨](#contributors-)
+
 ## Prerequisites
 
 Ensure you have the following installed:
 
 - **Neovim stable (0.9.5) or nightly**.
+
+Verify "[Copilot chat in the IDE](https://github.com/settings/copilot)" is enabled.
 
 Optional:
 
@@ -87,10 +113,6 @@ require("CopilotChat").setup {
 ```
 
 See @deathbeam for [configuration](https://github.com/deathbeam/dotfiles/blob/master/nvim/.config/nvim/lua/config/copilot.lua#L14)
-
-### Post-Installation
-
-Verify "[Copilot chat in the IDE](https://github.com/settings/copilot)" is enabled.
 
 ## Usage
 
