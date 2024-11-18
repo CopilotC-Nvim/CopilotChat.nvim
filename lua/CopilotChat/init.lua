@@ -570,6 +570,9 @@ function M.ask(prompt, config)
     local context_name = table.remove(split, 1)
     local context_input = table.concat(split, ':')
     local context_value = config.contexts[context_name]
+    if vim.trim(context_input) == '' then
+      context_input = nil
+    end
 
     if context_value then
       for _, embedding in ipairs(context_value.resolve(context_input, state.source)) do
