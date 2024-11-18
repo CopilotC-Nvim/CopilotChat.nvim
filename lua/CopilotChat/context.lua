@@ -116,7 +116,7 @@ function M.file(filename)
 
   return {
     content = table.concat(content, '\n'),
-    filename = filename,
+    filename = vim.fn.fnamemodify(filename, ':p:.'),
     filetype = vim.filetype.match({ filename = filename }),
   }
 end
@@ -127,6 +127,7 @@ end
 ---@return CopilotChat.copilot.embed?
 function M.outline(bufnr)
   local name = vim.api.nvim_buf_get_name(bufnr)
+  name = vim.fn.fnamemodify(name, ':p:.')
   local ft = vim.bo[bufnr].filetype
 
   -- If buffer is not too big, just return the content
