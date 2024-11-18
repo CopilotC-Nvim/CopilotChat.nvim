@@ -562,8 +562,8 @@ function M.ask(prompt, config)
   local embeddings = {}
   local function parse_context(prompt_context)
     local split = vim.split(prompt_context, ':')
-    local context_name = split[1]
-    local context_input = split[2]
+    local context_name = table.remove(split, 1)
+    local context_input = table.concat(split, ':')
     local context_value = config.contexts[context_name]
 
     if context_value then
