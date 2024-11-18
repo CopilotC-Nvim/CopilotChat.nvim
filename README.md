@@ -246,6 +246,47 @@ You can define custom contexts like this:
 }
 ```
 
+### Selections
+
+Selections are used to determine the source of the chat (so basically what to chat about).  
+Selections are configurable either by default or by prompt.  
+Default selection is `visual` or `buffer` (if no visual selection).  
+Default supported selections that live in `local select = require("CopilotChat.select")` are:
+
+- `select.visual` - Current visual selection. Works well with diffs.
+- `select.buffer` - Current buffer content. Works well with diffs.
+- `select.line` - Current line content. Works decently with diffs.
+- `select.unnamed` - Content from the unnamed register.
+- `select.clipboard` - Content from system clipboard.
+
+You can define custom selection functions like this:
+
+```lua
+{
+  selection = function()
+    -- Get content from * register
+    local lines = vim.fn.getreg('*')
+    if not lines or lines == '' then
+      return nil
+    end
+
+    return {
+      lines = lines,
+    }
+  end
+}
+```
+
+Or chain multiple selections like this:
+
+```lua
+{
+  selection = function(source)
+    return select.visual(source) or select.buffer(source)
+  end
+}
+```
+
 ### API
 
 ```lua
