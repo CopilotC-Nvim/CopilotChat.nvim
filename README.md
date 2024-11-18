@@ -203,7 +203,7 @@ You can install more agents from [here](https://github.com/marketplace?type=apps
 ### Contexts
 
 Contexts are used to determine the context of the chat.  
-You can set the context in the prompt by using `#` followed by the context name.  
+You can add context to the prompt by using `#` followed by the context name (multiple contexts are supported).  
 If context supports input, you can set the input in the prompt by using `:` followed by the input (or pressing `complete` key after `:`).  
 Default contexts are:
 
