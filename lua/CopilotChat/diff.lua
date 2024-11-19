@@ -3,8 +3,8 @@
 ---@field reference string
 ---@field filename string
 ---@field filetype string
----@field start_line number?
----@field end_line number?
+---@field start_line number
+---@field end_line number
 ---@field bufnr number?
 
 ---@class CopilotChat.Diff
