@@ -10,15 +10,19 @@ function M.open()
     'Log file path:',
     '`' .. log.logfile .. '`',
     '',
-    'Temp directory:',
-    '`' .. vim.fn.fnamemodify(os.tmpname(), ':h') .. '`',
-    '',
     'Data directory:',
     '`' .. vim.fn.stdpath('data') .. '`',
     '',
+    'Config directory:',
+    '`' .. utils.config_path() .. '`',
+    '',
+    'Temp directory:',
+    '`' .. vim.fn.fnamemodify(os.tmpname(), ':h') .. '`',
+    '',
   }
 
-  local outline = context.outline(vim.api.nvim_get_current_buf())
+  local buf = context.buffer(vim.api.nvim_get_current_buf())
+  local outline = buf and context.outline(buf.content, buf.filename, buf.filetype)
   if outline then
     table.insert(lines, 'Current buffer outline:')
     table.insert(lines, '`' .. outline.filename .. '`')

@@ -160,7 +160,7 @@ return {
       end,
       resolve = function(input, source)
         return {
-          context.outline(input and tonumber(input) or source.bufnr),
+          context.buffer(input and tonumber(input) or source.bufnr),
         }
       end,
     },
@@ -174,7 +174,7 @@ return {
       resolve = function(input)
         input = input or 'listed'
         return vim.tbl_map(
-          context.outline,
+          context.buffer,
           vim.tbl_filter(function(b)
             return vim.api.nvim_buf_is_loaded(b)
               and vim.fn.buflisted(b) == 1

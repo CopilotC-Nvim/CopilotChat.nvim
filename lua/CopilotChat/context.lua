@@ -40,7 +40,6 @@ local off_side_rule_languages = {
   'fsharp',
 }
 
-local big_file_threshold = 500
 local multi_file_threshold = 2
 
 local function spatial_distance_cosine(a, b)
@@ -73,83 +72,32 @@ local function data_ranked_by_relatedness(query, data, top_n)
   return result
 end
 
---- Get list of all files in workspace
----@param pattern string?
----@return table<CopilotChat.copilot.embed>
-function M.files(pattern)
-  local files = vim.tbl_filter(function(file)
-    return vim.fn.isdirectory(file) == 0
-  end, vim.fn.glob(pattern or '**/*', false, true))
-
-  if #files == 0 then
-    return {}
-  end
-
-  local out = {}
-
-  -- Create embeddings in chunks
-  local chunk_size = 100
-  for i = 1, #files, chunk_size do
-    local chunk = {}
-    for j = i, math.min(i + chunk_size - 1, #files) do
-      table.insert(chunk, files[j])
-    end
-
-    table.insert(out, {
-      content = table.concat(chunk, '\n'),
-      filename = 'file_map',
-      filetype = 'text',
-    })
-  end
-
-  return out
-end
-
---- Get the content of a file
----@param filename string
----@return CopilotChat.copilot.embed?
-function M.file(filename)
-  local content = vim.fn.readfile(filename)
-  if #content == 0 then
-    return
-  end
-
-  return {
-    content = table.concat(content, '\n'),
-    filename = vim.fn.fnamemodify(filename, ':p:.'),
-    filetype = vim.filetype.match({ filename = filename }),
-  }
-end
-
---- Build an outline for a buffer
+--- Build an outline from a string
 --- FIXME: Handle multiline function argument definitions when building the outline
----@param bufnr number
----@return CopilotChat.copilot.embed?
-function M.outline(bufnr)
-  local name = vim.api.nvim_buf_get_name(bufnr)
-  name = vim.fn.fnamemodify(name, ':p:.')
-  local ft = vim.bo[bufnr].filetype
+---@param content string
+---@param name string
+---@param ft string?
+---@return CopilotChat.copilot.embed
+function M.outline(content, name, ft)
+  ft = ft or 'text'
+  local lines = vim.split(content, '\n')
 
-  -- If buffer is not too big, just return the content
-  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-  if #lines < big_file_threshold then
-    return {
-      content = table.concat(lines, '\n'),
-      filename = name,
-      filetype = ft,
-    }
-  end
+  local base_output = {
+    content = content,
+    filename = name,
+    filetype = ft,
+  }
 
   local lang = vim.treesitter.language.get_lang(ft)
   local ok, parser = false, nil
   if lang then
-    ok, parser = pcall(vim.treesitter.get_parser, bufnr, lang)
+    ok, parser = pcall(vim.treesitter.get_string_parser, content, lang)
   end
   if not ok or not parser then
     ft = string.gsub(ft, 'react', '')
-    ok, parser = pcall(vim.treesitter.get_parser, bufnr, ft)
+    ok, parser = pcall(vim.treesitter.get_string_parser, content, ft)
     if not ok or not parser then
-      return
+      return base_output
     end
   end
 
@@ -178,9 +126,8 @@ function M.outline(bufnr)
         comment_lines = {}
       end
 
-      local start_line = vim.api.nvim_buf_get_lines(bufnr, start_row, start_row + 1, false)[1]
-      local signature_start =
-        vim.api.nvim_buf_get_text(bufnr, start_row, start_col, start_row, #start_line, {})[1]
+      local start_line = lines[start_row + 1]
+      local signature_start = start_line:sub(start_col + 1)
       table.insert(outline_lines, string.rep('  ', depth) .. vim.trim(signature_start))
 
       -- If the function definition spans multiple lines, add an ellipsis
@@ -191,7 +138,7 @@ function M.outline(bufnr)
       end
     elseif is_comment then
       skip_inner = true
-      local comment = vim.split(vim.treesitter.get_node_text(node, bufnr, {}), '\n')
+      local comment = vim.split(vim.treesitter.get_node_text(node, content), '\n')
       for _, line in ipairs(comment) do
         table.insert(comment_lines, vim.trim(line))
       end
@@ -207,8 +154,8 @@ function M.outline(bufnr)
 
     if is_outline then
       if not skip_inner and not vim.tbl_contains(off_side_rule_languages, ft) then
-        local signature_end =
-          vim.trim(vim.api.nvim_buf_get_text(bufnr, end_row, 0, end_row, end_col, {})[1])
+        local end_line = lines[end_row + 1]
+        local signature_end = vim.trim(end_line:sub(1, end_col))
         table.insert(outline_lines, string.rep('  ', depth) .. signature_end)
       end
       depth = depth - 1
@@ -216,21 +163,86 @@ function M.outline(bufnr)
   end
 
   get_outline_lines(root)
-  local content = table.concat(outline_lines, '\n')
-  if content == '' then
-    return
+  local result_content = table.concat(outline_lines, '\n')
+  if result_content == '' then
+    return base_output
   end
 
   return {
-    content = table.concat(outline_lines, '\n'),
+    content = result_content,
     filename = name,
     filetype = ft,
+  }
+end
+
+--- Get list of all files in workspace
+---@param pattern string?
+---@return table<CopilotChat.copilot.embed>
+function M.files(pattern)
+  local files = vim.tbl_filter(function(file)
+    return vim.fn.isdirectory(file) == 0
+  end, vim.fn.glob(pattern or '**/*', false, true))
+
+  if #files == 0 then
+    return {}
+  end
+
+  local out = {}
+
+  -- Create embeddings in chunks
+  local chunk_size = 100
+  for i = 1, #files, chunk_size do
+    local chunk = {}
+    for j = i, math.min(i + chunk_size - 1, #files) do
+      table.insert(chunk, files[j])
+    end
+
+    table.insert(out, {
+      content = table.concat(chunk, '\n'),
+      filename = 'file_map_' .. tostring(i),
+      filetype = 'text',
+    })
+  end
+
+  return out
+end
+
+--- Get the content of a file
+---@param filename string
+---@return CopilotChat.copilot.embed?
+function M.file(filename)
+  local content = vim.fn.readfile(filename)
+  if not content or #content == 0 then
+    return nil
+  end
+
+  return {
+    content = table.concat(content, '\n'),
+    filename = vim.fn.fnamemodify(filename, ':p:.'),
+    filetype = vim.filetype.match({ filename = filename }),
+  }
+end
+
+--- Get the content of a buffer
+---@param bufnr number
+---@return CopilotChat.copilot.embed?
+function M.buffer(bufnr)
+  local content = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  if not content or #content == 0 then
+    return nil
+  end
+
+  return {
+    content = table.concat(content, '\n'),
+    filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ':p:.'),
+    filetype = vim.bo[bufnr].filetype,
   }
 end
 
 --- Get current git diff
 ---@param type string?
 ---@param bufnr number
+---@return CopilotChat.copilot.embed?
 function M.gitdiff(type, bufnr)
   type = type or 'unstaged'
   local bufname = vim.api.nvim_buf_get_name(bufnr)
@@ -267,27 +279,48 @@ end
 
 --- Filter embeddings based on the query
 ---@param copilot CopilotChat.Copilot
+---@param prompt string
 ---@param embeddings table<CopilotChat.copilot.embed>
 ---@return table<CopilotChat.copilot.embed>
-function M.filter_embeddings(copilot, embeddings)
-  -- If we dont need to embed anything, just return the embeddings without query
-  if #embeddings <= (1 + multi_file_threshold) then
-    table.remove(embeddings, 1)
+function M.filter_embeddings(copilot, prompt, embeddings)
+  -- If we dont need to embed anything, just return directly
+  if #embeddings <= multi_file_threshold then
     return embeddings
   end
 
-  -- Get embeddings
-  local out = copilot:embed(embeddings)
-  log.debug(string.format('Got %s embeddings', #out))
+  table.insert(embeddings, 1, {
+    prompt = prompt,
+    filename = 'prompt',
+  })
+
+  -- Get embeddings from outlines
+  local embedded_data = copilot:embed(vim.tbl_map(function(embed)
+    if embed.content then
+      return M.outline(embed.content, embed.filename, embed.filetype)
+    end
+
+    return embed
+  end, embeddings))
 
   -- Rate embeddings by relatedness to the query
-  local data = data_ranked_by_relatedness(table.remove(out, 1), out, 20)
-  log.debug('Ranked data:', #data)
-  for i, item in ipairs(data) do
+  local ranked_data = data_ranked_by_relatedness(table.remove(embedded_data, 1), out, 20)
+  log.debug('Ranked data:', #ranked_data)
+  for i, item in ipairs(ranked_data) do
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
   end
 
-  return data
+  -- Return original content but keep the ranking order and scores
+  local result = {}
+  for _, ranked_item in ipairs(ranked_data) do
+    for _, original in ipairs(embeddings) do
+      if original.filename == ranked_item.filename then
+        table.insert(result, original)
+        break
+      end
+    end
+  end
+
+  return result
 end
 
 return M

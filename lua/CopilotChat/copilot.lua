@@ -108,24 +108,6 @@ local function quick_hash(str)
   return #str .. str:sub(1, 32) .. str:sub(-32)
 end
 
-local function find_config_path()
-  local config = vim.fn.expand('$XDG_CONFIG_HOME')
-  if config and vim.fn.isdirectory(config) > 0 then
-    return config
-  end
-  if vim.fn.has('win32') > 0 then
-    config = vim.fn.expand('$LOCALAPPDATA')
-    if not config or vim.fn.isdirectory(config) == 0 then
-      config = vim.fn.expand('$HOME/AppData/Local')
-    end
-  else
-    config = vim.fn.expand('$HOME/.config')
-  end
-  if config and vim.fn.isdirectory(config) > 0 then
-    return config
-  end
-end
-
 local function get_cached_token()
   -- loading token from the environment only in GitHub Codespaces
   local token = os.getenv('GITHUB_TOKEN')
@@ -135,7 +117,7 @@ local function get_cached_token()
   end
 
   -- loading token from the file
-  local config_path = find_config_path()
+  local config_path = utils.config_path()
   if not config_path then
     return nil
   end

@@ -529,11 +529,18 @@ function M.ask(prompt, config)
   state.chat:append(prompt)
   state.chat:append('\n\n' .. config.answer_header .. config.separator .. '\n\n')
 
+  -- Resolve prompt references
   local system_prompt, updated_prompt = update_prompts(prompt or '', config.system_prompt)
   state.last_system_prompt = system_prompt
   state.last_prompt = prompt
-  prompt = updated_prompt
-  prompt = string.gsub(prompt, '(^|\n)>%s+', '%1')
+
+  -- Remove sticky prefix
+  prompt = table.concat(
+    vim.tbl_map(function(l)
+      return l:gsub('>%s+', '')
+    end, vim.split(updated_prompt, '\n')),
+    '\n'
+  )
 
   local selection = get_selection()
   local filetype = selection.filetype
@@ -545,24 +552,20 @@ function M.ask(prompt, config)
     ))
     or 'untitled'
 
-  local embeddings = {
-    {
-      prompt = prompt,
-    },
-  }
-
+  local embedding_map = {}
   local function parse_context(prompt_context)
     local split = vim.split(prompt_context, ':')
     local context_name = table.remove(split, 1)
     local context_input = vim.trim(table.concat(split, ':'))
     local context_value = config.contexts[context_name]
+    if context_input == '' then
+      context_input = nil
+    end
 
     if context_value then
-      for _, embedding in
-        ipairs(context_value.resolve(context_input == '' and nil or context_input, state.source))
-      do
+      for _, embedding in ipairs(context_value.resolve(context_input, state.source)) do
         if embedding then
-          table.insert(embeddings, embedding)
+          embedding_map[embedding.filename] = embedding
         end
       end
 
@@ -570,13 +573,21 @@ function M.ask(prompt, config)
     end
   end
 
+  -- Sort and parse contexts
+  local contexts = {}
   if config.context then
-    parse_context(config.context)
+    table.insert(contexts, config.context)
   end
-
   for prompt_context in prompt:gmatch('#([^%s]+)') do
+    table.insert(contexts, prompt_context)
+  end
+  table.sort(contexts, function(a, b)
+    return #a > #b
+  end)
+  for _, prompt_context in ipairs(contexts) do
     parse_context(prompt_context)
   end
+  local embeddings = vim.tbl_values(embedding_map)
 
   async.run(function()
     local agents = vim.tbl_keys(state.copilot:list_agents())
@@ -599,7 +610,7 @@ function M.ask(prompt, config)
     end
 
     local query_ok, filtered_embeddings =
-      pcall(context.filter_embeddings, state.copilot, embeddings)
+      pcall(context.filter_embeddings, state.copilot, prompt, embeddings)
 
     if not query_ok then
       vim.schedule(function()
