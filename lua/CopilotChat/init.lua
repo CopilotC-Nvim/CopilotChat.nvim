@@ -76,32 +76,6 @@ local function update_prompts(prompt, system_prompt)
   return system_prompt, result
 end
 
---- Updates the selection based on previous window
-local function update_selection()
-  local prev_winnr = vim.fn.win_getid(vim.fn.winnr('#'))
-  if prev_winnr ~= state.chat.winnr then
-    state.source = {
-      bufnr = vim.api.nvim_win_get_buf(prev_winnr),
-      winnr = prev_winnr,
-    }
-  end
-
-  local bufnr = state.source and state.source.bufnr
-  local winnr = state.source and state.source.winnr
-
-  if
-    state.config
-    and state.config.selection
-    and utils.buf_valid(bufnr)
-    and winnr
-    and vim.api.nvim_win_is_valid(winnr)
-  then
-    state.selection = state.config.selection(state.source)
-  else
-    state.selection = nil
-  end
-end
-
 --- Highlights the selection in the source buffer.
 ---@param clear? boolean
 local function highlight_selection(clear)
@@ -135,6 +109,34 @@ local function highlight_selection(clear)
   )
 end
 
+--- Updates the selection based on previous window
+local function update_selection()
+  local prev_winnr = vim.fn.win_getid(vim.fn.winnr('#'))
+  if prev_winnr ~= state.chat.winnr then
+    state.source = {
+      bufnr = vim.api.nvim_win_get_buf(prev_winnr),
+      winnr = prev_winnr,
+    }
+  end
+
+  local bufnr = state.source and state.source.bufnr
+  local winnr = state.source and state.source.winnr
+
+  if
+    state.config
+    and state.config.selection
+    and utils.buf_valid(bufnr)
+    and winnr
+    and vim.api.nvim_win_is_valid(winnr)
+  then
+    state.selection = state.config.selection(state.source)
+  else
+    state.selection = nil
+  end
+
+  highlight_selection()
+end
+
 ---@return CopilotChat.Diff.diff|nil
 local function get_diff()
   local chat_lines = vim.api.nvim_buf_get_lines(state.chat.bufnr, 0, -1, false)
@@ -160,7 +162,7 @@ local function get_diff()
         header:match('%[file:(.+)%] line:(%d+)-(%d+)')
     end
     if header_filename then
-      header_filename = vim.fn.fnamemodify(header_filename, ':p')
+      header_filename = vim.fn.fnamemodify(header_filename, ':p:.')
       header_start_line = tonumber(header_start_line) or 1
       header_end_line = tonumber(header_end_line) or header_start_line
     end
@@ -174,20 +176,20 @@ local function get_diff()
   local filetype = state.selection and state.selection.filetype
   local bufnr = state.selection and state.selection.bufnr
 
-  -- If we have header info, try to use it
+  -- If we have header info, use it as source of truth
   if header_filename then
     -- Try to find matching buffer and window
-    if not bufnr or vim.fn.fnamemodify(filename or '', ':p') ~= header_filename then
-      for _, win in ipairs(vim.api.nvim_list_wins()) do
-        local win_buf = vim.api.nvim_win_get_buf(win)
-        if vim.fn.fnamemodify(vim.api.nvim_buf_get_name(win_buf), ':p') == header_filename then
-          bufnr = win_buf
-          break
-        end
+    bufnr = nil
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+      local win_buf = vim.api.nvim_win_get_buf(win)
+      if utils.filename_same(vim.api.nvim_buf_get_name(win_buf), header_filename) then
+        bufnr = win_buf
+        break
       end
     end
 
     filename = header_filename
+    filetype = vim.filetype.match({ filename = filename })
     start_line = header_start_line
     end_line = header_end_line
 
@@ -217,7 +219,7 @@ end
 
 ---@param diff CopilotChat.Diff.diff?
 local function apply_diff(diff)
-  if not diff or not diff.start_line or not diff.end_line or not diff.bufnr then
+  if not diff or not diff.bufnr then
     return
   end
 
@@ -227,17 +229,15 @@ local function apply_diff(diff)
   end
 
   local lines = vim.split(diff.change, '\n', { trimempty = false })
-  local end_pos = diff.start_line + #lines - 1
 
   -- Update the source buffer with the change
   vim.api.nvim_buf_set_lines(diff.bufnr, diff.start_line - 1, diff.end_line, false, lines)
 
   -- Update visual selection marks to the diff start/end and move cursor
-  vim.api.nvim_win_set_cursor(winnr, { end_pos, 0 })
+  vim.api.nvim_win_set_cursor(winnr, { diff.start_line, 0 })
   vim.api.nvim_buf_set_mark(diff.bufnr, '<', diff.start_line, 0, {})
-  vim.api.nvim_buf_set_mark(diff.bufnr, '>', end_pos, 0, {})
+  vim.api.nvim_buf_set_mark(diff.bufnr, '>', diff.start_line + #lines - 1, 0, {})
   update_selection()
-  highlight_selection()
 end
 
 local function finish(config, message, hide_help, start_of_chat)
@@ -1054,6 +1054,47 @@ function M.setup(config)
         apply_diff(get_diff())
       end)
 
+      map_key(M.config.mappings.jump_to_diff, bufnr, function()
+        if
+          not state.source
+          or not state.source.winnr
+          or not vim.api.nvim_win_is_valid(state.source.winnr)
+        then
+          return
+        end
+
+        local diff = get_diff()
+        if not diff then
+          return
+        end
+
+        local diff_bufnr = diff.bufnr
+
+        -- Try to find existing buffer first
+        if not diff_bufnr then
+          for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+            if utils.filename_same(vim.api.nvim_buf_get_name(buf), diff.filename) then
+              diff_bufnr = buf
+              break
+            end
+          end
+        end
+
+        -- Create new empty buffer if doesn't exist
+        if not diff_bufnr then
+          diff_bufnr = vim.api.nvim_create_buf(true, false)
+          vim.api.nvim_buf_set_name(diff_bufnr, diff.filename)
+          vim.bo[diff_bufnr].filetype = diff.filetype
+        end
+
+        -- Open the buffer in the source window and move cursor
+        vim.api.nvim_win_set_buf(state.source.winnr, diff_bufnr)
+        vim.api.nvim_win_set_cursor(state.source.winnr, { diff.start_line, 0 })
+        vim.api.nvim_buf_set_mark(diff_bufnr, '<', diff.start_line, 0, {})
+        vim.api.nvim_buf_set_mark(diff_bufnr, '>', diff.end_line, 0, {})
+        update_selection()
+      end)
+
       map_key(M.config.mappings.yank_diff, bufnr, function()
         local diff = get_diff()
         if not diff then
@@ -1100,10 +1141,8 @@ function M.setup(config)
 
           if is_enter then
             update_selection()
-          end
-
-          if state.config.highlight_selection then
-            highlight_selection(not is_enter)
+          else
+            highlight_selection(true)
           end
         end,
       })

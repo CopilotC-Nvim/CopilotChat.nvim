@@ -196,4 +196,15 @@ function M.buf_valid(bufnr)
   return bufnr and vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_is_loaded(bufnr) or false
 end
 
+--- Check if file paths are the same
+---@param file1 string? The first file path
+---@param file2 string? The second file path
+---@return boolean
+function M.filename_same(file1, file2)
+  if not file1 or not file2 then
+    return false
+  end
+  return vim.fn.fnamemodify(file1, ':p') == vim.fn.fnamemodify(file2, ':p')
+end
+
 return M
