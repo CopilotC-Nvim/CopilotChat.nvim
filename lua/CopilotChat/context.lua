@@ -1,4 +1,5 @@
 local log = require('plenary.log')
+local utils = require('CopilotChat.utils')
 
 local M = {}
 
@@ -211,6 +212,10 @@ end
 ---@param filename string
 ---@return CopilotChat.copilot.embed?
 function M.file(filename)
+  if vim.fn.filereadable(filename) ~= 1 then
+    return nil
+  end
+
   local content = vim.fn.readfile(filename)
   if not content or #content == 0 then
     return nil
@@ -227,6 +232,10 @@ end
 ---@param bufnr number
 ---@return CopilotChat.copilot.embed?
 function M.buffer(bufnr)
+  if not utils.buf_valid(bufnr) then
+    return nil
+  end
+
   local content = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   if not content or #content == 0 then
     return nil
@@ -244,6 +253,10 @@ end
 ---@param bufnr number
 ---@return CopilotChat.copilot.embed?
 function M.gitdiff(type, bufnr)
+  if not utils.buf_valid(bufnr) then
+    return nil
+  end
+
   type = type or 'unstaged'
   local bufname = vim.api.nvim_buf_get_name(bufnr)
   local file_path = bufname:gsub('^%w+://', '')
