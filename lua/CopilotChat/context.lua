@@ -41,7 +41,7 @@ local off_side_rule_languages = {
   'fsharp',
 }
 
-local multi_file_threshold = 2
+local outline_threshold = 600
 
 local function spatial_distance_cosine(a, b)
   local dot_product = 0
@@ -164,6 +164,8 @@ function M.outline(content, name, ft)
   end
 
   get_outline_lines(root)
+
+  -- Concatenate the outline lines
   local result_content = table.concat(outline_lines, '\n')
   if result_content == '' then
     return base_output
@@ -297,7 +299,7 @@ end
 ---@return table<CopilotChat.copilot.embed>
 function M.filter_embeddings(copilot, prompt, embeddings)
   -- If we dont need to embed anything, just return directly
-  if #embeddings <= multi_file_threshold then
+  if #embeddings == 0 then
     return embeddings
   end
 
@@ -310,7 +312,17 @@ function M.filter_embeddings(copilot, prompt, embeddings)
   -- Get embeddings from outlines
   local embedded_data = copilot:embed(vim.tbl_map(function(embed)
     if embed.filetype ~= 'raw' then
-      return M.outline(embed.content, embed.filename, embed.filetype)
+      local outline = M.outline(embed.content, embed.filename, embed.filetype)
+      local outline_lines = vim.split(outline.content, '\n')
+
+      -- If outline is too big, truncate it
+      if #outline_lines > 0 and #outline_lines > outline_threshold then
+        outline_lines = vim.list_slice(outline_lines, 1, outline_threshold)
+        table.insert(outline_lines, '... (truncated)')
+      end
+
+      outline.content = table.concat(outline_lines, '\n')
+      return outline
     end
 
     return embed

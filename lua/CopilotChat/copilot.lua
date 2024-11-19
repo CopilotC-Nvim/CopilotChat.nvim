@@ -35,6 +35,8 @@ local tiktoken = require('CopilotChat.tiktoken')
 local utils = require('CopilotChat.utils')
 local class = utils.class
 local temp_file = utils.temp_file
+local context_format = '[#file:%s](#file:%s-context)\n'
+local big_file_threshold = 2000
 local timeout = 30000
 local version_headers = {
   ['editor-version'] = 'Neovim/'
@@ -139,12 +141,25 @@ end
 
 local function generate_line_numbers(content, start_line)
   local lines = vim.split(content, '\n')
+  local truncated = false
+
+  -- If the file is too big, truncate it
+  if #lines > big_file_threshold then
+    lines = vim.list_slice(lines, 1, big_file_threshold)
+    truncated = true
+  end
+
   local total_lines = #lines
   local max_length = #tostring(total_lines)
   for i, line in ipairs(lines) do
     local formatted_line_number = string.format('%' .. max_length .. 'd', i - 1 + (start_line or 1))
     lines[i] = formatted_line_number .. ': ' .. line
   end
+
+  if truncated then
+    table.insert(lines, '... (truncated)')
+  end
+
   content = table.concat(lines, '\n')
   return content
 end
@@ -194,11 +209,15 @@ local function generate_selection_messages(selection)
     end
 
     out = out
-      .. string.format('\n# FILE:%s DIAGNOSTICS:\n%s', filename, table.concat(diagnostics, '\n'))
+      .. string.format(
+        "\nDiagnostics in user's active selection:\n%s",
+        table.concat(diagnostics, '\n')
+      )
   end
 
   return {
     {
+      context = string.format(context_format, filename, filename),
       content = out,
       role = 'user',
     },
@@ -210,7 +229,7 @@ end
 local function generate_embeddings_messages(embeddings)
   local files = {}
   for _, embedding in ipairs(embeddings) do
-    local filename = embedding.filename
+    local filename = embedding.filename or 'unknown'
     if not files[filename] then
       files[filename] = {}
     end
@@ -220,11 +239,13 @@ local function generate_embeddings_messages(embeddings)
   local out = {}
 
   for filename, group in pairs(files) do
+    local filetype = group[1].filetype or 'text'
     table.insert(out, {
+      context = string.format(context_format, filename, filename),
       content = string.format(
         '# FILE:%s CONTEXT\n```%s\n%s\n```',
         filename:upper(),
-        group[1].filetype,
+        filetype,
         generate_line_numbers(table.concat(
           vim.tbl_map(function(e)
             return vim.trim(e.content)
@@ -251,6 +272,7 @@ local function generate_ask_request(
 )
   local messages = {}
   local system_role = stream and 'system' or 'user'
+  local contexts = {}
 
   if system_prompt ~= '' then
     table.insert(messages, {
@@ -260,11 +282,23 @@ local function generate_ask_request(
   end
 
   for _, message in ipairs(generated_messages) do
-    table.insert(messages, message)
+    table.insert(messages, {
+      content = message.content,
+      role = message.role,
+    })
+
+    if message.context then
+      contexts[message.context] = true
+    end
   end
 
   for _, message in ipairs(history) do
     table.insert(messages, message)
+  end
+
+  if not vim.tbl_isempty(contexts) then
+    log.info('Contexts found')
+    prompt = table.concat(vim.tbl_keys(contexts), '\n') .. '\n' .. prompt
   end
 
   table.insert(messages, {
@@ -577,14 +611,10 @@ function Copilot:ask(prompt, opts)
   local system_tokens = tiktoken.count(system_prompt)
   local required_tokens = prompt_tokens + system_tokens + generated_tokens
 
-  -- Reserve space for first embedding if its smaller than half of max tokens
-  local reserved_tokens = 0
-  if #embeddings_messages > 0 then
-    local file_tokens = tiktoken.count(embeddings_messages[1].content)
-    if file_tokens < max_tokens / 2 then
-      reserved_tokens = file_tokens
-    end
-  end
+  -- Reserve space for first embedding
+  local reserved_tokens = #embeddings_messages > 0
+      and tiktoken.count(embeddings_messages[1].content)
+    or 0
 
   -- Calculate how many tokens we can use for history
   local history_limit = max_tokens - required_tokens - reserved_tokens
@@ -606,16 +636,6 @@ function Copilot:ask(prompt, opts)
     else
       break
     end
-  end
-
-  -- Prepend links to embeddings to the prompt
-  local embeddings_prompt = ''
-  for _, embedding in ipairs(embeddings) do
-    embeddings_prompt = embeddings_prompt
-      .. string.format('[#file:%s](#file:%s-context)\n', embedding.filename, embedding.filename)
-  end
-  if embeddings_prompt ~= '' then
-    prompt = embeddings_prompt .. '\n' .. prompt
   end
 
   local last_message = nil
@@ -864,6 +884,9 @@ function Copilot:embed(inputs, opts)
   local cached_embeddings = {}
   local uncached_embeddings = {}
   for _, embed in ipairs(inputs) do
+    embed.filename = embed.filename or 'unknown'
+    embed.filetype = embed.filetype or 'text'
+
     if embed.content then
       local key = embed.filename .. quick_hash(embed.content)
       if self.embedding_cache[key] then
