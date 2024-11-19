@@ -83,7 +83,7 @@ local function get_selection()
   if
     state.config
     and state.config.selection
-    and vim.api.nvim_buf_is_valid(bufnr)
+    and utils.buf_valid(bufnr)
     and vim.api.nvim_win_is_valid(winnr)
   then
     return state.config.selection(state.source)
@@ -112,7 +112,7 @@ local function get_diff()
   local filetype = state.selection.filetype or 'text'
   local bufnr = state.selection.bufnr
 
-  if bufnr then
+  if bufnr and utils.buf_valid(bufnr) then
     local header = section[change_start - 2]
     local header_filename, header_start_line, header_end_line =
       header and header:match('%[file:.+%]%((.+)%) line:(%d+)-(%d+)') or nil, nil, nil
@@ -132,6 +132,8 @@ local function get_diff()
           table.concat(vim.api.nvim_buf_get_lines(bufnr, start_line - 1, end_line, false), '\n')
       end
     end
+  else
+    bufnr = nil
   end
 
   return {
@@ -143,6 +145,26 @@ local function get_diff()
     end_line = end_line,
     bufnr = bufnr,
   }
+end
+
+---@param diff CopilotChat.Diff.diff?
+local function apply_diff(diff)
+  if not diff or not diff.start_line or not diff.end_line or not diff.bufnr then
+    return
+  end
+
+  local lines = vim.split(diff.change, '\n', { trimempty = false })
+  local end_pos = diff.start_line + #lines - 1
+
+  -- Update the source buffer with the change
+  vim.api.nvim_buf_set_lines(diff.bufnr, diff.start_line - 1, diff.end_line, false, lines)
+
+  -- Update visual selection marks to the diff start/end and move cursor
+  vim.api.nvim_win_set_cursor(state.source.winnr, { end_pos, 0 })
+  vim.api.nvim_buf_set_mark(diff.bufnr, '<', diff.start_line, 0, {})
+  vim.api.nvim_buf_set_mark(diff.bufnr, '>', end_pos, 0, {})
+  state.selection = get_selection()
+  M.highlight_selection()
 end
 
 local function finish(config, message, hide_help, start_of_chat)
@@ -409,7 +431,11 @@ function M.highlight_selection(clear)
   if clear then
     return
   end
-  if not state.selection or not state.selection.start_line or not state.selection.bufnr then
+  if
+    not state.selection
+    or not utils.buf_valid(state.selection.bufnr)
+    or not state.selection.start_line
+  then
     return
   end
 
@@ -848,18 +874,7 @@ function M.setup(config)
     end)
 
     map_key(M.config.mappings.accept_diff, bufnr, function()
-      local diff = state.diff:get_diff()
-      if diff or not diff.start_line or not diff.end_line or not diff.bufnr then
-        return
-      end
-
-      vim.api.nvim_buf_set_lines(
-        diff.bufnr,
-        diff.start_line - 1,
-        diff.end_line,
-        false,
-        vim.split(diff.change, '\n')
-      )
+      apply_diff(state.diff:get_diff())
     end)
   end)
 
@@ -999,23 +1014,7 @@ function M.setup(config)
       end)
 
       map_key(M.config.mappings.accept_diff, bufnr, function()
-        local diff = get_diff()
-        if not diff or not diff.start_line or not diff.end_line or not diff.bufnr then
-          return
-        end
-
-        local lines = vim.split(diff.change, '\n', { trimempty = false })
-        local end_pos = diff.start_line + #lines - 1
-
-        -- Update the source buffer with the change
-        vim.api.nvim_buf_set_lines(diff.bufnr, diff.start_line - 1, diff.end_line, false, lines)
-
-        -- Update visual selection marks to the diff start/end and move cursor
-        vim.api.nvim_win_set_cursor(state.source.winnr, { end_pos, 0 })
-        vim.api.nvim_buf_set_mark(diff.bufnr, '<', diff.start_line, 0, {})
-        vim.api.nvim_buf_set_mark(diff.bufnr, '>', end_pos, 0, {})
-        state.selection = get_selection()
-        M.highlight_selection()
+        apply_diff(get_diff())
       end)
 
       map_key(M.config.mappings.yank_diff, bufnr, function()
