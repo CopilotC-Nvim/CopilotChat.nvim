@@ -1,8 +1,7 @@
 ---@class CopilotChat.copilot.embed
+---@field content string
 ---@field filename string
 ---@field filetype string
----@field prompt string?
----@field content string?
 
 ---@class CopilotChat.copilot.ask.opts
 ---@field selection CopilotChat.config.selection?
@@ -304,10 +303,9 @@ local function generate_embedding_request(inputs, model)
     dimensions = 512,
     input = vim.tbl_map(function(input)
       local out = ''
-      if input.prompt then
-        out = input.prompt .. '\n'
-      end
-      if input.content then
+      if input.filetype == 'raw' then
+        out = input.content .. '\n'
+      else
         out = out
           .. string.format(
             'File: `%s`\n```%s\n%s\n```',
