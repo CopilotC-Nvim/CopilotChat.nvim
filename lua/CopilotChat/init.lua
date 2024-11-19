@@ -114,22 +114,30 @@ local function get_diff()
 
   if bufnr and utils.buf_valid(bufnr) then
     local header = section[change_start - 2]
-    local header_filename, header_start_line, header_end_line =
-      header and header:match('%[file:.+%]%((.+)%) line:(%d+)-(%d+)') or nil, nil, nil
-    if header_filename and header_start_line and header_end_line then
-      header_filename = vim.fn.fnamemodify(header_filename, ':p')
-      header_start_line = tonumber(header_start_line) or 1
-      header_end_line = tonumber(header_end_line) or header_start_line
 
-      start_line = header_start_line
-      end_line = header_end_line
+    if header then
+      local header_filename, header_start_line, header_end_line =
+        header:match('%[file:.+%]%((.+)%) line:(%d+)-(%d+)')
+      if not header_filename then
+        header_filename, header_start_line, header_end_line =
+          header:match('%[file:(.+)%]% line:(%d+)-(%d+)')
+      end
 
-      if vim.fn.fnamemodify(filename, ':p') ~= header_filename then
-        filename = header_filename
-        bufnr = nil -- Disable buffer updates
-      else
-        reference =
-          table.concat(vim.api.nvim_buf_get_lines(bufnr, start_line - 1, end_line, false), '\n')
+      if header_filename and header_start_line and header_end_line then
+        header_filename = vim.fn.fnamemodify(header_filename, ':p')
+        header_start_line = tonumber(header_start_line) or 1
+        header_end_line = tonumber(header_end_line) or header_start_line
+
+        start_line = header_start_line
+        end_line = header_end_line
+
+        if vim.fn.fnamemodify(filename, ':p') ~= header_filename then
+          filename = header_filename
+          bufnr = nil -- Disable buffer updates
+        else
+          reference =
+            table.concat(vim.api.nvim_buf_get_lines(bufnr, start_line - 1, end_line, false), '\n')
+        end
       end
     end
   else
