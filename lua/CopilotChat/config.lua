@@ -90,6 +90,7 @@ local select = require('CopilotChat.select')
 ---@field highlight_headers boolean?
 ---@field history_path string?
 ---@field callback fun(response: string, source: CopilotChat.config.source)?
+---@field agents table<string, table>?
 ---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
 ---@field contexts table<string, CopilotChat.config.context>?
 ---@field prompts table<string, CopilotChat.config.prompt|string>?
@@ -124,6 +125,7 @@ return {
 
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
   callback = nil, -- Callback to use when ask response is received
+  agents = nil, -- default per agent configuration
 
   -- default selection
   selection = function(source)

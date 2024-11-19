@@ -10,6 +10,7 @@
 ---@field model string?
 ---@field agent string?
 ---@field temperature number?
+---@field extra_body table?
 ---@field on_progress nil|fun(response: string):nil
 
 ---@class CopilotChat.copilot.embed.opts
@@ -707,18 +708,22 @@ function Copilot:ask(prompt, opts)
     full_response = full_response .. content
   end
 
-  local body = vim.json.encode(
-    generate_ask_request(
-      self.history,
-      prompt,
-      system_prompt,
-      generated_messages,
-      model,
-      temperature,
-      max_output_tokens,
-      not vim.startswith(model, 'o1')
-    )
+  local request = generate_ask_request(
+    self.history,
+    prompt,
+    system_prompt,
+    generated_messages,
+    model,
+    temperature,
+    max_output_tokens,
+    not vim.startswith(model, 'o1')
   )
+
+  if opts.extra_body then
+    request = vim.tbl_extend('force', request, opts.extra_body)
+  end
+
+  local body = vim.json.encode(request)
 
   if vim.startswith(model, 'claude') then
     self:enable_claude()

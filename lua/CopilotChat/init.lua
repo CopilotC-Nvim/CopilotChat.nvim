@@ -637,6 +637,7 @@ function M.ask(prompt, config)
         model = selected_model,
         agent = selected_agent,
         temperature = config.temperature,
+        extra_body = config.agents and selected_agent and config.agents[selected_agent],
         on_progress = function(token)
           vim.schedule(function()
             state.chat:append(token)

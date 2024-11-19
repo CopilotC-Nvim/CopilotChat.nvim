@@ -222,6 +222,18 @@ Default "noop" agent is `copilot`.
 For more information about extension agents, see [here](https://docs.github.com/en/copilot/using-github-copilot/using-extensions-to-integrate-external-tools-with-copilot-chat)  
 You can install more agents from [here](https://github.com/marketplace?type=apps&copilot_app=true)
 
+You can optionally define extra per-agent configuration like this:
+
+```lua
+{
+  agents = {
+    perplexityai = {
+      model = 'llama-3.1-sonar-huge-128k-online'
+    },
+  }
+}
+```
+
 ### Contexts
 
 Contexts are used to determine the context of the chat.  
@@ -411,6 +423,7 @@ Also see [here](/lua/CopilotChat/config.lua):
 
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
   callback = nil, -- Callback to use when ask response is received
+  agents = nil, -- default per agent configuration
 
   -- default selection
   selection = function(source)
