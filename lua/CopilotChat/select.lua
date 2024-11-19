@@ -1,3 +1,5 @@
+local utils = require('CopilotChat.utils')
+
 local M = {}
 
 local function get_diagnostics_in_range(bufnr, start_line, end_line)
@@ -169,6 +171,11 @@ function M.clipboard()
   return {
     lines = lines,
   }
+end
+
+function M.gitdiff()
+  utils.deprecated('selection.gitdiff', 'context.gitdiff')
+  return nil
 end
 
 return M
