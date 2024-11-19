@@ -1121,7 +1121,7 @@ function M.setup(config)
           return
         end
 
-        state.system_prompt:show(prompt .. '\n', 'markdown', state.chat.winnr)
+        state.system_prompt:show(prompt .. '\n\n', 'markdown', state.chat.winnr)
       end)
 
       map_key(M.config.mappings.show_user_selection, bufnr, function()
@@ -1130,7 +1130,7 @@ function M.setup(config)
         end
 
         state.user_selection:show(
-          state.selection.content .. '\n',
+          state.selection.content .. '\n\n',
           state.selection.filetype,
           state.chat.winnr
         )
