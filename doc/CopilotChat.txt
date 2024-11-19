@@ -555,6 +555,9 @@ Also see here </lua/CopilotChat/config.lua>:
         jump_to_diff = {
           normal = 'gj',
         },
+        quickfix_diffs = {
+          normal = 'gq',
+        },
         yank_diff = {
           normal = 'gy',
           register = '"',
