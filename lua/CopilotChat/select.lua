@@ -32,51 +32,27 @@ local function get_diagnostics_in_range(bufnr, start_line, end_line)
   return #range_diagnostics > 0 and range_diagnostics or nil
 end
 
---- Get selected lines
---- @param bufnr number
---- @param start_line number
---- @param start_col number
---- @param finish_line number
---- @param finish_col number
---- @param full_line boolean
+--- Select and process current visual selection
+--- @param source CopilotChat.config.source
 --- @return CopilotChat.config.selection|nil
-local function get_selection_lines(bufnr, start_line, start_col, finish_line, finish_col, full_line)
+function M.visual(source)
+  local bufnr = source.bufnr
+
+  local start_line = unpack(vim.api.nvim_buf_get_mark(bufnr, '<'))
+  local finish_line = unpack(vim.api.nvim_buf_get_mark(bufnr, '>'))
+
   -- Exit if no actual selection
-  if start_line == finish_line and start_col == finish_col then
+  if start_line == finish_line then
     return nil
   end
 
-  -- Get line lengths before swapping
-  local function get_line_length(line)
-    return #vim.api.nvim_buf_get_lines(bufnr, line - 1, line, false)[1]
-  end
-
   -- Swap positions if selection is backwards
-  if start_line > finish_line or (start_line == finish_line and start_col > finish_col) then
+  if start_line > finish_line then
     start_line, finish_line = finish_line, start_line
-    start_col, finish_col = finish_col, start_col
   end
-
-  -- Handle full line selection
-  if full_line then
-    start_col = 1
-    finish_col = get_line_length(finish_line)
-  end
-
-  -- Ensure columns are within valid bounds
-  start_col = math.max(1, math.min(start_col, get_line_length(start_line)))
-  finish_col = math.max(start_col, math.min(finish_col, get_line_length(finish_line)))
 
   -- Get selected text
-  local ok, lines = pcall(
-    vim.api.nvim_buf_get_text,
-    bufnr,
-    start_line - 1,
-    start_col - 1,
-    finish_line - 1,
-    finish_col,
-    {}
-  )
+  local ok, lines = pcall(vim.api.nvim_buf_get_lines, bufnr, start_line - 1, finish_line, false)
   if not ok then
     return nil
   end
@@ -94,19 +70,6 @@ local function get_selection_lines(bufnr, start_line, start_col, finish_line, fi
     end_line = finish_line,
     bufnr = bufnr,
   }
-end
-
---- Select and process current visual selection
---- @param source CopilotChat.config.source
---- @return CopilotChat.config.selection|nil
-function M.visual(source)
-  local bufnr = source.bufnr
-
-  local start_line, start_col = unpack(vim.api.nvim_buf_get_mark(bufnr, '<'))
-  local finish_line, finish_col = unpack(vim.api.nvim_buf_get_mark(bufnr, '>'))
-  start_col = start_col + 1
-  finish_col = finish_col + 1
-  return get_selection_lines(bufnr, start_line, start_col, finish_line, finish_col, false)
 end
 
 --- Select and process whole buffer
