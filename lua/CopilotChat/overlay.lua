@@ -2,7 +2,7 @@
 ---@field bufnr number
 ---@field valid fun(self: CopilotChat.Overlay)
 ---@field validate fun(self: CopilotChat.Overlay)
----@field show fun(self: CopilotChat.Overlay, text: string, filetype: string, winnr: number)
+---@field show fun(self: CopilotChat.Overlay, text: string, filetype: string?, winnr: number)
 ---@field restore fun(self: CopilotChat.Overlay, winnr: number, bufnr: number)
 ---@field delete fun(self: CopilotChat.Overlay)
 ---@field show_help fun(self: CopilotChat.Overlay, msg: string, offset: number)
@@ -47,6 +47,7 @@ function Overlay:show(text, filetype, winnr, syntax)
   self:show_help(self.help, -1)
   vim.api.nvim_win_set_cursor(winnr, { vim.api.nvim_buf_line_count(self.bufnr), 0 })
 
+  filetype = filetype or 'text'
   syntax = syntax or filetype
 
   -- Dual mode with treesitter (for diffs for example)

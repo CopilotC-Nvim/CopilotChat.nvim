@@ -7,22 +7,19 @@ local select = require('CopilotChat.select')
 --- @field winnr number
 
 ---@class CopilotChat.config.selection.diagnostic
----@field message string
+---@field content string
+---@field start_line number
+---@field end_line number
 ---@field severity string
----@field start_row number
----@field start_col number
----@field end_row number
----@field end_col number
 
 ---@class CopilotChat.config.selection
----@field lines string
----@field diagnostics table<CopilotChat.config.selection.diagnostic>?
+---@field content string
+---@field start_line number?
+---@field end_line number?
 ---@field filename string?
 ---@field filetype string?
----@field start_row number?
----@field start_col number?
----@field end_row number?
----@field end_col number?
+---@field bufnr number?
+---@field diagnostics table<CopilotChat.config.selection.diagnostic>?
 
 ---@class CopilotChat.config.context
 ---@field description string?
