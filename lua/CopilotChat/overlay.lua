@@ -24,9 +24,7 @@ local Overlay = class(function(self, name, help, on_buf_create)
 end)
 
 function Overlay:valid()
-  return self.bufnr
-    and vim.api.nvim_buf_is_valid(self.bufnr)
-    and vim.api.nvim_buf_is_loaded(self.bufnr)
+  return utils.buf_valid(self.bufnr)
 end
 
 function Overlay:validate()

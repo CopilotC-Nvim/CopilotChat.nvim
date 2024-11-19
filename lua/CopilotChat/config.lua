@@ -1,6 +1,7 @@
 local prompts = require('CopilotChat.prompts')
 local context = require('CopilotChat.context')
 local select = require('CopilotChat.select')
+local utils = require('CopilotChat.utils')
 
 --- @class CopilotChat.config.source
 --- @field bufnr number
@@ -141,7 +142,7 @@ return {
               return { id = buf, name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ':p:.') }
             end,
             vim.tbl_filter(function(buf)
-              return vim.api.nvim_buf_is_loaded(buf) and vim.fn.buflisted(buf) == 1
+              return utils.buf_valid(buf) and vim.fn.buflisted(buf) == 1
             end, vim.api.nvim_list_bufs())
           ),
           {
@@ -173,7 +174,7 @@ return {
         return vim.tbl_map(
           context.buffer,
           vim.tbl_filter(function(b)
-            return vim.api.nvim_buf_is_loaded(b)
+            return utils.buf_valid(b)
               and vim.fn.buflisted(b) == 1
               and (input == 'listed' or #vim.fn.win_findbuf(b) > 0)
           end, vim.api.nvim_list_bufs())

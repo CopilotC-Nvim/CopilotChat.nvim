@@ -189,4 +189,11 @@ function M.debounce(fn, delay)
   M.timer = vim.defer_fn(fn, delay)
 end
 
+--- Check if a buffer is valid
+---@param bufnr number? The buffer number
+---@return boolean
+function M.buf_valid(bufnr)
+  return bufnr and vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_is_loaded(bufnr) or false
+end
+
 return M

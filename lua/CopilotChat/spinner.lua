@@ -37,11 +37,7 @@ function Spinner:start()
     0,
     100,
     vim.schedule_wrap(function()
-      if
-        not vim.api.nvim_buf_is_valid(self.bufnr)
-        or not vim.api.nvim_buf_is_loaded(self.bufnr)
-        or not self.timer
-      then
+      if not utils.buf_valid(self.bufnr) or not self.timer then
         self:finish()
         return
       end
