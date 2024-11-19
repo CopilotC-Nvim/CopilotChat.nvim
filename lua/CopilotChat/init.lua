@@ -112,7 +112,7 @@ end
 --- Updates the selection based on previous window
 local function update_selection()
   local prev_winnr = vim.fn.win_getid(vim.fn.winnr('#'))
-  if prev_winnr ~= state.chat.winnr then
+  if prev_winnr ~= state.chat.winnr and vim.fn.win_gettype(prev_winnr) == '' then
     state.source = {
       bufnr = vim.api.nvim_win_get_buf(prev_winnr),
       winnr = prev_winnr,
@@ -137,6 +137,28 @@ local function update_selection()
   highlight_selection()
 end
 
+---@return string?, number?, number?
+local function match_header(header)
+  if not header then
+    return
+  end
+
+  local header_filename, header_start_line, header_end_line =
+    header:match('%[file:.+%]%((.+)%) line:(%d+)-(%d+)')
+  if not header_filename then
+    header_filename, header_start_line, header_end_line =
+      header:match('%[file:(.+)%] line:(%d+)-(%d+)')
+  end
+
+  if header_filename then
+    header_filename = vim.fn.fnamemodify(header_filename, ':p:.')
+    header_start_line = tonumber(header_start_line) or 1
+    header_end_line = tonumber(header_end_line) or header_start_line
+  end
+
+  return header_filename, header_start_line, header_end_line
+end
+
 ---@return CopilotChat.Diff.diff|nil
 local function get_diff()
   local chat_lines = vim.api.nvim_buf_get_lines(state.chat.bufnr, 0, -1, false)
@@ -153,20 +175,7 @@ local function get_diff()
 
   -- Try to get header info first
   local header = section[change_start - 2]
-  local header_filename, header_start_line, header_end_line
-  if header then
-    header_filename, header_start_line, header_end_line =
-      header:match('%[file:.+%]%((.+)%) line:(%d+)-(%d+)')
-    if not header_filename then
-      header_filename, header_start_line, header_end_line =
-        header:match('%[file:(.+)%] line:(%d+)-(%d+)')
-    end
-    if header_filename then
-      header_filename = vim.fn.fnamemodify(header_filename, ':p:.')
-      header_start_line = tonumber(header_start_line) or 1
-      header_end_line = tonumber(header_end_line) or header_start_line
-    end
-  end
+  local header_filename, header_start_line, header_end_line = match_header(header)
 
   -- Initialize variables with selection if available
   local reference = state.selection and state.selection.content
@@ -1095,6 +1104,80 @@ function M.setup(config)
         pcall(vim.api.nvim_buf_set_mark, diff_bufnr, '<', diff.start_line, 0, {})
         pcall(vim.api.nvim_buf_set_mark, diff_bufnr, '>', diff.end_line, 0, {})
         update_selection()
+      end)
+
+      map_key(M.config.mappings.quickfix_diffs, bufnr, function()
+        local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+        local items = {}
+        local in_block = false
+        local block_start = 0
+        local filetype = ''
+        local in_answer = false
+        local last_header = nil
+
+        for i, line in ipairs(chat_lines) do
+          -- Track if we're in an AI response section
+          if line:match(M.config.answer_header .. M.config.separator .. '$') then
+            in_answer = true
+          elseif line:match(M.config.question_header .. M.config.separator .. '$') then
+            in_answer = false
+          end
+
+          -- Only process code blocks in AI responses
+          if in_answer then
+            -- Try to capture markdown header with file info
+            local filename, start_line, end_line = match_header(line)
+            if filename then
+              last_header = {
+                filename = filename,
+                start_line = start_line,
+                end_line = end_line,
+              }
+            end
+
+            if line:match('^```%w+$') then
+              in_block = true
+              block_start = i + 1
+              filetype = line:match('^```(%w+)$')
+            elseif line == '```' and in_block then
+              in_block = false
+              local item = {
+                bufnr = bufnr,
+                lnum = block_start,
+                end_lnum = i - 1,
+              }
+
+              if last_header then
+                item.text = string.format(
+                  '%s [lines %d-%d]',
+                  last_header.filename,
+                  last_header.start_line,
+                  last_header.end_line
+                )
+              elseif
+                state.selection
+                and state.selection.filename
+                and state.selection.start_line
+                and state.selection.end_line
+              then
+                item.text = string.format(
+                  '%s [lines %d-%d]',
+                  state.selection.filename,
+                  state.selection.start_line,
+                  state.selection.end_line
+                )
+              else
+                item.text = string.format('Code block (%s)', filetype)
+              end
+
+              table.insert(items, item)
+              last_header = nil
+            end
+          end
+        end
+
+        vim.fn.setqflist(items)
+        vim.cmd('copen')
       end)
 
       map_key(M.config.mappings.yank_diff, bufnr, function()

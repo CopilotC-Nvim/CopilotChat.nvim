@@ -61,6 +61,7 @@ local utils = require('CopilotChat.utils')
 ---@field toggle_sticky CopilotChat.config.mapping?
 ---@field accept_diff CopilotChat.config.mapping?
 ---@field jump_to_diff CopilotChat.config.mapping?
+---@field quickfix_diffs CopilotChat.config.mapping?
 ---@field yank_diff CopilotChat.config.mapping?
 ---@field show_diff CopilotChat.config.mapping?
 ---@field show_system_prompt CopilotChat.config.mapping?
@@ -332,6 +333,9 @@ return {
     },
     jump_to_diff = {
       normal = 'gj',
+    },
+    quickfix_diffs = {
+      normal = 'gq',
     },
     yank_diff = {
       normal = 'gy',
