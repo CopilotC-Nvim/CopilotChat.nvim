@@ -76,19 +76,63 @@ local function update_prompts(prompt, system_prompt)
   return system_prompt, result
 end
 
----@return CopilotChat.config.selection|nil
-local function get_selection()
-  local bufnr = state.source.bufnr
-  local winnr = state.source.winnr
+--- Updates the selection based on previous window
+local function update_selection()
+  local prev_winnr = vim.fn.win_getid(vim.fn.winnr('#'))
+  if prev_winnr ~= state.chat.winnr then
+    state.source = {
+      bufnr = vim.api.nvim_win_get_buf(prev_winnr),
+      winnr = prev_winnr,
+    }
+  end
+
+  local bufnr = state.source and state.source.bufnr
+  local winnr = state.source and state.source.winnr
+
   if
     state.config
     and state.config.selection
     and utils.buf_valid(bufnr)
+    and winnr
     and vim.api.nvim_win_is_valid(winnr)
   then
-    return state.config.selection(state.source)
+    state.selection = state.config.selection(state.source)
+  else
+    state.selection = nil
   end
-  return nil
+end
+
+--- Highlights the selection in the source buffer.
+---@param clear? boolean
+local function highlight_selection(clear)
+  local selection_ns = vim.api.nvim_create_namespace('copilot-chat-selection')
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    vim.api.nvim_buf_clear_namespace(buf, selection_ns, 0, -1)
+  end
+
+  if clear then
+    return
+  end
+
+  if
+    not state.selection
+    or not utils.buf_valid(state.selection.bufnr)
+    or not state.selection.start_line
+  then
+    return
+  end
+
+  vim.api.nvim_buf_set_extmark(
+    state.selection.bufnr,
+    selection_ns,
+    state.selection.start_line - 1,
+    0,
+    {
+      hl_group = 'CopilotChatSelection',
+      end_row = state.selection.end_line,
+      strict = false,
+    }
+  )
 end
 
 ---@return CopilotChat.Diff.diff|nil
@@ -171,8 +215,8 @@ local function apply_diff(diff)
   vim.api.nvim_win_set_cursor(state.source.winnr, { end_pos, 0 })
   vim.api.nvim_buf_set_mark(diff.bufnr, '<', diff.start_line, 0, {})
   vim.api.nvim_buf_set_mark(diff.bufnr, '>', end_pos, 0, {})
-  state.selection = get_selection()
-  M.highlight_selection()
+  update_selection()
+  highlight_selection()
 end
 
 local function finish(config, message, hide_help, start_of_chat)
@@ -433,57 +477,17 @@ function M.prompts(skip_system)
   return prompts_to_use
 end
 
---- Highlights the selection in the source buffer.
----@param clear? boolean
-function M.highlight_selection(clear)
-  local selection_ns = vim.api.nvim_create_namespace('copilot-chat-selection')
-  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    vim.api.nvim_buf_clear_namespace(buf, selection_ns, 0, -1)
-  end
-  if clear then
-    return
-  end
-  if
-    not state.selection
-    or not utils.buf_valid(state.selection.bufnr)
-    or not state.selection.start_line
-  then
-    return
-  end
-
-  vim.api.nvim_buf_set_extmark(
-    state.selection.bufnr,
-    selection_ns,
-    state.selection.start_line - 1,
-    0,
-    {
-      hl_group = 'CopilotChatSelection',
-      end_row = state.selection.end_line,
-      strict = false,
-    }
-  )
-end
-
 --- Open the chat window.
 ---@param config CopilotChat.config|CopilotChat.config.prompt|nil
 function M.open(config)
   -- If we are already in chat window, do nothing
   if state.chat:active() then
-    state.selection = get_selection()
     return
   end
 
   config = vim.tbl_deep_extend('force', M.config, config or {})
   state.config = config
-
-  -- Save the source buffer and window (e.g the buffer we are currently asking about)
-  state.source = {
-    bufnr = vim.api.nvim_get_current_buf(),
-    winnr = vim.api.nvim_get_current_win(),
-  }
-
   utils.return_to_normal_mode()
-  state.selection = get_selection()
   state.chat:open(config)
   state.chat:follow()
   state.chat:focus()
@@ -1069,16 +1073,16 @@ function M.setup(config)
       end)
 
       vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
-        buffer = state.chat.bufnr,
+        buffer = bufnr,
         callback = function(ev)
           local is_enter = ev.event == 'BufEnter'
 
           if is_enter then
-            state.selection = get_selection()
+            update_selection()
           end
 
           if state.config.highlight_selection then
-            M.highlight_selection(not is_enter)
+            highlight_selection(not is_enter)
           end
         end,
       })
