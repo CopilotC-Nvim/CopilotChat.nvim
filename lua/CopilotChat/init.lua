@@ -1090,8 +1090,10 @@ function M.setup(config)
         -- Open the buffer in the source window and move cursor
         vim.api.nvim_win_set_buf(state.source.winnr, diff_bufnr)
         vim.api.nvim_win_set_cursor(state.source.winnr, { diff.start_line, 0 })
-        vim.api.nvim_buf_set_mark(diff_bufnr, '<', diff.start_line, 0, {})
-        vim.api.nvim_buf_set_mark(diff_bufnr, '>', diff.end_line, 0, {})
+
+        -- Set the marks for visual selection and update selection
+        pcall(vim.api.nvim_buf_set_mark, diff_bufnr, '<', diff.start_line, 0, {})
+        pcall(vim.api.nvim_buf_set_mark, diff_bufnr, '>', diff.end_line, 0, {})
         update_selection()
       end)
 
