@@ -241,23 +241,21 @@ function Chat:open(config)
 end
 
 function Chat:close(bufnr)
-  if self.spinner then
-    self.spinner:finish()
+  if not self:visible() then
+    return
   end
 
-  if self:visible() then
-    if self:active() then
-      utils.return_to_normal_mode()
-    end
-
-    if self.layout == 'replace' then
-      self:restore(self.winnr, bufnr)
-    else
-      vim.api.nvim_win_close(self.winnr, true)
-    end
-
-    self.winnr = nil
+  if self:active() then
+    utils.return_to_normal_mode()
   end
+
+  if self.layout == 'replace' then
+    self:restore(self.winnr, bufnr)
+  else
+    vim.api.nvim_win_close(self.winnr, true)
+  end
+
+  self.winnr = nil
 end
 
 function Chat:focus()
