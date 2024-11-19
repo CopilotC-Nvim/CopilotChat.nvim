@@ -69,6 +69,7 @@ function M.visual(source)
     start_line = start_line,
     end_line = finish_line,
     bufnr = bufnr,
+    diagnostics = get_diagnostics_in_range(bufnr, start_line, finish_line)
   }
 end
 
