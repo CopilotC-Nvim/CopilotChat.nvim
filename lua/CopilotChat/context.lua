@@ -289,13 +289,14 @@ function M.filter_embeddings(copilot, prompt, embeddings)
   end
 
   table.insert(embeddings, 1, {
-    prompt = prompt,
+    content = prompt,
     filename = 'prompt',
+    filetype = 'raw',
   })
 
   -- Get embeddings from outlines
   local embedded_data = copilot:embed(vim.tbl_map(function(embed)
-    if embed.content then
+    if embed.filetype ~= 'raw' then
       return M.outline(embed.content, embed.filename, embed.filetype)
     end
 
@@ -303,7 +304,7 @@ function M.filter_embeddings(copilot, prompt, embeddings)
   end, embeddings))
 
   -- Rate embeddings by relatedness to the query
-  local ranked_data = data_ranked_by_relatedness(table.remove(embedded_data, 1), out, 20)
+  local ranked_data = data_ranked_by_relatedness(table.remove(embedded_data, 1), embedded_data, 20)
   log.debug('Ranked data:', #ranked_data)
   for i, item in ipairs(ranked_data) do
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
