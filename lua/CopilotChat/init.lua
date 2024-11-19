@@ -303,6 +303,10 @@ local function trigger_complete()
   end
 
   M.complete_items(function(items)
+    if vim.fn.mode() ~= 'i' then
+      return
+    end
+
     vim.fn.complete(
       cmp_start + 1,
       vim.tbl_filter(function(item)
