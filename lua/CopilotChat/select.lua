@@ -2,6 +2,11 @@ local utils = require('CopilotChat.utils')
 
 local M = {}
 
+--- Get diagnostics in a given range
+--- @param bufnr number
+--- @param start_line number
+--- @param end_line number
+--- @return table<CopilotChat.config.selection.diagnostic>|nil
 local function get_diagnostics_in_range(bufnr, start_line, end_line)
   local diagnostics = vim.diagnostic.get(bufnr)
   local range_diagnostics = {}
@@ -16,12 +21,10 @@ local function get_diagnostics_in_range(bufnr, start_line, end_line)
     local lnum = diagnostic.lnum + 1
     if lnum >= start_line and lnum <= end_line then
       table.insert(range_diagnostics, {
-        message = diagnostic.message,
         severity = severity[diagnostic.severity],
-        start_row = lnum,
-        start_col = diagnostic.col + 1,
-        end_row = lnum,
-        end_col = diagnostic.end_col and (diagnostic.end_col + 1) or diagnostic.col + 1,
+        content = diagnostic.message,
+        start_line = lnum,
+        end_line = diagnostic.end_lnum and diagnostic.end_lnum + 1 or lnum,
       })
     end
   end
@@ -29,6 +32,14 @@ local function get_diagnostics_in_range(bufnr, start_line, end_line)
   return #range_diagnostics > 0 and range_diagnostics or nil
 end
 
+--- Get selected lines
+--- @param bufnr number
+--- @param start_line number
+--- @param start_col number
+--- @param finish_line number
+--- @param finish_col number
+--- @param full_line boolean
+--- @return CopilotChat.config.selection|nil
 local function get_selection_lines(bufnr, start_line, start_col, finish_line, finish_col, full_line)
   -- Exit if no actual selection
   if start_line == finish_line and start_col == finish_col then
@@ -76,11 +87,12 @@ local function get_selection_lines(bufnr, start_line, start_col, finish_line, fi
   end
 
   return {
-    lines = lines_content,
-    start_row = start_line,
-    start_col = start_col,
-    end_row = finish_line,
-    end_col = finish_col,
+    content = lines_content,
+    filename = vim.api.nvim_buf_get_name(bufnr),
+    filetype = vim.bo[bufnr].filetype,
+    start_line = start_line,
+    end_line = finish_line,
+    bufnr = bufnr,
   }
 end
 
@@ -109,14 +121,15 @@ function M.buffer(source)
   end
 
   local out = {
-    lines = table.concat(lines, '\n'),
-    start_row = 1,
-    start_col = 1,
-    end_row = #lines,
-    end_col = #lines[#lines],
+    content = table.concat(lines, '\n'),
+    filename = vim.api.nvim_buf_get_name(bufnr),
+    filetype = vim.bo[bufnr].filetype,
+    start_line = 1,
+    end_line = #lines,
+    bufnr = bufnr,
   }
 
-  out.diagnostics = get_diagnostics_in_range(bufnr, out.start_row, out.end_row)
+  out.diagnostics = get_diagnostics_in_range(bufnr, out.start_line, out.end_line)
   return out
 end
 
@@ -134,14 +147,15 @@ function M.line(source)
   end
 
   local out = {
-    lines = line,
-    start_row = cursor[1],
-    start_col = 1,
-    end_row = cursor[1],
-    end_col = #line,
+    content = line,
+    filename = vim.api.nvim_buf_get_name(bufnr),
+    filetype = vim.bo[bufnr].filetype,
+    start_line = cursor[1],
+    end_line = cursor[1],
+    bufnr = bufnr,
   }
 
-  out.diagnostics = get_diagnostics_in_range(bufnr, out.start_row, out.end_row)
+  out.diagnostics = get_diagnostics_in_range(bufnr, out.start_line, out.end_line)
   return out
 end
 
@@ -155,7 +169,8 @@ function M.unnamed()
   end
 
   return {
-    lines = lines,
+    content = lines,
+    filename = 'unnamed',
   }
 end
 
@@ -169,7 +184,8 @@ function M.clipboard()
   end
 
   return {
-    lines = lines,
+    content = lines,
+    filename = 'clipboard',
   }
 end
 

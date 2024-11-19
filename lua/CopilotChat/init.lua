@@ -15,28 +15,32 @@ local plugin_name = 'CopilotChat.nvim'
 
 --- @class CopilotChat.state
 --- @field copilot CopilotChat.Copilot?
---- @field chat CopilotChat.Chat?
 --- @field source CopilotChat.config.source?
+--- @field selection CopilotChat.config.selection?
 --- @field config CopilotChat.config?
 --- @field last_system_prompt string?
 --- @field last_prompt string?
 --- @field last_response string?
+--- @field chat CopilotChat.Chat?
 --- @field diff CopilotChat.Diff?
 --- @field system_prompt CopilotChat.Overlay?
 --- @field user_selection CopilotChat.Overlay?
 --- @field help CopilotChat.Overlay?
 local state = {
   copilot = nil,
-  chat = nil,
+
+  -- Current state tracking
   source = nil,
+  selection = nil,
   config = nil,
 
-  -- State tracking
+  -- Last state tracking
   last_system_prompt = nil,
   last_prompt = nil,
   last_response = nil,
 
   -- Overlays
+  chat = nil,
   diff = nil,
   system_prompt = nil,
   user_selection = nil,
@@ -72,6 +76,7 @@ local function update_prompts(prompt, system_prompt)
   return system_prompt, result
 end
 
+---@return CopilotChat.config.selection|nil
 local function get_selection()
   local bufnr = state.source.bufnr
   local winnr = state.source.winnr
@@ -81,11 +86,12 @@ local function get_selection()
     and vim.api.nvim_buf_is_valid(bufnr)
     and vim.api.nvim_win_is_valid(winnr)
   then
-    return state.config.selection(state.source) or {}
+    return state.config.selection(state.source)
   end
-  return {}
+  return nil
 end
 
+---@return CopilotChat.Diff.diff|nil
 local function get_diff()
   local chat_lines = vim.api.nvim_buf_get_lines(state.chat.bufnr, 0, -1, false)
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
@@ -93,37 +99,50 @@ local function get_diff()
     utils.find_lines(chat_lines, current_line, M.config.separator .. '$')
   local change, change_start =
     utils.find_lines(section, current_line - section_start, '^```%w+$', '^```$')
-  local selection = get_selection()
 
-  local reference = nil
-  local start_line = nil
-  local end_line = nil
-  local filetype = nil
-
-  if selection then
-    reference = selection.lines
-    start_line = selection.start_row
-    end_line = selection.end_row
-    filetype = selection.filetype
+  -- If we do not have selection or change there is no diff
+  if not state.selection or not change or #change == 0 then
+    return
   end
 
-  if #change > 0 then
+  local reference = state.selection.content
+  local start_line = state.selection.start_line
+  local end_line = state.selection.end_line
+  local filename = state.selection.filename or 'unknown'
+  local filetype = state.selection.filetype or 'text'
+  local bufnr = state.selection.bufnr
+
+  if bufnr then
     local header = section[change_start - 2]
-    if header then
-      local header_start_line, header_end_line = header:match('%[file:.+%]%(.+%) line:(%d+)-(%d+)')
-      if header_start_line and header_end_line then
-        start_line = tonumber(header_start_line) or 1
-        end_line = tonumber(header_end_line) or start_line
-        reference = table.concat(
-          vim.api.nvim_buf_get_lines(state.source.bufnr, start_line - 1, end_line, false),
-          '\n'
-        )
+    local header_filename, header_start_line, header_end_line =
+      header and header:match('%[file:.+%]%((.+)%) line:(%d+)-(%d+)') or nil, nil, nil
+    if header_filename and header_start_line and header_end_line then
+      header_filename = vim.fn.fnamemodify(header_filename, ':p')
+      header_start_line = tonumber(header_start_line) or 1
+      header_end_line = tonumber(header_end_line) or header_start_line
+
+      start_line = header_start_line
+      end_line = header_end_line
+
+      if vim.fn.fnamemodify(filename, ':p') ~= header_filename then
+        filename = header_filename
+        bufnr = nil -- Disable buffer updates
+      else
+        reference =
+          table.concat(vim.api.nvim_buf_get_lines(bufnr, start_line - 1, end_line, false), '\n')
       end
     end
   end
 
-  filetype = filetype or vim.bo[state.source.bufnr].filetype or 'text'
-  return table.concat(change, '\n'), reference, start_line, end_line, filetype
+  return {
+    change = table.concat(change, '\n'),
+    reference = reference or '',
+    filename = filename,
+    filetype = filetype or 'text',
+    start_line = start_line,
+    end_line = end_line,
+    bufnr = bufnr,
+  }
 end
 
 local function finish(config, message, hide_help, start_of_chat)
@@ -390,19 +409,18 @@ function M.highlight_selection(clear)
   if clear then
     return
   end
-  local selection = get_selection()
-  if not selection.start_row or not selection.end_row then
+  if not state.selection or not state.selection.start_line or not state.selection.bufnr then
     return
   end
+
   vim.api.nvim_buf_set_extmark(
-    state.source.bufnr,
+    state.selection.bufnr,
     selection_ns,
-    selection.start_row - 1,
-    selection.start_col - 1,
+    state.selection.start_line - 1,
+    0,
     {
       hl_group = 'CopilotChatSelection',
-      end_row = selection.end_row - 1,
-      end_col = selection.end_col,
+      end_row = state.selection.end_line,
       strict = false,
     }
   )
@@ -413,6 +431,7 @@ end
 function M.open(config)
   -- If we are already in chat window, do nothing
   if state.chat:active() then
+    state.selection = get_selection()
     return
   end
 
@@ -426,6 +445,7 @@ function M.open(config)
   }
 
   utils.return_to_normal_mode()
+  state.selection = get_selection()
   state.chat:open(config)
   state.chat:follow()
   state.chat:focus()
@@ -542,16 +562,6 @@ function M.ask(prompt, config)
     '\n'
   )
 
-  local selection = get_selection()
-  local filetype = selection.filetype
-    or (vim.api.nvim_buf_is_valid(state.source.bufnr) and vim.bo[state.source.bufnr].filetype)
-    or 'text'
-  local filename = selection.filename
-    or (vim.api.nvim_buf_is_valid(state.source.bufnr) and vim.api.nvim_buf_get_name(
-      state.source.bufnr
-    ))
-    or 'untitled'
-
   local embedding_map = {}
   local function parse_context(prompt_context)
     local split = vim.split(prompt_context, ':')
@@ -621,10 +631,8 @@ function M.ask(prompt, config)
 
     local ask_ok, response, token_count, token_max_count =
       pcall(state.copilot.ask, state.copilot, prompt, {
-        selection = selection,
+        selection = state.selection,
         embeddings = filtered_embeddings,
-        filename = filename,
-        filetype = filetype,
         system_prompt = system_prompt,
         model = selected_model,
         agent = selected_agent,
@@ -840,17 +848,17 @@ function M.setup(config)
     end)
 
     map_key(M.config.mappings.accept_diff, bufnr, function()
-      local change, _, start_line, end_line = state.diff:get_diff()
-      if not start_line or not end_line or vim.trim(change) == '' then
+      local diff = state.diff:get_diff()
+      if diff or not diff.start_line or not diff.end_line or not diff.bufnr then
         return
       end
 
       vim.api.nvim_buf_set_lines(
-        state.source.bufnr,
-        start_line - 1,
-        end_line,
+        diff.bufnr,
+        diff.start_line - 1,
+        diff.end_line,
         false,
-        vim.split(change, '\n')
+        vim.split(diff.change, '\n')
       )
     end)
   end)
@@ -991,36 +999,41 @@ function M.setup(config)
       end)
 
       map_key(M.config.mappings.accept_diff, bufnr, function()
-        local change, _, start_line, end_line = get_diff()
-        if not start_line or not end_line or vim.trim(change) == '' then
+        local diff = get_diff()
+        if not diff or not diff.start_line or not diff.end_line or not diff.bufnr then
           return
         end
 
-        vim.api.nvim_buf_set_lines(
-          state.source.bufnr,
-          start_line - 1,
-          end_line,
-          false,
-          vim.split(change, '\n')
-        )
+        local lines = vim.split(diff.change, '\n', { trimempty = false })
+        local end_pos = diff.start_line + #lines - 1
+
+        -- Update the source buffer with the change
+        vim.api.nvim_buf_set_lines(diff.bufnr, diff.start_line - 1, diff.end_line, false, lines)
+
+        -- Update visual selection marks to the diff start/end and move cursor
+        vim.api.nvim_win_set_cursor(state.source.winnr, { end_pos, 0 })
+        vim.api.nvim_buf_set_mark(diff.bufnr, '<', diff.start_line, 0, {})
+        vim.api.nvim_buf_set_mark(diff.bufnr, '>', end_pos, 0, {})
+        state.selection = get_selection()
+        M.highlight_selection()
       end)
 
       map_key(M.config.mappings.yank_diff, bufnr, function()
-        local change = get_diff()
-        if vim.trim(change) == '' then
+        local diff = get_diff()
+        if not diff then
           return
         end
 
-        vim.fn.setreg(M.config.mappings.yank_diff.register, change)
+        vim.fn.setreg(M.config.mappings.yank_diff.register, diff.change)
       end)
 
       map_key(M.config.mappings.show_diff, bufnr, function()
-        local change, reference, start_line, end_line, filetype = get_diff()
-        if vim.trim(change) == '' or not reference then
+        local diff = get_diff()
+        if not diff then
           return
         end
 
-        state.diff:show(change, reference, start_line, end_line, filetype, state.chat.winnr)
+        state.diff:show(diff, state.chat.winnr)
       end)
 
       map_key(M.config.mappings.show_system_prompt, bufnr, function()
@@ -1029,31 +1042,32 @@ function M.setup(config)
           return
         end
 
-        prompt = prompt .. '\n' .. M.config.separator .. '\n'
-        state.system_prompt:show(prompt, 'markdown', state.chat.winnr)
+        state.system_prompt:show(prompt .. '\n', 'markdown', state.chat.winnr)
       end)
 
       map_key(M.config.mappings.show_user_selection, bufnr, function()
-        local selection = get_selection()
-        if not selection or not selection.lines then
+        if not state.selection or not state.selection.content then
           return
         end
 
-        local filetype = selection.filetype or vim.bo[state.source.bufnr].filetype
-        local lines = selection.lines
-        if vim.trim(lines) == '' then
-          return
-        end
-
-        lines = lines .. '\n' .. M.config.separator .. '\n'
-        state.user_selection:show(lines, filetype, state.chat.winnr)
+        state.user_selection:show(
+          state.selection.content .. '\n',
+          state.selection.filetype,
+          state.chat.winnr
+        )
       end)
 
       vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
         buffer = state.chat.bufnr,
         callback = function(ev)
+          local is_enter = ev.event == 'BufEnter'
+
+          if is_enter then
+            state.selection = get_selection()
+          end
+
           if state.config.highlight_selection then
-            M.highlight_selection(ev.event == 'BufLeave')
+            M.highlight_selection(not is_enter)
           end
         end,
       })

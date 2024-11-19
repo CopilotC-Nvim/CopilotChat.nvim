@@ -6,10 +6,6 @@
 ---@class CopilotChat.copilot.ask.opts
 ---@field selection CopilotChat.config.selection?
 ---@field embeddings table<CopilotChat.copilot.embed>?
----@field filename string?
----@field filetype string?
----@field start_row number?
----@field end_row number?
 ---@field system_prompt string?
 ---@field model string?
 ---@field agent string?
@@ -141,20 +137,24 @@ local function get_cached_token()
   return nil
 end
 
-local function generate_line_numbers(content, start_row)
+local function generate_line_numbers(content, start_line)
   local lines = vim.split(content, '\n')
   local total_lines = #lines
   local max_length = #tostring(total_lines)
   for i, line in ipairs(lines) do
-    local formatted_line_number = string.format('%' .. max_length .. 'd', i - 1 + (start_row or 1))
+    local formatted_line_number = string.format('%' .. max_length .. 'd', i - 1 + (start_line or 1))
     lines[i] = formatted_line_number .. ': ' .. line
   end
   content = table.concat(lines, '\n')
   return content
 end
 
-local function generate_selection_messages(filename, filetype, selection)
-  local content = selection.lines
+--- Generate messages for the given selection
+--- @param selection CopilotChat.config.selection
+local function generate_selection_messages(selection)
+  local filename = selection.filename or 'unknown'
+  local filetype = selection.filetype or 'text'
+  local content = selection.content
 
   if not content or content == '' then
     return {}
@@ -162,44 +162,35 @@ local function generate_selection_messages(filename, filetype, selection)
 
   local out = string.format('# FILE:%s CONTEXT\n', filename:upper())
   out = out .. "User's active selection:\n"
-  if selection.start_row and selection.start_row > 0 then
+  if selection.start_line and selection.end_line > 0 then
     out = out
       .. string.format(
         'Excerpt from %s, lines %s to %s:\n',
         filename,
-        selection.start_row,
-        selection.end_row
+        selection.start_line,
+        selection.end_line
       )
   end
   out = out
     .. string.format(
       '```%s\n%s\n```',
       filetype,
-      generate_line_numbers(content, selection.start_row)
+      generate_line_numbers(content, selection.start_line)
     )
 
   if selection.diagnostics then
     local diagnostics = {}
     for _, diagnostic in ipairs(selection.diagnostics) do
-      local start_row = diagnostic.start_row
-      local end_row = diagnostic.end_row
-      if start_row == end_row then
-        table.insert(
-          diagnostics,
-          string.format('%s line=%d: %s', diagnostic.severity, start_row, diagnostic.message)
+      table.insert(
+        diagnostics,
+        string.format(
+          '%s line=%d-%d: %s',
+          diagnostic.severity,
+          diagnostic.start_line,
+          diagnostic.end_line,
+          diagnostic.content
         )
-      else
-        table.insert(
-          diagnostics,
-          string.format(
-            '%s line=%d-%d: %s',
-            diagnostic.severity,
-            start_row,
-            end_row,
-            diagnostic.message
-          )
-        )
-      end
+      )
     end
 
     out = out
@@ -214,6 +205,8 @@ local function generate_selection_messages(filename, filetype, selection)
   }
 end
 
+--- Generate messages for the given embeddings
+--- @param embeddings table<CopilotChat.copilot.embed>
 local function generate_embeddings_messages(embeddings)
   local files = {}
   for _, embedding in ipairs(embeddings) do
@@ -314,6 +307,7 @@ local function generate_embedding_request(inputs, model)
             input.content
           )
       end
+
       return out
     end, inputs),
     model = model,
@@ -533,8 +527,6 @@ function Copilot:ask(prompt, opts)
   opts = opts or {}
   prompt = vim.trim(prompt)
   local embeddings = opts.embeddings or {}
-  local filename = opts.filename or ''
-  local filetype = opts.filetype or ''
   local selection = opts.selection or {}
   local system_prompt = vim.trim(opts.system_prompt or prompts.COPILOT_INSTRUCTIONS)
   local model = opts.model or 'gpt-4o-2024-05-13'
@@ -545,11 +537,9 @@ function Copilot:ask(prompt, opts)
   self.current_job = job_id
 
   log.trace('System prompt: ' .. system_prompt)
-  log.trace('Selection: ' .. (selection.lines or ''))
+  log.trace('Selection: ' .. (selection.content or ''))
   log.debug('Prompt: ' .. prompt)
   log.debug('Embeddings: ' .. #embeddings)
-  log.debug('Filename: ' .. filename)
-  log.debug('Filetype: ' .. filetype)
   log.debug('Model: ' .. model)
   log.debug('Agent: ' .. agent)
   log.debug('Temperature: ' .. temperature)
@@ -574,7 +564,7 @@ function Copilot:ask(prompt, opts)
   tiktoken_load(tokenizer)
 
   local generated_messages = {}
-  local selection_messages = generate_selection_messages(filename, filetype, selection)
+  local selection_messages = generate_selection_messages(selection)
   local embeddings_messages = generate_embeddings_messages(embeddings)
   local generated_tokens = 0
   for _, message in ipairs(selection_messages) do
