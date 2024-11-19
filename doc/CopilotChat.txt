@@ -334,13 +334,13 @@ You can define custom selection functions like this:
     {
       selection = function()
         -- Get content from * register
-        local lines = vim.fn.getreg('*')
-        if not lines or lines == '' then
+        local content = vim.fn.getreg('*')
+        if not content or content == '' then
           return nil
         end
     
         return {
-          lines = lines,
+          content = content,
         }
       end
     }
