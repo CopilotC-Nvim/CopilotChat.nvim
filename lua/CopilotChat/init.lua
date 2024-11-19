@@ -120,7 +120,7 @@ local function get_diff()
         header:match('%[file:.+%]%((.+)%) line:(%d+)-(%d+)')
       if not header_filename then
         header_filename, header_start_line, header_end_line =
-          header:match('%[file:(.+)%]% line:(%d+)-(%d+)')
+          header:match('%[file:(.+)%] line:(%d+)-(%d+)')
       end
 
       if header_filename and header_start_line and header_end_line then
