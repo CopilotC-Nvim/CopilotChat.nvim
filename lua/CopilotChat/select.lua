@@ -64,7 +64,7 @@ function M.visual(source)
 
   return {
     content = lines_content,
-    filename = vim.api.nvim_buf_get_name(bufnr),
+    filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ':p:.'),
     filetype = vim.bo[bufnr].filetype,
     start_line = start_line,
     end_line = finish_line,
@@ -86,7 +86,7 @@ function M.buffer(source)
 
   local out = {
     content = table.concat(lines, '\n'),
-    filename = vim.api.nvim_buf_get_name(bufnr),
+    filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ':p:.'),
     filetype = vim.bo[bufnr].filetype,
     start_line = 1,
     end_line = #lines,
@@ -112,7 +112,7 @@ function M.line(source)
 
   local out = {
     content = line,
-    filename = vim.api.nvim_buf_get_name(bufnr),
+    filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ':p:.'),
     filetype = vim.bo[bufnr].filetype,
     start_line = cursor[1],
     end_line = cursor[1],
