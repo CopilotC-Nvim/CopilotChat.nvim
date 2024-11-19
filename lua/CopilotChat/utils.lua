@@ -49,6 +49,26 @@ function M.temp_file(text)
   return temp_file
 end
 
+--- Finds the path to the user's config directory
+---@return string?
+function M.config_path()
+  local config = vim.fn.expand('$XDG_CONFIG_HOME')
+  if config and vim.fn.isdirectory(config) > 0 then
+    return config
+  end
+  if vim.fn.has('win32') > 0 then
+    config = vim.fn.expand('$LOCALAPPDATA')
+    if not config or vim.fn.isdirectory(config) == 0 then
+      config = vim.fn.expand('$HOME/AppData/Local')
+    end
+  else
+    config = vim.fn.expand('$HOME/.config')
+  end
+  if config and vim.fn.isdirectory(config) > 0 then
+    return config
+  end
+end
+
 --- Check if a table is equal to another table
 ---@param a table The first table
 ---@param b table The second table
