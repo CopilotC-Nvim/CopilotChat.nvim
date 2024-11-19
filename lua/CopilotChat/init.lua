@@ -144,54 +144,70 @@ local function get_diff()
   local change, change_start =
     utils.find_lines(section, current_line - section_start, '^```%w+$', '^```$')
 
-  -- If we do not have selection or change there is no diff
-  if not state.selection or not change or #change == 0 then
-    return
+  -- If no change block found, return nil
+  if not change or #change == 0 then
+    return nil
   end
 
-  local reference = state.selection.content
-  local start_line = state.selection.start_line
-  local end_line = state.selection.end_line
-  local filename = state.selection.filename or 'unknown'
-  local filetype = state.selection.filetype or 'text'
-  local bufnr = state.selection.bufnr
+  -- Try to get header info first
+  local header = section[change_start - 2]
+  local header_filename, header_start_line, header_end_line
+  if header then
+    header_filename, header_start_line, header_end_line =
+      header:match('%[file:.+%]%((.+)%) line:(%d+)-(%d+)')
+    if not header_filename then
+      header_filename, header_start_line, header_end_line =
+        header:match('%[file:(.+)%] line:(%d+)-(%d+)')
+    end
+    if header_filename then
+      header_filename = vim.fn.fnamemodify(header_filename, ':p')
+      header_start_line = tonumber(header_start_line) or 1
+      header_end_line = tonumber(header_end_line) or header_start_line
+    end
+  end
 
-  if bufnr and utils.buf_valid(bufnr) then
-    local header = section[change_start - 2]
+  -- Initialize variables with selection if available
+  local reference = state.selection and state.selection.content
+  local start_line = state.selection and state.selection.start_line
+  local end_line = state.selection and state.selection.end_line
+  local filename = state.selection and state.selection.filename
+  local filetype = state.selection and state.selection.filetype
+  local bufnr = state.selection and state.selection.bufnr
 
-    if header then
-      local header_filename, header_start_line, header_end_line =
-        header:match('%[file:.+%]%((.+)%) line:(%d+)-(%d+)')
-      if not header_filename then
-        header_filename, header_start_line, header_end_line =
-          header:match('%[file:(.+)%] line:(%d+)-(%d+)')
-      end
-
-      if header_filename and header_start_line and header_end_line then
-        header_filename = vim.fn.fnamemodify(header_filename, ':p')
-        header_start_line = tonumber(header_start_line) or 1
-        header_end_line = tonumber(header_end_line) or header_start_line
-
-        start_line = header_start_line
-        end_line = header_end_line
-
-        if vim.fn.fnamemodify(filename, ':p') ~= header_filename then
-          filename = header_filename
-          bufnr = nil -- Disable buffer updates
-        else
-          reference =
-            table.concat(vim.api.nvim_buf_get_lines(bufnr, start_line - 1, end_line, false), '\n')
+  -- If we have header info, try to use it
+  if header_filename then
+    -- Try to find matching buffer and window
+    if not bufnr or vim.fn.fnamemodify(filename or '', ':p') ~= header_filename then
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        local win_buf = vim.api.nvim_win_get_buf(win)
+        if vim.fn.fnamemodify(vim.api.nvim_buf_get_name(win_buf), ':p') == header_filename then
+          bufnr = win_buf
+          break
         end
       end
     end
-  else
-    bufnr = nil
+
+    filename = header_filename
+    start_line = header_start_line
+    end_line = header_end_line
+
+    -- If we found a valid buffer, get the reference content
+    if bufnr and utils.buf_valid(bufnr) then
+      reference =
+        table.concat(vim.api.nvim_buf_get_lines(bufnr, start_line - 1, end_line, false), '\n')
+      filetype = vim.bo[bufnr].filetype
+    end
+  end
+
+  -- If we don't have either selection or valid header info, we can't proceed
+  if not start_line or not end_line then
+    return nil
   end
 
   return {
     change = table.concat(change, '\n'),
     reference = reference or '',
-    filename = filename,
+    filename = filename or 'unknown',
     filetype = filetype or 'text',
     start_line = start_line,
     end_line = end_line,
@@ -205,6 +221,11 @@ local function apply_diff(diff)
     return
   end
 
+  local winnr = vim.fn.win_findbuf(diff.bufnr)[1]
+  if not winnr then
+    return
+  end
+
   local lines = vim.split(diff.change, '\n', { trimempty = false })
   local end_pos = diff.start_line + #lines - 1
 
@@ -212,7 +233,7 @@ local function apply_diff(diff)
   vim.api.nvim_buf_set_lines(diff.bufnr, diff.start_line - 1, diff.end_line, false, lines)
 
   -- Update visual selection marks to the diff start/end and move cursor
-  vim.api.nvim_win_set_cursor(state.source.winnr, { end_pos, 0 })
+  vim.api.nvim_win_set_cursor(winnr, { end_pos, 0 })
   vim.api.nvim_buf_set_mark(diff.bufnr, '<', diff.start_line, 0, {})
   vim.api.nvim_buf_set_mark(diff.bufnr, '>', end_pos, 0, {})
   update_selection()
