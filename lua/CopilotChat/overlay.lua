@@ -38,6 +38,8 @@ end
 
 function Overlay:show(text, filetype, winnr, syntax)
   self:validate()
+  text = text .. '\n'
+
   vim.api.nvim_win_set_buf(winnr, self.bufnr)
   vim.bo[self.bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, vim.split(text, '\n'))
