@@ -163,17 +163,17 @@ COMMANDS ~
 
 CHAT MAPPINGS ~
 
-- `<Tab>` - Complete the current input
+- `<Tab>` - Trigger completion menu for special tokens or accept current completion (see help)
 - `q`/`<C-c>` - Close the chat window
-- `<C-l>` - Reset/clear the chat window
+- `<C-l>` - Reset and clear the chat window
 - `<CR>`/`<C-s>` - Submit the current prompt
-- `gr` - Toggle sticky prompt - makes line under cursor sticky or deletes sticky line
-- `<C-y>` - Accept current diff changes
-- `gj` - Jump to buffer that suggested change is modifying (if buffer is not available, it will be created)
-- `gq` - Add all diffs to quickfix list
-- `gy` - Yank current diff to register (default register is `"`)
-- `gd` - Show diff between source and suggested change
-- `gp` - Show system prompt used for the current chat
+- `gr` - Toggle sticky prompt for the line under cursor
+- `<C-y>` - Accept nearest diff (works best with `COPILOT_GENERATE` prompt)
+- `gj` - Jump to section of nearest diff. If in different buffer, jumps there; creates buffer if needed (works best with `COPILOT_GENERATE` prompt)
+- `gq` - Add all diffs from chat to quickfix list
+- `gy` - Yank nearest diff to register (defaults to `"`)
+- `gd` - Show diff between source and nearest diff
+- `gp` - Show system prompt for current chat
 - `gs` - Show current user selection
 - `gh` - Show help message
 
@@ -349,6 +349,12 @@ You can define custom contexts like this:
         }
       }
     }
+<
+
+>markdown
+    > #birthday:user
+    
+    What is my birthday
 <
 
 
