@@ -93,6 +93,7 @@ local utils = require('CopilotChat.utils')
 ---@field highlight_headers boolean?
 ---@field history_path string?
 ---@field callback fun(response: string, source: CopilotChat.config.source)?
+---@field no_chat boolean?
 ---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
 ---@field contexts table<string, CopilotChat.config.context>?
 ---@field prompts table<string, CopilotChat.config.prompt|string>?
@@ -127,6 +128,7 @@ return {
 
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
   callback = nil, -- Callback to use when ask response is received
+  no_chat = false, -- Do not write to chat buffer and use history(useful for using callback for custom processing)
 
   -- default selection
   selection = function(source)

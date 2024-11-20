@@ -10,6 +10,7 @@
 ---@field model string?
 ---@field agent string?
 ---@field temperature number?
+---@field no_history boolean?
 ---@field on_progress nil|fun(response: string):nil
 
 ---@class CopilotChat.copilot.embed.opts
@@ -566,6 +567,7 @@ function Copilot:ask(prompt, opts)
   local model = opts.model or 'gpt-4o-2024-05-13'
   local agent = opts.agent or 'copilot'
   local temperature = opts.temperature or 0.1
+  local no_history = opts.no_history or false
   local on_progress = opts.on_progress
   local job_id = uuid()
   self.current_job = job_id
@@ -578,6 +580,7 @@ function Copilot:ask(prompt, opts)
   log.debug('Agent: ' .. agent)
   log.debug('Temperature: ' .. temperature)
 
+  local history = no_history and {} or self.history
   local models = self:fetch_models()
   local agents = self:fetch_agents()
   local agent_config = agents[agent]
@@ -618,11 +621,11 @@ function Copilot:ask(prompt, opts)
 
   -- Calculate how many tokens we can use for history
   local history_limit = max_tokens - required_tokens - reserved_tokens
-  local history_tokens = count_history_tokens(self.history)
+  local history_tokens = count_history_tokens(history)
 
   -- If we're over history limit, truncate history from the beginning
-  while history_tokens > history_limit and #self.history > 0 do
-    local removed = table.remove(self.history, 1)
+  while history_tokens > history_limit and #history > 0 do
+    local removed = table.remove(history, 1)
     history_tokens = history_tokens - tiktoken.count(removed.content)
   end
 
@@ -740,7 +743,7 @@ function Copilot:ask(prompt, opts)
   local is_stream = not vim.startswith(model, 'o1')
   local body = vim.json.encode(
     generate_ask_request(
-      self.history,
+      history,
       prompt,
       system_prompt,
       generated_messages,
@@ -836,15 +839,20 @@ function Copilot:ask(prompt, opts)
   log.trace('Full response: ' .. full_response)
   log.debug('Last message: ' .. vim.inspect(last_message))
 
-  table.insert(self.history, {
+  table.insert(history, {
     content = prompt,
     role = 'user',
   })
 
-  table.insert(self.history, {
+  table.insert(history, {
     content = full_response,
     role = 'assistant',
   })
+
+  if not no_history then
+    log.debug('History size increased to ' .. #history)
+    self.history = history
+  end
 
   return full_response,
     last_message and last_message.usage and last_message.usage.total_tokens,
