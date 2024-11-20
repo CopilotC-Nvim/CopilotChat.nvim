@@ -43,14 +43,15 @@ local state = {
   help = nil,
 }
 
+---@param config CopilotChat.config
 ---@return CopilotChat.config.selection?
-local function get_selection()
+local function get_selection(config)
   local bufnr = state.source and state.source.bufnr
   local winnr = state.source and state.source.winnr
 
   if
-    state.config
-    and state.config.selection
+    config
+    and config.selection
     and utils.buf_valid(bufnr)
     and winnr
     and vim.api.nvim_win_is_valid(winnr)
@@ -105,7 +106,7 @@ local function highlight_selection(clear)
     return
   end
 
-  local selection = get_selection()
+  local selection = get_selection(state.config)
   if not selection or not selection.start_line or not utils.buf_valid(selection.bufnr) then
     return
   end
@@ -171,7 +172,7 @@ local function get_diff()
   local header_filename, header_start_line, header_end_line = match_header(header)
 
   -- Initialize variables with selection if available
-  local selection = get_selection()
+  local selection = get_selection(state.config)
   local reference = selection and selection.content
   local start_line = selection and selection.start_line
   local end_line = selection and selection.end_line
@@ -244,6 +245,10 @@ local function apply_diff(diff)
 end
 
 local function finish(config, message, hide_help, start_of_chat)
+  if config.no_chat then
+    return
+  end
+
   if not start_of_chat then
     state.chat:append('\n\n')
   end
@@ -274,8 +279,12 @@ local function finish(config, message, hide_help, start_of_chat)
   end
 end
 
-local function show_error(err, config, append_newline)
+local function show_error(config, err, append_newline)
   log.error(vim.inspect(err))
+
+  if config.no_chat then
+    return
+  end
 
   if type(err) == 'string' then
     local message = err:match('^[^:]+:[^:]+:(.+)') or err
@@ -591,33 +600,39 @@ end
 function M.ask(prompt, config)
   config = vim.tbl_deep_extend('force', M.config, config or {})
   vim.diagnostic.reset(vim.api.nvim_create_namespace('copilot_diagnostics'))
-  M.open(config)
+
+  if not config.no_chat then
+    M.open(config)
+  end
 
   prompt = vim.trim(prompt or '')
   if prompt == '' then
     return
   end
 
-  if config.clear_chat_on_new_prompt then
-    M.stop(true, config)
-  elseif state.copilot:stop() then
-    finish(config, nil, true)
-  end
+  if not config.no_chat then
+    if config.clear_chat_on_new_prompt then
+      M.stop(true, config)
+    elseif state.copilot:stop() then
+      finish(config, nil, true)
+    end
 
-  -- Clear the current input prompt before asking a new question
-  local chat_lines = vim.api.nvim_buf_get_lines(state.chat.bufnr, 0, -1, false)
-  local _, start_line, end_line =
-    utils.find_lines(chat_lines, #chat_lines, M.config.separator .. '$', nil, true)
-  if #chat_lines == end_line then
-    vim.api.nvim_buf_set_lines(state.chat.bufnr, start_line, end_line, false, { '' })
-  end
+    state.last_prompt = prompt
 
-  state.chat:append(prompt)
-  state.chat:append('\n\n' .. config.answer_header .. config.separator .. '\n\n')
+    -- Clear the current input prompt before asking a new question
+    local chat_lines = vim.api.nvim_buf_get_lines(state.chat.bufnr, 0, -1, false)
+    local _, start_line, end_line =
+      utils.find_lines(chat_lines, #chat_lines, M.config.separator .. '$', nil, true)
+    if #chat_lines == end_line then
+      vim.api.nvim_buf_set_lines(state.chat.bufnr, start_line, end_line, false, { '' })
+    end
+
+    state.chat:append(prompt)
+    state.chat:append('\n\n' .. config.answer_header .. config.separator .. '\n\n')
+  end
 
   -- Resolve prompt references
-  local system_prompt, updated_prompt = update_prompts(prompt or '', config.system_prompt)
-  state.last_prompt = prompt
+  local system_prompt, updated_prompt = update_prompts(prompt, config.system_prompt)
 
   -- Remove sticky prefix
   prompt = table.concat(
@@ -665,7 +680,7 @@ function M.ask(prompt, config)
   local embeddings = vim.tbl_values(embedding_map)
 
   -- Retrieve the selection
-  local selection = get_selection()
+  local selection = get_selection(config)
 
   async.run(function()
     local agents = vim.tbl_keys(state.copilot:list_agents())
@@ -692,7 +707,7 @@ function M.ask(prompt, config)
 
     if not query_ok then
       vim.schedule(function()
-        show_error(filtered_embeddings, config, has_output)
+        show_error(config, filtered_embeddings, has_output)
       end)
       return
     end
@@ -705,9 +720,13 @@ function M.ask(prompt, config)
         model = selected_model,
         agent = selected_agent,
         temperature = config.temperature,
+        no_history = config.no_chat,
         on_progress = function(token)
           vim.schedule(function()
-            state.chat:append(token)
+            if not config.no_chat then
+              state.chat:append(token)
+            end
+
             has_output = true
           end)
         end,
@@ -715,7 +734,7 @@ function M.ask(prompt, config)
 
     if not ask_ok then
       vim.schedule(function()
-        show_error(response, config, has_output)
+        show_error(config, response, has_output)
       end)
       return
     end
@@ -724,7 +743,9 @@ function M.ask(prompt, config)
       return
     end
 
-    state.last_response = response
+    if not config.no_chat then
+      state.last_response = response
+    end
 
     vim.schedule(function()
       if token_count and token_max_count and token_count > 0 then
@@ -1086,7 +1107,7 @@ function M.setup(config)
 
       map_key(M.config.mappings.quickfix_diffs, bufnr, function()
         local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-        local selection = get_selection()
+        local selection = get_selection(state.config)
         local items = {}
         local in_block = false
         local block_start = 0
@@ -1187,7 +1208,7 @@ function M.setup(config)
       end)
 
       map_key(M.config.mappings.show_user_selection, bufnr, function()
-        local selection = get_selection()
+        local selection = get_selection(state.config)
         if not selection or not selection.content then
           return
         end
