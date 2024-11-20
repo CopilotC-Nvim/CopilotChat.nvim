@@ -69,32 +69,11 @@ function M.config_path()
   end
 end
 
---- Check if a table is equal to another table
----@param a table The first table
----@param b table The second table
----@return boolean
-function M.table_equals(a, b)
-  if type(a) ~= type(b) then
-    return false
-  end
-  if type(a) ~= 'table' then
-    return a == b
-  end
-  for k, v in pairs(a) do
-    if not M.table_equals(v, b[k]) then
-      return false
-    end
-  end
-  for k, v in pairs(b) do
-    if not M.table_equals(v, a[k]) then
-      return false
-    end
-  end
-  return true
-end
-
 --- Blend a color with the neovim background
-function M.blend_color_with_neovim_bg(color_name, blend)
+---@param color_name string The color name
+---@param blend number The blend percentage
+---@return string?
+function M.blend_color(color_name, blend)
   local color_int = vim.api.nvim_get_hl(0, { name = color_name }).fg
   local bg_int = vim.api.nvim_get_hl(0, { name = 'Normal' }).bg
 
@@ -205,6 +184,38 @@ function M.filename_same(file1, file2)
     return false
   end
   return vim.fn.fnamemodify(file1, ':p') == vim.fn.fnamemodify(file2, ':p')
+end
+
+--- Generate a UUID
+---@return string
+function M.uuid()
+  local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
+  return (
+    string.gsub(template, '[xy]', function(c)
+      local v = (c == 'x') and math.random(0, 0xf) or math.random(8, 0xb)
+      return string.format('%x', v)
+    end)
+  )
+end
+
+--- Generate machine id
+---@return string
+function M.machine_id()
+  local length = 65
+  local hex_chars = '0123456789abcdef'
+  local hex = ''
+  for _ = 1, length do
+    local index = math.random(1, #hex_chars)
+    hex = hex .. hex_chars:sub(index, index)
+  end
+  return hex
+end
+
+--- Generate a quick hash
+---@param str string The string to hash
+---@return string
+function M.quick_hash(str)
+  return #str .. str:sub(1, 32) .. str:sub(-32)
 end
 
 return M
