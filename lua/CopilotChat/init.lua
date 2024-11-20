@@ -979,7 +979,6 @@ function M.setup(config)
             end
           end
         end
-        chat_help = chat_help .. M.config.separator .. '\n'
         state.help:show(chat_help, 'markdown', state.chat.winnr)
       end)
 
@@ -1184,7 +1183,7 @@ function M.setup(config)
           return
         end
 
-        state.system_prompt:show(prompt .. '\n\n', 'markdown', state.chat.winnr)
+        state.system_prompt:show(vim.trim(prompt) .. '\n', 'markdown', state.chat.winnr)
       end)
 
       map_key(M.config.mappings.show_user_selection, bufnr, function()
@@ -1193,7 +1192,7 @@ function M.setup(config)
           return
         end
 
-        state.user_selection:show(selection.content .. '\n\n', selection.filetype, state.chat.winnr)
+        state.user_selection:show(selection.content .. '\n', selection.filetype, state.chat.winnr)
       end)
 
       vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
