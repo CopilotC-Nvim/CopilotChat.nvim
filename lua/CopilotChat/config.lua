@@ -232,7 +232,7 @@ return {
   -- default prompts
   prompts = {
     Explain = {
-      prompt = '> /COPILOT_EXPLAIN\n\nWrite an explanation for the selected code and diagnostics as paragraphs of text.',
+      prompt = '> /COPILOT_EXPLAIN\n\nWrite an explanation for the selected code as paragraphs of text.',
     },
     Review = {
       prompt = '> /COPILOT_REVIEW\n\nReview the selected code.',
