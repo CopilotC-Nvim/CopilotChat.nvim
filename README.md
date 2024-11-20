@@ -6,6 +6,8 @@
 [![Dotfyle](https://dotfyle.com/plugins/CopilotC-Nvim/CopilotChat.nvim/shield?style=flat)](https://dotfyle.com/plugins/CopilotC-Nvim/CopilotChat.nvim)
 [![All Contributors](https://img.shields.io/github/all-contributors/CopilotC-Nvim/CopilotChat.nvim?color=ee8449&style=flat&link=%23contributors-)](#contributors)
 
+![image](https://github.com/user-attachments/assets/9ee30811-0fb8-4500-91f6-34ea6b26adea)
+
 > [!NOTE]
 > Plugin was rewritten to Lua from Python. Please check the [migration guide from version 1 to version 2](/MIGRATION.md) for more information.
 
@@ -17,6 +19,7 @@
   - [Post-Installation](#post-installation)
 - [Usage](#usage)
   - [Commands](#commands)
+  - [Chat Mappings](#chat-mappings)
   - [Prompts](#prompts)
   - [System Prompts](#system-prompts)
   - [Sticky Prompts](#sticky-prompts)
@@ -129,6 +132,41 @@ See @deathbeam for [configuration](https://github.com/deathbeam/dotfiles/blob/ma
 - `:CopilotChatDebugInfo` - Show debug information
 - `:CopilotChatModels` - View and select available models. This is reset when a new instance is made. Please set your model in `init.lua` for persistence.
 - `:CopilotChatAgents` - View and select available agents. This is reset when a new instance is made. Please set your agent in `init.lua` for persistence.
+
+### Chat Mappings
+
+- `<Tab>` - Complete the current input
+- `q`/`<C-c>` - Close the chat window
+- `<C-l>` - Reset/clear the chat window
+- `<CR>`/`<C-s>` - Submit the current prompt
+- `gr` - Toggle sticky prompt - makes line under cursor sticky or deletes sticky line
+- `<C-y>` - Accept current diff changes
+- `gj` - Jump to buffer that suggested change is modifying (if buffer is not available, it will be created)
+- `gq` - Add all diffs to quickfix list
+- `gy` - Yank current diff to register (default register is `"`)
+- `gd` - Show diff between source and suggested change
+- `gp` - Show system prompt used for the current chat
+- `gs` - Show current user selection
+- `gh` - Show help message
+
+The mappings can be customized by setting the `mappings` table in your configuration. Each mapping can have:
+
+- `normal`: Key for normal mode
+- `insert`: Key for insert mode
+- `detail`: Description of what the mapping does
+
+For example, to change the submit prompt mapping:
+
+```lua
+{
+    mappings = {
+      submit_prompt = {
+        normal = '<Leader>s',
+        insert = '<C-s>'
+      }
+    }
+}
+```
 
 ### Prompts
 
