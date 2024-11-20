@@ -314,7 +314,15 @@ local function map_key(key, bufnr, fn)
     vim.keymap.set('n', key.normal, fn, { buffer = bufnr, nowait = true })
   end
   if key.insert and key.insert ~= '' then
-    vim.keymap.set('i', key.insert, fn, { buffer = bufnr })
+    vim.keymap.set('i', key.insert, function()
+      -- If in insert mode and menu visible, use original key
+      if vim.fn.pumvisible() == 1 then
+        local keys = vim.api.nvim_replace_termcodes(key.insert, true, false, true)
+        vim.api.nvim_feedkeys(keys, 'n', false)
+      else
+        fn()
+      end
+    end, { buffer = bufnr })
   end
 end
 
@@ -380,7 +388,9 @@ local function trigger_complete()
           return
         end
 
-        vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { tostring(value) })
+        local value_str = tostring(value)
+        vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { value_str })
+        vim.api.nvim_win_set_cursor(0, { row, col + #value_str })
       end)
     end
 
