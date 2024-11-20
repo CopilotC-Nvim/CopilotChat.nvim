@@ -41,11 +41,6 @@ function M.visual(source)
   local start_line = unpack(vim.api.nvim_buf_get_mark(bufnr, '<'))
   local finish_line = unpack(vim.api.nvim_buf_get_mark(bufnr, '>'))
 
-  -- Exit if no actual selection
-  if start_line == finish_line then
-    return nil
-  end
-
   -- Swap positions if selection is backwards
   if start_line > finish_line then
     start_line, finish_line = finish_line, start_line
