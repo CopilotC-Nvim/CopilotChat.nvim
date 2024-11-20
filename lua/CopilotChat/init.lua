@@ -317,8 +317,14 @@ local function map_key(key, bufnr, fn)
     vim.keymap.set('i', key.insert, function()
       -- If in insert mode and menu visible, use original key
       if vim.fn.pumvisible() == 1 then
-        local keys = vim.api.nvim_replace_termcodes(key.insert, true, false, true)
-        vim.api.nvim_feedkeys(keys, 'n', false)
+        local used_key = key.insert == M.config.mappings.complete.insert and '<C-y>' or key.insert
+        if used_key then
+          vim.api.nvim_feedkeys(
+            vim.api.nvim_replace_termcodes(used_key, true, false, true),
+            'n',
+            false
+          )
+        end
       else
         fn()
       end
