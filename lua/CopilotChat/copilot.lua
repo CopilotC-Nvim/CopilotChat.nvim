@@ -334,6 +334,7 @@ end
 local Copilot = class(function(self, proxy, allow_insecure)
   self.history = {}
   self.embedding_cache = {}
+  self.policies = {}
   self.github_token = nil
   self.token = nil
   self.sessionid = nil
@@ -448,6 +449,10 @@ function Copilot:fetch_models()
   local models = vim.json.decode(response.body)['data']
   local out = {}
   for _, model in ipairs(models) do
+    if not model['policy'] or model['policy']['state'] == 'enabled' then
+      self.policies[model['id']] = true
+    end
+
     if model['capabilities']['type'] == 'chat' then
       out[model['id']] = model
     end
@@ -493,42 +498,29 @@ function Copilot:fetch_agents()
   return out
 end
 
-function Copilot:enable_claude()
-  if self.claude_enabled then
-    return true
+--- Enable policy for the given model if required
+---@param model string: The model to enable policy for
+function Copilot:enable_policy(model)
+  if self.policies[model] then
+    return
   end
 
-  local business_check = 'cannot enable policy inline for business users'
-  local business_msg =
-    'Claude is probably enabled (for business users needs to be enabled manually).'
-
   local response, err = curl_post(
-    'https://api.githubcopilot.com/models/claude-3.5-sonnet/policy',
+    'https://api.githubcopilot.com/models/' .. model .. '/policy',
     vim.tbl_extend('force', self.request_args, {
       headers = self:authenticate(),
       body = vim.json.encode({ state = 'enabled' }),
     })
   )
 
-  if err then
-    error(err)
+  self.policies[model] = true
+
+  if err or response.status ~= 200 then
+    log.warn('Failed to enable policy for ' .. model .. ': ' .. vim.inspect(err or response.body))
+    return
   end
 
-  -- Handle business user case
-  if response.status ~= 200 and string.find(tostring(response.body), business_check) then
-    self.claude_enabled = true
-    log.info(business_msg)
-    return true
-  end
-
-  -- Handle errors
-  if response.status ~= 200 then
-    error('Failed to enable Claude: ' .. tostring(response.status))
-  end
-
-  self.claude_enabled = true
-  log.info('Claude enabled')
-  return true
+  log.info('Policy enabled for ' .. model)
 end
 
 --- Ask a question to Copilot
@@ -733,10 +725,7 @@ function Copilot:ask(prompt, opts)
     )
   )
 
-  if vim.startswith(model, 'claude') then
-    self:enable_claude()
-  end
-
+  self:enable_policy(model)
   local url = 'https://api.githubcopilot.com/chat/completions'
   if not agent_config.default then
     url = 'https://api.githubcopilot.com/agents/' .. agent .. '?chat'
