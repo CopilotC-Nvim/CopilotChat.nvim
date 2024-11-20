@@ -22,6 +22,14 @@ local outline_types = {
   'type_alias_declaration',
   'import_statement',
   'import_from_statement',
+  -- markdown
+  'atx_h1_marker',
+  'atx_h2_marker',
+  'atx_h3_marker',
+  'atx_h4_marker',
+  'atx_h5_marker',
+  'list_item',
+  'block_quote',
 }
 
 local comment_types = {
