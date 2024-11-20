@@ -137,12 +137,12 @@ See @deathbeam for [configuration](https://github.com/deathbeam/dotfiles/blob/ma
 
 - `<Tab>` - Complete the current input
 - `q`/`<C-c>` - Close the chat window
-- `<C-l>` - Reset/clear the chat window  
+- `<C-l>` - Reset/clear the chat window
 - `<CR>`/`<C-s>` - Submit the current prompt
 - `gr` - Toggle sticky prompt - makes line under cursor sticky or deletes sticky line
 - `<C-y>` - Accept current diff changes
 - `gj` - Jump to buffer that suggested change is modifying (if buffer is not available, it will be created)
-- `gq` - Add all diffs to quickfix list  
+- `gq` - Add all diffs to quickfix list
 - `gy` - Yank current diff to register (default register is `"`)
 - `gd` - Show diff between source and suggested change
 - `gp` - Show system prompt used for the current chat
@@ -150,6 +150,7 @@ See @deathbeam for [configuration](https://github.com/deathbeam/dotfiles/blob/ma
 - `gh` - Show help message
 
 The mappings can be customized by setting the `mappings` table in your configuration. Each mapping can have:
+
 - `normal`: Key for normal mode
 - `insert`: Key for insert mode
 - `detail`: Description of what the mapping does
