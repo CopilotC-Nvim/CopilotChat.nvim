@@ -52,10 +52,6 @@ local Chat = class(function(self, help, on_buf_create)
     vim.bo[bufnr].filetype = self.name
     vim.bo[bufnr].syntax = 'markdown'
     vim.bo[bufnr].textwidth = 0
-    local ok, parser = pcall(vim.treesitter.get_parser, bufnr, 'markdown')
-    if ok and parser then
-      vim.treesitter.start(bufnr, 'markdown')
-    end
 
     if not self.spinner then
       self.spinner = Spinner(bufnr)
