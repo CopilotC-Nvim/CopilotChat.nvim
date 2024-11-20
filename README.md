@@ -313,9 +313,9 @@ Selections are configurable either by default or by prompt.
 Default selection is `visual` or `buffer` (if no visual selection).  
 Default supported selections that live in `local select = require("CopilotChat.select")` are:
 
-- `select.visual` - Current visual selection. Works well with diffs.
-- `select.buffer` - Current buffer content. Works well with diffs.
-- `select.line` - Current line content. Works decently with diffs.
+- `select.visual` - Current visual selection. Includes diagnostic in selection. Works well with diffs.
+- `select.buffer` - Current buffer content. Includes diagnostic in selection. Works well with diffs.
+- `select.line` - Current line content. Includes diagnostic in selection. Works decently with diffs.
 - `select.unnamed` - Content from the unnamed register.
 - `select.clipboard` - Content from system clipboard.
 
