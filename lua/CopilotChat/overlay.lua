@@ -18,6 +18,7 @@ local Overlay = class(function(self, name, help, on_buf_create)
   self.buf_create = function()
     local bufnr = vim.api.nvim_create_buf(false, true)
     vim.bo[bufnr].filetype = name
+    vim.bo[bufnr].modifiable = false
     vim.api.nvim_buf_set_name(bufnr, name)
     return bufnr
   end

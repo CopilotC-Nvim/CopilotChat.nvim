@@ -52,6 +52,16 @@ local Chat = class(function(self, help, on_buf_create)
     vim.bo[bufnr].filetype = self.name
     vim.bo[bufnr].syntax = 'markdown'
     vim.bo[bufnr].textwidth = 0
+    vim.bo[bufnr].modifiable = false
+
+    vim.api.nvim_create_autocmd({ 'TextChanged', 'TextChangedI' }, {
+      buffer = bufnr,
+      callback = function()
+        vim.defer_fn(function()
+          self:render()
+        end, 100)
+      end,
+    })
 
     if not self.spinner then
       self.spinner = Spinner(bufnr)
@@ -118,6 +128,7 @@ end
 
 function Chat:append(str)
   self:validate()
+  vim.bo[self.bufnr].modifiable = true
 
   if self:active() then
     utils.return_to_normal_mode()
@@ -145,17 +156,19 @@ function Chat:append(str)
     last_column,
     vim.split(str, '\n')
   )
-  self:render()
 
   if should_follow_cursor then
     self:follow()
   end
+
+  vim.bo[self.bufnr].modifiable = false
 end
 
 function Chat:clear()
   self:validate()
+  vim.bo[self.bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, {})
-  self:render()
+  vim.bo[self.bufnr].modifiable = false
 end
 
 function Chat:open(config)
@@ -233,7 +246,6 @@ function Chat:open(config)
   else
     vim.wo[self.winnr].foldcolumn = '0'
   end
-  self:render()
 end
 
 function Chat:close(bufnr)
@@ -295,6 +307,7 @@ function Chat:finish(msg, offset)
     msg = self.help
   end
 
+  vim.bo[self.bufnr].modifiable = true
   self:show_help(msg, -offset)
   if self.auto_insert and self:active() then
     vim.cmd('startinsert')
