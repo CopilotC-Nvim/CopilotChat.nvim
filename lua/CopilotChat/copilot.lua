@@ -479,6 +479,7 @@ function Copilot:fetch_models()
   end
 
   log.info('Models fetched')
+  log.trace(vim.inspect(models))
   self.models = out
   return out
 end
@@ -512,6 +513,7 @@ function Copilot:fetch_agents()
   out['copilot'] = { name = 'Copilot', default = true, description = 'Default noop agent' }
 
   log.info('Agents fetched')
+  log.trace(vim.inspect(agents))
   self.agents = out
   return out
 end
