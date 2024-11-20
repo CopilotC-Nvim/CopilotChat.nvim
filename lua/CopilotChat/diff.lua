@@ -20,21 +20,9 @@ local class = utils.class
 
 local Diff = class(function(self, help, on_buf_create)
   self.hl_ns = vim.api.nvim_create_namespace('copilot-chat-highlights')
-  vim.api.nvim_set_hl(
-    self.hl_ns,
-    '@diff.plus',
-    { bg = utils.blend_color_with_neovim_bg('DiffAdd', 20) }
-  )
-  vim.api.nvim_set_hl(
-    self.hl_ns,
-    '@diff.minus',
-    { bg = utils.blend_color_with_neovim_bg('DiffDelete', 20) }
-  )
-  vim.api.nvim_set_hl(
-    self.hl_ns,
-    '@diff.delta',
-    { bg = utils.blend_color_with_neovim_bg('DiffChange', 20) }
-  )
+  vim.api.nvim_set_hl(self.hl_ns, '@diff.plus', { bg = utils.blend_color('DiffAdd', 20) })
+  vim.api.nvim_set_hl(self.hl_ns, '@diff.minus', { bg = utils.blend_color('DiffDelete', 20) })
+  vim.api.nvim_set_hl(self.hl_ns, '@diff.delta', { bg = utils.blend_color('DiffChange', 20) })
 
   self.name = 'copilot-diff'
   self.help = help
