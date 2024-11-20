@@ -381,6 +381,10 @@ local Copilot = class(function(self, proxy, allow_insecure)
       -- Maximum time for the request
       '--max-time',
       math.floor(timeout * 2 / 1000),
+      -- Force http1.1
+      '--http1.1',
+      -- Force tls1.2
+      '--tlsv1.2',
       -- Timeout for initial connection
       '--connect-timeout',
       '10',
