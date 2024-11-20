@@ -740,6 +740,7 @@ function M.ask(prompt, config)
         on_progress = function(token)
           vim.schedule(function()
             if not config.no_chat then
+              vim.cmd('undojoin')
               state.chat:append(token)
             end
 
