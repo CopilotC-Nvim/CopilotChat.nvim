@@ -298,7 +298,6 @@ local function generate_ask_request(
   end
 
   if not vim.tbl_isempty(contexts) then
-    log.info('Contexts found')
     prompt = table.concat(vim.tbl_keys(contexts), '\n') .. '\n' .. prompt
   end
 
