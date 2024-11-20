@@ -16,9 +16,7 @@ local plugin_name = 'CopilotChat.nvim'
 --- @class CopilotChat.state
 --- @field copilot CopilotChat.Copilot?
 --- @field source CopilotChat.config.source?
---- @field selection CopilotChat.config.selection?
 --- @field config CopilotChat.config?
---- @field last_system_prompt string?
 --- @field last_prompt string?
 --- @field last_response string?
 --- @field chat CopilotChat.Chat?
@@ -31,11 +29,9 @@ local state = {
 
   -- Current state tracking
   source = nil,
-  selection = nil,
   config = nil,
 
   -- Last state tracking
-  last_system_prompt = nil,
   last_prompt = nil,
   last_response = nil,
 
@@ -47,6 +43,27 @@ local state = {
   help = nil,
 }
 
+---@return CopilotChat.config.selection?
+local function get_selection()
+  local bufnr = state.source and state.source.bufnr
+  local winnr = state.source and state.source.winnr
+
+  if
+    state.config
+    and state.config.selection
+    and utils.buf_valid(bufnr)
+    and winnr
+    and vim.api.nvim_win_is_valid(winnr)
+  then
+    return state.config.selection(state.source)
+  end
+
+  return nil
+end
+
+---@param prompt string
+---@param system_prompt string
+---@return string, string
 local function update_prompts(prompt, system_prompt)
   local prompts_to_use = M.prompts()
   local try_again = false
@@ -88,25 +105,16 @@ local function highlight_selection(clear)
     return
   end
 
-  if
-    not state.selection
-    or not utils.buf_valid(state.selection.bufnr)
-    or not state.selection.start_line
-  then
+  local selection = get_selection()
+  if not selection or not selection.start_line or not utils.buf_valid(selection.bufnr) then
     return
   end
 
-  vim.api.nvim_buf_set_extmark(
-    state.selection.bufnr,
-    selection_ns,
-    state.selection.start_line - 1,
-    0,
-    {
-      hl_group = 'CopilotChatSelection',
-      end_row = state.selection.end_line,
-      strict = false,
-    }
-  )
+  vim.api.nvim_buf_set_extmark(selection.bufnr, selection_ns, selection.start_line - 1, 0, {
+    hl_group = 'CopilotChatSelection',
+    end_row = selection.end_line,
+    strict = false,
+  })
 end
 
 --- Updates the selection based on previous window
@@ -117,21 +125,6 @@ local function update_selection()
       bufnr = vim.api.nvim_win_get_buf(prev_winnr),
       winnr = prev_winnr,
     }
-  end
-
-  local bufnr = state.source and state.source.bufnr
-  local winnr = state.source and state.source.winnr
-
-  if
-    state.config
-    and state.config.selection
-    and utils.buf_valid(bufnr)
-    and winnr
-    and vim.api.nvim_win_is_valid(winnr)
-  then
-    state.selection = state.config.selection(state.source)
-  else
-    state.selection = nil
   end
 
   highlight_selection()
@@ -178,15 +171,16 @@ local function get_diff()
   local header_filename, header_start_line, header_end_line = match_header(header)
 
   -- Initialize variables with selection if available
-  local reference = state.selection and state.selection.content
-  local start_line = state.selection and state.selection.start_line
-  local end_line = state.selection and state.selection.end_line
-  local filename = state.selection and state.selection.filename
-  local filetype = state.selection and state.selection.filetype
-  local bufnr = state.selection and state.selection.bufnr
+  local selection = get_selection()
+  local reference = selection and selection.content
+  local start_line = selection and selection.start_line
+  local end_line = selection and selection.end_line
+  local filename = selection and selection.filename
+  local filetype = selection and selection.filetype
+  local bufnr = selection and selection.bufnr
 
   -- If we have header info, use it as source of truth
-  if header_filename then
+  if header_filename and header_start_line and header_end_line then
     -- Try to find matching buffer and window
     bufnr = nil
     for _, win in ipairs(vim.api.nvim_list_wins()) do
@@ -623,7 +617,6 @@ function M.ask(prompt, config)
 
   -- Resolve prompt references
   local system_prompt, updated_prompt = update_prompts(prompt or '', config.system_prompt)
-  state.last_system_prompt = system_prompt
   state.last_prompt = prompt
 
   -- Remove sticky prefix
@@ -671,6 +664,9 @@ function M.ask(prompt, config)
   end
   local embeddings = vim.tbl_values(embedding_map)
 
+  -- Retrieve the selection
+  local selection = get_selection()
+
   async.run(function()
     local agents = vim.tbl_keys(state.copilot:list_agents())
     local selected_agent = config.agent
@@ -703,7 +699,7 @@ function M.ask(prompt, config)
 
     local ask_ok, response, token_count, token_max_count =
       pcall(state.copilot.ask, state.copilot, prompt, {
-        selection = state.selection,
+        selection = selection,
         embeddings = filtered_embeddings,
         system_prompt = system_prompt,
         model = selected_model,
@@ -760,7 +756,6 @@ function M.stop(reset, config)
   wrap(function()
     if reset then
       state.chat:clear()
-      state.last_system_prompt = nil
       state.last_prompt = nil
       state.last_response = nil
     end
@@ -992,22 +987,6 @@ function M.setup(config)
       map_key(M.config.mappings.close, bufnr, M.close)
       map_key(M.config.mappings.complete, bufnr, trigger_complete)
 
-      if M.config.chat_autocomplete then
-        vim.api.nvim_create_autocmd('TextChangedI', {
-          buffer = bufnr,
-          callback = function()
-            local line = vim.api.nvim_get_current_line()
-            local cursor = vim.api.nvim_win_get_cursor(0)
-            local col = cursor[2]
-            local char = line:sub(col, col)
-
-            if vim.tbl_contains(M.complete_info().triggers, char) then
-              utils.debounce(trigger_complete, 100)
-            end
-          end,
-        })
-      end
-
       map_key(M.config.mappings.submit_prompt, bufnr, function()
         local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
         local current_line = vim.api.nvim_win_get_cursor(0)[1]
@@ -1108,6 +1087,7 @@ function M.setup(config)
 
       map_key(M.config.mappings.quickfix_diffs, bufnr, function()
         local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+        local selection = get_selection()
         local items = {}
         local in_block = false
         local block_start = 0
@@ -1155,16 +1135,16 @@ function M.setup(config)
                   last_header.end_line
                 )
               elseif
-                state.selection
-                and state.selection.filename
-                and state.selection.start_line
-                and state.selection.end_line
+                selection
+                and selection.filename
+                and selection.start_line
+                and selection.end_line
               then
                 item.text = string.format(
                   '%s [lines %d-%d]',
-                  state.selection.filename,
-                  state.selection.start_line,
-                  state.selection.end_line
+                  selection.filename,
+                  selection.start_line,
+                  selection.end_line
                 )
               else
                 item.text = string.format('Code block (%s)', filetype)
@@ -1199,7 +1179,7 @@ function M.setup(config)
       end)
 
       map_key(M.config.mappings.show_system_prompt, bufnr, function()
-        local prompt = state.last_system_prompt or M.config.system_prompt
+        local prompt = state.config.system_prompt
         if not prompt then
           return
         end
@@ -1208,15 +1188,12 @@ function M.setup(config)
       end)
 
       map_key(M.config.mappings.show_user_selection, bufnr, function()
-        if not state.selection or not state.selection.content then
+        local selection = get_selection()
+        if not selection or not selection.content then
           return
         end
 
-        state.user_selection:show(
-          state.selection.content .. '\n\n',
-          state.selection.filetype,
-          state.chat.winnr
-        )
+        state.user_selection:show(selection.content .. '\n\n', selection.filetype, state.chat.winnr)
       end)
 
       vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
@@ -1239,6 +1216,22 @@ function M.setup(config)
             vim.cmd('normal! 0')
             vim.cmd('normal! G$')
             vim.v.char = 'x'
+          end,
+        })
+      end
+
+      if M.config.chat_autocomplete then
+        vim.api.nvim_create_autocmd('TextChangedI', {
+          buffer = bufnr,
+          callback = function()
+            local line = vim.api.nvim_get_current_line()
+            local cursor = vim.api.nvim_win_get_cursor(0)
+            local col = cursor[2]
+            local char = line:sub(col, col)
+
+            if vim.tbl_contains(M.complete_info().triggers, char) then
+              utils.debounce(trigger_complete, 100)
+            end
           end,
         })
       end
