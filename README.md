@@ -173,7 +173,7 @@ For example, to change the submit prompt mapping:
 You can ask Copilot to do various tasks with prompts. You can reference prompts with `/PromptName` in chat or call with command `:CopilotChat<PromptName>`.  
 Default prompts are:
 
-- `Explain` - Write an explanation for the selected code and diagnostics as paragraphs of text
+- `Explain` - Write an explanation for the selected code as paragraphs of text
 - `Review` - Review the selected code
 - `Fix` - There is a problem in this code. Rewrite the code to show it with the bug fixed
 - `Optimize` - Optimize the selected code to improve performance and readability
@@ -478,7 +478,7 @@ Also see [here](/lua/CopilotChat/config.lua):
   -- default prompts
   prompts = {
     Explain = {
-      prompt = '> /COPILOT_EXPLAIN\n\nWrite an explanation for the selected code and diagnostics as paragraphs of text.',
+      prompt = '> /COPILOT_EXPLAIN\n\nWrite an explanation for the selected code as paragraphs of text.',
     },
     Review = {
       prompt = '> /COPILOT_REVIEW\n\nReview the selected code.',
