@@ -1330,7 +1330,9 @@ function M.setup(config)
   vim.api.nvim_create_autocmd('DirChanged', {
     group = augroup,
     callback = function()
-      vim.api.nvim_win_set_var(0, 'cchat_cwd', vim.fn.getcwd())
+      if vim.v.event and vim.v.event.cwd then
+        vim.api.nvim_win_set_var(0, 'cchat_cwd', vim.v.event.cwd)
+      end
     end,
   })
 end
