@@ -147,6 +147,7 @@ See @deathbeam for [configuration](https://github.com/deathbeam/dotfiles/blob/ma
 - `gd` - Show diff between source and nearest diff
 - `gp` - Show system prompt for current chat
 - `gs` - Show current user selection
+- `gc` - Show current user context
 - `gh` - Show help message
 
 The mappings can be customized by setting the `mappings` table in your configuration. Each mapping can have:
@@ -557,6 +558,12 @@ Also see [here](/lua/CopilotChat/config.lua):
     },
     show_user_selection = {
       normal = 'gs'
+    },
+    show_user_context = {
+      normal = 'gc',
+    },
+    show_help = {
+      normal = 'gh',
     },
   },
 }

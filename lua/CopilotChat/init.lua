@@ -21,8 +21,7 @@ local plugin_name = 'CopilotChat.nvim'
 --- @field last_response string?
 --- @field chat CopilotChat.Chat?
 --- @field diff CopilotChat.Diff?
---- @field system_prompt CopilotChat.Overlay?
---- @field user_selection CopilotChat.Overlay?
+--- @field overlay CopilotChat.Overlay?
 --- @field help CopilotChat.Overlay?
 local state = {
   copilot = nil,
@@ -38,9 +37,7 @@ local state = {
   -- Overlays
   chat = nil,
   diff = nil,
-  system_prompt = nil,
-  user_selection = nil,
-  help = nil,
+  overlay = nil,
 }
 
 ---@param config CopilotChat.config
@@ -196,7 +193,7 @@ end
 ---@param prompt string
 ---@param system_prompt string
 ---@return string, string
-local function update_prompts(prompt, system_prompt)
+local function resolve_prompts(prompt, system_prompt)
   local prompts_to_use = M.prompts()
   local try_again = false
   local result = string.gsub(prompt, [[/[%w_]+]], function(match)
@@ -219,10 +216,59 @@ local function update_prompts(prompt, system_prompt)
   end)
 
   if try_again then
-    return update_prompts(result, system_prompt)
+    return resolve_prompts(result, system_prompt)
   end
 
   return system_prompt, result
+end
+
+---@param prompt string
+---@param config CopilotChat.config
+---@return table<CopilotChat.copilot.embed>, string
+local function resolve_embeddings(prompt, config)
+  local embedding_map = {}
+  local function parse_context(prompt_context)
+    local split = vim.split(prompt_context, ':')
+    local context_name = table.remove(split, 1)
+    local context_input = vim.trim(table.concat(split, ':'))
+    local context_value = config.contexts[context_name]
+    if context_input == '' then
+      context_input = nil
+    end
+
+    if context_value then
+      for _, embedding in ipairs(context_value.resolve(context_input, state.source)) do
+        if embedding then
+          embedding_map[embedding.filename] = embedding
+        end
+      end
+
+      prompt = prompt:gsub('#' .. prompt_context .. '%s*', '')
+    end
+  end
+
+  -- Sort and parse contexts
+  local contexts = {}
+  if config.context then
+    if type(config.context) == 'table' then
+      for _, config_context in ipairs(config.context) do
+        table.insert(contexts, config_context)
+      end
+    else
+      table.insert(contexts, config.context)
+    end
+  end
+  for prompt_context in prompt:gmatch('#([^%s]+)') do
+    table.insert(contexts, prompt_context)
+  end
+  table.sort(contexts, function(a, b)
+    return #a > #b
+  end)
+  for _, prompt_context in ipairs(contexts) do
+    parse_context(prompt_context)
+  end
+
+  return vim.tbl_values(embedding_map), prompt
 end
 
 ---@param config CopilotChat.config
@@ -639,58 +685,19 @@ function M.ask(prompt, config)
   end
 
   -- Resolve prompt references
-  local system_prompt, updated_prompt = update_prompts(prompt, config.system_prompt)
+  local system_prompt, resolved_prompt = resolve_prompts(prompt, config.system_prompt)
 
   -- Remove sticky prefix
   prompt = table.concat(
     vim.tbl_map(function(l)
       return l:gsub('>%s+', '')
-    end, vim.split(updated_prompt, '\n')),
+    end, vim.split(resolved_prompt, '\n')),
     '\n'
   )
 
-  local embedding_map = {}
-  local function parse_context(prompt_context)
-    local split = vim.split(prompt_context, ':')
-    local context_name = table.remove(split, 1)
-    local context_input = vim.trim(table.concat(split, ':'))
-    local context_value = config.contexts[context_name]
-    if context_input == '' then
-      context_input = nil
-    end
-
-    if context_value then
-      for _, embedding in ipairs(context_value.resolve(context_input, state.source)) do
-        if embedding then
-          embedding_map[embedding.filename] = embedding
-        end
-      end
-
-      prompt = prompt:gsub('#' .. prompt_context .. '%s*', '')
-    end
-  end
-
-  -- Sort and parse contexts
-  local contexts = {}
-  if config.context then
-    if type(config.context) == 'table' then
-      for _, config_context in ipairs(config.context) do
-        table.insert(contexts, config_context)
-      end
-    else
-      table.insert(contexts, config.context)
-    end
-  end
-  for prompt_context in prompt:gmatch('#([^%s]+)') do
-    table.insert(contexts, prompt_context)
-  end
-  table.sort(contexts, function(a, b)
-    return #a > #b
-  end)
-  for _, prompt_context in ipairs(contexts) do
-    parse_context(prompt_context)
-  end
-  local embeddings = vim.tbl_values(embedding_map)
+  -- Resolve embeddings
+  local embeddings, embedded_prompt = resolve_embeddings(prompt, config)
+  prompt = embedded_prompt
 
   -- Retrieve the selection
   local selection = get_selection(config)
@@ -954,30 +961,12 @@ function M.setup(config)
     end)
   end)
 
-  if state.system_prompt then
-    state.system_prompt:delete()
+  if state.overlay then
+    state.overlay:delete()
   end
-  state.system_prompt = Overlay('copilot-system-prompt', overlay_help, function(bufnr)
+  state.overlay = Overlay('copilot-overlay', overlay_help, function(bufnr)
     map_key(M.config.mappings.close, bufnr, function()
-      state.system_prompt:restore(state.chat.winnr, state.chat.bufnr)
-    end)
-  end)
-
-  if state.user_selection then
-    state.user_selection:delete()
-  end
-  state.user_selection = Overlay('copilot-user-selection', overlay_help, function(bufnr)
-    map_key(M.config.mappings.close, bufnr, function()
-      state.user_selection:restore(state.chat.winnr, state.chat.bufnr)
-    end)
-  end)
-
-  if state.help then
-    state.help:delete()
-  end
-  state.help = Overlay('copilot-help', overlay_help, function(bufnr)
-    map_key(M.config.mappings.close, bufnr, function()
-      state.help:restore(state.chat.winnr, state.chat.bufnr)
+      state.overlay:restore(state.chat.winnr, state.chat.bufnr)
     end)
   end)
 
@@ -1015,7 +1004,7 @@ function M.setup(config)
             end
           end
         end
-        state.help:show(chat_help, 'markdown', state.chat.winnr)
+        state.overlay:show(chat_help, 'markdown', state.chat.winnr)
       end)
 
       map_key(M.config.mappings.reset, bufnr, M.reset)
@@ -1167,12 +1156,16 @@ function M.setup(config)
       end)
 
       map_key(M.config.mappings.show_system_prompt, bufnr, function()
-        local prompt = state.config.system_prompt
-        if not prompt then
+        local section = state.chat:get_closest_section()
+        local system_prompt = state.config.system_prompt
+        if section and not section.answer then
+          system_prompt = resolve_prompts(section.content, state.config.system_prompt)
+        end
+        if not system_prompt then
           return
         end
 
-        state.system_prompt:show(vim.trim(prompt) .. '\n', 'markdown', state.chat.winnr)
+        state.overlay:show(vim.trim(system_prompt) .. '\n', 'markdown', state.chat.winnr)
       end)
 
       map_key(M.config.mappings.show_user_selection, bufnr, function()
@@ -1181,7 +1174,30 @@ function M.setup(config)
           return
         end
 
-        state.user_selection:show(selection.content .. '\n', selection.filetype, state.chat.winnr)
+        state.overlay:show(selection.content, selection.filetype, state.chat.winnr)
+      end)
+
+      map_key(M.config.mappings.show_user_context, bufnr, function()
+        local section = state.chat:get_closest_section()
+        local embeddings = {}
+        if section and not section.answer then
+          embeddings = resolve_embeddings(section.content, state.config)
+        end
+
+        local text = ''
+        for _, embedding in ipairs(embeddings) do
+          local lines = vim.split(embedding.content, '\n')
+          local preview = table.concat(vim.list_slice(lines, 1, math.min(10, #lines)), '\n')
+          local header = string.format('**`%s`** (%s lines)', embedding.filename, #lines)
+          if #lines > 10 then
+            header = header .. ' (truncated)'
+          end
+
+          text = text
+            .. string.format('%s\n```%s\n%s\n```\n\n', header, embedding.filetype, preview)
+        end
+
+        state.overlay:show(vim.trim(text) .. '\n', 'markdown', state.chat.winnr)
       end)
 
       vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {

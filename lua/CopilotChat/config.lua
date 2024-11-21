@@ -66,6 +66,7 @@ local utils = require('CopilotChat.utils')
 ---@field show_diff CopilotChat.config.mapping?
 ---@field show_system_prompt CopilotChat.config.mapping?
 ---@field show_user_selection CopilotChat.config.mapping?
+---@field show_user_context CopilotChat.config.mapping?
 ---@field show_help CopilotChat.config.mapping?
 
 --- CopilotChat default configuration
@@ -389,6 +390,9 @@ return {
     },
     show_user_selection = {
       normal = 'gs',
+    },
+    show_user_context = {
+      normal = 'gc',
     },
     show_help = {
       normal = 'gh',
