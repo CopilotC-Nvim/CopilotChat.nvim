@@ -176,8 +176,8 @@ function M.win_cwd(winnr)
     return '.'
   end
 
-  local ok, dir = pcall(vim.api.nvim_win_get_var, winnr, 'cchat_cwd')
-  if not ok or not dir or dir == '' then
+  local dir = vim.w[winnr].cchat_cwd
+  if not dir or dir == '' then
     return '.'
   end
 

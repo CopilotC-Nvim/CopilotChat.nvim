@@ -1319,7 +1319,7 @@ function M.setup(config)
   vim.api.nvim_create_autocmd({ 'VimEnter', 'WinEnter' }, {
     group = augroup,
     callback = function()
-      vim.api.nvim_win_set_var(0, 'cchat_cwd', vim.fn.getcwd())
+      vim.w.cchat_cwd = vim.fn.getcwd()
     end,
   })
 end
