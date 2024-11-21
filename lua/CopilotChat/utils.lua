@@ -1,4 +1,5 @@
 local M = {}
+M.timers = {}
 
 --- Create class
 ---@param fn function The class constructor
@@ -89,62 +90,6 @@ function M.blend_color(color_name, blend)
   return string.format('#%02x%02x%02x', r, g, b)
 end
 
---- Find lines between two patterns
----@param lines table<string> The lines to search
----@param current_line number The current line
----@param start_pattern string The start pattern
----@param end_pattern string? The end pattern
----@param allow_end_of_file boolean? Allow end of file as end pattern
-function M.find_lines(lines, current_line, start_pattern, end_pattern, allow_end_of_file)
-  if not end_pattern then
-    end_pattern = start_pattern
-  end
-
-  local line_count = #lines
-  local separator_line_start = 1
-  local separator_line_finish = line_count
-  local found_one = false
-
-  -- Find starting separator line
-  for i = current_line, 1, -1 do
-    local line = lines[i]
-
-    if line and string.match(line, start_pattern) then
-      separator_line_start = i + 1
-
-      for x = separator_line_start, line_count do
-        local next_line = lines[x]
-        if next_line and string.match(next_line, end_pattern) then
-          separator_line_finish = x - 1
-          found_one = true
-          break
-        end
-        if allow_end_of_file and x == line_count then
-          separator_line_finish = x
-          found_one = true
-          break
-        end
-      end
-
-      if found_one then
-        break
-      end
-    end
-  end
-
-  if not found_one then
-    return {}, 1, 1
-  end
-
-  -- Extract everything between the last and next separator or end of file
-  local result = {}
-  for i = separator_line_start, separator_line_finish do
-    table.insert(result, lines[i])
-  end
-
-  return result, separator_line_start, separator_line_finish
-end
-
 --- Return to normal mode
 function M.return_to_normal_mode()
   local mode = vim.fn.mode():lower()
@@ -161,11 +106,12 @@ function M.deprecate(old, new)
 end
 
 --- Debounce a function
-function M.debounce(fn, delay)
-  if M.timer then
-    M.timer:stop()
+function M.debounce(id, fn, delay)
+  if M.timers[id] then
+    M.timers[id]:stop()
+    M.timers[id] = nil
   end
-  M.timer = vim.defer_fn(fn, delay)
+  M.timers[id] = vim.defer_fn(fn, delay)
 end
 
 --- Check if a buffer is valid
