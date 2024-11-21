@@ -79,6 +79,21 @@ function Chat:create()
   vim.bo[bufnr].syntax = 'markdown'
   vim.bo[bufnr].textwidth = 0
 
+  -- Add popup and noinsert if not present
+  local completeopt = vim.opt.completeopt:get()
+  local updated = false
+  if not vim.tbl_contains(completeopt, 'noinsert') then
+    updated = true
+    table.insert(completeopt, 'noinsert')
+  end
+  if not vim.tbl_contains(completeopt, 'popup') then
+    updated = true
+    table.insert(completeopt, 'popup')
+  end
+  if updated then
+    vim.bo[bufnr].completeopt = table.concat(completeopt, ',')
+  end
+
   vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertLeave' }, {
     buffer = bufnr,
     callback = function()
