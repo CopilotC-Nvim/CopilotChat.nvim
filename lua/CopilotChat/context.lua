@@ -191,11 +191,13 @@ end
 
 --- Get list of all files in workspace
 ---@param pattern string?
+---@param cwd string
 ---@return table<CopilotChat.copilot.embed>
-function M.files(pattern)
+function M.files(pattern, cwd)
+  local search = cwd .. '/' .. (pattern or '**/*')
   local files = vim.tbl_filter(function(file)
     return vim.fn.isdirectory(file) == 0
-  end, vim.fn.glob(pattern or '**/*', false, true))
+  end, vim.fn.glob(search, false, true))
 
   if #files == 0 then
     return {}
@@ -263,23 +265,11 @@ end
 
 --- Get current git diff
 ---@param type string?
----@param bufnr number
+---@param cwd string
 ---@return CopilotChat.copilot.embed?
-function M.gitdiff(type, bufnr)
-  if not utils.buf_valid(bufnr) then
-    return nil
-  end
-
+function M.gitdiff(type, cwd)
   type = type or 'unstaged'
-  local bufname = vim.api.nvim_buf_get_name(bufnr)
-  local file_path = bufname:gsub('^%w+://', '')
-  local dir = vim.fn.fnamemodify(file_path, ':h')
-  if not dir or dir == '' then
-    return nil
-  end
-  dir = dir:gsub('.git$', '')
-
-  local cmd = 'git -C ' .. dir .. ' diff --no-color --no-ext-diff'
+  local cmd = 'git -C ' .. cwd .. ' diff --no-color --no-ext-diff'
 
   if type == 'staged' then
     cmd = cmd .. ' --staged'
