@@ -27,6 +27,10 @@ function M.class(fn, parent)
     return self
   end
 
+  function out.init(self, ...)
+    fn(self, ...)
+  end
+
   return out
 end
 

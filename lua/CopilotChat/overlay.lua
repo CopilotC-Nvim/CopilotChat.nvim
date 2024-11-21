@@ -1,5 +1,7 @@
 ---@class CopilotChat.Overlay
+---@field name string
 ---@field bufnr number
+---@field create fun(self: CopilotChat.Overlay)
 ---@field valid fun(self: CopilotChat.Overlay)
 ---@field validate fun(self: CopilotChat.Overlay)
 ---@field show fun(self: CopilotChat.Overlay, text: string, filetype: string?, winnr: number)
@@ -11,18 +13,20 @@ local utils = require('CopilotChat.utils')
 local class = utils.class
 
 local Overlay = class(function(self, name, help, on_buf_create)
+  self.name = name
   self.help = help
+  self.help_ns = vim.api.nvim_create_namespace('copilot-chat-help')
   self.on_buf_create = on_buf_create
   self.bufnr = nil
-
-  self.buf_create = function()
-    local bufnr = vim.api.nvim_create_buf(false, true)
-    vim.bo[bufnr].filetype = name
-    vim.bo[bufnr].modifiable = false
-    vim.api.nvim_buf_set_name(bufnr, name)
-    return bufnr
-  end
 end)
+
+function Overlay:create()
+  local bufnr = vim.api.nvim_create_buf(false, true)
+  vim.bo[bufnr].filetype = self.name
+  vim.bo[bufnr].modifiable = false
+  vim.api.nvim_buf_set_name(bufnr, self.name)
+  return bufnr
+end
 
 function Overlay:valid()
   return utils.buf_valid(self.bufnr)
@@ -33,7 +37,7 @@ function Overlay:validate()
     return
   end
 
-  self.bufnr = self.buf_create(self)
+  self.bufnr = self:create()
   self.on_buf_create(self.bufnr)
 end
 
@@ -82,9 +86,8 @@ function Overlay:show_help(msg, offset)
   end
 
   self:validate()
-  local help_ns = vim.api.nvim_create_namespace('copilot-chat-help')
   local line = vim.api.nvim_buf_line_count(self.bufnr) + offset
-  vim.api.nvim_buf_set_extmark(self.bufnr, help_ns, math.max(0, line - 1), 0, {
+  vim.api.nvim_buf_set_extmark(self.bufnr, self.help_ns, math.max(0, line - 1), 0, {
     id = 1,
     hl_mode = 'combine',
     priority = 100,
