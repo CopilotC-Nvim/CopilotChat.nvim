@@ -91,7 +91,9 @@ function Chat:create()
     table.insert(completeopt, 'popup')
   end
   if updated then
-    vim.bo[bufnr].completeopt = table.concat(completeopt, ',')
+    if vim.fn.has('nvim-0.11.0') == 1 then
+      vim.bo[bufnr].completeopt = table.concat(completeopt, ',')
+    end
   end
 
   vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertLeave' }, {
