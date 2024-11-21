@@ -6,7 +6,6 @@ local utils = require('CopilotChat.utils')
 --- @class CopilotChat.config.source
 --- @field bufnr number
 --- @field winnr number
---- @field cwd string
 
 ---@class CopilotChat.config.selection.diagnostic
 ---@field content string
@@ -190,9 +189,10 @@ return {
     file = {
       description = 'Includes content of provided file in chat context. Supports input.',
       input = function(callback, source)
+        local cwd = utils.win_cwd(source.winnr)
         local files = vim.tbl_filter(function(file)
           return vim.fn.isdirectory(file) == 0
-        end, vim.fn.glob(source.cwd .. '/**/*', false, true))
+        end, vim.fn.glob(cwd .. '/**/*', false, true))
 
         vim.ui.select(files, {
           prompt = 'Select a file> ',
@@ -213,7 +213,7 @@ return {
         }, callback)
       end,
       resolve = function(input, source)
-        return context.files(input, source.cwd)
+        return context.files(input, source.winnr)
       end,
     },
     git = {
@@ -225,7 +225,7 @@ return {
       end,
       resolve = function(input, source)
         return {
-          context.gitdiff(input, source.cwd),
+          context.gitdiff(input, source.winnr),
         }
       end,
     },
