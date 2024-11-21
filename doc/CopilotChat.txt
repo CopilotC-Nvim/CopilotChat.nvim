@@ -277,7 +277,8 @@ MODELS ~
 
 You can list available models with `:CopilotChatModels` command. Model
 determines the AI model used for the chat. You can set the model in the prompt
-by using `$` followed by the model name. Default models are:
+by using `$` followed by the model name or default model via config using
+`model` key. Default models are:
 
 - `gpt-4o` - This is the default Copilot Chat model. It is a versatile, multimodal model that excels in both text and image processing and is designed to provide fast, reliable responses. It also has superior performance in non-English languages. Gpt-4o is hosted on Azure.
 - `claude-3.5-sonnet` - This model excels at coding tasks across the entire software development lifecycle, from initial design to bug fixes, maintenance to optimizations. GitHub Copilot uses Claude 3.5 Sonnet hosted on Amazon Web Services.
@@ -295,8 +296,8 @@ AGENTS ~
 
 Agents are used to determine the AI agent used for the chat. You can list
 available agents with `:CopilotChatAgents` command. You can set the agent in
-the prompt by using `@` followed by the agent name. Default "noop" agent is
-`copilot`.
+the prompt by using `@` followed by the agent name or default agent via config
+using `agent` key. Default "noop" agent is `copilot`.
 
 For more information about extension agents, see here
 <https://docs.github.com/en/copilot/using-github-copilot/using-extensions-to-integrate-external-tools-with-copilot-chat>
@@ -307,16 +308,18 @@ You can install more agents from here
 CONTEXTS ~
 
 Contexts are used to determine the context of the chat. You can add context to
-the prompt by using `#` followed by the context name (multiple contexts are
-supported). If context supports input, you can set the input in the prompt by
-using `:` followed by the input (or pressing `complete` key after `:`). Default
-contexts are:
+the prompt by using `#` followed by the context name or default context via
+config using `context` (can be single or array) key. Any amount of context can
+be added to the prompt. If context supports input, you can set the input in the
+prompt by using `:` followed by the input (or pressing `complete` key after
+`:`). Default contexts are:
 
 - `buffer` - Includes specified buffer in chat context (default current). Supports input.
 - `buffers` - Includes all buffers in chat context (default listed). Supports input.
 - `file` - Includes content of provided file in chat context. Supports input.
 - `files` - Includes all non-hidden filenames in the current workspace in chat context. Supports input.
 - `git` - Includes current git diff in chat context (default unstaged). Supports input.
+- `register` - Includes content of specified register in chat context (default `+`, e.g system clipboard). Supports input.
 
 You can define custom contexts like this:
 
@@ -362,35 +365,17 @@ SELECTIONS ~
 
 Selections are used to determine the source of the chat (so basically what to
 chat about). Selections are configurable either by default or by prompt.
-Default selection is `visual` or `buffer` (if no visual selection). Default
-supported selections that live in `local select =
+Default selection is `visual` or `buffer` (if no visual selection). Selection
+includes content, start and end position, buffer info and diagnostic info (if
+available). Supported selections that live in `local select =
 require("CopilotChat.select")` are:
 
-- `select.visual` - Current visual selection. Includes diagnostic in selection. Works well with diffs.
-- `select.buffer` - Current buffer content. Includes diagnostic in selection. Works well with diffs.
-- `select.line` - Current line content. Includes diagnostic in selection. Works decently with diffs.
-- `select.unnamed` - Content from the unnamed register.
-- `select.clipboard` - Content from system clipboard.
+- `select.visual` - Current visual selection.
+- `select.buffer` - Current buffer content.
+- `select.line` - Current line content.
+- `select.unnamed` - Unnamed register content. This register contains last deleted, changed or yanked content.
 
-You can define custom selection functions like this:
-
->lua
-    {
-      selection = function()
-        -- Get content from * register
-        local content = vim.fn.getreg('*')
-        if not content or content == '' then
-          return nil
-        end
-    
-        return {
-          content = content,
-        }
-      end
-    }
-<
-
-Or chain multiple selections like this:
+You can chain multiple selections like this:
 
 >lua
     {
@@ -442,6 +427,11 @@ API ~
       selection = require("CopilotChat.select").buffer,
     })
     
+    -- Ask a question and provide custom contexts
+    chat.ask("Explain how it works.", {
+      context = { 'buffers', 'files', 'register:+' },
+    })
+    
     -- Ask a question and do something with the response
     chat.ask("Show me something interesting", {
       callback = function(response)
@@ -485,7 +475,7 @@ Also see here </lua/CopilotChat/config.lua>:
       system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use (can be specified manually in prompt via /).
       model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
       agent = 'copilot', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
-      context = nil, -- Default context to use (can be specified manually in prompt via #).
+      context = nil, -- Default context or array of contexts to use (can be specified manually in prompt via #).
       temperature = 0.1, -- GPT result temperature
     
       question_header = '## User ', -- Header to use for user questions
@@ -527,6 +517,9 @@ Also see here </lua/CopilotChat/config.lua>:
           -- see config.lua for implementation
         },
         git = {
+          -- see config.lua for implementation
+        },
+        register = {
           -- see config.lua for implementation
         },
       },
