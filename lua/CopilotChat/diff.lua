@@ -19,23 +19,13 @@ local utils = require('CopilotChat.utils')
 local class = utils.class
 
 local Diff = class(function(self, help, on_buf_create)
+  Overlay.init(self, 'copilot-diff', help, on_buf_create)
   self.hl_ns = vim.api.nvim_create_namespace('copilot-chat-highlights')
   vim.api.nvim_set_hl(self.hl_ns, '@diff.plus', { bg = utils.blend_color('DiffAdd', 20) })
   vim.api.nvim_set_hl(self.hl_ns, '@diff.minus', { bg = utils.blend_color('DiffDelete', 20) })
   vim.api.nvim_set_hl(self.hl_ns, '@diff.delta', { bg = utils.blend_color('DiffChange', 20) })
 
-  self.name = 'copilot-diff'
-  self.help = help
-  self.on_buf_create = on_buf_create
-  self.bufnr = nil
   self.diff = nil
-
-  self.buf_create = function()
-    local bufnr = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_name(bufnr, self.name)
-    vim.bo[bufnr].filetype = self.name
-    return bufnr
-  end
 end, Overlay)
 
 function Diff:show(diff, winnr)

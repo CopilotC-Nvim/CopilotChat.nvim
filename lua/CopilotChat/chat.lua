@@ -56,11 +56,10 @@ local function match_header(header)
 end
 
 local Chat = class(function(self, help, on_buf_create)
+  Overlay.init(self, 'copilot-chat', help, on_buf_create)
+  vim.treesitter.language.register('markdown', self.name)
+
   self.header_ns = vim.api.nvim_create_namespace('copilot-chat-headers')
-  self.name = 'copilot-chat'
-  self.help = help
-  self.on_buf_create = on_buf_create
-  self.bufnr = nil
   self.winnr = nil
   self.spinner = nil
   self.sections = {}
@@ -73,35 +72,30 @@ local Chat = class(function(self, help, on_buf_create)
   self.question_header = nil
   self.answer_header = nil
   self.separator = nil
-
-  vim.treesitter.language.register('markdown', self.name)
-
-  self.buf_create = function()
-    local bufnr = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_name(bufnr, self.name)
-    vim.bo[bufnr].filetype = self.name
-    vim.bo[bufnr].syntax = 'markdown'
-    vim.bo[bufnr].textwidth = 0
-    vim.bo[bufnr].modifiable = false
-
-    vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertLeave' }, {
-      buffer = bufnr,
-      callback = function()
-        utils.debounce(self.name, function()
-          self:render()
-        end, 100)
-      end,
-    })
-
-    if not self.spinner then
-      self.spinner = Spinner(bufnr)
-    else
-      self.spinner.bufnr = bufnr
-    end
-
-    return bufnr
-  end
 end, Overlay)
+
+function Chat:create()
+  local bufnr = Overlay.create(self)
+  vim.bo[bufnr].syntax = 'markdown'
+  vim.bo[bufnr].textwidth = 0
+
+  vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertLeave' }, {
+    buffer = bufnr,
+    callback = function()
+      utils.debounce(self.name, function()
+        self:render()
+      end, 100)
+    end,
+  })
+
+  if not self.spinner then
+    self.spinner = Spinner(bufnr)
+  else
+    self.spinner.bufnr = bufnr
+  end
+
+  return bufnr
+end
 
 function Chat:visible()
   return self.winnr
