@@ -4,6 +4,7 @@
 ---@field sections table<string, table>
 ---@field get_closest_section fun(self: CopilotChat.Chat): table|nil
 ---@field get_closest_block fun(self: CopilotChat.Chat): table|nil
+---@field clear_prompt fun(self: CopilotChat.Chat)
 ---@field valid fun(self: CopilotChat.Chat)
 ---@field visible fun(self: CopilotChat.Chat)
 ---@field active fun(self: CopilotChat.Chat)
@@ -276,6 +277,23 @@ function Chat:get_closest_block()
     end_line = closest_block.end_line,
     content = table.concat(block_content, '\n'),
   }
+end
+
+function Chat:clear_prompt()
+  if not self:visible() then
+    return
+  end
+
+  self:render()
+
+  local section = self.sections[#self.sections]
+  if not section or section.answer then
+    return
+  end
+
+  vim.bo[self.bufnr].modifiable = true
+  vim.api.nvim_buf_set_lines(self.bufnr, section.start_line - 1, section.end_line, false, {})
+  vim.bo[self.bufnr].modifiable = false
 end
 
 function Chat:active()
