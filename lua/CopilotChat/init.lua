@@ -75,7 +75,12 @@ local function highlight_selection(clear)
   end
 
   local selection = get_selection(state.config)
-  if not selection or not utils.buf_valid(selection.bufnr) then
+  if
+    not selection
+    or not utils.buf_valid(selection.bufnr)
+    or not selection.start_line
+    or not selection.end_line
+  then
     return
   end
 
