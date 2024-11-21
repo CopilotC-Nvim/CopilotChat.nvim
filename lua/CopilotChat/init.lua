@@ -75,7 +75,7 @@ local function highlight_selection(clear)
   end
 
   local selection = get_selection(state.config)
-  if not selection or not selection.start_line or not utils.buf_valid(selection.bufnr) then
+  if not selection or not utils.buf_valid(selection.bufnr) then
     return
   end
 
@@ -143,16 +143,16 @@ local function get_diff()
     end
   end
 
-  -- If we don't have either selection or valid header info, we can't proceed
-  if not start_line or not end_line then
+  -- If we are missing info, there is no diff to be made
+  if not start_line or not end_line or not filename then
     return nil
   end
 
   return {
     change = block.content,
     reference = reference or '',
-    filename = filename or 'unknown',
-    filetype = filetype or 'text',
+    filetype = filetype or '',
+    filename = filename,
     start_line = start_line,
     end_line = end_line,
     bufnr = bufnr,
@@ -167,6 +167,8 @@ local function jump_to_diff(winnr, bufnr, start_line, end_line)
   vim.api.nvim_win_set_cursor(winnr, { start_line, 0 })
   pcall(vim.api.nvim_buf_set_mark, bufnr, '<', start_line, 0, {})
   pcall(vim.api.nvim_buf_set_mark, bufnr, '>', end_line, 0, {})
+  pcall(vim.api.nvim_buf_set_mark, bufnr, '[', start_line, 0, {})
+  pcall(vim.api.nvim_buf_set_mark, bufnr, ']', end_line, 0, {})
   update_selection()
 end
 
@@ -666,7 +668,13 @@ function M.ask(prompt, config)
   -- Sort and parse contexts
   local contexts = {}
   if config.context then
-    table.insert(contexts, config.context)
+    if type(config.context) == 'table' then
+      for _, config_context in ipairs(config.context) do
+        table.insert(contexts, config_context)
+      end
+    else
+      table.insert(contexts, config.context)
+    end
   end
   for prompt_context in prompt:gmatch('#([^%s]+)') do
     table.insert(contexts, prompt_context)
@@ -1164,7 +1172,7 @@ function M.setup(config)
 
       map_key(M.config.mappings.show_user_selection, bufnr, function()
         local selection = get_selection(state.config)
-        if not selection or not selection.content then
+        if not selection then
           return
         end
 
