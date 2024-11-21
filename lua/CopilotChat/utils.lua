@@ -169,7 +169,6 @@ function M.quick_hash(str)
 end
 
 --- Get current working directory for target window
---- TODO: This is a hack to get the cwd of the previous window properly, its actually baffling I have to do this
 ---@param winnr number The buffer number
 ---@return string
 function M.win_cwd(winnr)
@@ -177,11 +176,7 @@ function M.win_cwd(winnr)
     return '.'
   end
 
-  local current_win = vim.api.nvim_get_current_win()
-  vim.api.nvim_set_current_win(winnr)
-  local dir = vim.fn.getcwd()
-  vim.api.nvim_set_current_win(current_win)
-
+  local dir = vim.api.nvim_win_get_var(winnr, 'cchat_cwd')
   if not dir or dir == '' then
     return '.'
   end
