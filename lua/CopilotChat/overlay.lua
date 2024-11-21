@@ -42,6 +42,10 @@ function Overlay:validate()
 end
 
 function Overlay:show(text, filetype, winnr, syntax)
+  if not text or vim.trim(text) == '' then
+    return
+  end
+
   self:validate()
   text = text .. '\n'
 
