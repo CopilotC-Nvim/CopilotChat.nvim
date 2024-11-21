@@ -161,7 +161,7 @@ local function generate_selection_messages(selection)
 
   local out = string.format('# FILE:%s CONTEXT\n', filename:upper())
   out = out .. "User's active selection:\n"
-  if selection.start_line and selection.end_line > 0 then
+  if selection.start_line and selection.end_line then
     out = out
       .. string.format(
         'Excerpt from %s, lines %s to %s:\n',
