@@ -667,19 +667,8 @@ function M.ask(prompt, config)
       finish(config, nil, true)
     end
 
-    local section = state.chat:get_closest_section()
-    if not section or section.answer then
-      return
-    end
-
     state.last_prompt = prompt
-    vim.api.nvim_buf_set_lines(
-      state.chat.bufnr,
-      section.start_line - 1,
-      section.end_line,
-      false,
-      {}
-    )
+    state.chat:clear_prompt()
     state.chat:append('\n\n' .. prompt)
     state.chat:append('\n\n' .. config.answer_header .. config.separator .. '\n\n')
   end
@@ -1327,12 +1316,10 @@ function M.setup(config)
   -- I dont think there is a better way to do this that functions
   -- with "rooter" plugins, LSP and stuff as vim.fn.getcwd() when
   -- i pass window number inside doesnt work
-  vim.api.nvim_create_autocmd('DirChanged', {
+  vim.api.nvim_create_autocmd({ 'VimEnter', 'WinEnter' }, {
     group = augroup,
     callback = function()
-      if vim.v.event and vim.v.event.cwd then
-        vim.api.nvim_win_set_var(0, 'cchat_cwd', vim.v.event.cwd)
-      end
+      vim.api.nvim_win_set_var(0, 'cchat_cwd', vim.fn.getcwd())
     end,
   })
 end
