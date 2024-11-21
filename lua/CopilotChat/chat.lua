@@ -1,6 +1,9 @@
 ---@class CopilotChat.Chat
 ---@field bufnr number
 ---@field winnr number
+---@field sections table<string, table>
+---@field get_closest_section fun(self: CopilotChat.Chat): table|nil
+---@field get_closest_block fun(self: CopilotChat.Chat): table|nil
 ---@field valid fun(self: CopilotChat.Chat)
 ---@field visible fun(self: CopilotChat.Chat)
 ---@field active fun(self: CopilotChat.Chat)
@@ -30,6 +33,28 @@ function CopilotChatFoldExpr(lnum, separator)
   return '='
 end
 
+---@return string?, number?, number?
+local function match_header(header)
+  if not header then
+    return
+  end
+
+  local header_filename, header_start_line, header_end_line =
+    header:match('%[file:.+%]%((.+)%) line:(%d+)-(%d+)')
+  if not header_filename then
+    header_filename, header_start_line, header_end_line =
+      header:match('%[file:(.+)%] line:(%d+)-(%d+)')
+  end
+
+  if header_filename then
+    header_filename = vim.fn.fnamemodify(header_filename, ':p:.')
+    header_start_line = tonumber(header_start_line) or 1
+    header_end_line = tonumber(header_end_line) or header_start_line
+  end
+
+  return header_filename, header_start_line, header_end_line
+end
+
 local Chat = class(function(self, help, on_buf_create)
   self.header_ns = vim.api.nvim_create_namespace('copilot-chat-headers')
   self.name = 'copilot-chat'
@@ -38,11 +63,16 @@ local Chat = class(function(self, help, on_buf_create)
   self.bufnr = nil
   self.winnr = nil
   self.spinner = nil
-  self.separator = nil
+  self.sections = {}
+
+  -- Config
+  self.layout = nil
   self.auto_insert = false
   self.auto_follow_cursor = true
   self.highlight_headers = true
-  self.layout = nil
+  self.question_header = nil
+  self.answer_header = nil
+  self.separator = nil
 
   vim.treesitter.language.register('markdown', self.name)
 
@@ -54,10 +84,10 @@ local Chat = class(function(self, help, on_buf_create)
     vim.bo[bufnr].textwidth = 0
     vim.bo[bufnr].modifiable = false
 
-    vim.api.nvim_create_autocmd({ 'TextChanged', 'TextChangedI' }, {
+    vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertLeave' }, {
       buffer = bufnr,
       callback = function()
-        vim.defer_fn(function()
+        utils.debounce(self.name, function()
           self:render()
         end, 100)
       end,
@@ -80,14 +110,48 @@ function Chat:visible()
 end
 
 function Chat:render()
-  if not self.highlight_headers or not self:visible() then
-    return
-  end
-
   vim.api.nvim_buf_clear_namespace(self.bufnr, self.header_ns, 0, -1)
   local lines = vim.api.nvim_buf_get_lines(self.bufnr, 0, -1, false)
+  local line_count = #lines
+
+  local sections = {}
+  local current_section = nil
+  local current_block = nil
+
   for l, line in ipairs(lines) do
-    if line:match(self.separator .. '$') then
+    local separator_found = false
+
+    if line:match(self.answer_header .. self.separator .. '$') then
+      separator_found = true
+      if current_section then
+        current_section.end_line = l - 1
+        table.insert(sections, current_section)
+      end
+      current_section = {
+        answer = true,
+        start_line = l + 1,
+        blocks = {},
+      }
+    elseif line:match(self.question_header .. self.separator .. '$') then
+      separator_found = true
+      if current_section then
+        current_section.end_line = l - 1
+        table.insert(sections, current_section)
+      end
+      current_section = {
+        answer = false,
+        start_line = l + 1,
+        blocks = {},
+      }
+    elseif l == line_count then
+      if current_section then
+        current_section.end_line = l
+        table.insert(sections, current_section)
+      end
+    end
+
+    -- Highlight separators
+    if self.highlight_headers and separator_found then
       local sep = vim.fn.strwidth(line) - vim.fn.strwidth(self.separator)
       -- separator line
       vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, sep, {
@@ -104,7 +168,109 @@ function Chat:render()
         strict = false,
       })
     end
+
+    -- Parse code blocks
+    if current_section and current_section.answer then
+      local filetype = line:match('^```(%w+)$')
+      if filetype and not current_block then
+        local filename, start_line, end_line = match_header(lines[l - 1])
+        if not filename then
+          filename, start_line, end_line = match_header(lines[l - 2])
+        end
+        filename = filename or 'code-block'
+
+        current_block = {
+          header = {
+            filename = filename,
+            start_line = start_line,
+            end_line = end_line,
+            filetype = filetype,
+          },
+          start_line = l + 1,
+        }
+      elseif line == '```' and current_block then
+        current_block.end_line = l - 1
+        table.insert(current_section.blocks, current_block)
+        current_block = nil
+      end
+    end
   end
+
+  self.sections = sections
+end
+
+function Chat:get_closest_section()
+  if not self:visible() then
+    return nil
+  end
+
+  local cursor_pos = vim.api.nvim_win_get_cursor(self.winnr)
+  local cursor_line = cursor_pos[1]
+  local closest_section = nil
+  local max_line_below_cursor = -1
+
+  for _, section in ipairs(self.sections) do
+    if section.start_line <= cursor_line and section.start_line > max_line_below_cursor then
+      max_line_below_cursor = section.start_line
+      closest_section = section
+    end
+  end
+
+  if not closest_section then
+    return nil
+  end
+
+  local section_content = vim.api.nvim_buf_get_lines(
+    self.bufnr,
+    closest_section.start_line - 1,
+    closest_section.end_line,
+    false
+  )
+
+  return {
+    answer = closest_section.answer,
+    start_line = closest_section.start_line,
+    end_line = closest_section.end_line,
+    content = table.concat(section_content, '\n'),
+  }
+end
+
+function Chat:get_closest_block()
+  if not self:visible() then
+    return nil
+  end
+
+  local cursor_pos = vim.api.nvim_win_get_cursor(self.winnr)
+  local cursor_line = cursor_pos[1]
+  local closest_block = nil
+  local max_line_below_cursor = -1
+
+  for _, section in pairs(self.sections) do
+    for _, block in ipairs(section.blocks) do
+      if block.start_line <= cursor_line and block.start_line > max_line_below_cursor then
+        max_line_below_cursor = block.start_line
+        closest_block = block
+      end
+    end
+  end
+
+  if not closest_block then
+    return nil
+  end
+
+  local block_content = vim.api.nvim_buf_get_lines(
+    self.bufnr,
+    closest_block.start_line - 1,
+    closest_block.end_line,
+    false
+  )
+
+  return {
+    header = closest_block.header,
+    start_line = closest_block.start_line,
+    end_line = closest_block.end_line,
+    content = table.concat(block_content, '\n'),
+  }
 end
 
 function Chat:active()
@@ -229,10 +395,12 @@ function Chat:open(config)
   end
 
   self.layout = layout
-  self.separator = config.separator
   self.auto_insert = config.auto_insert
   self.auto_follow_cursor = config.auto_follow_cursor
   self.highlight_headers = config.highlight_headers
+  self.question_header = config.question_header
+  self.answer_header = config.answer_header
+  self.separator = config.separator
 
   vim.wo[self.winnr].wrap = true
   vim.wo[self.winnr].linebreak = true

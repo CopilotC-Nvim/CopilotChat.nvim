@@ -62,38 +62,6 @@ local function get_selection(config)
   return nil
 end
 
----@param prompt string
----@param system_prompt string
----@return string, string
-local function update_prompts(prompt, system_prompt)
-  local prompts_to_use = M.prompts()
-  local try_again = false
-  local result = string.gsub(prompt, [[/[%w_]+]], function(match)
-    local found = prompts_to_use[string.sub(match, 2)]
-    if found then
-      if found.kind == 'user' then
-        local out = found.prompt
-        if out and string.match(out, [[/[%w_]+]]) then
-          try_again = true
-        end
-        system_prompt = found.system_prompt or system_prompt
-        return out
-      elseif found.kind == 'system' then
-        system_prompt = found.prompt
-        return ''
-      end
-    end
-
-    return match
-  end)
-
-  if try_again then
-    return update_prompts(result, system_prompt)
-  end
-
-  return system_prompt, result
-end
-
 --- Highlights the selection in the source buffer.
 ---@param clear? boolean
 local function highlight_selection(clear)
@@ -131,47 +99,17 @@ local function update_selection()
   highlight_selection()
 end
 
----@return string?, number?, number?
-local function match_header(header)
-  if not header then
-    return
-  end
-
-  local header_filename, header_start_line, header_end_line =
-    header:match('%[file:.+%]%((.+)%) line:(%d+)-(%d+)')
-  if not header_filename then
-    header_filename, header_start_line, header_end_line =
-      header:match('%[file:(.+)%] line:(%d+)-(%d+)')
-  end
-
-  if header_filename then
-    header_filename = vim.fn.fnamemodify(header_filename, ':p:.')
-    header_start_line = tonumber(header_start_line) or 1
-    header_end_line = tonumber(header_end_line) or header_start_line
-  end
-
-  return header_filename, header_start_line, header_end_line
-end
-
 ---@return CopilotChat.Diff.diff|nil
 local function get_diff()
-  local chat_lines = vim.api.nvim_buf_get_lines(state.chat.bufnr, 0, -1, false)
-  local current_line = vim.api.nvim_win_get_cursor(0)[1]
-  local section, section_start =
-    utils.find_lines(chat_lines, current_line, M.config.separator .. '$')
-  local change, change_start =
-    utils.find_lines(section, current_line - section_start, '^```%w+$', '^```$')
+  local block = state.chat:get_closest_block()
 
-  -- If no change block found, return nil
-  if not change or #change == 0 then
+  -- If no block found, return nil
+  if not block then
     return nil
   end
 
-  -- Try to get header info first
-  local header = section[change_start - 2]
-  local header_filename, header_start_line, header_end_line = match_header(header)
-
   -- Initialize variables with selection if available
+  local header = block.header
   local selection = get_selection(state.config)
   local reference = selection and selection.content
   local start_line = selection and selection.start_line
@@ -181,21 +119,21 @@ local function get_diff()
   local bufnr = selection and selection.bufnr
 
   -- If we have header info, use it as source of truth
-  if header_filename and header_start_line and header_end_line then
+  if header.start_line and header.end_line then
     -- Try to find matching buffer and window
     bufnr = nil
     for _, win in ipairs(vim.api.nvim_list_wins()) do
       local win_buf = vim.api.nvim_win_get_buf(win)
-      if utils.filename_same(vim.api.nvim_buf_get_name(win_buf), header_filename) then
+      if utils.filename_same(vim.api.nvim_buf_get_name(win_buf), header.filename) then
         bufnr = win_buf
         break
       end
     end
 
-    filename = header_filename
-    filetype = vim.filetype.match({ filename = filename })
-    start_line = header_start_line
-    end_line = header_end_line
+    filename = header.filename
+    filetype = header.filetype or vim.filetype.match({ filename = filename })
+    start_line = header.start_line
+    end_line = header.end_line
 
     -- If we found a valid buffer, get the reference content
     if bufnr and utils.buf_valid(bufnr) then
@@ -211,7 +149,7 @@ local function get_diff()
   end
 
   return {
-    change = table.concat(change, '\n'),
+    change = block.content,
     reference = reference or '',
     filename = filename or 'unknown',
     filetype = filetype or 'text',
@@ -219,6 +157,17 @@ local function get_diff()
     end_line = end_line,
     bufnr = bufnr,
   }
+end
+
+---@param winnr number
+---@param bufnr number
+---@param start_line number
+---@param end_line number
+local function jump_to_diff(winnr, bufnr, start_line, end_line)
+  vim.api.nvim_win_set_cursor(winnr, { start_line, 0 })
+  pcall(vim.api.nvim_buf_set_mark, bufnr, '<', start_line, 0, {})
+  pcall(vim.api.nvim_buf_set_mark, bufnr, '>', end_line, 0, {})
+  update_selection()
 end
 
 ---@param diff CopilotChat.Diff.diff?
@@ -233,17 +182,46 @@ local function apply_diff(diff)
   end
 
   local lines = vim.split(diff.change, '\n', { trimempty = false })
-
-  -- Update the source buffer with the change
   vim.api.nvim_buf_set_lines(diff.bufnr, diff.start_line - 1, diff.end_line, false, lines)
-
-  -- Update visual selection marks to the diff start/end and move cursor
-  vim.api.nvim_win_set_cursor(winnr, { diff.start_line, 0 })
-  vim.api.nvim_buf_set_mark(diff.bufnr, '<', diff.start_line, 0, {})
-  vim.api.nvim_buf_set_mark(diff.bufnr, '>', diff.start_line + #lines - 1, 0, {})
-  update_selection()
+  jump_to_diff(winnr, diff.bufnr, diff.start_line, diff.start_line + #lines - 1)
 end
 
+---@param prompt string
+---@param system_prompt string
+---@return string, string
+local function update_prompts(prompt, system_prompt)
+  local prompts_to_use = M.prompts()
+  local try_again = false
+  local result = string.gsub(prompt, [[/[%w_]+]], function(match)
+    local found = prompts_to_use[string.sub(match, 2)]
+    if found then
+      if found.kind == 'user' then
+        local out = found.prompt
+        if out and string.match(out, [[/[%w_]+]]) then
+          try_again = true
+        end
+        system_prompt = found.system_prompt or system_prompt
+        return out
+      elseif found.kind == 'system' then
+        system_prompt = found.prompt
+        return ''
+      end
+    end
+
+    return match
+  end)
+
+  if try_again then
+    return update_prompts(result, system_prompt)
+  end
+
+  return system_prompt, result
+end
+
+---@param config CopilotChat.config
+---@param message string?
+---@param hide_help boolean?
+---@param start_of_chat boolean?
 local function finish(config, message, hide_help, start_of_chat)
   if config.no_chat then
     return
@@ -279,6 +257,9 @@ local function finish(config, message, hide_help, start_of_chat)
   end
 end
 
+---@param config CopilotChat.config
+---@param err string|table
+---@param append_newline boolean?
 local function show_error(config, err, append_newline)
   log.error(vim.inspect(err))
 
@@ -633,17 +614,20 @@ function M.ask(prompt, config)
       finish(config, nil, true)
     end
 
-    state.last_prompt = prompt
-
-    -- Clear the current input prompt before asking a new question
-    local chat_lines = vim.api.nvim_buf_get_lines(state.chat.bufnr, 0, -1, false)
-    local _, start_line, end_line =
-      utils.find_lines(chat_lines, #chat_lines, M.config.separator .. '$', nil, true)
-    if #chat_lines == end_line then
-      vim.api.nvim_buf_set_lines(state.chat.bufnr, start_line, end_line, false, { '' })
+    local section = state.chat:get_closest_section()
+    if not section or section.answer then
+      return
     end
 
-    state.chat:append(prompt)
+    state.last_prompt = prompt
+    vim.api.nvim_buf_set_lines(
+      state.chat.bufnr,
+      section.start_line - 1,
+      section.end_line,
+      false,
+      {}
+    )
+    state.chat:append('\n\n' .. prompt)
     state.chat:append('\n\n' .. config.answer_header .. config.separator .. '\n\n')
   end
 
@@ -1026,14 +1010,20 @@ function M.setup(config)
       map_key(M.config.mappings.complete, bufnr, trigger_complete)
 
       map_key(M.config.mappings.submit_prompt, bufnr, function()
-        local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-        local current_line = vim.api.nvim_win_get_cursor(0)[1]
-        local lines =
-          utils.find_lines(chat_lines, current_line, M.config.separator .. '$', nil, true)
-        M.ask(vim.trim(table.concat(lines, '\n')), state.config)
+        local section = state.chat:get_closest_section()
+        if not section or section.answer then
+          return
+        end
+
+        M.ask(section.content, state.config)
       end)
 
       map_key(M.config.mappings.toggle_sticky, bufnr, function()
+        local section = state.chat:get_closest_section()
+        if not section or section.answer then
+          return
+        end
+
         local current_line = vim.trim(vim.api.nvim_get_current_line())
         if current_line == '' then
           return
@@ -1043,37 +1033,33 @@ function M.setup(config)
         local cur_line = cursor[1]
         vim.api.nvim_buf_set_lines(bufnr, cur_line - 1, cur_line, false, {})
 
-        local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-        local _, start_line, end_line =
-          utils.find_lines(chat_lines, cur_line, M.config.separator .. '$', nil, true)
-
         if vim.startswith(current_line, '> ') then
           return
         end
 
-        if start_line then
-          local insert_line = start_line
-          local first_one = true
+        local lines = vim.split(section.content, '\n')
+        local insert_line = 1
+        local first_one = true
 
-          for i = insert_line, end_line do
-            local line = chat_lines[i]
-            if line and vim.trim(line) ~= '' then
-              if vim.startswith(line, '> ') then
-                first_one = false
-              else
-                break
-              end
-            elseif i >= start_line + 1 then
+        for i = insert_line, #lines do
+          local line = lines[i]
+          if line and vim.trim(line) ~= '' then
+            if vim.startswith(line, '> ') then
+              first_one = false
+            else
               break
             end
-
-            insert_line = insert_line + 1
+          elseif i >= 2 then
+            break
           end
 
-          local lines = first_one and { '> ' .. current_line, '' } or { '> ' .. current_line }
-          vim.api.nvim_buf_set_lines(bufnr, insert_line - 1, insert_line - 1, false, lines)
-          vim.api.nvim_win_set_cursor(0, cursor)
+          insert_line = insert_line + 1
         end
+
+        insert_line = section.start_line + insert_line - 1
+        local to_insert = first_one and { '> ' .. current_line, '' } or { '> ' .. current_line }
+        vim.api.nvim_buf_set_lines(bufnr, insert_line - 1, insert_line - 1, false, to_insert)
+        vim.api.nvim_win_set_cursor(0, cursor)
       end)
 
       map_key(M.config.mappings.accept_diff, bufnr, function()
@@ -1113,84 +1099,35 @@ function M.setup(config)
           vim.bo[diff_bufnr].filetype = diff.filetype
         end
 
-        -- Open the buffer in the source window and move cursor
         vim.api.nvim_win_set_buf(state.source.winnr, diff_bufnr)
-        vim.api.nvim_win_set_cursor(state.source.winnr, { diff.start_line, 0 })
-
-        -- Set the marks for visual selection and update selection
-        pcall(vim.api.nvim_buf_set_mark, diff_bufnr, '<', diff.start_line, 0, {})
-        pcall(vim.api.nvim_buf_set_mark, diff_bufnr, '>', diff.end_line, 0, {})
-        update_selection()
+        jump_to_diff(state.source.winnr, diff_bufnr, diff.start_line, diff.end_line)
       end)
 
       map_key(M.config.mappings.quickfix_diffs, bufnr, function()
-        local chat_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
         local selection = get_selection(state.config)
         local items = {}
-        local in_block = false
-        local block_start = 0
-        local filetype = ''
-        local in_answer = false
-        local last_header = nil
 
-        for i, line in ipairs(chat_lines) do
-          -- Track if we're in an AI response section
-          if line:match(M.config.answer_header .. M.config.separator .. '$') then
-            in_answer = true
-          elseif line:match(M.config.question_header .. M.config.separator .. '$') then
-            in_answer = false
-          end
+        for _, section in ipairs(state.chat.sections) do
+          for _, block in ipairs(section.blocks) do
+            local header = block.header
 
-          -- Only process code blocks in AI responses
-          if in_answer then
-            -- Try to capture markdown header with file info
-            local filename, start_line, end_line = match_header(line)
-            if filename then
-              last_header = {
-                filename = filename,
-                start_line = start_line,
-                end_line = end_line,
-              }
+            if not header.start_line and selection then
+              header.filename = selection.filename .. ' (selection)'
+              header.start_line = selection.start_line
+              header.end_line = selection.end_line
             end
 
-            if line:match('^```%w+$') then
-              in_block = true
-              block_start = i + 1
-              filetype = line:match('^```(%w+)$')
-            elseif line == '```' and in_block then
-              in_block = false
-              local item = {
-                bufnr = bufnr,
-                lnum = block_start,
-                end_lnum = i - 1,
-              }
-
-              if last_header then
-                item.text = string.format(
-                  '%s [lines %d-%d]',
-                  last_header.filename,
-                  last_header.start_line,
-                  last_header.end_line
-                )
-              elseif
-                selection
-                and selection.filename
-                and selection.start_line
-                and selection.end_line
-              then
-                item.text = string.format(
-                  '%s [lines %d-%d]',
-                  selection.filename,
-                  selection.start_line,
-                  selection.end_line
-                )
-              else
-                item.text = string.format('Code block (%s)', filetype)
-              end
-
-              table.insert(items, item)
-              last_header = nil
+            local text = string.format('%s (%s)', header.filename, header.filetype)
+            if header.start_line and header.end_line then
+              text = text .. string.format(' [lines %d-%d]', header.start_line, header.end_line)
             end
+
+            table.insert(items, {
+              bufnr = bufnr,
+              lnum = block.start_line,
+              end_lnum = block.end_line,
+              text = text,
+            })
           end
         end
 
@@ -1268,7 +1205,7 @@ function M.setup(config)
             local char = line:sub(col, col)
 
             if vim.tbl_contains(M.complete_info().triggers, char) then
-              utils.debounce(trigger_complete, 100)
+              utils.debounce('complete', trigger_complete, 100)
             end
           end,
         })
