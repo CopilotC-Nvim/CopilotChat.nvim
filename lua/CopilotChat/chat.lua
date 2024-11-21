@@ -97,6 +97,17 @@ function Chat:create()
   return bufnr
 end
 
+function Chat:validate()
+  Overlay.validate(self)
+  if
+    self.winnr
+    and vim.api.nvim_win_is_valid(self.winnr)
+    and vim.api.nvim_win_get_buf(self.winnr) ~= self.bufnr
+  then
+    vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
+  end
+end
+
 function Chat:visible()
   return self.winnr
     and vim.api.nvim_win_is_valid(self.winnr)
