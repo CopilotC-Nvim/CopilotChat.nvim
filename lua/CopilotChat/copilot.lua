@@ -597,9 +597,10 @@ function Copilot:ask(prompt, opts)
     history_tokens = history_tokens - tiktoken.count(removed.content)
   end
 
-  -- Now add as many files as possible with remaining token budget
+  -- Now add as many files as possible with remaining token budget (back to front)
   local remaining_tokens = max_tokens - required_tokens - history_tokens
-  for _, message in ipairs(embeddings_messages) do
+  for i = #embeddings_messages, 1, -1 do
+    local message = embeddings_messages[i]
     local tokens = tiktoken.count(message.content)
     if remaining_tokens - tokens >= 0 then
       remaining_tokens = remaining_tokens - tokens

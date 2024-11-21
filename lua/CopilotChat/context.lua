@@ -53,6 +53,7 @@ local OFF_SIDE_RULE_LANGUAGES = {
 }
 
 local OUTLINE_THRESHOLD = 600
+local MULTI_FILE_THRESHOLD = 3
 
 local function spatial_distance_cosine(a, b)
   local dot_product = 0
@@ -322,18 +323,23 @@ end
 ---@return table<CopilotChat.copilot.embed>
 function M.filter_embeddings(copilot, prompt, embeddings)
   -- If we dont need to embed anything, just return directly
-  if #embeddings == 0 then
+  if #embeddings < MULTI_FILE_THRESHOLD then
     return embeddings
   end
 
-  table.insert(embeddings, 1, {
+  local original_map = utils.ordered_map()
+  local embedded_map = utils.ordered_map()
+
+  embedded_map:set('prompt', {
     content = prompt,
     filename = 'prompt',
     filetype = 'raw',
   })
 
-  -- Get embeddings from outlines
-  local embedded_data = copilot:embed(vim.tbl_map(function(embed)
+  -- Map embeddings by filename
+  for _, embed in ipairs(embeddings) do
+    original_map:set(embed.filename, embed)
+
     if embed.filetype ~= 'raw' then
       local outline = M.outline(embed.content, embed.filename, embed.filetype)
       local outline_lines = vim.split(outline.content, '\n')
@@ -345,11 +351,14 @@ function M.filter_embeddings(copilot, prompt, embeddings)
       end
 
       outline.content = table.concat(outline_lines, '\n')
-      return outline
+      embedded_map:set(embed.filename, outline)
+    else
+      embedded_map:set(embed.filename, embed)
     end
+  end
 
-    return embed
-  end, embeddings))
+  -- Get embeddings from all items
+  local embedded_data = copilot:embed(embedded_map:values())
 
   -- Rate embeddings by relatedness to the query
   local ranked_data = data_ranked_by_relatedness(table.remove(embedded_data, 1), embedded_data, 20)
@@ -358,14 +367,12 @@ function M.filter_embeddings(copilot, prompt, embeddings)
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
   end
 
-  -- Return original content but keep the ranking order and scores
+  -- Return original content in ranked order
   local result = {}
   for _, ranked_item in ipairs(ranked_data) do
-    for _, original in ipairs(embeddings) do
-      if original.filename == ranked_item.filename then
-        table.insert(result, original)
-        break
-      end
+    local original = original_map:get(ranked_item.filename)
+    if original then
+      table.insert(result, original)
     end
   end
 

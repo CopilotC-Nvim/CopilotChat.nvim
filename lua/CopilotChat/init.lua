@@ -12,7 +12,7 @@ local utils = require('CopilotChat.utils')
 
 local M = {}
 local PLUGIN_NAME = 'CopilotChat.nvim'
-local WORD = '([^%s]+)%s*'
+local WORD = '([^%s]+)'
 
 --- @class CopilotChat.state
 --- @field copilot CopilotChat.Copilot?
@@ -213,7 +213,7 @@ local function resolve_prompts(prompt, system_prompt)
       end
     end
 
-    return match
+    return '/' .. match
   end)
 
   if try_again then
@@ -227,8 +227,7 @@ end
 ---@param config CopilotChat.config
 ---@return table<CopilotChat.copilot.embed>, string
 local function resolve_embeddings(prompt, config)
-  local embedding_map = {}
-  local embeddings = {}
+  local embeddings = utils.ordered_map()
 
   local function parse_context(prompt_context)
     local split = vim.split(prompt_context, ':')
@@ -241,9 +240,8 @@ local function resolve_embeddings(prompt, config)
 
     if context_value then
       for _, embedding in ipairs(context_value.resolve(context_input, state.source)) do
-        if embedding and not embedding_map[embedding.filename] then
-          embedding_map[embedding.filename] = true
-          table.insert(embeddings, embedding)
+        if embedding then
+          embeddings:set(embedding.filename, embedding)
         end
       end
 
@@ -257,7 +255,7 @@ local function resolve_embeddings(prompt, config)
     if parse_context(match) then
       return ''
     end
-    return match
+    return '#' .. match
   end)
 
   if config.context then
@@ -270,7 +268,7 @@ local function resolve_embeddings(prompt, config)
     end
   end
 
-  return embeddings, prompt
+  return embeddings:values(), prompt
 end
 
 ---@param config CopilotChat.config
@@ -712,7 +710,7 @@ function M.ask(prompt, config)
         selected_agent = match
         return ''
       end
-      return match
+      return '@' .. match
     end)
 
     local models = vim.tbl_keys(state.copilot:list_models())
@@ -722,7 +720,7 @@ function M.ask(prompt, config)
         selected_model = match
         return ''
       end
-      return match
+      return '$' .. match
     end)
 
     local has_output = false
