@@ -92,9 +92,16 @@ end
 local function update_selection()
   local prev_winnr = vim.fn.win_getid(vim.fn.winnr('#'))
   if prev_winnr ~= state.chat.winnr and vim.fn.win_gettype(prev_winnr) == '' then
+    -- TODO: This is a hack to get the cwd of the previous window properly, its actually baffling I have to do this
+    local current_win = vim.api.nvim_get_current_win()
+    vim.api.nvim_set_current_win(prev_winnr)
+    local cwd = vim.fn.getcwd()
+    vim.api.nvim_set_current_win(current_win)
+
     state.source = {
       bufnr = vim.api.nvim_win_get_buf(prev_winnr),
       winnr = prev_winnr,
+      cwd = cwd,
     }
   end
 
@@ -431,7 +438,7 @@ local function trigger_complete()
         local value_str = tostring(value)
         vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { value_str })
         vim.api.nvim_win_set_cursor(0, { row, col + #value_str })
-      end)
+      end, state.source)
     end
 
     return
