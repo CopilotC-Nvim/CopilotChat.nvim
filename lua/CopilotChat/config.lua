@@ -15,11 +15,11 @@ local utils = require('CopilotChat.utils')
 
 ---@class CopilotChat.config.selection
 ---@field content string
----@field start_line number?
----@field end_line number?
----@field filename string?
----@field filetype string?
----@field bufnr number?
+---@field start_line number
+---@field end_line number
+---@field filename string
+---@field filetype string
+---@field bufnr number
 ---@field diagnostics table<CopilotChat.config.selection.diagnostic>?
 
 ---@class CopilotChat.config.context
@@ -77,7 +77,7 @@ local utils = require('CopilotChat.utils')
 ---@field system_prompt string?
 ---@field model string?
 ---@field agent string?
----@field context string?
+---@field context string|table<string>|nil
 ---@field temperature number?
 ---@field question_header string?
 ---@field answer_header string?
@@ -108,7 +108,7 @@ return {
   system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use (can be specified manually in prompt via /).
   model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   agent = 'copilot', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
-  context = nil, -- Default context to use (can be specified manually in prompt via #).
+  context = nil, -- Default context or array of contexts to use (can be specified manually in prompt via #).
   temperature = 0.1, -- GPT result temperature
 
   question_header = '## User ', -- Header to use for user questions
@@ -224,6 +224,44 @@ return {
       resolve = function(input, source)
         return {
           context.gitdiff(input, source.bufnr),
+        }
+      end,
+    },
+    register = {
+      description = 'Includes contents of register in chat context (default +, e.g clipboard). Supports input.',
+      input = function(callback)
+        local registers = {
+          ['+'] = 'synchronized with the system clipboard',
+          ['*'] = 'synchronized with the selection clipboard',
+          ['"'] = 'last deleted, changed, or yanked content',
+          ['0'] = 'last yank',
+          ['-'] = 'deleted or changed content smaller than one line',
+          ['.'] = 'last inserted text',
+          ['%'] = 'name of the current file',
+          [':'] = 'most recent executed command',
+          ['#'] = 'alternate buffer',
+          ['='] = 'result of an expression',
+          ['/'] = 'last search pattern',
+        }
+
+        vim.ui.select(
+          vim.tbl_map(function(k)
+            return { id = k, name = k .. ' - ' .. (registers[k] or '') }
+          end, vim.tbl_keys(registers)),
+          {
+            prompt = 'Select a register> ',
+            format_item = function(item)
+              return item.name
+            end,
+          },
+          function(choice)
+            callback(choice and choice.id)
+          end
+        )
+      end,
+      resolve = function(input)
+        return {
+          context.register(input),
         }
       end,
     },

@@ -37,21 +37,19 @@ end
 --- @return CopilotChat.config.selection|nil
 function M.visual(source)
   local bufnr = source.bufnr
-
   local start_line = unpack(vim.api.nvim_buf_get_mark(bufnr, '<'))
   local finish_line = unpack(vim.api.nvim_buf_get_mark(bufnr, '>'))
-
-  -- Swap positions if selection is backwards
+  if start_line == 0 or finish_line == 0 then
+    return nil
+  end
   if start_line > finish_line then
     start_line, finish_line = finish_line, start_line
   end
 
-  -- Get selected text
   local ok, lines = pcall(vim.api.nvim_buf_get_lines, bufnr, start_line - 1, finish_line, false)
   if not ok then
     return nil
   end
-
   local lines_content = table.concat(lines, '\n')
   if vim.trim(lines_content) == '' then
     return nil
@@ -74,7 +72,6 @@ end
 function M.buffer(source)
   local bufnr = source.bufnr
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-
   if not lines or #lines == 0 then
     return nil
   end
@@ -100,7 +97,6 @@ function M.line(source)
   local winnr = source.winnr
   local cursor = vim.api.nvim_win_get_cursor(winnr)
   local line = vim.api.nvim_buf_get_lines(bufnr, cursor[1] - 1, cursor[1], false)[1]
-
   if not line then
     return nil
   end
@@ -119,33 +115,42 @@ function M.line(source)
 end
 
 --- Select and process contents of unnamed register ("). This register contains last deleted, changed or yanked content.
+--- @param source CopilotChat.config.source
 --- @return CopilotChat.config.selection|nil
-function M.unnamed()
-  local lines = vim.fn.getreg('"')
+function M.unnamed(source)
+  local bufnr = source.bufnr
+  local start_line = unpack(vim.api.nvim_buf_get_mark(bufnr, '['))
+  local finish_line = unpack(vim.api.nvim_buf_get_mark(bufnr, ']'))
+  if start_line == 0 or finish_line == 0 then
+    return nil
+  end
+  if start_line > finish_line then
+    start_line, finish_line = finish_line, start_line
+  end
 
-  if not lines or lines == '' then
+  local ok, lines = pcall(vim.api.nvim_buf_get_lines, bufnr, start_line - 1, finish_line, false)
+  if not ok then
+    return nil
+  end
+  local lines_content = table.concat(lines, '\n')
+  if vim.trim(lines_content) == '' then
     return nil
   end
 
   return {
-    content = lines,
-    filename = 'unnamed',
+    content = lines_content,
+    filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ':p:.'),
+    filetype = vim.bo[bufnr].filetype,
+    start_line = start_line,
+    end_line = finish_line,
+    bufnr = bufnr,
+    diagnostics = get_diagnostics_in_range(bufnr, start_line, finish_line),
   }
 end
 
---- Select and process contents of plus register (+). This register is synchronized with system clipboard.
---- @return CopilotChat.config.selection|nil
 function M.clipboard()
-  local lines = vim.fn.getreg('+')
-
-  if not lines or lines == '' then
-    return nil
-  end
-
-  return {
-    content = lines,
-    filename = 'clipboard',
-  }
+  utils.deprecated('selection.clipboard', 'context.register:+')
+  return nil
 end
 
 function M.gitdiff()

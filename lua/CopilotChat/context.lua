@@ -303,6 +303,23 @@ function M.gitdiff(type, bufnr)
   }
 end
 
+--- Return contents of specified register
+---@param register string?
+---@return CopilotChat.copilot.embed?
+function M.register(register)
+  register = register or '+'
+  local lines = vim.fn.getreg(register)
+  if not lines or lines == '' then
+    return nil
+  end
+
+  return {
+    content = lines,
+    filename = 'vim_register_' .. register,
+    filetype = '',
+  }
+end
+
 --- Filter embeddings based on the query
 ---@param copilot CopilotChat.Copilot
 ---@param prompt string
