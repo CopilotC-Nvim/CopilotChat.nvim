@@ -1320,6 +1320,19 @@ function M.setup(config)
   vim.api.nvim_create_user_command('CopilotChatLoad', function(args)
     M.load(args.args)
   end, { nargs = '*', force = true, complete = complete_load })
+
+  local augroup = vim.api.nvim_create_augroup('CopilotChat', {})
+
+  -- Store the current directory to window when directory changes
+  -- I dont think there is a better way to do this that functions
+  -- with "rooter" plugins, LSP and stuff as vim.fn.getcwd() when
+  -- i pass window number inside doesnt work
+  vim.api.nvim_create_autocmd('DirChanged', {
+    group = augroup,
+    callback = function()
+      vim.api.nvim_win_set_var(0, 'cchat_cwd', vim.fn.getcwd())
+    end,
+  })
 end
 
 return M
