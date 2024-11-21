@@ -11,7 +11,8 @@ local debuginfo = require('CopilotChat.debuginfo')
 local utils = require('CopilotChat.utils')
 
 local M = {}
-local plugin_name = 'CopilotChat.nvim'
+local PLUGIN_NAME = 'CopilotChat.nvim'
+local WORD = '([^%s]+)%s*'
 
 --- @class CopilotChat.state
 --- @field copilot CopilotChat.Copilot?
@@ -196,12 +197,12 @@ end
 local function resolve_prompts(prompt, system_prompt)
   local prompts_to_use = M.prompts()
   local try_again = false
-  local result = string.gsub(prompt, [[/[%w_]+]], function(match)
+  local result = string.gsub(prompt, '/' .. WORD, function(match)
     local found = prompts_to_use[string.sub(match, 2)]
     if found then
       if found.kind == 'user' then
         local out = found.prompt
-        if out and string.match(out, [[/[%w_]+]]) then
+        if out and string.match(out, '/' .. WORD) then
           try_again = true
         end
         system_prompt = found.system_prompt or system_prompt
@@ -227,6 +228,8 @@ end
 ---@return table<CopilotChat.copilot.embed>, string
 local function resolve_embeddings(prompt, config)
   local embedding_map = {}
+  local embeddings = {}
+
   local function parse_context(prompt_context)
     local split = vim.split(prompt_context, ':')
     local context_name = table.remove(split, 1)
@@ -238,37 +241,36 @@ local function resolve_embeddings(prompt, config)
 
     if context_value then
       for _, embedding in ipairs(context_value.resolve(context_input, state.source)) do
-        if embedding then
-          embedding_map[embedding.filename] = embedding
+        if embedding and not embedding_map[embedding.filename] then
+          embedding_map[embedding.filename] = true
+          table.insert(embeddings, embedding)
         end
       end
 
-      prompt = prompt:gsub('#' .. prompt_context .. '%s*', '')
+      return true
     end
+
+    return false
   end
 
-  -- Sort and parse contexts
-  local contexts = {}
+  prompt = prompt:gsub('#' .. WORD, function(match)
+    if parse_context(match) then
+      return ''
+    end
+    return match
+  end)
+
   if config.context then
     if type(config.context) == 'table' then
       for _, config_context in ipairs(config.context) do
-        table.insert(contexts, config_context)
+        parse_context(config_context)
       end
     else
-      table.insert(contexts, config.context)
+      parse_context(config.context)
     end
   end
-  for prompt_context in prompt:gmatch('#([^%s]+)') do
-    table.insert(contexts, prompt_context)
-  end
-  table.sort(contexts, function(a, b)
-    return #a > #b
-  end)
-  for _, prompt_context in ipairs(contexts) do
-    parse_context(prompt_context)
-  end
 
-  return vim.tbl_values(embedding_map), prompt
+  return embeddings, prompt
 end
 
 ---@param config CopilotChat.config
@@ -705,23 +707,25 @@ function M.ask(prompt, config)
   async.run(function()
     local agents = vim.tbl_keys(state.copilot:list_agents())
     local selected_agent = config.agent
-    for agent in prompt:gmatch('@([^%s]+)') do
-      if vim.tbl_contains(agents, agent) then
-        selected_agent = agent
-        prompt = prompt:gsub('@' .. agent .. '%s*', '')
+    prompt = prompt:gsub('@' .. WORD, function(match)
+      if vim.tbl_contains(agents, match) then
+        selected_agent = match
+        return ''
       end
-    end
+      return match
+    end)
 
     local models = vim.tbl_keys(state.copilot:list_models())
-    local has_output = false
     local selected_model = config.model
-    for model in prompt:gmatch('%$([^%s]+)') do
-      if vim.tbl_contains(models, model) then
-        selected_model = model
-        prompt = prompt:gsub('%$' .. model .. '%s*', '')
+    prompt = prompt:gsub('%$' .. WORD, function(match)
+      if vim.tbl_contains(models, match) then
+        selected_model = match
+        return ''
       end
-    end
+      return match
+    end)
 
+    local has_output = false
     local query_ok, filtered_embeddings =
       pcall(context.filter_embeddings, state.copilot, prompt, embeddings)
 
@@ -869,9 +873,9 @@ end
 function M.log_level(level)
   M.config.log_level = level
   M.config.debug = level == 'debug'
-  local logfile = string.format('%s/%s.log', vim.fn.stdpath('state'), plugin_name)
+  local logfile = string.format('%s/%s.log', vim.fn.stdpath('state'), PLUGIN_NAME)
   log.new({
-    plugin = plugin_name,
+    plugin = PLUGIN_NAME,
     level = level,
     outfile = logfile,
   }, true)
@@ -1257,13 +1261,13 @@ function M.setup(config)
       nargs = '*',
       force = true,
       range = true,
-      desc = prompt.description or (plugin_name .. ' ' .. name),
+      desc = prompt.description or (PLUGIN_NAME .. ' ' .. name),
     })
 
     if prompt.mapping then
       vim.keymap.set({ 'n', 'v' }, prompt.mapping, function()
         M.ask(prompt.prompt, prompt)
-      end, { desc = prompt.description or (plugin_name .. ' ' .. name) })
+      end, { desc = prompt.description or (PLUGIN_NAME .. ' ' .. name) })
     end
   end
 

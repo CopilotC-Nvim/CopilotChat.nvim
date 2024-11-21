@@ -38,10 +38,10 @@ local class = utils.class
 local temp_file = utils.temp_file
 
 --- Constants
-local context_format = '[#file:%s](#file:%s-context)\n'
-local big_file_threshold = 2000
-local timeout = 30000
-local version_headers = {
+local CONTEXT_FORMAT = '[#file:%s](#file:%s-context)'
+local BIG_FILE_THRESHOLD = 2000
+local TIMEOUT = 30000
+local VERSION_HEADERS = {
   ['editor-version'] = 'Neovim/'
     .. vim.version().major
     .. '.'
@@ -128,8 +128,8 @@ local function generate_line_numbers(content, start_line)
   local truncated = false
 
   -- If the file is too big, truncate it
-  if #lines > big_file_threshold then
-    lines = vim.list_slice(lines, 1, big_file_threshold)
+  if #lines > BIG_FILE_THRESHOLD then
+    lines = vim.list_slice(lines, 1, BIG_FILE_THRESHOLD)
     truncated = true
   end
 
@@ -201,7 +201,7 @@ local function generate_selection_messages(selection)
 
   return {
     {
-      context = string.format(context_format, filename, filename),
+      context = string.format(CONTEXT_FORMAT, filename, filename),
       content = out,
       role = 'user',
     },
@@ -225,7 +225,7 @@ local function generate_embeddings_messages(embeddings)
   for filename, group in pairs(files) do
     local filetype = group[1].filetype or 'text'
     table.insert(out, {
-      context = string.format(context_format, filename, filename),
+      context = string.format(CONTEXT_FORMAT, filename, filename),
       content = string.format(
         '# FILE:%s CONTEXT\n```%s\n%s\n```',
         filename:upper(),
@@ -344,7 +344,7 @@ local Copilot = class(function(self, proxy, allow_insecure)
   self.claude_enabled = false
   self.current_job = nil
   self.request_args = {
-    timeout = timeout,
+    timeout = TIMEOUT,
     proxy = proxy,
     insecure = allow_insecure,
     raw = {
@@ -356,7 +356,7 @@ local Copilot = class(function(self, proxy, allow_insecure)
       '1',
       -- Maximum time for the request
       '--max-time',
-      math.floor(timeout * 2 / 1000),
+      math.floor(TIMEOUT * 2 / 1000),
       -- Timeout for initial connection
       '--connect-timeout',
       '10',
@@ -381,13 +381,10 @@ function Copilot:authenticate()
     not self.token or (self.token.expires_at and self.token.expires_at <= math.floor(os.time()))
   then
     local sessionid = utils.uuid() .. tostring(math.floor(os.time() * 1000))
-    local headers = {
+    local headers = vim.tbl_extend('force', {
       ['authorization'] = 'token ' .. self.github_token,
       ['accept'] = 'application/json',
-    }
-    for key, value in pairs(version_headers) do
-      headers[key] = value
-    end
+    }, VERSION_HEADERS)
 
     local response, err = curl_get(
       'https://api.github.com/copilot_internal/v2/token',
@@ -418,7 +415,7 @@ function Copilot:authenticate()
     ['openai-intent'] = 'conversation-panel',
     ['content-type'] = 'application/json',
   }
-  for key, value in pairs(version_headers) do
+  for key, value in pairs(VERSION_HEADERS) do
     headers[key] = value
   end
 

@@ -3,7 +3,7 @@ local utils = require('CopilotChat.utils')
 
 local M = {}
 
-local outline_types = {
+local OUTLINE_TYPES = {
   'local_function',
   'function_item',
   'arrow_function',
@@ -32,18 +32,18 @@ local outline_types = {
   'block_quote',
 }
 
-local comment_types = {
+local COMMENT_TYPES = {
   'comment',
   'line_comment',
   'block_comment',
   'doc_comment',
 }
 
-local ignored_types = {
+local IGNORED_TYPES = {
   'export_statement',
 }
 
-local off_side_rule_languages = {
+local OFF_SIDE_RULE_LANGUAGES = {
   'python',
   'coffeescript',
   'nim',
@@ -52,7 +52,7 @@ local off_side_rule_languages = {
   'fsharp',
 }
 
-local outline_threshold = 600
+local OUTLINE_THRESHOLD = 600
 
 local function spatial_distance_cosine(a, b)
   local dot_product = 0
@@ -121,10 +121,10 @@ function M.outline(content, name, ft)
   local function get_outline_lines(node)
     local type = node:type()
     local parent = node:parent()
-    local is_outline = vim.tbl_contains(outline_types, type)
-    local is_comment = vim.tbl_contains(comment_types, type)
-    local is_ignored = vim.tbl_contains(ignored_types, type)
-      or parent and vim.tbl_contains(ignored_types, parent:type())
+    local is_outline = vim.tbl_contains(OUTLINE_TYPES, type)
+    local is_comment = vim.tbl_contains(COMMENT_TYPES, type)
+    local is_ignored = vim.tbl_contains(IGNORED_TYPES, type)
+      or parent and vim.tbl_contains(IGNORED_TYPES, parent:type())
     local start_row, start_col, end_row, end_col = node:range()
     local skip_inner = false
 
@@ -165,7 +165,7 @@ function M.outline(content, name, ft)
     end
 
     if is_outline then
-      if not skip_inner and not vim.tbl_contains(off_side_rule_languages, ft) then
+      if not skip_inner and not vim.tbl_contains(OFF_SIDE_RULE_LANGUAGES, ft) then
         local end_line = lines[end_row + 1]
         local signature_end = vim.trim(end_line:sub(1, end_col))
         table.insert(outline_lines, string.rep('  ', depth) .. signature_end)
@@ -214,9 +214,12 @@ function M.files(pattern, winnr)
       table.insert(chunk, files[j])
     end
 
+    local chunk_number = math.floor(i / chunk_size)
+    local chunk_name = chunk_number == 0 and 'file_map' or 'file_map' .. tostring(chunk_number)
+
     table.insert(out, {
       content = table.concat(chunk, '\n'),
-      filename = 'file_map_' .. tostring(i),
+      filename = chunk_name,
       filetype = 'text',
     })
   end
@@ -336,8 +339,8 @@ function M.filter_embeddings(copilot, prompt, embeddings)
       local outline_lines = vim.split(outline.content, '\n')
 
       -- If outline is too big, truncate it
-      if #outline_lines > 0 and #outline_lines > outline_threshold then
-        outline_lines = vim.list_slice(outline_lines, 1, outline_threshold)
+      if #outline_lines > 0 and #outline_lines > OUTLINE_THRESHOLD then
+        outline_lines = vim.list_slice(outline_lines, 1, OUTLINE_THRESHOLD)
         table.insert(outline_lines, '... (truncated)')
       end
 
