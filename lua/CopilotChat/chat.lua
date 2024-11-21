@@ -246,6 +246,8 @@ function Chat:open(config)
   else
     vim.wo[self.winnr].foldcolumn = '0'
   end
+
+  self:render()
 end
 
 function Chat:close(bufnr)
