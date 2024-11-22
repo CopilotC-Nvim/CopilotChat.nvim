@@ -1,9 +1,3 @@
----@class CopilotChat.Spinner
----@field bufnr number
----@field set fun(self: CopilotChat.Spinner, text: string, virt_line: boolean)
----@field start fun(self: CopilotChat.Spinner)
----@field finish fun(self: CopilotChat.Spinner)
-
 local utils = require('CopilotChat.utils')
 local class = utils.class
 
@@ -20,6 +14,11 @@ local spinner_frames = {
   '⠏',
 }
 
+---@class CopilotChat.ui.Spinner : CopilotChat.utils.Class
+---@field ns number
+---@field bufnr number
+---@field timer table
+---@field index number
 local Spinner = class(function(self, bufnr)
   self.ns = vim.api.nvim_create_namespace('copilot-chat-spinner')
   self.bufnr = bufnr

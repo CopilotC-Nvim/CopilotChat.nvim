@@ -17,17 +17,6 @@
 ---@field model string?
 ---@field chunk_size number?
 
----@class CopilotChat.Copilot
----@field ask fun(self: CopilotChat.Copilot, prompt: string, opts: CopilotChat.copilot.ask.opts):string,number,number
----@field embed fun(self: CopilotChat.Copilot, inputs: table, opts: CopilotChat.copilot.embed.opts?):table<CopilotChat.copilot.embed>
----@field stop fun(self: CopilotChat.Copilot):boolean
----@field reset fun(self: CopilotChat.Copilot):boolean
----@field save fun(self: CopilotChat.Copilot, name: string, path: string):nil
----@field load fun(self: CopilotChat.Copilot, name: string, path: string):table
----@field running fun(self: CopilotChat.Copilot):boolean
----@field list_models fun(self: CopilotChat.Copilot):table
----@field list_agents fun(self: CopilotChat.Copilot):table
-
 local async = require('plenary.async')
 local log = require('plenary.log')
 local curl = require('plenary.curl')
@@ -331,18 +320,31 @@ local function generate_embedding_request(inputs, model)
   }
 end
 
+---@class CopilotChat.Copilot : CopilotChat.utils.Class
+---@field history table
+---@field embedding_cache table<CopilotChat.copilot.embed>
+---@field policies table<string, boolean>
+---@field models table<string, table>?
+---@field agents table<string, table>?
+---@field current_job string?
+---@field github_token string?
+---@field token table?
+---@field sessionid string?
+---@field machineid string
+---@field request_args table<string>
 local Copilot = class(function(self, proxy, allow_insecure)
   self.history = {}
   self.embedding_cache = {}
   self.policies = {}
+  self.models = nil
+  self.agents = nil
+
+  self.current_job = nil
   self.github_token = nil
   self.token = nil
   self.sessionid = nil
   self.machineid = utils.machine_id()
-  self.models = nil
-  self.agents = nil
-  self.claude_enabled = false
-  self.current_job = nil
+
   self.request_args = {
     timeout = TIMEOUT,
     proxy = proxy,
@@ -367,6 +369,8 @@ local Copilot = class(function(self, proxy, allow_insecure)
   }
 end)
 
+--- Authenticate with GitHub and get the required headers
+---@return table<string, string>
 function Copilot:authenticate()
   if not self.github_token then
     self.github_token = get_cached_token()
@@ -422,6 +426,8 @@ function Copilot:authenticate()
   return headers
 end
 
+--- Fetch models from the Copilot API
+---@return table<string, table>
 function Copilot:fetch_models()
   if self.models then
     return self.models
@@ -461,6 +467,8 @@ function Copilot:fetch_models()
   return out
 end
 
+--- Fetch agents from the Copilot API
+---@return table<string, table>
 function Copilot:fetch_agents()
   if self.agents then
     return self.agents
@@ -826,7 +834,7 @@ function Copilot:ask(prompt, opts)
 end
 
 --- List available models
----@return table
+---@return table<string, string>
 function Copilot:list_models()
   local models = self:fetch_models()
 
@@ -849,7 +857,7 @@ function Copilot:list_models()
 end
 
 --- List available agents
----@return table
+---@return table<string, string>
 function Copilot:list_agents()
   local agents = self:fetch_agents()
 
@@ -866,6 +874,7 @@ end
 --- Generate embeddings for the given inputs
 ---@param inputs table<CopilotChat.copilot.embed>: The inputs to embed
 ---@param opts CopilotChat.copilot.embed.opts: Options for the request
+---@return table<CopilotChat.copilot.embed>
 function Copilot:embed(inputs, opts)
   if not inputs or #inputs == 0 then
     return {}
@@ -909,17 +918,17 @@ function Copilot:embed(inputs, opts)
 
     if err then
       error(err)
-      return
+      return {}
     end
 
     if not response then
       error('Failed to get response')
-      return
+      return {}
     end
 
     if response.status ~= 200 then
       error('Failed to get response: ' .. tostring(response.status) .. '\n' .. response.body)
-      return
+      return {}
     end
 
     local ok, content = pcall(vim.json.decode, response.body, {
@@ -931,7 +940,7 @@ function Copilot:embed(inputs, opts)
 
     if not ok then
       error('Failed to parse response: ' .. vim.inspect(content) .. '\n' .. response.body)
-      return
+      return {}
     end
 
     for _, embedding in ipairs(content.data) do
@@ -952,6 +961,7 @@ function Copilot:embed(inputs, opts)
 end
 
 --- Stop the running job
+---@return boolean
 function Copilot:stop()
   if self.current_job ~= nil then
     self.current_job = nil
@@ -962,6 +972,7 @@ function Copilot:stop()
 end
 
 --- Reset the history and stop any running job
+---@return boolean
 function Copilot:reset()
   local stopped = self:stop()
   self.history = {}

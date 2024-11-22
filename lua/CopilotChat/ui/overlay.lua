@@ -1,18 +1,12 @@
----@class CopilotChat.Overlay
----@field name string
----@field bufnr number
----@field create fun(self: CopilotChat.Overlay)
----@field valid fun(self: CopilotChat.Overlay)
----@field validate fun(self: CopilotChat.Overlay)
----@field show fun(self: CopilotChat.Overlay, text: string, filetype: string?, winnr: number)
----@field restore fun(self: CopilotChat.Overlay, winnr: number, bufnr: number)
----@field delete fun(self: CopilotChat.Overlay)
----@field show_help fun(self: CopilotChat.Overlay, msg: string, offset: number)
----@field clear_help fun(self: CopilotChat.Overlay)
-
 local utils = require('CopilotChat.utils')
 local class = utils.class
 
+---@class CopilotChat.ui.Overlay : CopilotChat.utils.Class
+---@field name string
+---@field help string
+---@field help_ns number
+---@field on_buf_create fun(bufnr: number)
+---@field bufnr number?
 local Overlay = class(function(self, name, help, on_buf_create)
   self.name = name
   self.help = help
@@ -21,6 +15,7 @@ local Overlay = class(function(self, name, help, on_buf_create)
   self.bufnr = nil
 end)
 
+---@return number
 function Overlay:create()
   local bufnr = vim.api.nvim_create_buf(false, true)
   vim.bo[bufnr].filetype = self.name
@@ -29,6 +24,7 @@ function Overlay:create()
   return bufnr
 end
 
+---@return boolean
 function Overlay:valid()
   return utils.buf_valid(self.bufnr)
 end
@@ -39,10 +35,16 @@ function Overlay:validate()
   end
 
   self.bufnr = self:create()
-  self.on_buf_create(self.bufnr)
+  if self.on_buf_create then
+    self.on_buf_create(self.bufnr)
+  end
 end
 
-function Overlay:show(text, filetype, winnr, syntax)
+---@param text string
+---@param winnr number
+---@param filetype? string
+---@param syntax string?
+function Overlay:show(text, winnr, filetype, syntax)
   if not text or vim.trim(text) == '' then
     return
   end
@@ -70,6 +72,8 @@ function Overlay:show(text, filetype, winnr, syntax)
   end
 end
 
+---@param winnr number
+---@param bufnr number?
 function Overlay:restore(winnr, bufnr)
   vim.api.nvim_win_set_buf(winnr, bufnr or 0)
 end
@@ -80,6 +84,8 @@ function Overlay:delete()
   end
 end
 
+---@param msg string
+---@param offset number
 function Overlay:show_help(msg, offset)
   if not msg then
     return

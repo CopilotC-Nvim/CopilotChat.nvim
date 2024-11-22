@@ -1,25 +1,5 @@
----@class CopilotChat.Chat
----@field bufnr number
----@field winnr number
----@field sections table<string, table>
----@field get_closest_section fun(self: CopilotChat.Chat): table|nil
----@field get_closest_block fun(self: CopilotChat.Chat): table|nil
----@field clear_prompt fun(self: CopilotChat.Chat)
----@field valid fun(self: CopilotChat.Chat)
----@field visible fun(self: CopilotChat.Chat)
----@field active fun(self: CopilotChat.Chat)
----@field append fun(self: CopilotChat.Chat, str: string)
----@field last fun(self: CopilotChat.Chat)
----@field clear fun(self: CopilotChat.Chat)
----@field open fun(self: CopilotChat.Chat, config: CopilotChat.config)
----@field close fun(self: CopilotChat.Chat, bufnr: number?)
----@field focus fun(self: CopilotChat.Chat)
----@field follow fun(self: CopilotChat.Chat)
----@field finish fun(self: CopilotChat.Chat, msg: string?, offset: number?)
----@field delete fun(self: CopilotChat.Chat)
-
-local Overlay = require('CopilotChat.overlay')
-local Spinner = require('CopilotChat.spinner')
+local Overlay = require('CopilotChat.ui.overlay')
+local Spinner = require('CopilotChat.ui.spinner')
 local utils = require('CopilotChat.utils')
 local is_stable = utils.is_stable
 local class = utils.class
@@ -34,6 +14,7 @@ function CopilotChatFoldExpr(lnum, separator)
   return '='
 end
 
+---@param header? string
 ---@return string?, number?, number?
 local function match_header(header)
   if not header then
@@ -56,6 +37,39 @@ local function match_header(header)
   return header_filename, header_start_line, header_end_line
 end
 
+---@class CopilotChat.ui.Chat.Section.Block.Header
+---@field filename string
+---@field start_line number
+---@field end_line number
+---@field filetype string
+
+---@class CopilotChat.ui.Chat.Section.Block
+---@field header CopilotChat.ui.Chat.Section.Block.Header
+---@field start_line number
+---@field end_line number
+---@field content string?
+
+---@class CopilotChat.ui.Chat.Section
+---@field answer boolean
+---@field start_line number
+---@field end_line number
+---@field blocks table<CopilotChat.ui.Chat.Section.Block>
+---@field content string?
+
+---@class CopilotChat.ui.Chat : CopilotChat.ui.Overlay
+---@field header_ns number
+---@field winnr number?
+---@field spinner CopilotChat.ui.Spinner
+---@field sections table<CopilotChat.ui.Chat.Section>
+---@field token_count number?
+---@field token_max_count number?
+---@field layout string?
+---@field auto_insert boolean
+---@field auto_follow_cursor boolean
+---@field highlight_headers boolean
+---@field question_header string?
+---@field answer_header string?
+---@field separator string?
 local Chat = class(function(self, help, on_buf_create)
   Overlay.init(self, 'copilot-chat', help, on_buf_create)
   vim.treesitter.language.register('markdown', self.name)
@@ -79,6 +93,7 @@ local Chat = class(function(self, help, on_buf_create)
   self.separator = nil
 end, Overlay)
 
+---@return number
 function Chat:create()
   local bufnr = Overlay.create(self)
   vim.bo[bufnr].syntax = 'markdown'
@@ -113,10 +128,12 @@ function Chat:validate()
   end
 end
 
+---@return boolean
 function Chat:visible()
   return self.winnr
-    and vim.api.nvim_win_is_valid(self.winnr)
-    and vim.api.nvim_win_get_buf(self.winnr) == self.bufnr
+      and vim.api.nvim_win_is_valid(self.winnr)
+      and vim.api.nvim_win_get_buf(self.winnr) == self.bufnr
+    or false
 end
 
 function Chat:render()
@@ -220,6 +237,7 @@ function Chat:render()
   self.sections = sections
 end
 
+---@return CopilotChat.ui.Chat.Section?
 function Chat:get_closest_section()
   if not self:visible() then
     return nil
@@ -256,6 +274,7 @@ function Chat:get_closest_section()
   }
 end
 
+---@return CopilotChat.ui.Chat.Section.Block?
 function Chat:get_closest_block()
   if not self:visible() then
     return nil
@@ -311,10 +330,12 @@ function Chat:clear_prompt()
   vim.bo[self.bufnr].modifiable = false
 end
 
+---@return boolean
 function Chat:active()
   return vim.api.nvim_get_current_win() == self.winnr
 end
 
+---@return number, number, number
 function Chat:last()
   self:validate()
   local line_count = vim.api.nvim_buf_line_count(self.bufnr)
@@ -330,6 +351,7 @@ function Chat:last()
   return last_line, last_column, line_count
 end
 
+---@param str string
 function Chat:append(str)
   self:validate()
   vim.bo[self.bufnr].modifiable = true
@@ -377,6 +399,7 @@ function Chat:clear()
   vim.bo[self.bufnr].modifiable = false
 end
 
+---@param config CopilotChat.config
 function Chat:open(config)
   self:validate()
 
@@ -475,6 +498,7 @@ function Chat:open(config)
   self:render()
 end
 
+---@param bufnr number?
 function Chat:close(bufnr)
   if not self:visible() then
     return
@@ -485,7 +509,9 @@ function Chat:close(bufnr)
   end
 
   if self.layout == 'replace' then
-    self:restore(self.winnr, bufnr)
+    if bufnr then
+      self:restore(self.winnr, bufnr)
+    end
   else
     vim.api.nvim_win_close(self.winnr, true)
   end

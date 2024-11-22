@@ -192,7 +192,7 @@ end
 
 --- Get list of all files in workspace
 ---@param pattern string?
----@param winnr number
+---@param winnr number?
 ---@return table<CopilotChat.copilot.embed>
 function M.files(pattern, winnr)
   local cwd = utils.win_cwd(winnr)

@@ -1,4 +1,8 @@
----@class CopilotChat.Diff.diff
+local Overlay = require('CopilotChat.ui.overlay')
+local utils = require('CopilotChat.utils')
+local class = utils.class
+
+---@class CopilotChat.ui.Diff.Diff
 ---@field change string
 ---@field reference string
 ---@field filename string
@@ -7,17 +11,9 @@
 ---@field end_line number
 ---@field bufnr number?
 
----@class CopilotChat.Diff
----@field bufnr number
----@field show fun(self: CopilotChat.Diff, diff: CopilotChat.Diff.diff, winnr: number)
----@field restore fun(self: CopilotChat.Diff, winnr: number, bufnr: number)
----@field delete fun(self: CopilotChat.Diff)
----@field get_diff fun(self: CopilotChat.Diff): CopilotChat.Diff.diff
-
-local Overlay = require('CopilotChat.overlay')
-local utils = require('CopilotChat.utils')
-local class = utils.class
-
+---@class CopilotChat.ui.Diff : CopilotChat.ui.Overlay
+---@field hl_ns number
+---@field diff CopilotChat.ui.Diff.Diff?
 local Diff = class(function(self, help, on_buf_create)
   Overlay.init(self, 'copilot-diff', help, on_buf_create)
   self.hl_ns = vim.api.nvim_create_namespace('copilot-chat-highlights')
@@ -28,6 +24,8 @@ local Diff = class(function(self, help, on_buf_create)
   self.diff = nil
 end, Overlay)
 
+---@param diff CopilotChat.ui.Diff.Diff
+---@param winnr number
 function Diff:show(diff, winnr)
   self.diff = diff
   self:validate()
@@ -45,17 +43,20 @@ function Diff:show(diff, winnr)
       algorithm = 'myers',
       ctxlen = #diff.reference,
     })),
-    diff.filetype,
     winnr,
+    diff.filetype,
     'diff'
   )
 end
 
+---@param winnr number
+---@param bufnr number
 function Diff:restore(winnr, bufnr)
   Overlay.restore(self, winnr, bufnr)
   vim.api.nvim_win_set_hl_ns(winnr, 0)
 end
 
+---@return CopilotChat.ui.Diff.Diff?
 function Diff:get_diff()
   return self.diff
 end
