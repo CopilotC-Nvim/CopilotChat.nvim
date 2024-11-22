@@ -435,7 +435,7 @@ function Chat:open(config)
   end
 
   self.layout = layout
-  self.auto_insert = config.auto_insert
+  self.auto_insert = config.auto_insert_mode
   self.auto_follow_cursor = config.auto_follow_cursor
   self.highlight_headers = config.highlight_headers
   self.question_header = config.question_header
@@ -494,11 +494,13 @@ function Chat:close(bufnr)
 end
 
 function Chat:focus()
-  if self:visible() then
-    vim.api.nvim_set_current_win(self.winnr)
-    if self.auto_insert and self:active() then
-      vim.cmd('startinsert')
-    end
+  if not self:visible() then
+    return
+  end
+
+  vim.api.nvim_set_current_win(self.winnr)
+  if self.auto_insert and self:active() and vim.bo[self.bufnr].modifiable then
+    vim.cmd('startinsert')
   end
 end
 
