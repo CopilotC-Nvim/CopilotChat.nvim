@@ -56,15 +56,16 @@ local function get_selection(config)
     and winnr
     and vim.api.nvim_win_is_valid(winnr)
   then
-    return state.config.selection(state.source)
+    return config.selection(state.source)
   end
 
   return nil
 end
 
 --- Highlights the selection in the source buffer.
----@param clear? boolean
-local function highlight_selection(clear)
+---@param clear boolean
+---@param config CopilotChat.config
+local function highlight_selection(clear, config)
   local selection_ns = vim.api.nvim_create_namespace('copilot-chat-selection')
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
     vim.api.nvim_buf_clear_namespace(buf, selection_ns, 0, -1)
@@ -74,7 +75,7 @@ local function highlight_selection(clear)
     return
   end
 
-  local selection = get_selection(state.config)
+  local selection = get_selection(config)
   if
     not selection
     or not utils.buf_valid(selection.bufnr)
@@ -92,7 +93,8 @@ local function highlight_selection(clear)
 end
 
 --- Updates the selection based on previous window
-local function update_selection()
+---@param config CopilotChat.config
+local function update_selection(config)
   local prev_winnr = vim.fn.win_getid(vim.fn.winnr('#'))
   if prev_winnr ~= state.chat.winnr and vim.fn.win_gettype(prev_winnr) == '' then
     state.source = {
@@ -101,11 +103,12 @@ local function update_selection()
     }
   end
 
-  highlight_selection()
+  highlight_selection(false, config)
 end
 
+---@param config CopilotChat.config
 ---@return CopilotChat.ui.Diff.Diff?
-local function get_diff()
+local function get_diff(config)
   local block = state.chat:get_closest_block()
 
   -- If no block found, return nil
@@ -115,7 +118,7 @@ local function get_diff()
 
   -- Initialize variables with selection if available
   local header = block.header
-  local selection = get_selection(state.config)
+  local selection = get_selection(config)
   local reference = selection and selection.content
   local start_line = selection and selection.start_line
   local end_line = selection and selection.end_line
@@ -168,17 +171,19 @@ end
 ---@param bufnr number
 ---@param start_line number
 ---@param end_line number
-local function jump_to_diff(winnr, bufnr, start_line, end_line)
+---@param config CopilotChat.config
+local function jump_to_diff(winnr, bufnr, start_line, end_line, config)
   vim.api.nvim_win_set_cursor(winnr, { start_line, 0 })
   pcall(vim.api.nvim_buf_set_mark, bufnr, '<', start_line, 0, {})
   pcall(vim.api.nvim_buf_set_mark, bufnr, '>', end_line, 0, {})
   pcall(vim.api.nvim_buf_set_mark, bufnr, '[', start_line, 0, {})
   pcall(vim.api.nvim_buf_set_mark, bufnr, ']', end_line, 0, {})
-  update_selection()
+  update_selection(config)
 end
 
 ---@param diff CopilotChat.ui.Diff.Diff?
-local function apply_diff(diff)
+---@param config CopilotChat.config
+local function apply_diff(diff, config)
   if not diff or not diff.bufnr then
     return
   end
@@ -190,7 +195,7 @@ local function apply_diff(diff)
 
   local lines = vim.split(diff.change, '\n', { trimempty = false })
   vim.api.nvim_buf_set_lines(diff.bufnr, diff.start_line - 1, diff.end_line, false, lines)
-  jump_to_diff(winnr, diff.bufnr, diff.start_line, diff.start_line + #lines - 1)
+  jump_to_diff(winnr, diff.bufnr, diff.start_line, diff.start_line + #lines - 1, config)
 end
 
 ---@param prompt string
@@ -301,9 +306,10 @@ local function finish(config, start_of_chat)
 end
 
 ---@param config CopilotChat.config
----@param err string|table
+---@param err string|table|nil
 ---@param append_newline boolean?
 local function show_error(config, err, append_newline)
+  err = err or 'Unknown error'
   log.error(vim.inspect(err))
 
   if config.no_chat then
@@ -940,7 +946,7 @@ function M.setup(config)
     end)
 
     map_key(M.config.mappings.accept_diff, bufnr, function()
-      apply_diff(state.diff:get_diff())
+      apply_diff(state.diff:get_diff(), state.config)
     end)
   end)
 
@@ -991,7 +997,7 @@ function M.setup(config)
           return
         end
 
-        M.ask(section.content, state.config)
+        M.ask(section.content)
       end)
 
       map_key(M.config.mappings.toggle_sticky, bufnr, function()
@@ -1039,7 +1045,7 @@ function M.setup(config)
       end)
 
       map_key(M.config.mappings.accept_diff, bufnr, function()
-        apply_diff(get_diff())
+        apply_diff(get_diff(state.config), state.config)
       end)
 
       map_key(M.config.mappings.jump_to_diff, bufnr, function()
@@ -1051,7 +1057,7 @@ function M.setup(config)
           return
         end
 
-        local diff = get_diff()
+        local diff = get_diff(state.config)
         if not diff then
           return
         end
@@ -1076,7 +1082,7 @@ function M.setup(config)
         end
 
         vim.api.nvim_win_set_buf(state.source.winnr, diff_bufnr)
-        jump_to_diff(state.source.winnr, diff_bufnr, diff.start_line, diff.end_line)
+        jump_to_diff(state.source.winnr, diff_bufnr, diff.start_line, diff.end_line, state.config)
       end)
 
       map_key(M.config.mappings.quickfix_diffs, bufnr, function()
@@ -1112,7 +1118,7 @@ function M.setup(config)
       end)
 
       map_key(M.config.mappings.yank_diff, bufnr, function()
-        local diff = get_diff()
+        local diff = get_diff(state.config)
         if not diff then
           return
         end
@@ -1121,7 +1127,7 @@ function M.setup(config)
       end)
 
       map_key(M.config.mappings.show_diff, bufnr, function()
-        local diff = get_diff()
+        local diff = get_diff(state.config)
         if not diff then
           return
         end
@@ -1133,7 +1139,7 @@ function M.setup(config)
         local section = state.chat:get_closest_section()
         local system_prompt = state.config.system_prompt
         if section and not section.answer then
-          system_prompt = resolve_prompts(section.content, state.config.system_prompt)
+          system_prompt = resolve_prompts(section.content, system_prompt)
         end
         if not system_prompt then
           return
@@ -1180,9 +1186,9 @@ function M.setup(config)
           local is_enter = ev.event == 'BufEnter'
 
           if is_enter then
-            update_selection()
+            update_selection(state.config)
           else
-            highlight_selection(true)
+            highlight_selection(true, state.config)
           end
         end,
       })
