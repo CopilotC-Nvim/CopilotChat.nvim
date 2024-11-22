@@ -8,6 +8,7 @@
 ---@field restore fun(self: CopilotChat.Overlay, winnr: number, bufnr: number)
 ---@field delete fun(self: CopilotChat.Overlay)
 ---@field show_help fun(self: CopilotChat.Overlay, msg: string, offset: number)
+---@field clear_help fun(self: CopilotChat.Overlay)
 
 local utils = require('CopilotChat.utils')
 local class = utils.class
@@ -99,6 +100,10 @@ function Overlay:show_help(msg, offset)
       return { { t, 'CopilotChatHelp' } }
     end, vim.split(msg, '\n')),
   })
+end
+
+function Overlay:clear_help()
+  vim.api.nvim_buf_del_extmark(self.bufnr, self.help_ns, 1)
 end
 
 return Overlay

@@ -21,7 +21,7 @@ local spinner_frames = {
 }
 
 local Spinner = class(function(self, bufnr)
-  self.ns = vim.api.nvim_create_namespace('copilot-chat-help')
+  self.ns = vim.api.nvim_create_namespace('copilot-chat-spinner')
   self.bufnr = bufnr
   self.timer = nil
   self.index = 1

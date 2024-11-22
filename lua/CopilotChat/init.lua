@@ -272,10 +272,8 @@ local function resolve_embeddings(prompt, config)
 end
 
 ---@param config CopilotChat.config
----@param message string?
----@param hide_help boolean?
 ---@param start_of_chat boolean?
-local function finish(config, message, hide_help, start_of_chat)
+local function finish(config, start_of_chat)
   if config.no_chat then
     return
   end
@@ -286,28 +284,18 @@ local function finish(config, message, hide_help, start_of_chat)
 
   state.chat:append(config.question_header .. config.separator .. '\n\n')
 
-  local offset = 0
-
   if state.last_prompt then
+    local has_sticky = false
     for sticky_line in state.last_prompt:gmatch('(>%s+[^\n]+)') do
       state.chat:append(sticky_line .. '\n')
-      -- Account for sticky line
-      offset = offset + 1
+      has_sticky = true
     end
-
-    if offset > 0 then
+    if has_sticky then
       state.chat:append('\n')
-      -- Account for new line after sticky lines
-      offset = offset + 1
     end
   end
 
-  -- Account for double new line after separator
-  offset = offset + 2
-
-  if not hide_help then
-    state.chat:finish(message, offset)
-  end
+  state.chat:finish()
 end
 
 ---@param config CopilotChat.config
@@ -664,7 +652,7 @@ function M.ask(prompt, config)
     if config.clear_chat_on_new_prompt then
       M.stop(true, config)
     elseif state.copilot:stop() then
-      finish(config, nil, true)
+      finish(config)
     end
 
     state.last_prompt = prompt
@@ -757,15 +745,12 @@ function M.ask(prompt, config)
 
     if not config.no_chat then
       state.last_response = response
+      state.chat.token_count = token_count
+      state.chat.token_max_count = token_max_count
     end
 
     vim.schedule(function()
-      if token_count and token_max_count and token_count > 0 then
-        finish(config, token_count .. '/' .. token_max_count .. ' tokens used')
-      else
-        finish(config)
-      end
-
+      finish(config)
       if config.callback then
         config.callback(response, state.source)
       end
@@ -793,7 +778,7 @@ function M.stop(reset, config)
       state.last_response = nil
     end
 
-    finish(config, nil, nil, reset)
+    finish(config, reset)
   end)
 end
 
@@ -851,7 +836,7 @@ function M.load(name, history_path)
     end
   end
 
-  finish(M.config, nil, nil, #history == 0)
+  finish(M.config, #history == 0)
   M.open()
 end
 
@@ -1231,7 +1216,7 @@ function M.setup(config)
         })
       end
 
-      finish(M.config, nil, nil, true)
+      finish(M.config, true)
     end
   )
 
