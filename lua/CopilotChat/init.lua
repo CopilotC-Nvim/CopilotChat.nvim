@@ -1189,7 +1189,7 @@ function M.setup(config)
 
       if M.config.insert_at_end then
         vim.api.nvim_create_autocmd({ 'InsertEnter' }, {
-          buffer = state.chat.bufnr,
+          buffer = bufnr,
           callback = function()
             vim.cmd('normal! 0')
             vim.cmd('normal! G$')
@@ -1285,7 +1285,6 @@ function M.setup(config)
 
     return options
   end
-
   vim.api.nvim_create_user_command('CopilotChatSave', function(args)
     M.save(args.args)
   end, { nargs = '*', force = true, complete = complete_load })
@@ -1293,14 +1292,12 @@ function M.setup(config)
     M.load(args.args)
   end, { nargs = '*', force = true, complete = complete_load })
 
-  local augroup = vim.api.nvim_create_augroup('CopilotChat', {})
-
   -- Store the current directory to window when directory changes
   -- I dont think there is a better way to do this that functions
   -- with "rooter" plugins, LSP and stuff as vim.fn.getcwd() when
   -- i pass window number inside doesnt work
   vim.api.nvim_create_autocmd({ 'VimEnter', 'WinEnter', 'DirChanged' }, {
-    group = augroup,
+    group = vim.api.nvim_create_augroup('CopilotChat', {}),
     callback = function()
       vim.w.cchat_cwd = vim.fn.getcwd()
     end,

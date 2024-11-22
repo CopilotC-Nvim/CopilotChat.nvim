@@ -4,16 +4,8 @@ local context = require('CopilotChat.context')
 local Overlay = require('CopilotChat.ui.overlay')
 local class = utils.class
 
----@class CopilotChat.ui.Debug : CopilotChat.ui.Overlay
-local Debug = class(function(self)
-  Overlay.init(self, 'copilot-debug', nil, function(bufnr)
-    vim.keymap.set('n', 'q', function()
-      vim.api.nvim_win_close(0, true)
-    end, { buffer = bufnr })
-  end)
-end, Overlay)
-
-function Debug:get_debug_content()
+---@return table<string>
+local function build_debug_info()
   local lines = {
     'If you are facing issues, run `:checkhealth CopilotChat` and share the output.',
     '',
@@ -59,10 +51,19 @@ function Debug:get_debug_content()
   return lines
 end
 
+---@class CopilotChat.ui.Debug : CopilotChat.ui.Overlay
+local Debug = class(function(self)
+  Overlay.init(self, 'copilot-debug', nil, function(bufnr)
+    vim.keymap.set('n', 'q', function()
+      vim.api.nvim_win_close(0, true)
+    end, { buffer = bufnr })
+  end)
+end, Overlay)
+
 function Debug:open()
   self:validate()
 
-  local lines = self:get_debug_content()
+  local lines = build_debug_info()
   local height = math.min(vim.o.lines - 3, #lines)
   local width = 0
   for _, line in ipairs(lines) do
