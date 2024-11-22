@@ -65,6 +65,10 @@ local Chat = class(function(self, help, on_buf_create)
   self.spinner = nil
   self.sections = {}
 
+  -- Variables
+  self.token_count = nil
+  self.token_max_count = nil
+
   -- Config
   self.layout = nil
   self.auto_insert = false
@@ -200,6 +204,17 @@ function Chat:render()
         current_block = nil
       end
     end
+  end
+
+  local last_section = sections[#sections]
+  if last_section and not last_section.answer then
+    local msg = self.help
+    if self.token_count and self.token_max_count then
+      msg = msg .. '\n' .. self.token_count .. '/' .. self.token_max_count .. ' tokens used'
+    end
+    self:show_help(msg, last_section.start_line - last_section.end_line - 1)
+  else
+    self:clear_help()
   end
 
   self.sections = sections
@@ -355,6 +370,8 @@ end
 
 function Chat:clear()
   self:validate()
+  self.token_count = nil
+  self.token_max_count = nil
   vim.bo[self.bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, {})
   vim.bo[self.bufnr].modifiable = false
@@ -498,27 +515,13 @@ function Chat:follow()
   vim.api.nvim_win_set_cursor(self.winnr, { last_line + 1, last_column })
 end
 
-function Chat:finish(msg, offset)
+function Chat:finish()
   if not self.spinner then
     return
   end
 
-  if not offset then
-    offset = 0
-  end
-
   self.spinner:finish()
-
-  if msg and msg ~= '' then
-    if self.help and self.help ~= '' then
-      msg = msg .. '\n' .. self.help
-    end
-  else
-    msg = self.help
-  end
-
   vim.bo[self.bufnr].modifiable = true
-  self:show_help(msg, -offset)
   if self.auto_insert and self:active() then
     vim.cmd('startinsert')
   end
