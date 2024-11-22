@@ -1,10 +1,14 @@
 local M = {}
 M.timers = {}
 
+---@class CopilotChat.utils.Class
+---@field new fun(...):table
+---@field init fun(self, ...)
+
 --- Create class
 ---@param fn function The class constructor
 ---@param parent table? The parent class
----@return table
+---@return CopilotChat.utils.Class
 function M.class(fn, parent)
   local out = {}
   out.__index = out
@@ -168,7 +172,7 @@ function M.quick_hash(str)
 end
 
 --- Get current working directory for target window
----@param winnr number The buffer number
+---@param winnr number? The buffer number
 ---@return string
 function M.win_cwd(winnr)
   if not winnr or not vim.api.nvim_win_is_valid(winnr) then
@@ -192,7 +196,7 @@ end
 --- Create an ordered map
 ---@return OrderedMap
 function M.ordered_map()
-  local ordered_map = {
+  return {
     _keys = {},
     _data = {},
     set = function(self, key, value)
@@ -218,8 +222,6 @@ function M.ordered_map()
       return result
     end,
   }
-
-  return ordered_map
 end
 
 return M

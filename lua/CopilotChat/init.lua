@@ -1,14 +1,15 @@
-local default_config = require('CopilotChat.config')
 local async = require('plenary.async')
 local log = require('plenary.log')
+local default_config = require('CopilotChat.config')
 local Copilot = require('CopilotChat.copilot')
-local Chat = require('CopilotChat.chat')
-local Diff = require('CopilotChat.diff')
-local Overlay = require('CopilotChat.overlay')
 local context = require('CopilotChat.context')
 local prompts = require('CopilotChat.prompts')
-local debuginfo = require('CopilotChat.debuginfo')
 local utils = require('CopilotChat.utils')
+
+local Chat = require('CopilotChat.ui.chat')
+local Diff = require('CopilotChat.ui.diff')
+local Overlay = require('CopilotChat.ui.overlay')
+local Debug = require('CopilotChat.ui.debug')
 
 local M = {}
 local PLUGIN_NAME = 'CopilotChat.nvim'
@@ -20,10 +21,10 @@ local WORD = '([^%s]+)'
 --- @field config CopilotChat.config?
 --- @field last_prompt string?
 --- @field last_response string?
---- @field chat CopilotChat.Chat?
---- @field diff CopilotChat.Diff?
---- @field overlay CopilotChat.Overlay?
---- @field help CopilotChat.Overlay?
+--- @field chat CopilotChat.ui.Chat?
+--- @field diff CopilotChat.ui.Diff?
+--- @field debug CopilotChat.ui.Debug?
+--- @field overlay CopilotChat.ui.Overlay?
 local state = {
   copilot = nil,
 
@@ -39,6 +40,7 @@ local state = {
   chat = nil,
   diff = nil,
   overlay = nil,
+  debug = nil,
 }
 
 ---@param config CopilotChat.config
@@ -102,7 +104,7 @@ local function update_selection()
   highlight_selection()
 end
 
----@return CopilotChat.Diff.diff|nil
+---@return CopilotChat.ui.Diff.Diff?
 local function get_diff()
   local block = state.chat:get_closest_block()
 
@@ -175,7 +177,7 @@ local function jump_to_diff(winnr, bufnr, start_line, end_line)
   update_selection()
 end
 
----@param diff CopilotChat.Diff.diff?
+---@param diff CopilotChat.ui.Diff.Diff?
 local function apply_diff(diff)
   if not diff or not diff.bufnr then
     return
@@ -633,7 +635,7 @@ function M.select_agent()
 end
 
 --- Ask a question to the Copilot model.
----@param prompt string
+---@param prompt string?
 ---@param config CopilotChat.config|CopilotChat.config.prompt|nil
 function M.ask(prompt, config)
   config = vim.tbl_deep_extend('force', M.config, config or {})
@@ -916,6 +918,19 @@ function M.setup(config)
     diff_help = diff_help .. '\n' .. overlay_help
   end
 
+  if state.overlay then
+    state.overlay:delete()
+  end
+  state.overlay = Overlay('copilot-overlay', overlay_help, function(bufnr)
+    map_key(M.config.mappings.close, bufnr, function()
+      state.overlay:restore(state.chat.winnr, state.chat.bufnr)
+    end)
+  end)
+
+  if not state.debug then
+    state.debug = Debug()
+  end
+
   if state.diff then
     state.diff:delete()
   end
@@ -926,15 +941,6 @@ function M.setup(config)
 
     map_key(M.config.mappings.accept_diff, bufnr, function()
       apply_diff(state.diff:get_diff())
-    end)
-  end)
-
-  if state.overlay then
-    state.overlay:delete()
-  end
-  state.overlay = Overlay('copilot-overlay', overlay_help, function(bufnr)
-    map_key(M.config.mappings.close, bufnr, function()
-      state.overlay:restore(state.chat.winnr, state.chat.bufnr)
     end)
   end)
 
@@ -972,7 +978,7 @@ function M.setup(config)
             end
           end
         end
-        state.overlay:show(chat_help, 'markdown', state.chat.winnr)
+        state.overlay:show(chat_help, state.chat.winnr, 'markdown')
       end)
 
       map_key(M.config.mappings.reset, bufnr, M.reset)
@@ -1133,7 +1139,7 @@ function M.setup(config)
           return
         end
 
-        state.overlay:show(vim.trim(system_prompt) .. '\n', 'markdown', state.chat.winnr)
+        state.overlay:show(vim.trim(system_prompt) .. '\n', state.chat.winnr, 'markdown')
       end)
 
       map_key(M.config.mappings.show_user_selection, bufnr, function()
@@ -1142,7 +1148,7 @@ function M.setup(config)
           return
         end
 
-        state.overlay:show(selection.content, selection.filetype, state.chat.winnr)
+        state.overlay:show(selection.content, state.chat.winnr, selection.filetype)
       end)
 
       map_key(M.config.mappings.show_user_context, bufnr, function()
@@ -1165,7 +1171,7 @@ function M.setup(config)
             .. string.format('%s\n```%s\n%s\n```\n\n', header, embedding.filetype, preview)
         end
 
-        state.overlay:show(vim.trim(text) .. '\n', 'markdown', state.chat.winnr)
+        state.overlay:show(vim.trim(text) .. '\n', state.chat.winnr, 'markdown')
       end)
 
       vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
@@ -1265,7 +1271,7 @@ function M.setup(config)
     M.reset()
   end, { force = true })
   vim.api.nvim_create_user_command('CopilotChatDebugInfo', function()
-    debuginfo.open()
+    state.debug:open()
   end, { force = true })
 
   local function complete_load()
