@@ -198,17 +198,17 @@ local function resolve_prompts(prompt, system_prompt)
   local prompts_to_use = M.prompts()
   local try_again = false
   local result = string.gsub(prompt, '/' .. WORD, function(match)
-    local found = prompts_to_use[string.sub(match, 2)]
-    if found then
-      if found.kind == 'user' then
-        local out = found.prompt
+    local matched_prompt = prompts_to_use[match]
+    if matched_prompt then
+      if matched_prompt.kind == 'user' then
+        local out = matched_prompt.prompt
         if out and string.match(out, '/' .. WORD) then
           try_again = true
         end
-        system_prompt = found.system_prompt or system_prompt
+        system_prompt = matched_prompt.system_prompt or system_prompt
         return out
-      elseif found.kind == 'system' then
-        system_prompt = found.prompt
+      elseif matched_prompt.kind == 'system' then
+        system_prompt = matched_prompt.prompt
         return ''
       end
     end
