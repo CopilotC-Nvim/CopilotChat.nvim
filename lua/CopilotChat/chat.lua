@@ -127,7 +127,7 @@ function Chat:render()
   for l, line in ipairs(lines) do
     local separator_found = false
 
-    if line:match(self.answer_header .. self.separator .. '$') then
+    if line == self.answer_header .. self.separator then
       separator_found = true
       if current_section then
         current_section.end_line = l - 1
@@ -138,7 +138,7 @@ function Chat:render()
         start_line = l + 1,
         blocks = {},
       }
-    elseif line:match(self.question_header .. self.separator .. '$') then
+    elseif line == self.question_header .. self.separator then
       separator_found = true
       if current_section then
         current_section.end_line = l - 1
