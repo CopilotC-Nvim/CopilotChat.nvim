@@ -652,7 +652,7 @@ function M.ask(prompt, config)
     if config.clear_chat_on_new_prompt then
       M.stop(true, config)
     elseif state.copilot:stop() then
-      finish(config)
+      finish(config, nil)
     end
 
     state.last_prompt = prompt
@@ -723,7 +723,6 @@ function M.ask(prompt, config)
         on_progress = function(token)
           vim.schedule(function()
             if not config.no_chat then
-              vim.cmd('undojoin')
               state.chat:append(token)
             end
 
@@ -763,23 +762,17 @@ end
 ---@param config CopilotChat.config?
 function M.stop(reset, config)
   config = vim.tbl_deep_extend('force', M.config, config or {})
-  local stopped = reset and state.copilot:reset() or state.copilot:stop()
-  local wrap = vim.schedule
-  if not stopped then
-    wrap = function(fn)
-      fn()
-    end
+
+  if reset then
+    state.copilot:reset()
+    state.chat:clear()
+    state.last_prompt = nil
+    state.last_response = nil
+  else
+    state.copilot:stop()
   end
 
-  wrap(function()
-    if reset then
-      state.chat:clear()
-      state.last_prompt = nil
-      state.last_response = nil
-    end
-
-    finish(config, reset)
-  end)
+  finish(config, reset)
 end
 
 --- Reset the chat window and show the help message.
@@ -895,7 +888,6 @@ function M.setup(config)
   if state.copilot then
     state.copilot:stop()
   end
-
   state.copilot = Copilot(M.config.proxy, M.config.allow_insecure)
 
   if M.config.debug then
