@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 November 22
+*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 November 23
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -494,17 +494,32 @@ Also see here </lua/CopilotChat/config.lua>:
       auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
       insert_at_end = false, -- Move cursor to end of buffer when inserting text
       clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
-      highlight_selection = true, -- Highlight selection in the source buffer when in the chat window
+      highlight_selection = true, -- Highlight selection
       highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
     
       history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
+      no_chat = false, -- Do not write to chat buffer and use history(useful for using callback for custom processing)
       callback = nil, -- Callback to use when ask response is received
-      no_chat = false, -- Do not write to chat buffer and use chat history (useful for using callback for custom processing)
     
       -- default selection
       selection = function(source)
         return select.visual(source) or select.buffer(source)
       end,
+    
+      -- default window options
+      window = {
+        layout = 'vertical', -- 'vertical', 'horizontal', 'float', 'replace'
+        width = 0.5, -- fractional width of parent, or absolute width in columns when > 1
+        height = 0.5, -- fractional height of parent, or absolute height in rows when > 1
+        -- Options below only apply to floating windows
+        relative = 'editor', -- 'editor', 'win', 'cursor', 'mouse'
+        border = 'single', -- 'none', single', 'double', 'rounded', 'solid', 'shadow'
+        row = nil, -- row position of the window, default is centered
+        col = nil, -- column position of the window, default is centered
+        title = 'Copilot Chat', -- title of chat window
+        footer = nil, -- footer of chat window
+        zindex = 1, -- determines if window is on top or below other floating windows
+      },
     
       -- default contexts
       contexts = {
@@ -554,37 +569,22 @@ Also see here </lua/CopilotChat/config.lua>:
         },
       },
     
-      -- default window options
-      window = {
-        layout = 'vertical', -- 'vertical', 'horizontal', 'float', 'replace'
-        width = 0.5, -- fractional width of parent, or absolute width in columns when > 1
-        height = 0.5, -- fractional height of parent, or absolute height in rows when > 1
-        -- Options below only apply to floating windows
-        relative = 'editor', -- 'editor', 'win', 'cursor', 'mouse'
-        border = 'single', -- 'none', single', 'double', 'rounded', 'solid', 'shadow'
-        row = nil, -- row position of the window, default is centered
-        col = nil, -- column position of the window, default is centered
-        title = 'Copilot Chat', -- title of chat window
-        footer = nil, -- footer of chat window
-        zindex = 1, -- determines if window is on top or below other floating windows
-      },
-    
       -- default mappings
       mappings = {
         complete = {
-          insert ='<Tab>',
+          insert = '<Tab>',
         },
         close = {
           normal = 'q',
-          insert = '<C-c>'
+          insert = '<C-c>',
         },
         reset = {
-          normal ='<C-l>',
-          insert = '<C-l>'
+          normal = '<C-l>',
+          insert = '<C-l>',
         },
         submit_prompt = {
           normal = '<CR>',
-          insert = '<C-s>'
+          insert = '<C-s>',
         },
         toggle_sticky = {
           detail = 'Makes line under cursor sticky or deletes sticky line.',
@@ -592,7 +592,7 @@ Also see here </lua/CopilotChat/config.lua>:
         },
         accept_diff = {
           normal = '<C-y>',
-          insert = '<C-y>'
+          insert = '<C-y>',
         },
         jump_to_diff = {
           normal = 'gj',
@@ -605,13 +605,13 @@ Also see here </lua/CopilotChat/config.lua>:
           register = '"',
         },
         show_diff = {
-          normal = 'gd'
+          normal = 'gd',
         },
         show_system_prompt = {
-          normal = 'gp'
+          normal = 'gp',
         },
         show_user_selection = {
-          normal = 'gs'
+          normal = 'gs',
         },
         show_user_context = {
           normal = 'gc',
