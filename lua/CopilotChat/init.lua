@@ -522,6 +522,9 @@ function M.complete_items(callback)
     end
 
     table.sort(items, function(a, b)
+      if a.kind == b.kind then
+        return a.word < b.word
+      end
       return a.kind < b.kind
     end)
 
