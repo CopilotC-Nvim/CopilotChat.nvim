@@ -27,14 +27,10 @@ local utils = require('CopilotChat.utils')
 ---@field input fun(callback: fun(input: string?), source: CopilotChat.config.source)?
 ---@field resolve fun(input: string?, source: CopilotChat.config.source):table<CopilotChat.copilot.embed>
 
----@class CopilotChat.config.prompt
+---@class CopilotChat.config.prompt : CopilotChat.config.shared
 ---@field prompt string?
 ---@field description string?
----@field kind string?
 ---@field mapping string?
----@field system_prompt string?
----@field callback fun(response: string, source: CopilotChat.config.source)?
----@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
 
 ---@class CopilotChat.config.window
 ---@field layout string?
@@ -53,6 +49,9 @@ local utils = require('CopilotChat.utils')
 ---@field insert string?
 ---@field detail string?
 
+---@class CopilotChat.config.mapping.register : CopilotChat.config.mapping
+---@field register string?
+
 ---@class CopilotChat.config.mappings
 ---@field complete CopilotChat.config.mapping?
 ---@field close CopilotChat.config.mapping?
@@ -62,19 +61,14 @@ local utils = require('CopilotChat.utils')
 ---@field accept_diff CopilotChat.config.mapping?
 ---@field jump_to_diff CopilotChat.config.mapping?
 ---@field quickfix_diffs CopilotChat.config.mapping?
----@field yank_diff CopilotChat.config.mapping?
+---@field yank_diff CopilotChat.config.mapping.register?
 ---@field show_diff CopilotChat.config.mapping?
 ---@field show_system_prompt CopilotChat.config.mapping?
 ---@field show_user_selection CopilotChat.config.mapping?
 ---@field show_user_context CopilotChat.config.mapping?
 ---@field show_help CopilotChat.config.mapping?
 
---- CopilotChat default configuration
----@class CopilotChat.config
----@field debug boolean?
----@field log_level string?
----@field proxy string?
----@field allow_insecure boolean?
+---@class CopilotChat.config.shared
 ---@field system_prompt string?
 ---@field model string?
 ---@field agent string?
@@ -84,7 +78,6 @@ local utils = require('CopilotChat.utils')
 ---@field answer_header string?
 ---@field error_header string?
 ---@field separator string?
----@field chat_autocomplete boolean?
 ---@field show_folds boolean?
 ---@field show_help boolean?
 ---@field auto_follow_cursor boolean?
@@ -92,13 +85,21 @@ local utils = require('CopilotChat.utils')
 ---@field clear_chat_on_new_prompt boolean?
 ---@field highlight_selection boolean?
 ---@field highlight_headers boolean?
----@field history_path string?
----@field callback fun(response: string, source: CopilotChat.config.source)?
 ---@field no_chat boolean?
+---@field callback fun(response: string, source: CopilotChat.config.source)?
 ---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
+---@field window CopilotChat.config.window?
+
+--- CopilotChat default configuration
+---@class CopilotChat.config : CopilotChat.config.shared
+---@field debug boolean?
+---@field log_level string?
+---@field proxy string?
+---@field allow_insecure boolean?
+---@field chat_autocomplete boolean?
+---@field history_path string?
 ---@field contexts table<string, CopilotChat.config.context>?
 ---@field prompts table<string, CopilotChat.config.prompt|string>?
----@field window CopilotChat.config.window?
 ---@field mappings CopilotChat.config.mappings?
 return {
   debug = false, -- Enable debug logging (same as 'log_level = 'debug')
@@ -128,13 +129,28 @@ return {
   highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
 
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
-  callback = nil, -- Callback to use when ask response is received
   no_chat = false, -- Do not write to chat buffer and use history(useful for using callback for custom processing)
+  callback = nil, -- Callback to use when ask response is received
 
   -- default selection
   selection = function(source)
     return select.visual(source) or select.buffer(source)
   end,
+
+  -- default window options
+  window = {
+    layout = 'vertical', -- 'vertical', 'horizontal', 'float', 'replace'
+    width = 0.5, -- fractional width of parent, or absolute width in columns when > 1
+    height = 0.5, -- fractional height of parent, or absolute height in rows when > 1
+    -- Options below only apply to floating windows
+    relative = 'editor', -- 'editor', 'win', 'cursor', 'mouse'
+    border = 'single', -- 'none', single', 'double', 'rounded', 'solid', 'shadow'
+    row = nil, -- row position of the window, default is centered
+    col = nil, -- column position of the window, default is centered
+    title = 'Copilot Chat', -- title of chat window
+    footer = nil, -- footer of chat window
+    zindex = 1, -- determines if window is on top or below other floating windows
+  },
 
   -- default contexts
   contexts = {
@@ -331,21 +347,6 @@ return {
     Commit = {
       prompt = '> #git:staged\n\nWrite commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
     },
-  },
-
-  -- default window options
-  window = {
-    layout = 'vertical', -- 'vertical', 'horizontal', 'float', 'replace'
-    width = 0.5, -- fractional width of parent, or absolute width in columns when > 1
-    height = 0.5, -- fractional height of parent, or absolute height in rows when > 1
-    -- Options below only apply to floating windows
-    relative = 'editor', -- 'editor', 'win', 'cursor', 'mouse'
-    border = 'single', -- 'none', single', 'double', 'rounded', 'solid', 'shadow'
-    row = nil, -- row position of the window, default is centered
-    col = nil, -- column position of the window, default is centered
-    title = 'Copilot Chat', -- title of chat window
-    footer = nil, -- footer of chat window
-    zindex = 1, -- determines if window is on top or below other floating windows
   },
 
   -- default mappings

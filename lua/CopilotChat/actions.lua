@@ -17,8 +17,10 @@ end
 ---@return CopilotChat.integrations.actions?: The prompt actions
 function M.prompt_actions(config)
   local actions = {}
-  for name, prompt in pairs(chat.prompts(true)) do
-    actions[name] = vim.tbl_extend('keep', prompt, config or {})
+  for name, prompt in pairs(chat.prompts()) do
+    if prompt.prompt then
+      actions[name] = vim.tbl_extend('keep', prompt, config or {})
+    end
   end
   return {
     prompt = 'Copilot Chat Prompt Actions',

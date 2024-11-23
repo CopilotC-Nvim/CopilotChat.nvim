@@ -203,31 +203,32 @@ end
 ---@return string, string
 local function resolve_prompts(prompt, system_prompt)
   local prompts_to_use = M.prompts()
-  local try_again = false
-  local result = string.gsub(prompt, '/' .. WORD, function(match)
-    local matched_prompt = prompts_to_use[match]
-    if matched_prompt then
-      if matched_prompt.kind == 'user' then
-        local out = matched_prompt.prompt
-        if out and string.match(out, '/' .. WORD) then
-          try_again = true
-        end
-        system_prompt = matched_prompt.system_prompt or system_prompt
-        return out
-      elseif matched_prompt.kind == 'system' then
-        system_prompt = matched_prompt.prompt
-        return ''
-      end
+  local depth = 0
+  local MAX_DEPTH = 10
+
+  local function resolve(inner_prompt, inner_system_prompt)
+    if depth >= MAX_DEPTH then
+      return inner_prompt, inner_system_prompt
     end
+    depth = depth + 1
 
-    return '/' .. match
-  end)
+    inner_prompt = string.gsub(inner_prompt, '/' .. WORD, function(match)
+      local p = prompts_to_use[match]
+      if p then
+        local resolved_prompt, resolved_system_prompt =
+          resolve(p.prompt or '', p.system_prompt or inner_system_prompt)
+        inner_system_prompt = resolved_system_prompt
+        return resolved_prompt
+      end
 
-  if try_again then
-    return resolve_prompts(result, system_prompt)
+      return '/' .. match
+    end)
+
+    depth = depth - 1
+    return inner_prompt, inner_system_prompt
   end
 
-  return system_prompt, result
+  return resolve(prompt, system_prompt)
 end
 
 ---@param prompt string
@@ -466,10 +467,20 @@ function M.complete_items(callback)
     local items = {}
 
     for name, prompt in pairs(prompts_to_use) do
+      local kind = ''
+      local info = ''
+      if prompt.prompt then
+        kind = 'user'
+        info = prompt.prompt
+      elseif prompt.system_prompt then
+        kind = 'system'
+        info = prompt.system_prompt
+      end
+
       items[#items + 1] = {
         word = '/' .. name,
-        kind = prompt.kind,
-        info = prompt.prompt,
+        kind = kind,
+        info = info,
         menu = prompt.description or '',
         icase = 1,
         dup = 0,
@@ -521,22 +532,14 @@ function M.complete_items(callback)
 end
 
 --- Get the prompts to use.
----@param skip_system boolean|nil
 ---@return table<string, CopilotChat.config.prompt>
-function M.prompts(skip_system)
-  local function get_prompt_kind(name)
-    return vim.startswith(name, 'COPILOT_') and 'system' or 'user'
-  end
-
+function M.prompts()
   local prompts_to_use = {}
 
-  if not skip_system then
-    for name, prompt in pairs(prompts) do
-      prompts_to_use[name] = {
-        prompt = prompt,
-        kind = get_prompt_kind(name),
-      }
-    end
+  for name, prompt in pairs(prompts) do
+    prompts_to_use[name] = {
+      system_prompt = prompt,
+    }
   end
 
   for name, prompt in pairs(M.config.prompts) do
@@ -544,10 +547,7 @@ function M.prompts(skip_system)
     if type(prompt) == 'string' then
       val = {
         prompt = prompt,
-        kind = get_prompt_kind(name),
       }
-    elseif not val.kind then
-      val.kind = get_prompt_kind(name)
     end
 
     prompts_to_use[name] = val
@@ -670,7 +670,7 @@ function M.ask(prompt, config)
   end
 
   -- Resolve prompt references
-  local system_prompt, resolved_prompt = resolve_prompts(prompt, config.system_prompt)
+  local resolved_prompt, system_prompt = resolve_prompts(prompt, config.system_prompt)
 
   -- Remove sticky prefix
   prompt = table.concat(
@@ -856,7 +856,7 @@ function M.log_level(level)
 end
 
 --- Set up the plugin
----@param config CopilotChat.config|nil
+---@param config CopilotChat.config?
 function M.setup(config)
   -- Handle changed configuration
   if config then
@@ -1139,7 +1139,7 @@ function M.setup(config)
         local section = state.chat:get_closest_section()
         local system_prompt = state.config.system_prompt
         if section and not section.answer then
-          system_prompt = resolve_prompts(section.content, system_prompt)
+          _, system_prompt = resolve_prompts(section.content, system_prompt)
         end
         if not system_prompt then
           return
@@ -1224,26 +1224,28 @@ function M.setup(config)
     end
   )
 
-  for name, prompt in pairs(M.prompts(true)) do
-    vim.api.nvim_create_user_command('CopilotChat' .. name, function(args)
-      local input = prompt.prompt
-      if args.args and vim.trim(args.args) ~= '' then
-        input = input .. ' ' .. args.args
-      end
-      if input then
-        M.ask(input, prompt)
-      end
-    end, {
-      nargs = '*',
-      force = true,
-      range = true,
-      desc = prompt.description or (PLUGIN_NAME .. ' ' .. name),
-    })
+  for name, prompt in pairs(M.prompts()) do
+    if prompt.prompt then
+      vim.api.nvim_create_user_command('CopilotChat' .. name, function(args)
+        local input = prompt.prompt
+        if args.args and vim.trim(args.args) ~= '' then
+          input = input .. ' ' .. args.args
+        end
+        if input then
+          M.ask(input, prompt)
+        end
+      end, {
+        nargs = '*',
+        force = true,
+        range = true,
+        desc = prompt.description or (PLUGIN_NAME .. ' ' .. name),
+      })
 
-    if prompt.mapping then
-      vim.keymap.set({ 'n', 'v' }, prompt.mapping, function()
-        M.ask(prompt.prompt, prompt)
-      end, { desc = prompt.description or (PLUGIN_NAME .. ' ' .. name) })
+      if prompt.mapping then
+        vim.keymap.set({ 'n', 'v' }, prompt.mapping, function()
+          M.ask(prompt.prompt, prompt)
+        end, { desc = prompt.description or (PLUGIN_NAME .. ' ' .. name) })
+      end
     end
   end
 
