@@ -69,7 +69,7 @@ local function highlight_selection(clear, config)
     vim.api.nvim_buf_clear_namespace(buf, selection_ns, 0, -1)
   end
 
-  if clear then
+  if clear or not config.highlight_selection then
     return
   end
 
@@ -948,7 +948,10 @@ function M.setup(config)
     state.chat:delete()
   end
   state.chat = Chat(
-    M.config.show_help and key_to_info('show_help', M.config.mappings.show_help),
+    M.config.question_header,
+    M.config.answer_header,
+    M.config.separator,
+    key_to_info('show_help', M.config.mappings.show_help),
     function(bufnr)
       map_key(M.config.mappings.show_help, bufnr, function()
         local chat_help = '**`Special tokens`**\n'

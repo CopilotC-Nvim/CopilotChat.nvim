@@ -57,16 +57,23 @@ end
 ---@field content string?
 
 ---@class CopilotChat.ui.Chat : CopilotChat.ui.Overlay
+---@field question_header string
+---@field answer_header string
+---@field separator string
 ---@field header_ns number
 ---@field winnr number?
 ---@field spinner CopilotChat.ui.Spinner
 ---@field sections table<CopilotChat.ui.Chat.Section>
----@field config CopilotChat.config
+---@field config CopilotChat.config.shared
 ---@field token_count number?
 ---@field token_max_count number?
-local Chat = class(function(self, help, on_buf_create)
+local Chat = class(function(self, question_header, answer_header, separator, help, on_buf_create)
   Overlay.init(self, 'copilot-chat', help, on_buf_create)
   vim.treesitter.language.register('markdown', self.name)
+
+  self.question_header = question_header
+  self.answer_header = answer_header
+  self.separator = separator
 
   self.header_ns = vim.api.nvim_create_namespace('copilot-chat-headers')
   self.winnr = nil
@@ -134,7 +141,7 @@ function Chat:render()
   for l, line in ipairs(lines) do
     local separator_found = false
 
-    if line == self.config.answer_header .. self.config.separator then
+    if line == self.answer_header .. self.separator then
       separator_found = true
       if current_section then
         current_section.end_line = l - 1
@@ -145,7 +152,7 @@ function Chat:render()
         start_line = l + 1,
         blocks = {},
       }
-    elseif line == self.config.question_header .. self.config.separator then
+    elseif line == self.question_header .. self.separator then
       separator_found = true
       if current_section then
         current_section.end_line = l - 1
@@ -165,12 +172,12 @@ function Chat:render()
 
     -- Highlight separators
     if self.config.highlight_headers and separator_found then
-      local sep = vim.fn.strwidth(line) - vim.fn.strwidth(self.config.separator)
+      local sep = vim.fn.strwidth(line) - vim.fn.strwidth(self.separator)
       -- separator line
       vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, sep, {
         virt_text_win_col = sep,
         virt_text = {
-          { string.rep(self.config.separator, vim.go.columns), 'CopilotChatSeparator' },
+          { string.rep(self.separator, vim.go.columns), 'CopilotChatSeparator' },
         },
         priority = 100,
         strict = false,
@@ -213,10 +220,14 @@ function Chat:render()
 
   local last_section = sections[#sections]
   if last_section and not last_section.answer then
-    local msg = self.help
+    local msg = self.config.show_help and self.help or ''
     if self.token_count and self.token_max_count then
-      msg = msg .. '\n' .. self.token_count .. '/' .. self.token_max_count .. ' tokens used'
+      if msg ~= '' then
+        msg = msg .. '\n'
+      end
+      msg = msg .. self.token_count .. '/' .. self.token_max_count .. ' tokens used'
     end
+
     self:show_help(msg, last_section.start_line - last_section.end_line - 1)
   else
     self:clear_help()
@@ -387,7 +398,7 @@ function Chat:clear()
   vim.bo[self.bufnr].modifiable = false
 end
 
----@param config CopilotChat.config
+---@param config CopilotChat.config.shared
 function Chat:open(config)
   self:validate()
   self.config = config
@@ -454,7 +465,7 @@ function Chat:open(config)
   if config.show_folds then
     vim.wo[self.winnr].foldcolumn = '1'
     vim.wo[self.winnr].foldmethod = 'expr'
-    vim.wo[self.winnr].foldexpr = "v:lua.CopilotChatFoldExpr(v:lnum, '" .. config.separator .. "')"
+    vim.wo[self.winnr].foldexpr = "v:lua.CopilotChatFoldExpr(v:lnum, '" .. self.separator .. "')"
   else
     vim.wo[self.winnr].foldcolumn = '0'
   end
