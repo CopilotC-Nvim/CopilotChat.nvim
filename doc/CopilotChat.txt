@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 November 23
+*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 November 24
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -471,10 +471,8 @@ Also see here </lua/CopilotChat/config.lua>:
 
 >lua
     {
-      debug = false, -- Enable debug logging (same as 'log_level = 'debug')
-      log_level = 'info', -- Log level to use, 'trace', 'debug', 'info', 'warn', 'error', 'fatal'
-      proxy = nil, -- [protocol://]host[:port] Use this proxy
-      allow_insecure = false, -- Allow insecure server connections
+    
+      -- Shared config starts here (can be passed to functions at runtime)
     
       system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use (can be specified manually in prompt via /).
       model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
@@ -482,23 +480,7 @@ Also see here </lua/CopilotChat/config.lua>:
       context = nil, -- Default context or array of contexts to use (can be specified manually in prompt via #).
       temperature = 0.1, -- GPT result temperature
     
-      question_header = '## User ', -- Header to use for user questions
-      answer_header = '## Copilot ', -- Header to use for AI answers
-      error_header = '## Error ', -- Header to use for errors
-      separator = '───', -- Separator to use in chat
-    
-      chat_autocomplete = true, -- Enable chat autocompletion (when disabled, requires manual `mappings.complete` trigger)
-      show_folds = true, -- Shows folds for sections in chat
-      show_help = true, -- Shows help message as virtual lines when waiting for user input
-      auto_follow_cursor = true, -- Auto-follow cursor in chat
-      auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
-      insert_at_end = false, -- Move cursor to end of buffer when inserting text
-      clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
-      highlight_selection = true, -- Highlight selection
-      highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
-    
-      history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
-      no_chat = false, -- Do not write to chat buffer and use history(useful for using callback for custom processing)
+      headless = false, -- Do not write to chat buffer and use history(useful for using callback for custom processing)
       callback = nil, -- Callback to use when ask response is received
     
       -- default selection
@@ -520,6 +502,30 @@ Also see here </lua/CopilotChat/config.lua>:
         footer = nil, -- footer of chat window
         zindex = 1, -- determines if window is on top or below other floating windows
       },
+    
+      -- Static config starts here (can be configured only via setup function)
+    
+      debug = false, -- Enable debug logging (same as 'log_level = 'debug')
+      log_level = 'info', -- Log level to use, 'trace', 'debug', 'info', 'warn', 'error', 'fatal'
+      proxy = nil, -- [protocol://]host[:port] Use this proxy
+      allow_insecure = false, -- Allow insecure server connections
+      history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
+    
+      question_header = '## User ', -- Header to use for user questions
+      answer_header = '## Copilot ', -- Header to use for AI answers
+      error_header = '## Error ', -- Header to use for errors
+      separator = '───', -- Separator to use in chat
+    
+      show_folds = true, -- Shows folds for sections in chat
+      show_help = true, -- Shows help message as virtual lines when waiting for user input
+      highlight_selection = true, -- Highlight selection
+      highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
+    
+      chat_autocomplete = true, -- Enable chat autocompletion (when disabled, requires manual `mappings.complete` trigger)
+      auto_follow_cursor = true, -- Auto-follow cursor in chat
+      auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
+      insert_at_end = false, -- Move cursor to end of buffer when inserting text
+      clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
     
       -- default contexts
       contexts = {
