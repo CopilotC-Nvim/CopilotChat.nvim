@@ -14,7 +14,7 @@ local spinner_frames = {
   '⠏',
 }
 
----@class CopilotChat.ui.Spinner : CopilotChat.utils.Class
+---@class CopilotChat.ui.Spinner : Class
 ---@field ns number
 ---@field bufnr number
 ---@field timer table

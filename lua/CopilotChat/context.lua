@@ -52,7 +52,6 @@ local OFF_SIDE_RULE_LANGUAGES = {
   'fsharp',
 }
 
-local OUTLINE_THRESHOLD = 600
 local MULTI_FILE_THRESHOLD = 3
 
 local function spatial_distance_cosine(a, b)
@@ -339,19 +338,8 @@ function M.filter_embeddings(copilot, prompt, embeddings)
   -- Map embeddings by filename
   for _, embed in ipairs(embeddings) do
     original_map:set(embed.filename, embed)
-
     if embed.filetype ~= 'raw' then
-      local outline = M.outline(embed.content, embed.filename, embed.filetype)
-      local outline_lines = vim.split(outline.content, '\n')
-
-      -- If outline is too big, truncate it
-      if #outline_lines > 0 and #outline_lines > OUTLINE_THRESHOLD then
-        outline_lines = vim.list_slice(outline_lines, 1, OUTLINE_THRESHOLD)
-        table.insert(outline_lines, '... (truncated)')
-      end
-
-      outline.content = table.concat(outline_lines, '\n')
-      embedded_map:set(embed.filename, outline)
+      embedded_map:set(embed.filename, M.outline(embed.content, embed.filename, embed.filetype))
     else
       embedded_map:set(embed.filename, embed)
     end

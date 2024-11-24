@@ -29,6 +29,8 @@ local temp_file = utils.temp_file
 --- Constants
 local CONTEXT_FORMAT = '[#file:%s](#file:%s-context)'
 local BIG_FILE_THRESHOLD = 2000
+local BIG_EMBED_THRESHOLD = 600
+local TRUNCATED = '... (truncated)'
 local TIMEOUT = 30000
 local VERSION_HEADERS = {
   ['editor-version'] = 'Neovim/'
@@ -114,12 +116,9 @@ end
 ---@return string
 local function generate_line_numbers(content, start_line)
   local lines = vim.split(content, '\n')
-  local truncated = false
-
-  -- If the file is too big, truncate it
   if #lines > BIG_FILE_THRESHOLD then
     lines = vim.list_slice(lines, 1, BIG_FILE_THRESHOLD)
-    truncated = true
+    table.insert(lines, TRUNCATED)
   end
 
   local total_lines = #lines
@@ -127,10 +126,6 @@ local function generate_line_numbers(content, start_line)
   for i, line in ipairs(lines) do
     local formatted_line_number = string.format('%' .. max_length .. 'd', i - 1 + (start_line or 1))
     lines[i] = formatted_line_number .. ': ' .. line
-  end
-
-  if truncated then
-    table.insert(lines, '... (truncated)')
   end
 
   content = table.concat(lines, '\n')
@@ -301,26 +296,24 @@ local function generate_embedding_request(inputs, model)
   return {
     dimensions = 512,
     input = vim.tbl_map(function(input)
-      local out = ''
-      if input.filetype == 'raw' then
-        out = input.content .. '\n'
-      else
-        out = out
-          .. string.format(
-            'File: `%s`\n```%s\n%s\n```',
-            input.filename,
-            input.filetype,
-            input.content
-          )
+      local lines = vim.split(input.content, '\n')
+      if #lines > BIG_EMBED_THRESHOLD then
+        lines = vim.list_slice(lines, 1, BIG_EMBED_THRESHOLD)
+        table.insert(lines, TRUNCATED)
       end
+      local content = table.concat(lines, '\n')
 
-      return out
+      if input.filetype == 'raw' then
+        return content
+      else
+        return string.format('File: `%s`\n```%s\n%s\n```', input.filename, input.filetype, content)
+      end
     end, inputs),
     model = model,
   }
 end
 
----@class CopilotChat.Copilot : CopilotChat.utils.Class
+---@class CopilotChat.Copilot : Class
 ---@field history table
 ---@field embedding_cache table<CopilotChat.copilot.embed>
 ---@field policies table<string, boolean>
@@ -873,7 +866,7 @@ end
 
 --- Generate embeddings for the given inputs
 ---@param inputs table<CopilotChat.copilot.embed>: The inputs to embed
----@param opts CopilotChat.copilot.embed.opts: Options for the request
+---@param opts CopilotChat.copilot.embed.opts?: Options for the request
 ---@return table<CopilotChat.copilot.embed>
 function Copilot:embed(inputs, opts)
   if not inputs or #inputs == 0 then
