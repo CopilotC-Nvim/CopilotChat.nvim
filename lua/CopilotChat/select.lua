@@ -149,12 +149,12 @@ function M.unnamed(source)
 end
 
 function M.clipboard()
-  utils.deprecated('selection.clipboard', 'context.register:+')
+  utils.deprecate('selection.clipboard', 'context.register:+')
   return nil
 end
 
 function M.gitdiff()
-  utils.deprecated('selection.gitdiff', 'context.gitdiff')
+  utils.deprecate('selection.gitdiff', 'context.gitdiff')
   return nil
 end
 
