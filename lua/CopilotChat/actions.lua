@@ -13,7 +13,7 @@ function M.help_actions()
 end
 
 --- User prompt actions
----@param config CopilotChat.config?: The chat configuration
+---@param config CopilotChat.config.shared?: The chat configuration
 ---@return CopilotChat.integrations.actions?: The prompt actions
 function M.prompt_actions(config)
   local actions = {}
