@@ -78,6 +78,14 @@ local utils = require('CopilotChat.utils')
 ---@field callback fun(response: string, source: CopilotChat.config.source)?
 ---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
 ---@field window CopilotChat.config.window?
+---@field show_help boolean?
+---@field show_folds boolean?
+---@field highlight_selection boolean?
+---@field highlight_headers boolean?
+---@field auto_follow_cursor boolean?
+---@field auto_insert_mode boolean?
+---@field insert_at_end boolean?
+---@field clear_chat_on_new_prompt boolean?
 
 --- CopilotChat default configuration
 ---@class CopilotChat.config : CopilotChat.config.shared
@@ -85,26 +93,18 @@ local utils = require('CopilotChat.utils')
 ---@field log_level string?
 ---@field proxy string?
 ---@field allow_insecure boolean?
+---@field chat_autocomplete boolean?
 ---@field history_path string?
 ---@field question_header string?
 ---@field answer_header string?
 ---@field error_header string?
 ---@field separator string?
----@field show_folds boolean?
----@field show_help boolean?
----@field highlight_selection boolean?
----@field highlight_headers boolean?
----@field chat_autocomplete boolean?
----@field auto_follow_cursor boolean?
----@field auto_insert_mode boolean?
----@field insert_at_end boolean?
----@field clear_chat_on_new_prompt boolean?
 ---@field contexts table<string, CopilotChat.config.context>?
 ---@field prompts table<string, CopilotChat.config.prompt|string>?
 ---@field mappings CopilotChat.config.mappings?
 return {
 
-  -- Shared config starts here (can be passed to functions at runtime)
+  -- Shared config starts here (can be passed to functions at runtime and configured via setup function)
 
   system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use (can be specified manually in prompt via /).
   model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
@@ -135,29 +135,29 @@ return {
     zindex = 1, -- determines if window is on top or below other floating windows
   },
 
+  show_help = true, -- Shows help message as virtual lines when waiting for user input
+  show_folds = true, -- Shows folds for sections in chat
+  highlight_selection = true, -- Highlight selection
+  highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
+  auto_follow_cursor = true, -- Auto-follow cursor in chat
+  auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
+  insert_at_end = false, -- Move cursor to end of buffer when inserting text
+  clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
+
   -- Static config starts here (can be configured only via setup function)
 
   debug = false, -- Enable debug logging (same as 'log_level = 'debug')
   log_level = 'info', -- Log level to use, 'trace', 'debug', 'info', 'warn', 'error', 'fatal'
   proxy = nil, -- [protocol://]host[:port] Use this proxy
   allow_insecure = false, -- Allow insecure server connections
+
+  chat_autocomplete = true, -- Enable chat autocompletion (when disabled, requires manual `mappings.complete` trigger)
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
 
   question_header = '## User ', -- Header to use for user questions
   answer_header = '## Copilot ', -- Header to use for AI answers
   error_header = '## Error ', -- Header to use for errors
   separator = '───', -- Separator to use in chat
-
-  show_folds = true, -- Shows folds for sections in chat
-  show_help = true, -- Shows help message as virtual lines when waiting for user input
-  highlight_selection = true, -- Highlight selection
-  highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
-
-  chat_autocomplete = true, -- Enable chat autocompletion (when disabled, requires manual `mappings.complete` trigger)
-  auto_follow_cursor = true, -- Auto-follow cursor in chat
-  auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
-  insert_at_end = false, -- Move cursor to end of buffer when inserting text
-  clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
 
   -- default contexts
   contexts = {
