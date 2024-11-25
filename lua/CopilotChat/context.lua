@@ -1,3 +1,15 @@
+---@class CopilotChat.context.symbol
+---@field name string?
+---@field signature string
+---@field type string
+---@field start_row number
+---@field start_col number
+---@field end_row number
+---@field end_col number
+
+---@class CopilotChat.context.outline : CopilotChat.copilot.embed
+---@field symbols table<string, CopilotChat.context.symbol>
+
 local log = require('plenary.log')
 local utils = require('CopilotChat.utils')
 
@@ -23,13 +35,14 @@ local OUTLINE_TYPES = {
   'import_statement',
   'import_from_statement',
   -- markdown
-  'atx_h1_marker',
-  'atx_h2_marker',
-  'atx_h3_marker',
-  'atx_h4_marker',
-  'atx_h5_marker',
+  'atx_heading',
   'list_item',
-  'block_quote',
+}
+
+local NAME_TYPES = {
+  'name',
+  'identifier',
+  'heading_content',
 }
 
 local COMMENT_TYPES = {
@@ -52,6 +65,8 @@ local OFF_SIDE_RULE_LANGUAGES = {
   'fsharp',
 }
 
+local TOP_SYMBOLS = 64
+local TOP_RELATED = 20
 local MULTI_FILE_THRESHOLD = 3
 
 local function spatial_distance_cosine(a, b)
@@ -68,6 +83,7 @@ local function spatial_distance_cosine(a, b)
   return dot_product / (magnitude_a * magnitude_b)
 end
 
+---@param query string
 local function data_ranked_by_relatedness(query, data, top_n)
   local scores = {}
   for i, item in pairs(data) do
@@ -79,27 +95,86 @@ local function data_ranked_by_relatedness(query, data, top_n)
   local result = {}
   for i = 1, math.min(top_n, #scores) do
     local srt = scores[i]
-    table.insert(result, vim.tbl_extend('keep', data[srt.index], { score = srt.score }))
+    table.insert(result, vim.tbl_extend('force', data[srt.index], { score = srt.score }))
   end
   return result
 end
 
---- Build an outline from a string
+---@param query string
+---@param data table<CopilotChat.context.outline>
+---@param top_n number
+local function data_ranked_by_symbols(query, data, top_n)
+  local query_terms = {}
+  for term in query:lower():gmatch('%w+') do
+    query_terms[term] = true
+  end
+
+  local results = {}
+  for _, entry in ipairs(data) do
+    local score = 0
+    local filename = entry.filename and entry.filename:lower() or ''
+
+    -- Filename matches (highest priority)
+    for term in pairs(query_terms) do
+      if filename:find(term, 1, true) then
+        score = score + 15
+        if vim.fn.fnamemodify(filename, ':t'):gsub('%..*$', '') == term then
+          score = score + 10
+        end
+      end
+    end
+
+    -- Symbol matches
+    if entry.symbols then
+      for _, symbol in ipairs(entry.symbols) do
+        for term in pairs(query_terms) do
+          -- Check symbol name (high priority)
+          if symbol.name and symbol.name:lower():find(term, 1, true) then
+            score = score + 5
+            if symbol.name:lower() == term then
+              score = score + 3
+            end
+          end
+
+          -- Check signature (medium priority)
+          -- This catches parameter names, return types, etc
+          if symbol.signature and symbol.signature:lower():find(term, 1, true) then
+            score = score + 2
+          end
+        end
+      end
+    end
+
+    table.insert(results, vim.tbl_extend('force', entry, { score = score }))
+  end
+
+  table.sort(results, function(a, b)
+    return a.score > b.score
+  end)
+  return vim.list_slice(results, 1, top_n)
+end
+
+--- Build an outline and symbols from a string
 --- FIXME: Handle multiline function argument definitions when building the outline
 ---@param content string
 ---@param name string
 ---@param ft string?
----@return CopilotChat.copilot.embed
+---@return CopilotChat.context.outline
 function M.outline(content, name, ft)
   ft = ft or 'text'
-  local lines = vim.split(content, '\n')
 
-  local base_output = {
-    content = content,
+  local output = {
     filename = name,
     filetype = ft,
+    content = content,
+    symbols = {},
   }
 
+  if ft == 'raw' then
+    return output
+  end
+
+  local lines = vim.split(content, '\n')
   local lang = vim.treesitter.language.get_lang(ft)
   local ok, parser = false, nil
   if lang then
@@ -109,7 +184,7 @@ function M.outline(content, name, ft)
     ft = string.gsub(ft, 'react', '')
     ok, parser = pcall(vim.treesitter.get_string_parser, content, ft)
     if not ok or not parser then
-      return base_output
+      return output
     end
   end
 
@@ -118,7 +193,18 @@ function M.outline(content, name, ft)
   local comment_lines = {}
   local depth = 0
 
-  local function get_outline_lines(node)
+  local function get_node_name(node)
+    for _, name_type in ipairs(NAME_TYPES) do
+      local name_field = node:field(name_type)
+      if name_field and #name_field > 0 then
+        return vim.treesitter.get_node_text(name_field[1], content)
+      end
+    end
+
+    return nil
+  end
+
+  local function parse_node(node)
     local type = node:type()
     local parent = node:parent()
     local is_outline = vim.tbl_contains(OUTLINE_TYPES, type)
@@ -131,6 +217,7 @@ function M.outline(content, name, ft)
     if is_outline then
       depth = depth + 1
 
+      -- Handle comments
       if #comment_lines > 0 then
         for _, line in ipairs(comment_lines) do
           table.insert(outline_lines, string.rep('  ', depth) .. line)
@@ -139,10 +226,20 @@ function M.outline(content, name, ft)
       end
 
       local start_line = lines[start_row + 1]
-      local signature_start = start_line:sub(start_col + 1)
-      table.insert(outline_lines, string.rep('  ', depth) .. vim.trim(signature_start))
+      local signature_start = vim.trim(start_line:sub(start_col + 1))
+      table.insert(outline_lines, string.rep('  ', depth) .. signature_start)
 
-      -- If the function definition spans multiple lines, add an ellipsis
+      -- Store symbol information
+      table.insert(output.symbols, {
+        name = get_node_name(node),
+        signature = signature_start,
+        type = type,
+        start_row = start_row + 1,
+        start_col = start_col + 1,
+        end_row = end_row,
+        end_col = end_col,
+      })
+
       if start_row ~= end_row then
         table.insert(outline_lines, string.rep('  ', depth + 1) .. '...')
       else
@@ -160,7 +257,7 @@ function M.outline(content, name, ft)
 
     if not skip_inner then
       for child in node:iter_children() do
-        get_outline_lines(child)
+        parse_node(child)
       end
     end
 
@@ -174,19 +271,13 @@ function M.outline(content, name, ft)
     end
   end
 
-  get_outline_lines(root)
+  parse_node(root)
 
-  -- Concatenate the outline lines
-  local result_content = table.concat(outline_lines, '\n')
-  if result_content == '' then
-    return base_output
+  if #outline_lines > 0 then
+    output.content = table.concat(outline_lines, '\n')
   end
 
-  return {
-    content = result_content,
-    filename = name,
-    filetype = ft,
-  }
+  return output
 end
 
 --- Get list of all files in workspace
@@ -338,26 +429,30 @@ function M.filter_embeddings(copilot, prompt, embeddings)
   -- Map embeddings by filename
   for _, embed in ipairs(embeddings) do
     original_map:set(embed.filename, embed)
-    if embed.filetype ~= 'raw' then
-      embedded_map:set(embed.filename, M.outline(embed.content, embed.filename, embed.filetype))
-    else
-      embedded_map:set(embed.filename, embed)
-    end
+    embedded_map:set(embed.filename, M.outline(embed.content, embed.filename, embed.filetype))
   end
 
-  -- Get embeddings from all items
-  local embedded_data = copilot:embed(embedded_map:values())
-
-  -- Rate embeddings by relatedness to the query
-  local ranked_data = data_ranked_by_relatedness(table.remove(embedded_data, 1), embedded_data, 20)
+  -- Rank embeddings by symbols
+  local ranked_data = data_ranked_by_symbols(prompt, embedded_map:values(), TOP_SYMBOLS)
   log.debug('Ranked data:', #ranked_data)
   for i, item in ipairs(ranked_data) do
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
   end
 
+  -- Get embeddings from all items
+  local embedded_data = copilot:embed(ranked_data)
+
+  -- Rate embeddings by relatedness to the query
+  local ranked_embeddings =
+    data_ranked_by_relatedness(table.remove(embedded_data, 1), embedded_data, TOP_RELATED)
+  log.debug('Ranked embeddings:', #ranked_embeddings)
+  for i, item in ipairs(ranked_embeddings) do
+    log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
+  end
+
   -- Return original content in ranked order
   local result = {}
-  for _, ranked_item in ipairs(ranked_data) do
+  for _, ranked_item in ipairs(ranked_embeddings) do
     local original = original_map:get(ranked_item.filename)
     if original then
       table.insert(result, original)

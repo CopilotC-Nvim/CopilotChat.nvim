@@ -26,6 +26,22 @@ local function build_debug_info()
   local buf = context.buffer(vim.api.nvim_get_current_buf())
   local outline = buf and context.outline(buf.content, buf.filename, buf.filetype)
   if outline then
+    table.insert(lines, 'Current buffer symbols:')
+    for _, symbol in ipairs(outline.symbols) do
+      table.insert(
+        lines,
+        string.format(
+          '%s `%s` (%s %s %s %s) - `%s`',
+          symbol.type,
+          symbol.name,
+          symbol.start_row,
+          symbol.start_col,
+          symbol.end_row,
+          symbol.end_col,
+          symbol.signature
+        )
+      )
+    end
     table.insert(lines, 'Current buffer outline:')
     table.insert(lines, '`' .. outline.filename .. '`')
     table.insert(lines, '```' .. outline.filetype)
