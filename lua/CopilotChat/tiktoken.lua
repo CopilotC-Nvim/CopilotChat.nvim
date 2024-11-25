@@ -1,32 +1,23 @@
+local async = require('plenary.async')
 local curl = require('plenary.curl')
 local log = require('plenary.log')
+local utils = require('CopilotChat.utils')
 local tiktoken_core = nil
 local current_tokenizer = nil
-
-local function get_cache_path(fname)
-  vim.fn.mkdir(tostring(vim.fn.stdpath('cache')), 'p')
-  return vim.fn.stdpath('cache') .. '/' .. fname
-end
-
-local function file_exists(name)
-  local f = io.open(name, 'r')
-  if f ~= nil then
-    io.close(f)
-    return true
-  else
-    return false
-  end
-end
+local cache_dir = vim.fn.stdpath('cache')
+vim.fn.mkdir(tostring(cache_dir), 'p')
 
 --- Load tiktoken data from cache or download it
-local function load_tiktoken_data(done, tokenizer)
+---@param tokenizer string The tokenizer to load
+---@param on_done fun(path: string) The callback to call when the data is loaded
+local function load_tiktoken_data(tokenizer, on_done)
   local tiktoken_url = 'https://openaipublic.blob.core.windows.net/encodings/'
     .. tokenizer
     .. '.tiktoken'
-  local cache_path = get_cache_path(tiktoken_url:match('.+/(.+)'))
+  local cache_path = cache_dir .. '/' .. tiktoken_url:match('.+/(.+)')
 
-  if file_exists(cache_path) then
-    done(cache_path)
+  if utils.file_exists(cache_path) then
+    on_done(cache_path)
     return
   end
 
@@ -34,46 +25,46 @@ local function load_tiktoken_data(done, tokenizer)
   curl.get(tiktoken_url, {
     output = cache_path,
     callback = function()
-      done(cache_path)
+      on_done(cache_path)
     end,
   })
 end
 
 local M = {}
 
-function M.load(tokenizer, on_done)
+--- Load the tiktoken module
+---@param tokenizer string The tokenizer to load
+M.load = async.wrap(function(tokenizer, callback)
   if tokenizer == current_tokenizer then
-    on_done()
+    callback()
     return
   end
 
   local ok, core = pcall(require, 'tiktoken_core')
   if not ok then
-    on_done()
+    callback()
     return
   end
 
-  vim.schedule(function()
-    load_tiktoken_data(
-      vim.schedule_wrap(function(path)
-        local special_tokens = {}
-        special_tokens['<|endoftext|>'] = 100257
-        special_tokens['<|fim_prefix|>'] = 100258
-        special_tokens['<|fim_middle|>'] = 100259
-        special_tokens['<|fim_suffix|>'] = 100260
-        special_tokens['<|endofprompt|>'] = 100276
-        local pat_str =
-          "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
-        core.new(path, special_tokens, pat_str)
-        tiktoken_core = core
-        current_tokenizer = tokenizer
-        on_done()
-      end),
-      tokenizer
-    )
+  load_tiktoken_data(tokenizer, function(path)
+    local special_tokens = {}
+    special_tokens['<|endoftext|>'] = 100257
+    special_tokens['<|fim_prefix|>'] = 100258
+    special_tokens['<|fim_middle|>'] = 100259
+    special_tokens['<|fim_suffix|>'] = 100260
+    special_tokens['<|endofprompt|>'] = 100276
+    local pat_str =
+      "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
+    core.new(path, special_tokens, pat_str)
+    tiktoken_core = core
+    current_tokenizer = tokenizer
+    callback()
   end)
-end
+end, 2)
 
+--- Encode a prompt
+---@param prompt string The prompt to encode
+---@return table?
 function M.encode(prompt)
   if not tiktoken_core then
     return nil
@@ -88,6 +79,9 @@ function M.encode(prompt)
   return tiktoken_core.encode(prompt)
 end
 
+--- Count the tokens in a prompt
+---@param prompt string The prompt to count
+---@return number
 function M.count(prompt)
   if not tiktoken_core then
     return math.ceil(#prompt * 0.5) -- Fallback to 1/2 character count

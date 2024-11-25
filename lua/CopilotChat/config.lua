@@ -228,15 +228,9 @@ return {
       end,
     },
     files = {
-      description = 'Includes all non-hidden filenames in the current workspace in chat context. Supports input.',
-      input = function(callback)
-        vim.ui.input({
-          prompt = 'Enter a file pattern> ',
-          default = '**/*',
-        }, callback)
-      end,
-      resolve = function(input, source)
-        return context.files(input, source.winnr)
+      description = 'Includes all non-hidden filenames in the current workspace in chat context.',
+      resolve = function(_, source)
+        return context.files(source.winnr)
       end,
     },
     git = {

@@ -18,9 +18,7 @@
 ---@field model string?
 ---@field chunk_size number?
 
-local async = require('plenary.async')
 local log = require('plenary.log')
-local curl = require('plenary.curl')
 local prompts = require('CopilotChat.prompts')
 local tiktoken = require('CopilotChat.tiktoken')
 local utils = require('CopilotChat.utils')
@@ -48,32 +46,6 @@ local VERSION_HEADERS = {
   ['priority'] = 'u=4, i',
   -- ['x-github-api-version'] = '2023-07-07',
 }
-
-local curl_get = async.wrap(function(url, opts, callback)
-  opts = vim.tbl_deep_extend('force', opts, {
-    callback = callback,
-    on_error = function(err)
-      err = err and err.stderr or vim.inspect(err)
-      callback(nil, err)
-    end,
-  })
-  curl.get(url, opts)
-end, 3)
-
-local curl_post = async.wrap(function(url, opts, callback)
-  opts = vim.tbl_deep_extend('force', opts, {
-    callback = callback,
-    on_error = function(err)
-      err = err and err.stderr or vim.inspect(err)
-      callback(nil, err)
-    end,
-  })
-  curl.post(url, opts)
-end, 3)
-
-local tiktoken_load = async.wrap(function(tokenizer, callback)
-  tiktoken.load(tokenizer, callback)
-end, 2)
 
 --- Get the github oauth cached token
 ---@return string|nil
@@ -384,7 +356,7 @@ function Copilot:authenticate()
       ['accept'] = 'application/json',
     }, VERSION_HEADERS)
 
-    local response, err = curl_get(
+    local response, err = utils.curl_get(
       'https://api.github.com/copilot_internal/v2/token',
       vim.tbl_extend('force', self.request_args, {
         headers = headers,
@@ -427,7 +399,7 @@ function Copilot:fetch_models()
     return self.models
   end
 
-  local response, err = curl_get(
+  local response, err = utils.curl_get(
     'https://api.githubcopilot.com/models',
     vim.tbl_extend('force', self.request_args, {
       headers = self:authenticate(),
@@ -468,7 +440,7 @@ function Copilot:fetch_agents()
     return self.agents
   end
 
-  local response, err = curl_get(
+  local response, err = utils.curl_get(
     'https://api.githubcopilot.com/agents',
     vim.tbl_extend('force', self.request_args, {
       headers = self:authenticate(),
@@ -504,7 +476,7 @@ function Copilot:enable_policy(model)
     return
   end
 
-  local response, err = curl_post(
+  local response, err = utils.curl_post(
     'https://api.githubcopilot.com/models/' .. model .. '/policy',
     vim.tbl_extend('force', self.request_args, {
       headers = self:authenticate(),
@@ -565,7 +537,7 @@ function Copilot:ask(prompt, opts)
   local tokenizer = capabilities.tokenizer
   log.debug('Max tokens: ' .. max_tokens)
   log.debug('Tokenizer: ' .. tokenizer)
-  tiktoken_load(tokenizer)
+  tiktoken.load(tokenizer)
 
   local generated_messages = {}
   local selection_messages = generate_selection_messages(selection)
@@ -740,7 +712,7 @@ function Copilot:ask(prompt, opts)
     args.stream = stream_func
   end
 
-  local response, err = curl_post(url, args)
+  local response, err = utils.curl_post(url, args)
 
   if self.current_job ~= job_id then
     return nil, nil, nil
@@ -902,7 +874,7 @@ function Copilot:embed(inputs, opts)
   for i = 1, #uncached_embeddings, chunk_size do
     local chunk = vim.list_slice(uncached_embeddings, i, i + chunk_size - 1)
     local body = vim.json.encode(generate_embedding_request(chunk, model))
-    local response, err = curl_post(
+    local response, err = utils.curl_post(
       'https://api.githubcopilot.com/embeddings',
       vim.tbl_extend('force', self.request_args, {
         headers = self:authenticate(),

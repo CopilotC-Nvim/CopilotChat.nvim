@@ -1,3 +1,7 @@
+local async = require('plenary.async')
+local curl = require('plenary.curl')
+local scandir = require('plenary.scandir')
+
 local M = {}
 M.timers = {}
 
@@ -212,7 +216,7 @@ end
 ---@param winnr number? The buffer number
 ---@return string
 function M.win_cwd(winnr)
-  if not winnr or not vim.api.nvim_win_is_valid(winnr) then
+  if not winnr then
     return '.'
   end
 
@@ -222,6 +226,70 @@ function M.win_cwd(winnr)
   end
 
   return dir
+end
+
+--- Send curl get request
+---@param url string The url
+---@param opts table The options
+M.curl_get = async.wrap(function(url, opts, callback)
+  curl.get(
+    url,
+    vim.tbl_deep_extend('force', opts, {
+      callback = callback,
+      on_error = function(err)
+        err = err and err.stderr or vim.inspect(err)
+        callback(nil, err)
+      end,
+    })
+  )
+end, 3)
+
+--- Send curl post request
+---@param url string The url
+---@param opts table The options
+M.curl_post = async.wrap(function(url, opts, callback)
+  curl.post(
+    url,
+    vim.tbl_deep_extend('force', opts, {
+      callback = callback,
+      on_error = function(err)
+        err = err and err.stderr or vim.inspect(err)
+        callback(nil, err)
+      end,
+    })
+  )
+end, 3)
+
+--- Scan a directory
+--- FIXME: Make async
+M.scan_dir = scandir.scan_dir
+
+--- Check if a file exists
+--- FIXME: Make async
+---@param path string The file path
+M.file_exists = function(path)
+  local stat = vim.uv.fs_stat(path)
+  return stat ~= nil
+end
+
+--- Read a file
+--- FIXME: Make async
+---@param path string The file path
+M.read_file = function(path)
+  local fd = vim.uv.fs_open(path, 'r', 438)
+  if not fd then
+    return nil
+  end
+
+  local stat = vim.uv.fs_fstat(fd)
+  if not stat then
+    vim.uv.fs_close(fd)
+    return nil
+  end
+
+  local data = vim.uv.fs_read(fd, stat.size, 0)
+  vim.uv.fs_close(fd)
+  return data
 end
 
 return M
