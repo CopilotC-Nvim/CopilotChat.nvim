@@ -242,6 +242,7 @@ function Chat:get_closest_section()
     return nil
   end
 
+  self:render()
   local cursor_pos = vim.api.nvim_win_get_cursor(self.winnr)
   local cursor_line = cursor_pos[1]
   local closest_section = nil
@@ -279,6 +280,7 @@ function Chat:get_closest_block()
     return nil
   end
 
+  self:render()
   local cursor_pos = vim.api.nvim_win_get_cursor(self.winnr)
   local cursor_line = cursor_pos[1]
   local closest_block = nil
@@ -318,7 +320,6 @@ function Chat:clear_prompt()
   end
 
   self:render()
-
   local section = self.sections[#self.sections]
   if not section or section.answer then
     return
