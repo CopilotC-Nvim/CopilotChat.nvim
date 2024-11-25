@@ -27,14 +27,15 @@ local OUTLINE_TYPES = {
   'template_declaration',
   'macro_declaration',
   'constructor_declaration',
+  'field_declaration',
   'class_definition',
   'class_declaration',
   'interface_definition',
   'interface_declaration',
+  'record_declaration',
   'type_alias_declaration',
   'import_statement',
   'import_from_statement',
-  -- markdown
   'atx_heading',
   'list_item',
 }
@@ -43,17 +44,6 @@ local NAME_TYPES = {
   'name',
   'identifier',
   'heading_content',
-}
-
-local COMMENT_TYPES = {
-  'comment',
-  'line_comment',
-  'block_comment',
-  'doc_comment',
-}
-
-local IGNORED_TYPES = {
-  'export_statement',
 }
 
 local OFF_SIDE_RULE_LANGUAGES = {
@@ -69,6 +59,10 @@ local TOP_SYMBOLS = 64
 local TOP_RELATED = 20
 local MULTI_FILE_THRESHOLD = 3
 
+--- Compute the cosine similarity between two vectors
+---@param a table<number>
+---@param b table<number>
+---@return number
 local function spatial_distance_cosine(a, b)
   local dot_product = 0
   local magnitude_a = 0
@@ -83,7 +77,11 @@ local function spatial_distance_cosine(a, b)
   return dot_product / (magnitude_a * magnitude_b)
 end
 
----@param query string
+--- Rank data by relatedness to the query
+---@param query CopilotChat.copilot.embed
+---@param data table<CopilotChat.copilot.embed>
+---@param top_n number
+---@return table<CopilotChat.copilot.embed>
 local function data_ranked_by_relatedness(query, data, top_n)
   local scores = {}
   for i, item in pairs(data) do
@@ -100,6 +98,7 @@ local function data_ranked_by_relatedness(query, data, top_n)
   return result
 end
 
+--- Rank data by symbols
 ---@param query string
 ---@param data table<CopilotChat.context.outline>
 ---@param top_n number
@@ -154,17 +153,51 @@ local function data_ranked_by_symbols(query, data, top_n)
   return vim.list_slice(results, 1, top_n)
 end
 
---- Build an outline and symbols from a string
---- FIXME: Handle multiline function argument definitions when building the outline
+--- Get the full signature of a declaration
+---@param start_row number
+---@param start_col number
+---@param lines table<number, string>
+---@return string
+local function get_full_signature(start_row, start_col, lines)
+  local start_line = lines[start_row + 1]
+  local signature = vim.trim(start_line:sub(start_col + 1))
+
+  -- Look ahead for opening brace on next line
+  if not signature:match('{') and (start_row + 2) <= #lines then
+    local next_line = vim.trim(lines[start_row + 2])
+    if next_line:match('^{') then
+      signature = signature .. ' {'
+    end
+  end
+
+  return signature
+end
+
+--- Get the name of a node
+---@param node table
 ---@param content string
----@param name string
+---@return string?
+local function get_node_name(node, content)
+  for _, name_type in ipairs(NAME_TYPES) do
+    local name_field = node:field(name_type)
+    if name_field and #name_field > 0 then
+      return vim.treesitter.get_node_text(name_field[1], content)
+    end
+  end
+
+  return nil
+end
+
+--- Build an outline and symbols from a string
+---@param content string
+---@param filename string
 ---@param ft string?
 ---@return CopilotChat.context.outline
-function M.outline(content, name, ft)
+function M.outline(content, filename, ft)
   ft = ft or 'text'
 
   local output = {
-    filename = name,
+    filename = filename,
     filetype = ft,
     content = content,
     symbols = {},
@@ -190,48 +223,22 @@ function M.outline(content, name, ft)
 
   local root = parser:parse()[1]:root()
   local outline_lines = {}
-  local comment_lines = {}
   local depth = 0
-
-  local function get_node_name(node)
-    for _, name_type in ipairs(NAME_TYPES) do
-      local name_field = node:field(name_type)
-      if name_field and #name_field > 0 then
-        return vim.treesitter.get_node_text(name_field[1], content)
-      end
-    end
-
-    return nil
-  end
 
   local function parse_node(node)
     local type = node:type()
-    local parent = node:parent()
     local is_outline = vim.tbl_contains(OUTLINE_TYPES, type)
-    local is_comment = vim.tbl_contains(COMMENT_TYPES, type)
-    local is_ignored = vim.tbl_contains(IGNORED_TYPES, type)
-      or parent and vim.tbl_contains(IGNORED_TYPES, parent:type())
     local start_row, start_col, end_row, end_col = node:range()
-    local skip_inner = false
 
     if is_outline then
       depth = depth + 1
-
-      -- Handle comments
-      if #comment_lines > 0 then
-        for _, line in ipairs(comment_lines) do
-          table.insert(outline_lines, string.rep('  ', depth) .. line)
-        end
-        comment_lines = {}
-      end
-
-      local start_line = lines[start_row + 1]
-      local signature_start = vim.trim(start_line:sub(start_col + 1))
+      local name = get_node_name(node, content)
+      local signature_start = get_full_signature(start_row, start_col, lines)
       table.insert(outline_lines, string.rep('  ', depth) .. signature_start)
 
       -- Store symbol information
       table.insert(output.symbols, {
-        name = get_node_name(node),
+        name = name,
         signature = signature_start,
         type = type,
         start_row = start_row + 1,
@@ -239,30 +246,14 @@ function M.outline(content, name, ft)
         end_row = end_row,
         end_col = end_col,
       })
-
-      if start_row ~= end_row then
-        table.insert(outline_lines, string.rep('  ', depth + 1) .. '...')
-      else
-        skip_inner = true
-      end
-    elseif is_comment then
-      skip_inner = true
-      local comment = vim.split(vim.treesitter.get_node_text(node, content), '\n')
-      for _, line in ipairs(comment) do
-        table.insert(comment_lines, vim.trim(line))
-      end
-    elseif not is_ignored then
-      comment_lines = {}
     end
 
-    if not skip_inner then
-      for child in node:iter_children() do
-        parse_node(child)
-      end
+    for child in node:iter_children() do
+      parse_node(child)
     end
 
     if is_outline then
-      if not skip_inner and not vim.tbl_contains(OFF_SIDE_RULE_LANGUAGES, ft) then
+      if not vim.tbl_contains(OFF_SIDE_RULE_LANGUAGES, ft) then
         local end_line = lines[end_row + 1]
         local signature_end = vim.trim(end_line:sub(1, end_col))
         table.insert(outline_lines, string.rep('  ', depth) .. signature_end)
