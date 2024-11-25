@@ -287,11 +287,15 @@ local function finish(start_of_chat)
 
   state.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
 
+  -- Reinsert sticky prompts from last prompt
   if state.last_prompt then
     local has_sticky = false
-    for sticky_line in state.last_prompt:gmatch('(>%s+[^\n]+)') do
-      state.chat:append(sticky_line .. '\n')
-      has_sticky = true
+    local lines = vim.split(state.last_prompt, '\n')
+    for _, line in ipairs(lines) do
+      if vim.startswith(line, '> ') then
+        state.chat:append(line .. '\n')
+        has_sticky = true
+      end
     end
     if has_sticky then
       state.chat:append('\n')
@@ -666,7 +670,7 @@ function M.ask(prompt, config)
   -- Remove sticky prefix
   prompt = vim.trim(table.concat(
     vim.tbl_map(function(l)
-      return l:gsub('>%s+', '')
+      return l:gsub('^>%s+', '')
     end, vim.split(resolved_prompt, '\n')),
     '\n'
   ))
