@@ -83,19 +83,19 @@ end
 ---@param top_n number
 ---@return table<CopilotChat.copilot.embed>
 local function data_ranked_by_relatedness(query, data, top_n)
-  local scores = {}
-  for i, item in pairs(data) do
-    scores[i] = { index = i, score = spatial_distance_cosine(item.embedding, query.embedding) }
-  end
-  table.sort(scores, function(a, b)
+  data = vim.tbl_map(function(item)
+    return vim.tbl_extend(
+      'force',
+      item,
+      { score = spatial_distance_cosine(item.embedding, query.embedding) }
+    )
+  end, data)
+
+  table.sort(data, function(a, b)
     return a.score > b.score
   end)
-  local result = {}
-  for i = 1, math.min(top_n, #scores) do
-    local srt = scores[i]
-    table.insert(result, vim.tbl_extend('force', data[srt.index], { score = srt.score }))
-  end
-  return result
+
+  return vim.list_slice(data, 1, top_n)
 end
 
 --- Rank data by symbols
@@ -150,6 +150,7 @@ local function data_ranked_by_symbols(query, data, top_n)
   table.sort(results, function(a, b)
     return a.score > b.score
   end)
+
   return vim.list_slice(results, 1, top_n)
 end
 
@@ -207,7 +208,6 @@ function M.outline(content, filename, ft)
     return output
   end
 
-  local lines = vim.split(content, '\n')
   local lang = vim.treesitter.language.get_lang(ft)
   local ok, parser = false, nil
   if lang then
@@ -222,6 +222,7 @@ function M.outline(content, filename, ft)
   end
 
   local root = parser:parse()[1]:root()
+  local lines = vim.split(content, '\n')
   local outline_lines = {}
   local depth = 0
 
@@ -265,6 +266,7 @@ function M.outline(content, filename, ft)
   parse_node(root)
 
   if #outline_lines > 0 then
+    output.original = content
     output.content = table.concat(outline_lines, '\n')
   end
 
@@ -408,51 +410,41 @@ function M.filter_embeddings(copilot, prompt, embeddings)
     return embeddings
   end
 
-  local original_map = utils.ordered_map()
-  local embedded_map = utils.ordered_map()
-
-  -- Map embeddings by filename
-  for _, embed in ipairs(embeddings) do
-    original_map:set(embed.filename, embed)
-    embedded_map:set(embed.filename, M.outline(embed.content, embed.filename, embed.filetype))
-  end
+  -- Map embeddings to outlines
+  embeddings = vim.tbl_map(function(embed)
+    return M.outline(embed.content, embed.filename, embed.filetype)
+  end, embeddings)
 
   -- Rank embeddings by symbols
-  local ranked_data = data_ranked_by_symbols(prompt, embedded_map:values(), TOP_SYMBOLS)
-  log.debug('Ranked data:', #ranked_data)
-  for i, item in ipairs(ranked_data) do
+  embeddings = data_ranked_by_symbols(prompt, embeddings, TOP_SYMBOLS)
+  log.debug('Ranked data:', #embeddings)
+  for i, item in ipairs(embeddings) do
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
   end
 
   -- Add prompt so it can be embedded
-  table.insert(ranked_data, {
+  table.insert(embeddings, {
     content = prompt,
     filename = 'prompt',
     filetype = 'raw',
   })
 
   -- Get embeddings from all items
-  local embedded_data = copilot:embed(ranked_data)
+  embeddings = copilot:embed(embeddings)
 
   -- Rate embeddings by relatedness to the query
-  local embedded_query = table.remove(embedded_data, #embedded_data)
+  local embedded_query = table.remove(embeddings, #embeddings)
   log.debug('Embedded query:', embedded_query.content)
-  local ranked_embeddings = data_ranked_by_relatedness(embedded_query, embedded_data, TOP_RELATED)
-  log.debug('Ranked embeddings:', #ranked_embeddings)
-  for i, item in ipairs(ranked_embeddings) do
+  embeddings = data_ranked_by_relatedness(embedded_query, embeddings, TOP_RELATED)
+  log.debug('Ranked embeddings:', #embeddings)
+  for i, item in ipairs(embeddings) do
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
   end
 
-  -- Return original content in ranked order
-  local result = {}
-  for _, ranked_item in ipairs(ranked_embeddings) do
-    local original = original_map:get(ranked_item.filename)
-    if original then
-      table.insert(result, original)
-    end
-  end
-
-  return result
+  -- Return embeddings with original content
+  return vim.tbl_map(function(item)
+    return vim.tbl_extend('force', item, { content = item.original or item.content })
+  end, embeddings)
 end
 
 return M
