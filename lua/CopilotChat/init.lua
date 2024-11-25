@@ -664,12 +664,12 @@ function M.ask(prompt, config)
   local resolved_prompt, system_prompt = resolve_prompts(prompt, config.system_prompt)
 
   -- Remove sticky prefix
-  prompt = table.concat(
+  prompt = vim.trim(table.concat(
     vim.tbl_map(function(l)
       return l:gsub('>%s+', '')
     end, vim.split(resolved_prompt, '\n')),
     '\n'
-  )
+  ))
 
   -- Resolve embeddings
   local embeddings, embedded_prompt = resolve_embeddings(prompt, config)

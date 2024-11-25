@@ -420,12 +420,6 @@ function M.filter_embeddings(copilot, prompt, embeddings)
   local original_map = utils.ordered_map()
   local embedded_map = utils.ordered_map()
 
-  embedded_map:set('prompt', {
-    content = prompt,
-    filename = 'prompt',
-    filetype = 'raw',
-  })
-
   -- Map embeddings by filename
   for _, embed in ipairs(embeddings) do
     original_map:set(embed.filename, embed)
@@ -439,12 +433,20 @@ function M.filter_embeddings(copilot, prompt, embeddings)
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
   end
 
+  -- Add prompt so it can be embedded
+  table.insert(ranked_data, {
+    content = prompt,
+    filename = 'prompt',
+    filetype = 'raw',
+  })
+
   -- Get embeddings from all items
   local embedded_data = copilot:embed(ranked_data)
 
   -- Rate embeddings by relatedness to the query
-  local ranked_embeddings =
-    data_ranked_by_relatedness(table.remove(embedded_data, 1), embedded_data, TOP_RELATED)
+  local embedded_query = table.remove(embedded_data, #embedded_data)
+  log.debug('Embedded query:', embedded_query.content)
+  local ranked_embeddings = data_ranked_by_relatedness(embedded_query, embedded_data, TOP_RELATED)
   log.debug('Ranked embeddings:', #ranked_embeddings)
   for i, item in ipairs(ranked_embeddings) do
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
