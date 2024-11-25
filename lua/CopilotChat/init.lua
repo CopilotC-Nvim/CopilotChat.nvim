@@ -12,7 +12,7 @@ local Overlay = require('CopilotChat.ui.overlay')
 local Debug = require('CopilotChat.ui.debug')
 
 local M = {}
-local PLUGIN_NAME = 'CopilotChat.nvim'
+local PLUGIN_NAME = 'CopilotChat'
 local WORD = '([^%s]+)'
 
 --- @class CopilotChat.state
@@ -327,15 +327,21 @@ local function show_error(err, append_newline)
 end
 
 --- Map a key to a function.
----@param key CopilotChat.config.mapping
+---@param name string
 ---@param bufnr number
 ---@param fn function
-local function map_key(key, bufnr, fn)
+local function map_key(name, bufnr, fn)
+  local key = M.config.mappings[name]
   if not key then
     return
   end
   if key.normal and key.normal ~= '' then
-    vim.keymap.set('n', key.normal, fn, { buffer = bufnr, nowait = true })
+    vim.keymap.set(
+      'n',
+      key.normal,
+      fn,
+      { buffer = bufnr, nowait = true, desc = PLUGIN_NAME .. ' ' .. name:gsub('_', ' ') }
+    )
   end
   if key.insert and key.insert ~= '' then
     vim.keymap.set('i', key.insert, function()
@@ -352,16 +358,16 @@ local function map_key(key, bufnr, fn)
       else
         fn()
       end
-    end, { buffer = bufnr })
+    end, { buffer = bufnr, desc = PLUGIN_NAME .. ' ' .. name:gsub('_', ' ') })
   end
 end
 
 --- Get the info for a key.
 ---@param name string
----@param key CopilotChat.config.mapping?
 ---@param surround string|nil
 ---@return string
-local function key_to_info(name, key, surround)
+local function key_to_info(name, surround)
+  local key = M.config.mappings[name]
   if not key then
     return ''
   end
@@ -907,8 +913,8 @@ function M.setup(config)
     { link = '@punctuation.special.markdown', default = true }
   )
 
-  local overlay_help = key_to_info('close', M.config.mappings.close)
-  local diff_help = key_to_info('accept_diff', M.config.mappings.accept_diff)
+  local overlay_help = key_to_info('close')
+  local diff_help = key_to_info('accept_diff')
   if overlay_help ~= '' and diff_help ~= '' then
     diff_help = diff_help .. '\n' .. overlay_help
   end
@@ -917,7 +923,7 @@ function M.setup(config)
     state.overlay:delete()
   end
   state.overlay = Overlay('copilot-overlay', overlay_help, function(bufnr)
-    map_key(M.config.mappings.close, bufnr, function()
+    map_key('close', bufnr, function()
       state.overlay:restore(state.chat.winnr, state.chat.bufnr)
     end)
   end)
@@ -930,11 +936,11 @@ function M.setup(config)
     state.diff:delete()
   end
   state.diff = Diff(diff_help, function(bufnr)
-    map_key(M.config.mappings.close, bufnr, function()
+    map_key('close', bufnr, function()
       state.diff:restore(state.chat.winnr, state.chat.bufnr)
     end)
 
-    map_key(M.config.mappings.accept_diff, bufnr, function()
+    map_key('accept_diff', bufnr, function()
       apply_diff(state.diff:get_diff(), state.chat.config)
     end)
   end)
@@ -947,9 +953,9 @@ function M.setup(config)
     M.config.question_header,
     M.config.answer_header,
     M.config.separator,
-    key_to_info('show_help', M.config.mappings.show_help),
+    key_to_info('show_help'),
     function(bufnr)
-      map_key(M.config.mappings.show_help, bufnr, function()
+      map_key('show_help', bufnr, function()
         local chat_help = '**`Special tokens`**\n'
         chat_help = chat_help .. '`@<agent>` to select an agent\n'
         chat_help = chat_help .. '`#<context>` to select a context\n'
@@ -969,8 +975,7 @@ function M.setup(config)
         end)
         for _, name in ipairs(chat_keys) do
           if name ~= 'close' then
-            local key = M.config.mappings[name]
-            local info = key_to_info(name, key, '`')
+            local info = key_to_info(name, '`')
             if info ~= '' then
               chat_help = chat_help .. info .. '\n'
             end
@@ -979,11 +984,11 @@ function M.setup(config)
         state.overlay:show(chat_help, state.chat.winnr, 'markdown')
       end)
 
-      map_key(M.config.mappings.reset, bufnr, M.reset)
-      map_key(M.config.mappings.close, bufnr, M.close)
-      map_key(M.config.mappings.complete, bufnr, trigger_complete)
+      map_key('reset', bufnr, M.reset)
+      map_key('close', bufnr, M.close)
+      map_key('complete', bufnr, trigger_complete)
 
-      map_key(M.config.mappings.submit_prompt, bufnr, function()
+      map_key('submit_prompt', bufnr, function()
         local section = state.chat:get_closest_section()
         if not section or section.answer then
           return
@@ -992,7 +997,7 @@ function M.setup(config)
         M.ask(section.content)
       end)
 
-      map_key(M.config.mappings.toggle_sticky, bufnr, function()
+      map_key('toggle_sticky', bufnr, function()
         local section = state.chat:get_closest_section()
         if not section or section.answer then
           return
@@ -1036,11 +1041,11 @@ function M.setup(config)
         vim.api.nvim_win_set_cursor(0, cursor)
       end)
 
-      map_key(M.config.mappings.accept_diff, bufnr, function()
+      map_key('accept_diff', bufnr, function()
         apply_diff(get_diff(state.chat.config), state.chat.config)
       end)
 
-      map_key(M.config.mappings.jump_to_diff, bufnr, function()
+      map_key('jump_to_diff', bufnr, function()
         if
           not state.source
           or not state.source.winnr
@@ -1083,7 +1088,7 @@ function M.setup(config)
         )
       end)
 
-      map_key(M.config.mappings.quickfix_diffs, bufnr, function()
+      map_key('quickfix_diffs', bufnr, function()
         local selection = get_selection(state.chat.config)
         local items = {}
 
@@ -1115,7 +1120,7 @@ function M.setup(config)
         vim.cmd('copen')
       end)
 
-      map_key(M.config.mappings.yank_diff, bufnr, function()
+      map_key('yank_diff', bufnr, function()
         local diff = get_diff(state.chat.config)
         if not diff then
           return
@@ -1124,7 +1129,7 @@ function M.setup(config)
         vim.fn.setreg(M.config.mappings.yank_diff.register, diff.change)
       end)
 
-      map_key(M.config.mappings.show_diff, bufnr, function()
+      map_key('show_diff', bufnr, function()
         local diff = get_diff(state.chat.config)
         if not diff then
           return
@@ -1133,7 +1138,7 @@ function M.setup(config)
         state.diff:show(diff, state.chat.winnr)
       end)
 
-      map_key(M.config.mappings.show_system_prompt, bufnr, function()
+      map_key('show_system_prompt', bufnr, function()
         local section = state.chat:get_closest_section()
         local system_prompt = state.chat.config.system_prompt
         if section and not section.answer then
@@ -1146,7 +1151,7 @@ function M.setup(config)
         state.overlay:show(vim.trim(system_prompt) .. '\n', state.chat.winnr, 'markdown')
       end)
 
-      map_key(M.config.mappings.show_user_selection, bufnr, function()
+      map_key('show_user_selection', bufnr, function()
         local selection = get_selection(state.chat.config)
         if not selection then
           return
@@ -1155,7 +1160,7 @@ function M.setup(config)
         state.overlay:show(selection.content, state.chat.winnr, selection.filetype)
       end)
 
-      map_key(M.config.mappings.show_user_context, bufnr, function()
+      map_key('show_user_context', bufnr, function()
         local section = state.chat:get_closest_section()
         local embeddings = {}
         if section and not section.answer then
