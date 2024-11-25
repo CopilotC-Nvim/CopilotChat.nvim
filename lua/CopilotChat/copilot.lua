@@ -2,6 +2,7 @@
 ---@field content string
 ---@field filename string
 ---@field filetype string
+---@field embedding table<number>
 
 ---@class CopilotChat.copilot.ask.opts
 ---@field selection CopilotChat.config.selection?
