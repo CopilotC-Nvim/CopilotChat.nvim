@@ -521,9 +521,8 @@ function M.complete_items(callback)
       return a.kind < b.kind
     end)
 
-    vim.schedule(function()
-      callback(items)
-    end)
+    async.util.scheduler()
+    callback(items)
   end)
 end
 
@@ -599,14 +598,13 @@ function M.select_model()
       return model
     end, models)
 
-    vim.schedule(function()
-      vim.ui.select(models, {
-        prompt = 'Select a model> ',
-      }, function(choice)
-        if choice then
-          M.config.model = choice:gsub(' %(selected%)', '')
-        end
-      end)
+    async.util.scheduler()
+    vim.ui.select(models, {
+      prompt = 'Select a model> ',
+    }, function(choice)
+      if choice then
+        M.config.model = choice:gsub(' %(selected%)', '')
+      end
     end)
   end)
 end
@@ -623,14 +621,13 @@ function M.select_agent()
       return agent
     end, agents)
 
-    vim.schedule(function()
-      vim.ui.select(agents, {
-        prompt = 'Select an agent> ',
-      }, function(choice)
-        if choice then
-          M.config.agent = choice:gsub(' %(selected%)', '')
-        end
-      end)
+    async.util.scheduler()
+    vim.ui.select(agents, {
+      prompt = 'Select an agent> ',
+    }, function(choice)
+      if choice then
+        M.config.agent = choice:gsub(' %(selected%)', '')
+      end
     end)
   end)
 end
@@ -675,7 +672,7 @@ function M.ask(prompt, config)
     '\n'
   ))
 
-  -- Resolve embeddings
+  -- Retrieve embeddings
   local embeddings, embedded_prompt = resolve_embeddings(prompt, config)
   prompt = embedded_prompt
 
@@ -708,12 +705,11 @@ function M.ask(prompt, config)
       pcall(context.filter_embeddings, state.copilot, prompt, embeddings)
 
     if not query_ok then
-      vim.schedule(function()
-        log.error(vim.inspect(filtered_embeddings))
-        if not config.headless then
-          show_error(filtered_embeddings, has_output)
-        end
-      end)
+      async.util.scheduler()
+      log.error(vim.inspect(filtered_embeddings))
+      if not config.headless then
+        show_error(filtered_embeddings, has_output)
+      end
       return
     end
 
@@ -726,23 +722,21 @@ function M.ask(prompt, config)
         agent = selected_agent,
         temperature = config.temperature,
         no_history = config.headless,
-        on_progress = function(token)
-          vim.schedule(function()
-            if not config.headless then
-              state.chat:append(token)
-            end
-            has_output = true
-          end)
-        end,
+        on_progress = vim.schedule_wrap(function(token)
+          if not config.headless then
+            state.chat:append(token)
+          end
+          has_output = true
+        end),
       })
 
+    async.util.scheduler()
+
     if not ask_ok then
-      vim.schedule(function()
-        log.error(vim.inspect(response))
-        if not config.headless then
-          show_error(response, has_output)
-        end
-      end)
+      log.error(vim.inspect(response))
+      if not config.headless then
+        show_error(response, has_output)
+      end
       return
     end
 
@@ -756,14 +750,12 @@ function M.ask(prompt, config)
       state.chat.token_max_count = token_max_count
     end
 
-    vim.schedule(function()
-      if not config.headless then
-        finish()
-      end
-      if config.callback then
-        config.callback(response, state.source)
-      end
-    end)
+    if not config.headless then
+      finish()
+    end
+    if config.callback then
+      config.callback(response, state.source)
+    end
   end)
 end
 

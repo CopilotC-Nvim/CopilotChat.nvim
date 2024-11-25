@@ -264,6 +264,16 @@ end, 3)
 --- FIXME: Make async
 M.scan_dir = scandir.scan_dir
 
+-- M.scan_dir = async.wrap(function(path, opts, callback)
+--   scandir.scan_dir_async(path, vim.tbl_deep_extend('force', opts, {
+--     on_exit = callback,
+--     on_error = function(err)
+--       err = err and err.stderr or vim.inspect(err)
+--       callback(nil, err)
+--     end,
+--   }))
+-- end, 3)
+
 --- Check if a file exists
 --- FIXME: Make async
 ---@param path string The file path
