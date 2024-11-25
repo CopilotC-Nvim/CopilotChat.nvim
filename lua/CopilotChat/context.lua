@@ -274,19 +274,14 @@ function M.outline(content, filename, ft)
 end
 
 --- Get list of all files in workspace
----@param pattern string?
 ---@param winnr number?
 ---@return table<CopilotChat.copilot.embed>
-function M.files(pattern, winnr)
+function M.files(winnr)
   local cwd = utils.win_cwd(winnr)
-  local search = cwd .. '/' .. (pattern or '**/*')
-  local files = vim.tbl_filter(function(file)
-    return vim.fn.isdirectory(file) == 0
-  end, vim.fn.glob(search, false, true))
-
-  if #files == 0 then
-    return {}
-  end
+  local files = utils.scan_dir(cwd, {
+    add_dirs = false,
+    respect_gitignore = true,
+  })
 
   local out = {}
 
@@ -315,17 +310,13 @@ end
 ---@param filename string
 ---@return CopilotChat.copilot.embed?
 function M.file(filename)
-  if vim.fn.filereadable(filename) ~= 1 then
-    return nil
-  end
-
-  local content = vim.fn.readfile(filename)
-  if not content or #content == 0 then
+  local content = utils.read_file(filename)
+  if not content then
     return nil
   end
 
   return {
-    content = table.concat(content, '\n'),
+    content = content,
     filename = vim.fn.fnamemodify(filename, ':p:.'),
     filetype = vim.filetype.match({ filename = filename }),
   }
