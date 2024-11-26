@@ -734,6 +734,10 @@ function Copilot:ask(prompt, opts)
     return
   end
 
+  log.debug('Response status: ' .. response.status)
+  log.debug('Response body: ' .. response.body)
+  log.debug('Response headers: ' .. vim.inspect(response.headers))
+
   if response.status ~= 200 then
     if response.status == 401 then
       local ok, content = pcall(vim.json.decode, response.body, {
