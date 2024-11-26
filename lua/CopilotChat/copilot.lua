@@ -322,15 +322,19 @@ local Copilot = class(function(self, proxy, allow_insecure)
       -- Wait 1 second between retries
       '--retry-delay',
       '1',
-      -- Maximum time for the request
+      -- Keep connections alive for better performance
+      '--keepalive-time',
+      '60',
+      -- Disable compression (since responses are already streamed efficiently)
+      '--no-compressed',
+      -- Important timeouts
       '--max-time',
       math.floor(TIMEOUT * 2 / 1000),
-      -- Timeout for initial connection
       '--connect-timeout',
       '10',
-      '--no-keepalive', -- Don't reuse connections
-      '--tcp-nodelay', -- Disable Nagle's algorithm for faster streaming
-      '--no-buffer', -- Disable output buffering for streaming
+      -- Streaming optimizations
+      '--tcp-nodelay',
+      '--no-buffer',
     },
   }
 end)
