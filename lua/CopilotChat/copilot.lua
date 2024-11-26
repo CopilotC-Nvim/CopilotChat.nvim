@@ -211,8 +211,9 @@ local function generate_ask_request(
   max_output_tokens,
   stream
 )
+  local is_o1 = vim.startswith(model, 'o1')
   local messages = {}
-  local system_role = stream and 'system' or 'user'
+  local system_role = is_o1 and 'user' or 'system'
   local contexts = {}
 
   if system_prompt ~= '' then
@@ -250,14 +251,14 @@ local function generate_ask_request(
     messages = messages,
     model = model,
     stream = stream,
+    n = 1,
   }
 
   if max_output_tokens then
     out.max_tokens = max_output_tokens
   end
 
-  if stream then
-    out.n = 1
+  if not is_o1 then
     out.temperature = temperature
     out.top_p = 1
   end
@@ -655,6 +656,26 @@ function Copilot:ask(prompt, opts)
     full_response = full_response .. content
   end
 
+  local function parse_stream_line(line, job)
+    line = vim.trim(line)
+    if not vim.startswith(line, 'data: ') then
+      return
+    end
+    line = line:gsub('^data:%s*', '')
+
+    if line == '[DONE]' then
+      if job then
+        finish_stream(nil, job)
+      end
+      return
+    end
+
+    local err = parse_line(line)
+    if err and job then
+      finish_stream('Failed to parse response: ' .. vim.inspect(err) .. '\n' .. line, job)
+    end
+  end
+
   local function stream_func(err, line, job)
     if not line or errored or finished then
       return
@@ -665,26 +686,12 @@ function Copilot:ask(prompt, opts)
       return
     end
 
-    if err or vim.startswith(line, '{"error"') then
+    if err then
       finish_stream('Failed to get response: ' .. (err and vim.inspect(err) or line), job)
       return
     end
 
-    if not vim.startswith(line, 'data: ') then
-      return
-    end
-
-    line = line:gsub('^%s*data:%s*', ''):gsub('%s*$', '')
-
-    if line == '[DONE]' then
-      finish_stream(nil, job)
-      return
-    end
-
-    err = parse_line(line)
-    if err then
-      finish_stream('Failed to parse response: ' .. vim.inspect(err) .. '\n' .. line, job)
-    end
+    parse_stream_line(line, job)
   end
 
   local is_stream = not vim.startswith(model, 'o1')
@@ -767,7 +774,13 @@ function Copilot:ask(prompt, opts)
     return
   end
 
-  if not is_stream then
+  if is_stream then
+    if full_response == '' then
+      for _, line in ipairs(vim.split(response.body, '\n')) do
+        parse_stream_line(line)
+      end
+    end
+  else
     parse_line(response.body)
   end
 
