@@ -10,6 +10,7 @@
 ---@class CopilotChat.context.outline : CopilotChat.copilot.embed
 ---@field symbols table<string, CopilotChat.context.symbol>
 
+local async = require('plenary.async')
 local log = require('plenary.log')
 local utils = require('CopilotChat.utils')
 
@@ -315,6 +316,7 @@ function M.file(filename)
     return nil
   end
 
+  async.util.scheduler()
   return {
     content = content,
     filename = vim.fn.fnamemodify(filename, ':p:.'),
@@ -326,6 +328,8 @@ end
 ---@param bufnr number
 ---@return CopilotChat.copilot.embed?
 function M.buffer(bufnr)
+  async.util.scheduler()
+
   if not utils.buf_valid(bufnr) then
     return nil
   end

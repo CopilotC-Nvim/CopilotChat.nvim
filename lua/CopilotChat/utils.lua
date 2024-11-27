@@ -261,44 +261,47 @@ M.curl_post = async.wrap(function(url, opts, callback)
 end, 3)
 
 --- Scan a directory
---- FIXME: Make async
-M.scan_dir = scandir.scan_dir
-
--- M.scan_dir = async.wrap(function(path, opts, callback)
---   scandir.scan_dir_async(path, vim.tbl_deep_extend('force', opts, {
---     on_exit = callback,
---     on_error = function(err)
---       err = err and err.stderr or vim.inspect(err)
---       callback(nil, err)
---     end,
---   }))
--- end, 3)
+---@param path string The directory path
+---@param opts table The options
+M.scan_dir = async.wrap(function(path, opts, callback)
+  scandir.scan_dir_async(
+    path,
+    vim.tbl_deep_extend('force', opts, {
+      on_exit = callback,
+      on_error = function(err)
+        err = err and err.stderr or vim.inspect(err)
+        callback(nil, err)
+      end,
+    })
+  )
+end, 3)
 
 --- Check if a file exists
---- FIXME: Make async
 ---@param path string The file path
 M.file_exists = function(path)
-  local stat = vim.uv.fs_stat(path)
-  return stat ~= nil
+  local err, stat = async.uv.fs_stat(path)
+  return err == nil and stat ~= nil
 end
 
 --- Read a file
---- FIXME: Make async
 ---@param path string The file path
 M.read_file = function(path)
-  local fd = vim.uv.fs_open(path, 'r', 438)
-  if not fd then
+  local err, fd = async.uv.fs_open(path, 'r', 438)
+  if err or not fd then
     return nil
   end
 
-  local stat = vim.uv.fs_fstat(fd)
-  if not stat then
-    vim.uv.fs_close(fd)
+  local err, stat = async.uv.fs_fstat(fd)
+  if err or not stat then
+    async.uv.fs_close(fd)
     return nil
   end
 
-  local data = vim.uv.fs_read(fd, stat.size, 0)
-  vim.uv.fs_close(fd)
+  local err, data = async.uv.fs_read(fd, stat.size, 0)
+  async.uv.fs_close(fd)
+  if err or not data then
+    return nil
+  end
   return data
 end
 

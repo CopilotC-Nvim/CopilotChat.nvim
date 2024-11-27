@@ -233,24 +233,16 @@ end
 ---@param config CopilotChat.config.shared
 ---@return table<CopilotChat.copilot.embed>, string
 local function resolve_embeddings(prompt, config)
-  local embeddings = utils.ordered_map()
-
+  local contexts = {}
   local function parse_context(prompt_context)
     local split = vim.split(prompt_context, ':')
     local context_name = table.remove(split, 1)
     local context_input = vim.trim(table.concat(split, ':'))
-    local context_value = M.config.contexts[context_name]
-    if context_input == '' then
-      ---@diagnostic disable-next-line: cast-local-type
-      context_input = nil
-    end
-
-    if context_value then
-      for _, embedding in ipairs(context_value.resolve(context_input, state.source)) do
-        if embedding then
-          embeddings:set(embedding.filename, embedding)
-        end
-      end
+    if M.config.contexts[context_name] then
+      table.insert(contexts, {
+        name = context_name,
+        input = (context_input ~= '' and context_input or nil),
+      })
 
       return true
     end
@@ -273,6 +265,16 @@ local function resolve_embeddings(prompt, config)
       end
     else
       parse_context(config.context)
+    end
+  end
+
+  local embeddings = utils.ordered_map()
+  for _, context_data in ipairs(contexts) do
+    local context_value = M.config.contexts[context_data.name]
+    for _, embedding in ipairs(context_value.resolve(context_data.input, state.source)) do
+      if embedding then
+        embeddings:set(embedding.filename, embedding)
+      end
     end
   end
 
@@ -678,14 +680,13 @@ function M.ask(prompt, config)
     '\n'
   ))
 
-  -- Retrieve embeddings
-  local embeddings, embedded_prompt = resolve_embeddings(prompt, config)
-  prompt = embedded_prompt
-
   -- Retrieve the selection
   local selection = get_selection(config)
 
   async.run(function()
+    local embeddings, embedded_prompt = resolve_embeddings(prompt, config)
+    prompt = embedded_prompt
+
     local agents = vim.tbl_keys(state.copilot:list_agents())
     local selected_agent = config.agent
     prompt = prompt:gsub('@' .. WORD, function(match)
@@ -1162,25 +1163,29 @@ function M.setup(config)
 
       map_key('show_user_context', bufnr, function()
         local section = state.chat:get_closest_section()
-        local embeddings = {}
-        if section and not section.answer then
-          embeddings = resolve_embeddings(section.content, state.chat.config)
-        end
 
-        local text = ''
-        for _, embedding in ipairs(embeddings) do
-          local lines = vim.split(embedding.content, '\n')
-          local preview = table.concat(vim.list_slice(lines, 1, math.min(10, #lines)), '\n')
-          local header = string.format('**`%s`** (%s lines)', embedding.filename, #lines)
-          if #lines > 10 then
-            header = header .. ' (truncated)'
+        async.run(function()
+          local embeddings = {}
+          if section and not section.answer then
+            embeddings = resolve_embeddings(section.content, state.chat.config)
           end
 
-          text = text
-            .. string.format('%s\n```%s\n%s\n```\n\n', header, embedding.filetype, preview)
-        end
+          local text = ''
+          for _, embedding in ipairs(embeddings) do
+            local lines = vim.split(embedding.content, '\n')
+            local preview = table.concat(vim.list_slice(lines, 1, math.min(10, #lines)), '\n')
+            local header = string.format('**`%s`** (%s lines)', embedding.filename, #lines)
+            if #lines > 10 then
+              header = header .. ' (truncated)'
+            end
 
-        state.overlay:show(vim.trim(text) .. '\n', state.chat.winnr, 'markdown')
+            text = text
+              .. string.format('%s\n```%s\n%s\n```\n\n', header, embedding.filetype, preview)
+          end
+
+          async.util.scheduler()
+          state.overlay:show(vim.trim(text) .. '\n', state.chat.winnr, 'markdown')
+        end)
       end)
 
       vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
