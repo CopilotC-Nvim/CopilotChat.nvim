@@ -353,25 +353,23 @@ end
 function M.gitdiff(type, winnr)
   type = type or 'unstaged'
   local cwd = utils.win_cwd(winnr)
-  local cmd = 'git -C ' .. cwd .. ' diff --no-color --no-ext-diff'
+  local cmd = {
+    'git',
+    '-C',
+    cwd,
+    'diff',
+    '--no-color',
+    '--no-ext-diff',
+  }
 
   if type == 'staged' then
-    cmd = cmd .. ' --staged'
+    table.insert(cmd, '--staged')
   end
 
-  local handle = io.popen(cmd)
-  if not handle then
-    return nil
-  end
-
-  local result = handle:read('*a')
-  handle:close()
-  if not result or result == '' then
-    return nil
-  end
+  local out = utils.system(cmd)
 
   return {
-    content = result,
+    content = out.stdout,
     filename = 'git_diff_' .. type,
     filetype = 'diff',
   }

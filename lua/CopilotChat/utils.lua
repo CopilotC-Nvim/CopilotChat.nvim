@@ -305,4 +305,10 @@ M.read_file = function(path)
   return data
 end
 
+--- Call a system command
+---@param cmd table The command
+M.system = async.wrap(function(cmd, callback)
+  vim.system(cmd, { text = true }, callback)
+end, 2)
+
 return M

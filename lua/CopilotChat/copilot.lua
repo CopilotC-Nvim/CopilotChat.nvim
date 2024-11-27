@@ -18,6 +18,7 @@
 ---@field model string?
 ---@field chunk_size number?
 
+local async = require('plenary.async')
 local log = require('plenary.log')
 local prompts = require('CopilotChat.prompts')
 local tiktoken = require('CopilotChat.tiktoken')
@@ -50,6 +51,8 @@ local VERSION_HEADERS = {
 --- Get the github oauth cached token
 ---@return string|nil
 local function get_cached_token()
+  async.util.scheduler()
+
   -- loading token from the environment only in GitHub Codespaces
   local token = os.getenv('GITHUB_TOKEN')
   local codespaces = os.getenv('CODESPACES')
