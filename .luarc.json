@@ -1,3 +1,4 @@
 {
-  "diagnostics.globals": ["describe", "it"]
+  "diagnostics.globals": ["describe", "it"],
+  "diagnostics.disable": ["redefined-local"]
 }
