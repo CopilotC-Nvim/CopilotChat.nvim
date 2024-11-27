@@ -18,7 +18,6 @@
 ---@field model string?
 ---@field chunk_size number?
 
-local async = require('plenary.async')
 local log = require('plenary.log')
 local prompts = require('CopilotChat.prompts')
 local tiktoken = require('CopilotChat.tiktoken')
@@ -51,8 +50,6 @@ local VERSION_HEADERS = {
 --- Get the github oauth cached token
 ---@return string|nil
 local function get_cached_token()
-  async.util.scheduler()
-
   -- loading token from the environment only in GitHub Codespaces
   local token = os.getenv('GITHUB_TOKEN')
   local codespaces = os.getenv('CODESPACES')
@@ -314,6 +311,7 @@ local Copilot = class(function(self, proxy, allow_insecure)
   self.token = nil
   self.sessionid = nil
   self.machineid = utils.machine_id()
+  self.github_token = get_cached_token()
 
   self.request_args = {
     timeout = TIMEOUT,
@@ -347,12 +345,9 @@ end)
 ---@return table<string, string>
 function Copilot:authenticate()
   if not self.github_token then
-    self.github_token = get_cached_token()
-    if not self.github_token then
-      error(
-        'No GitHub token found, please use `:Copilot auth` to set it up from copilot.lua or `:Copilot setup` for copilot.vim'
-      )
-    end
+    error(
+      'No GitHub token found, please use `:Copilot auth` to set it up from copilot.lua or `:Copilot setup` for copilot.vim'
+    )
   end
 
   if
