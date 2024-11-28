@@ -1,7 +1,7 @@
 local async = require('plenary.async')
 local log = require('plenary.log')
 local utils = require('CopilotChat.utils')
-local tiktoken_core = nil
+local _, tiktoken_core = pcall(require, 'tiktoken_core')
 local current_tokenizer = nil
 local cache_dir = vim.fn.stdpath('cache')
 vim.fn.mkdir(tostring(cache_dir), 'p')
@@ -31,16 +31,16 @@ local M = {}
 --- Load the tiktoken module
 ---@param tokenizer string The tokenizer to load
 M.load = function(tokenizer)
+  if not tiktoken_core then
+    return
+  end
+
   if tokenizer == current_tokenizer then
     return
   end
 
-  local ok, core = pcall(require, 'tiktoken_core')
-  if not ok then
-    return
-  end
-
   local path = load_tiktoken_data(tokenizer)
+  async.util.scheduler()
   local special_tokens = {}
   special_tokens['<|endoftext|>'] = 100257
   special_tokens['<|fim_prefix|>'] = 100258
@@ -49,8 +49,7 @@ M.load = function(tokenizer)
   special_tokens['<|endofprompt|>'] = 100276
   local pat_str =
     "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
-  core.new(path, special_tokens, pat_str)
-  tiktoken_core = core
+  tiktoken_core.new(path, special_tokens, pat_str)
   current_tokenizer = tokenizer
 end
 
