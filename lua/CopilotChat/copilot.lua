@@ -427,7 +427,7 @@ function Copilot:fetch_models()
   end
 
   log.info('Models fetched')
-  log.trace(vim.inspect(models))
+  log.trace(models)
   self.models = out
   return out
 end
@@ -463,7 +463,7 @@ function Copilot:fetch_agents()
   out['copilot'] = { name = 'Copilot', default = true, description = 'Default noop agent' }
 
   log.info('Agents fetched')
-  log.trace(vim.inspect(agents))
+  log.trace(agents)
   self.agents = out
   return out
 end
@@ -486,7 +486,7 @@ function Copilot:enable_policy(model)
   self.policies[model] = true
 
   if err or response.status ~= 200 then
-    log.warn('Failed to enable policy for ' .. model .. ': ' .. vim.inspect(err or response.body))
+    log.warn('Failed to enable policy for ', model, ': ', (err or response.body))
     return
   end
 
@@ -510,13 +510,13 @@ function Copilot:ask(prompt, opts)
   local job_id = utils.uuid()
   self.current_job = job_id
 
-  log.trace('System prompt: ' .. system_prompt)
-  log.trace('Selection: ' .. (selection.content or ''))
-  log.debug('Prompt: ' .. prompt)
-  log.debug('Embeddings: ' .. #embeddings)
-  log.debug('Model: ' .. model)
-  log.debug('Agent: ' .. agent)
-  log.debug('Temperature: ' .. temperature)
+  log.trace('System prompt: ', system_prompt)
+  log.trace('Selection: ', selection.content)
+  log.debug('Prompt: ', prompt)
+  log.debug('Embeddings: ', #embeddings)
+  log.debug('Model: ', model)
+  log.debug('Agent: ', agent)
+  log.debug('Temperature: ', temperature)
 
   local history = no_history and {} or self.history
   local models = self:fetch_models()
@@ -534,8 +534,8 @@ function Copilot:ask(prompt, opts)
   local max_tokens = capabilities.limits.max_prompt_tokens -- FIXME: Is max_prompt_tokens the right limit?
   local max_output_tokens = capabilities.limits.max_output_tokens
   local tokenizer = capabilities.tokenizer
-  log.debug('Max tokens: ' .. max_tokens)
-  log.debug('Tokenizer: ' .. tokenizer)
+  log.debug('Max tokens: ', max_tokens)
+  log.debug('Tokenizer: ', tokenizer)
   tiktoken.load(tokenizer)
 
   local generated_messages = {}
@@ -666,7 +666,7 @@ function Copilot:ask(prompt, opts)
 
     local err = parse_line(line)
     if err and job then
-      finish_stream('Failed to parse response: ' .. vim.inspect(err) .. '\n' .. line, job)
+      finish_stream('Failed to parse response: ' .. utils.make_string(err) .. '\n' .. line, job)
     end
   end
 
@@ -681,7 +681,7 @@ function Copilot:ask(prompt, opts)
     end
 
     if err then
-      finish_stream('Failed to get response: ' .. (err and vim.inspect(err) or line), job)
+      finish_stream('Failed to get response: ' .. utils.make_string(err and err or line), job)
       return
     end
 
@@ -735,9 +735,9 @@ function Copilot:ask(prompt, opts)
     return
   end
 
-  log.debug('Response status: ' .. response.status)
-  log.debug('Response body: ' .. response.body)
-  log.debug('Response headers: ' .. vim.inspect(response.headers))
+  log.debug('Response status: ', response.status)
+  log.debug('Response body: ', response.body)
+  log.debug('Response headers: ', response.headers)
 
   if response.status ~= 200 then
     if response.status == 401 then
@@ -791,8 +791,8 @@ function Copilot:ask(prompt, opts)
     end
   end
 
-  log.trace('Full response: ' .. full_response)
-  log.debug('Last message: ' .. vim.inspect(last_message))
+  log.trace('Full response: ', full_response)
+  log.debug('Last message: ', last_message)
 
   table.insert(history, {
     content = prompt,

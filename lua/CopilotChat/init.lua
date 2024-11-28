@@ -317,7 +317,7 @@ local function show_error(err, append_newline)
     message = message:gsub('^%s*', '')
     err = message
   else
-    err = vim.inspect(err)
+    err = utils.make_string(err)
   end
 
   if append_newline then
@@ -713,7 +713,7 @@ function M.ask(prompt, config)
 
     if not query_ok then
       async.util.scheduler()
-      log.error(vim.inspect(filtered_embeddings))
+      log.error(filtered_embeddings)
       if not config.headless then
         show_error(filtered_embeddings, has_output)
       end
@@ -740,7 +740,7 @@ function M.ask(prompt, config)
     async.util.scheduler()
 
     if not ask_ok then
-      log.error(vim.inspect(response))
+      log.error(response)
       if not config.headless then
         show_error(response, has_output)
       end
