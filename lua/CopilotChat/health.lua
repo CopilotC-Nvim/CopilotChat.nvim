@@ -79,6 +79,15 @@ function M.check()
     ok('git: ' .. git_version)
   end
 
+  local lynx_version = run_command('lynx', '-version')
+  if lynx_version == false then
+    warn(
+      'lynx: missing, optional for fetching url contents. See "https://lynx.invisible-island.net/".'
+    )
+  else
+    ok('lynx: ' .. lynx_version)
+  end
+
   start('CopilotChat.nvim [dependencies]')
 
   if lualib_installed('plenary') then

@@ -46,10 +46,15 @@ Verify "[Copilot chat in the IDE](https://github.com/settings/copilot)" is enabl
 
 Optional:
 
-- tiktoken_core: `sudo luarocks install --lua-version 5.1 tiktoken_core`. Alternatively, download a pre-built binary from [lua-tiktoken releases](https://github.com/gptlang/lua-tiktoken/releases)
-- You can check your Lua PATH in Neovim by doing `:lua print(package.cpath)`. Save the binary as `tiktoken_core.so` in any of the given paths.
-
-> For Arch Linux user, you can install [`luajit-tiktoken-bin`](https://aur.archlinux.org/packages/luajit-tiktoken-bin) or [`lua51-tiktoken-bin`](https://aur.archlinux.org/packages/lua51-tiktoken-bin) from aur!
+- [tiktoken_core](https://github.com/gptlang/lua-tiktoken)
+  - Used for more accurate token counting
+  - Install via luarocks: `sudo luarocks install --lua-version 5.1 tiktoken_core`
+  - Alternatively, download a pre-built binary from [lua-tiktoken releases](https://github.com/gptlang/lua-tiktoken/releases). You can check your Lua PATH in Neovim by doing `:lua print(package.cpath)`. Save the binary as `tiktoken_core.so` in any of the given paths.
+  - For Arch Linux users, you can install [`luajit-tiktoken-bin`](https://aur.archlinux.org/packages/luajit-tiktoken-bin) or [`lua51-tiktoken-bin`](https://aur.archlinux.org/packages/lua51-tiktoken-bin) from aur
+- [lynx](https://lynx.invisible-island.net/)
+  - Used for fetching textual representation of URLs for `url` context
+  - For Arch Linux users, you can install [`lynx`](https://archlinux.org/packages/extra/x86_64/lynx) from the official repositories
+  - For other systems, use your package manager to install `lynx`. For windows use the installer provided from lynx site
 
 > [!WARNING]
 > If you are on neovim < 0.11.0, you also might want to add `noinsert` and `popup` to your `completeopt` to make the chat completion behave well.
@@ -277,6 +282,7 @@ Default contexts are:
 - `files` - Includes all non-hidden files in the current workspace in chat context. By default includes only filenames, includes also content with `full` input. Including all content can be slow on big workspaces so use with care. Supports input.
 - `git` - Includes current git diff in chat context (default unstaged). Supports input.
 - `register` - Includes content of specified register in chat context (default `+`, e.g system clipboard). Supports input.
+- `url` - Includes content of provided URL in chat context. Requires `lynx` (see requirements). Supports input.
 
 You can define custom contexts like this:
 
@@ -493,6 +499,9 @@ Also see [here](/lua/CopilotChat/config.lua):
       -- see config.lua for implementation
     },
     register = {
+      -- see config.lua for implementation
+    },
+    url = {
       -- see config.lua for implementation
     },
   },

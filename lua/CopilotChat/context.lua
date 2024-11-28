@@ -19,6 +19,7 @@ local async = require('plenary.async')
 local log = require('plenary.log')
 local utils = require('CopilotChat.utils')
 local file_cache = {}
+local url_cache = {}
 
 local M = {}
 
@@ -398,6 +399,27 @@ function M.buffer(bufnr)
     utils.filepath(vim.api.nvim_buf_get_name(bufnr)),
     vim.bo[bufnr].filetype
   )
+end
+
+--- Get the content of an URL
+---@param url string
+---@return CopilotChat.context.embed?
+function M.url(url)
+  local content = url_cache[url]
+  if not content then
+    local out = utils.system({ 'lynx', '-dump', url })
+    if not out or out.code ~= 0 then
+      return nil
+    end
+    content = out.stdout
+    url_cache[url] = content
+  end
+
+  return {
+    content = content,
+    filename = url,
+    filetype = 'text',
+  }
 end
 
 --- Get current git diff
