@@ -171,7 +171,7 @@ end
 ---@param end_line number
 ---@param config CopilotChat.config.shared
 local function jump_to_diff(winnr, bufnr, start_line, end_line, config)
-  vim.api.nvim_win_set_cursor(winnr, { start_line, 0 })
+  pcall(vim.api.nvim_win_set_cursor, winnr, { start_line, 0 })
   pcall(vim.api.nvim_buf_set_mark, bufnr, '<', start_line, 0, {})
   pcall(vim.api.nvim_buf_set_mark, bufnr, '>', end_line, 0, {})
   pcall(vim.api.nvim_buf_set_mark, bufnr, '[', start_line, 0, {})
@@ -1062,24 +1062,15 @@ function M.setup(config)
 
         local diff_bufnr = diff.bufnr
 
-        -- Try to find existing buffer first
+        -- If buffer is not found, try to load it
         if not diff_bufnr then
-          for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-            if utils.filename_same(vim.api.nvim_buf_get_name(buf), diff.filename) then
-              diff_bufnr = buf
-              break
-            end
-          end
+          diff_bufnr = vim.fn.bufadd(diff.filename)
+          vim.fn.bufload(diff_bufnr)
         end
 
-        -- Create new empty buffer if doesn't exist
-        if not diff_bufnr then
-          diff_bufnr = vim.api.nvim_create_buf(true, false)
-          vim.api.nvim_buf_set_name(diff_bufnr, diff.filename)
-          vim.bo[diff_bufnr].filetype = diff.filetype
-        end
-
+        state.source.bufnr = diff_bufnr
         vim.api.nvim_win_set_buf(state.source.winnr, diff_bufnr)
+
         jump_to_diff(
           state.source.winnr,
           diff_bufnr,
