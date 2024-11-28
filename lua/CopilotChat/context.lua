@@ -58,7 +58,7 @@ local OFF_SIDE_RULE_LANGUAGES = {
 
 local TOP_SYMBOLS = 64
 local TOP_RELATED = 20
-local MULTI_FILE_THRESHOLD = 3
+local MULTI_FILE_THRESHOLD = 5
 
 --- Compute the cosine similarity between two vectors
 ---@param a table<number>
