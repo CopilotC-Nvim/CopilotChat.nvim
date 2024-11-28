@@ -1,10 +1,14 @@
 local async = require('plenary.async')
 local log = require('plenary.log')
 local utils = require('CopilotChat.utils')
-local _, tiktoken_core = pcall(require, 'tiktoken_core')
 local current_tokenizer = nil
 local cache_dir = vim.fn.stdpath('cache')
 vim.fn.mkdir(tostring(cache_dir), 'p')
+
+local tiktoken_ok, tiktoken_core = pcall(require, 'tiktoken_core')
+if not tiktoken_ok then
+  tiktoken_core = nil
+end
 
 --- Load tiktoken data from cache or download it
 ---@param tokenizer string The tokenizer to load
