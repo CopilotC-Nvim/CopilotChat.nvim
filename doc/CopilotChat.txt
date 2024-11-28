@@ -757,7 +757,7 @@ installed.
 
 ROADMAP (WISHLIST)                            *CopilotChat-roadmap-(wishlist)*
 
-- Caching for contexts
+- Improved caching for context (persistence through restarts/smarter caching)
 - General QOL improvements
 
 
