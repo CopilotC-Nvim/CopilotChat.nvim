@@ -180,6 +180,24 @@ function M.filename_same(file1, file2)
   return vim.fn.fnamemodify(file1, ':p') == vim.fn.fnamemodify(file2, ':p')
 end
 
+--- Get the filetype of a file
+---@param filename string The file name
+---@return string|nil
+function M.filetype(filename)
+  local ft = vim.filetype.match({ filename = filename })
+  if ft == '' then
+    return nil
+  end
+  return ft
+end
+
+--- Get the file path
+---@param filename string The file name
+---@return string
+function M.filepath(filename)
+  return vim.fn.fnamemodify(filename, ':p:.')
+end
+
 --- Generate a UUID
 ---@return string
 function M.uuid()

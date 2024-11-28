@@ -329,9 +329,7 @@ local Copilot = class(function(self, proxy, allow_insecure)
       '60',
       -- Disable compression (since responses are already streamed efficiently)
       '--no-compressed',
-      -- Important timeouts
-      '--max-time',
-      math.floor(TIMEOUT * 2 / 1000),
+      -- Connect timeout of 10 seconds
       '--connect-timeout',
       '10',
       -- Streaming optimizations

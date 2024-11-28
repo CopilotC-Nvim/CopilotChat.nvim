@@ -275,7 +275,7 @@ Default contexts are:
 - `buffer` - Includes specified buffer in chat context (default current). Supports input.
 - `buffers` - Includes all buffers in chat context (default listed). Supports input.
 - `file` - Includes content of provided file in chat context. Supports input.
-- `files` - Includes all non-hidden filenames in the current workspace in chat context.
+- `files` - Includes all non-hidden files in the current workspace in chat context. By default includes only filenames, includes also content with `full` input. Including all content can be slow on big workspaces so use with care. Supports input.
 - `git` - Includes current git diff in chat context (default unstaged). Supports input.
 - `register` - Includes content of specified register in chat context (default `+`, e.g system clipboard). Supports input.
 
@@ -719,7 +719,7 @@ require('CopilotChat').setup({
 
 ## Roadmap (Wishlist)
 
-- Use indexed vector database with current workspace for better context selection
+- Caching for contexts
 - General QOL improvements
 
 ## Development

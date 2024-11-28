@@ -276,8 +276,9 @@ end
 
 --- Get list of all files in workspace
 ---@param winnr number?
+---@param with_content boolean?
 ---@return table<CopilotChat.copilot.embed>
-function M.files(winnr)
+function M.files(winnr, with_content)
   local cwd = utils.win_cwd(winnr)
   local files = utils.scan_dir(cwd, {
     add_dirs = false,
@@ -286,7 +287,35 @@ function M.files(winnr)
 
   local out = {}
 
-  -- Create embeddings in chunks
+  -- Read all files if we want content as well
+  if with_content then
+    async.util.scheduler()
+
+    files = vim.tbl_map(function(file)
+      return {
+        name = utils.filepath(file),
+        ft = utils.filetype(file),
+      }
+    end, files)
+    files = vim.tbl_filter(function(file)
+      return file.ft ~= nil
+    end, files)
+
+    for _, file in ipairs(files) do
+      local content = utils.read_file(file.name)
+      if content then
+        table.insert(out, {
+          content = content,
+          filename = file.name,
+          filetype = file.ft,
+        })
+      end
+    end
+
+    return out
+  end
+
+  -- Create file list in chunks
   local chunk_size = 100
   for i = 1, #files, chunk_size do
     local chunk = {}
@@ -317,10 +346,14 @@ function M.file(filename)
   end
 
   async.util.scheduler()
+  if not utils.filetype(filename) then
+    return nil
+  end
+
   return {
     content = content,
-    filename = vim.fn.fnamemodify(filename, ':p:.'),
-    filetype = vim.filetype.match({ filename = filename }),
+    filename = utils.filepath(filename),
+    filetype = utils.filetype(filename),
   }
 end
 
@@ -341,7 +374,7 @@ function M.buffer(bufnr)
 
   return {
     content = table.concat(content, '\n'),
-    filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ':p:.'),
+    filename = utils.filepath(vim.api.nvim_buf_get_name(bufnr)),
     filetype = vim.bo[bufnr].filetype,
   }
 end
