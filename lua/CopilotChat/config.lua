@@ -274,6 +274,20 @@ return {
         }
       end,
     },
+    url = {
+      description = 'Includes content of provided URL in chat context. Requires `lynx`. Supports input.',
+      input = function(callback)
+        vim.ui.input({
+          prompt = 'Enter URL> ',
+          default = 'https://',
+        }, callback)
+      end,
+      resolve = function(input)
+        return {
+          context.url(input),
+        }
+      end,
+    },
   },
 
   -- default prompts

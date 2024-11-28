@@ -267,11 +267,11 @@ end
 
 --- Send curl get request
 ---@param url string The url
----@param opts table The options
+---@param opts table? The options
 M.curl_get = async.wrap(function(url, opts, callback)
   curl.get(
     url,
-    vim.tbl_deep_extend('force', opts, {
+    vim.tbl_deep_extend('force', opts or {}, {
       callback = callback,
       on_error = function(err)
         err = M.make_string(err and err.stderr or err)
@@ -283,11 +283,11 @@ end, 3)
 
 --- Send curl post request
 ---@param url string The url
----@param opts table The options
+---@param opts table? The options
 M.curl_post = async.wrap(function(url, opts, callback)
   curl.post(
     url,
-    vim.tbl_deep_extend('force', opts, {
+    vim.tbl_deep_extend('force', opts or {}, {
       callback = callback,
       on_error = function(err)
         err = M.make_string(err and err.stderr or err)
