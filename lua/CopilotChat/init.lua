@@ -42,7 +42,7 @@ local state = {
 }
 
 ---@param config CopilotChat.config.shared
----@return CopilotChat.config.selection?
+---@return CopilotChat.select.selection?
 local function get_selection(config)
   local bufnr = state.source and state.source.bufnr
   local winnr = state.source and state.source.winnr
@@ -231,7 +231,7 @@ end
 
 ---@param prompt string
 ---@param config CopilotChat.config.shared
----@return table<CopilotChat.copilot.embed>, string
+---@return table<CopilotChat.context.embed>, string
 local function resolve_embeddings(prompt, config)
   local contexts = {}
   local function parse_context(prompt_context)

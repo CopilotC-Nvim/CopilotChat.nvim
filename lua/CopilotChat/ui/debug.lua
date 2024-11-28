@@ -25,10 +25,9 @@ local function build_debug_info()
   }
 
   local buf = context.buffer()
-  local outline = buf and context.outline(buf.content, buf.filename, buf.filetype)
-  if outline then
+  if buf then
     table.insert(lines, 'Current buffer symbols:')
-    for _, symbol in ipairs(outline.symbols) do
+    for _, symbol in ipairs(buf.symbols) do
       table.insert(
         lines,
         string.format(
@@ -44,9 +43,9 @@ local function build_debug_info()
       )
     end
     table.insert(lines, 'Current buffer outline:')
-    table.insert(lines, '`' .. outline.filename .. '`')
-    table.insert(lines, '```' .. outline.filetype)
-    local outline_lines = vim.split(outline.content, '\n')
+    table.insert(lines, '`' .. buf.filename .. '`')
+    table.insert(lines, '```' .. buf.filetype)
+    local outline_lines = vim.split(buf.content, '\n')
     for _, line in ipairs(outline_lines) do
       table.insert(lines, line)
     end
