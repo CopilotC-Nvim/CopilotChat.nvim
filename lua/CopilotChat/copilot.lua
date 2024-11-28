@@ -28,10 +28,8 @@ local temp_file = utils.temp_file
 --- Constants
 local CONTEXT_FORMAT = '[#file:%s](#file:%s-context)'
 local BIG_FILE_THRESHOLD = 2000
-local BIG_EMBED_THRESHOLD = 500
+local BIG_EMBED_THRESHOLD = 300
 local EMBED_MODEL = 'text-embedding-3-small'
-local EMBED_MAX_TOKENS = 8191
-local EMBED_TOKENIZER = 'cl100k_base'
 local TRUNCATED = '... (truncated)'
 local TIMEOUT = 30000
 local VERSION_HEADERS = {
@@ -269,30 +267,28 @@ local function generate_ask_request(
   return out
 end
 
-local function generate_embeddings_request_message(embedding)
-  local lines = vim.split(embedding.content, '\n')
-  if #lines > BIG_EMBED_THRESHOLD then
-    lines = vim.list_slice(lines, 1, BIG_EMBED_THRESHOLD)
-    table.insert(lines, TRUNCATED)
-  end
-  local content = table.concat(lines, '\n')
-
-  if embedding.filetype == 'raw' then
-    return content
-  else
-    return string.format(
-      'File: `%s`\n```%s\n%s\n```',
-      embedding.filename,
-      embedding.filetype,
-      content
-    )
-  end
-end
-
-local function generate_embedding_request(inputs, model)
+local function generate_embedding_request(inputs, model, threshold)
   return {
     dimensions = 512,
-    input = vim.tbl_map(generate_embeddings_request_message, inputs),
+    input = vim.tbl_map(function(embedding)
+      local lines = vim.split(embedding.content, '\n')
+      if #lines > threshold then
+        lines = vim.list_slice(lines, 1, threshold)
+        table.insert(lines, TRUNCATED)
+      end
+      local content = table.concat(lines, '\n')
+
+      if embedding.filetype == 'raw' then
+        return content
+      else
+        return string.format(
+          'File: `%s`\n```%s\n%s\n```',
+          embedding.filename,
+          embedding.filetype,
+          content
+        )
+      end
+    end, inputs),
     model = model,
   }
 end
@@ -328,6 +324,8 @@ local Copilot = class(function(self, proxy, allow_insecure)
     proxy = proxy,
     insecure = allow_insecure,
     raw = {
+      -- Properly fail on errors
+      '--fail-with-body',
       -- Retry failed requests twice
       '--retry',
       '2',
@@ -867,16 +865,16 @@ end
 --- Generate embeddings for the given inputs
 ---@param inputs table<CopilotChat.copilot.embed>: The inputs to embed
 ---@return table<CopilotChat.copilot.embed>
-function Copilot:embed(inputs, opts)
+function Copilot:embed(inputs)
   if not inputs or #inputs == 0 then
     return {}
   end
 
   -- Initialize essentials
   local model = EMBED_MODEL
-  tiktoken.load(EMBED_TOKENIZER)
   local to_process = {}
   local results = {}
+  local initial_chunk_size = 10
 
   -- Process each input, using cache when possible
   for _, input in ipairs(inputs) do
@@ -888,67 +886,76 @@ function Copilot:embed(inputs, opts)
       if self.embedding_cache[cache_key] then
         table.insert(results, self.embedding_cache[cache_key])
       else
-        local message = generate_embeddings_request_message(input)
-        local tokens = tiktoken.count(message)
-
-        if tokens <= EMBED_MAX_TOKENS then
-          input.tokens = tokens
-          table.insert(to_process, input)
-        else
-          log.warn(
-            string.format(
-              'Embedding for %s exceeds token limit (%d > %d), skipping',
-              input.filename,
-              tokens,
-              EMBED_MAX_TOKENS
-            )
-          )
-        end
+        table.insert(to_process, input)
       end
     end
   end
 
-  -- Process inputs in batches
+  -- Process inputs in batches with adaptive chunk size
   while #to_process > 0 do
+    local chunk_size = initial_chunk_size -- Reset chunk size for each new batch
+    local threshold = BIG_EMBED_THRESHOLD -- Reset threshold for each new batch
+
+    -- Take next chunk
     local batch = {}
-    local batch_tokens = 0
-
-    -- Build batch within token limit
-    while #to_process > 0 do
-      local next_input = to_process[1]
-      if batch_tokens + next_input.tokens > EMBED_MAX_TOKENS then
-        break
-      end
+    for _ = 1, math.min(chunk_size, #to_process) do
       table.insert(batch, table.remove(to_process, 1))
-      batch_tokens = batch_tokens + next_input.tokens
     end
 
-    -- Get embeddings for batch
-    local body = vim.json.encode(generate_embedding_request(batch, model))
-    local response, err = utils.curl_post(
-      'https://api.githubcopilot.com/embeddings',
-      vim.tbl_extend('force', self.request_args, {
-        headers = self:authenticate(),
-        body = temp_file(body),
-      })
-    )
+    -- Try to get embeddings for batch
+    local success = false
+    local attempts = 0
+    while not success and attempts < 5 do -- Limit total attempts to 5
+      local body = vim.json.encode(generate_embedding_request(batch, model, threshold))
+      local response, err = utils.curl_post(
+        'https://api.githubcopilot.com/embeddings',
+        vim.tbl_extend('force', self.request_args, {
+          headers = self:authenticate(),
+          body = temp_file(body),
+        })
+      )
 
-    if err or not response or response.status ~= 200 then
-      error(err or ('Failed to get embeddings: ' .. (response and response.body or 'no response')))
+      if err or not response or response.status ~= 200 then
+        attempts = attempts + 1
+        -- If we have few items and the request failed, try reducing threshold first
+        if #batch <= 5 then
+          threshold = math.max(5, math.floor(threshold / 2))
+          log.debug(string.format('Reducing threshold to %d and retrying...', threshold))
+        else
+          -- Otherwise reduce batch size first
+          chunk_size = math.max(1, math.floor(chunk_size / 2))
+          -- Put items back in to_process
+          for i = #batch, 1, -1 do
+            table.insert(to_process, 1, table.remove(batch, i))
+          end
+          -- Take new smaller batch
+          batch = {}
+          for _ = 1, math.min(chunk_size, #to_process) do
+            table.insert(batch, table.remove(to_process, 1))
+          end
+          log.debug(string.format('Reducing batch size to %d and retrying...', chunk_size))
+        end
+      else
+        success = true
+
+        -- Process and cache results
+        local ok, content = pcall(vim.json.decode, response.body)
+        if not ok then
+          error('Failed to parse embedding response: ' .. response.body)
+        end
+
+        for _, embedding in ipairs(content.data) do
+          local result = vim.tbl_extend('keep', batch[embedding.index + 1], embedding)
+          table.insert(results, result)
+
+          local cache_key = result.filename .. utils.quick_hash(result.content)
+          self.embedding_cache[cache_key] = result
+        end
+      end
     end
 
-    local ok, content = pcall(vim.json.decode, response.body)
-    if not ok then
-      error('Failed to parse embedding response: ' .. response.body)
-    end
-
-    -- Process and cache results
-    for _, embedding in ipairs(content.data) do
-      local result = vim.tbl_extend('keep', batch[embedding.index + 1], embedding)
-      table.insert(results, result)
-
-      local cache_key = result.filename .. utils.quick_hash(result.content)
-      self.embedding_cache[cache_key] = result
+    if not success then
+      error('Failed to process embeddings after multiple attempts')
     end
   end
 
