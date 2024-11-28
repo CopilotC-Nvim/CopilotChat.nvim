@@ -1,22 +1,12 @@
----@class CopilotChat.copilot.embed
----@field content string
----@field filename string
----@field filetype string
----@field embedding table<number>
-
 ---@class CopilotChat.copilot.ask.opts
----@field selection CopilotChat.config.selection?
----@field embeddings table<CopilotChat.copilot.embed>?
+---@field selection CopilotChat.select.selection?
+---@field embeddings table<CopilotChat.context.embed>?
 ---@field system_prompt string?
 ---@field model string?
 ---@field agent string?
 ---@field temperature number?
 ---@field no_history boolean?
 ---@field on_progress nil|fun(response: string):nil
-
----@class CopilotChat.copilot.embed.opts
----@field model string?
----@field chunk_size number?
 
 local log = require('plenary.log')
 local prompts = require('CopilotChat.prompts')
@@ -107,7 +97,7 @@ local function generate_line_numbers(content, start_line)
 end
 
 --- Generate messages for the given selection
---- @param selection CopilotChat.config.selection
+--- @param selection CopilotChat.select.selection
 local function generate_selection_messages(selection)
   local filename = selection.filename or 'unknown'
   local filetype = selection.filetype or 'text'
@@ -167,7 +157,7 @@ local function generate_selection_messages(selection)
 end
 
 --- Generate messages for the given embeddings
---- @param embeddings table<CopilotChat.copilot.embed>
+--- @param embeddings table<CopilotChat.context.embed>
 local function generate_embeddings_messages(embeddings)
   local files = {}
   for _, embedding in ipairs(embeddings) do
@@ -295,7 +285,7 @@ end
 
 ---@class CopilotChat.Copilot : Class
 ---@field history table
----@field embedding_cache table<CopilotChat.copilot.embed>
+---@field embedding_cache table<CopilotChat.context.embed>
 ---@field policies table<string, boolean>
 ---@field models table<string, table>?
 ---@field agents table<string, table>?
@@ -863,8 +853,8 @@ function Copilot:list_agents()
 end
 
 --- Generate embeddings for the given inputs
----@param inputs table<CopilotChat.copilot.embed>: The inputs to embed
----@return table<CopilotChat.copilot.embed>
+---@param inputs table<CopilotChat.context.embed>: The inputs to embed
+---@return table<CopilotChat.context.embed>
 function Copilot:embed(inputs)
   if not inputs or #inputs == 0 then
     return {}

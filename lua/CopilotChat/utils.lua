@@ -301,6 +301,17 @@ M.file_exists = function(path)
   return err == nil and stat ~= nil
 end
 
+--- Get last modified time of a file
+---@param path string The file path
+---@return number?
+M.file_mtime = function(path)
+  local err, stat = async.uv.fs_stat(path)
+  if err or not stat then
+    return nil
+  end
+  return stat.mtime.sec
+end
+
 --- Read a file
 ---@param path string The file path
 M.read_file = function(path)

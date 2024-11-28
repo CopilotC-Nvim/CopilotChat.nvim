@@ -7,12 +7,18 @@
 ---@field end_row number
 ---@field end_col number
 
----@class CopilotChat.context.outline : CopilotChat.copilot.embed
----@field symbols table<string, CopilotChat.context.symbol>
+---@class CopilotChat.context.embed
+---@field content string
+---@field filename string
+---@field filetype string
+---@field original string?
+---@field symbols table<string, CopilotChat.context.symbol>?
+---@field embedding table<number>?
 
 local async = require('plenary.async')
 local log = require('plenary.log')
 local utils = require('CopilotChat.utils')
+local file_cache = {}
 
 local M = {}
 
@@ -79,10 +85,10 @@ local function spatial_distance_cosine(a, b)
 end
 
 --- Rank data by relatedness to the query
----@param query CopilotChat.copilot.embed
----@param data table<CopilotChat.copilot.embed>
+---@param query CopilotChat.context.embed
+---@param data table<CopilotChat.context.embed>
 ---@param top_n number
----@return table<CopilotChat.copilot.embed>
+---@return table<CopilotChat.context.embed>
 local function data_ranked_by_relatedness(query, data, top_n)
   data = vim.tbl_map(function(item)
     return vim.tbl_extend(
@@ -101,7 +107,7 @@ end
 
 --- Rank data by symbols
 ---@param query string
----@param data table<CopilotChat.context.outline>
+---@param data table<CopilotChat.context.embed>
 ---@param top_n number
 local function data_ranked_by_symbols(query, data, top_n)
   local query_terms = {}
@@ -193,21 +199,14 @@ end
 --- Build an outline and symbols from a string
 ---@param content string
 ---@param filename string
----@param ft string?
----@return CopilotChat.context.outline
-function M.outline(content, filename, ft)
-  ft = ft or 'text'
-
+---@param ft string
+---@return CopilotChat.context.embed
+local function build_outline(content, filename, ft)
   local output = {
     filename = filename,
     filetype = ft,
     content = content,
-    symbols = {},
   }
-
-  if ft == 'raw' then
-    return output
-  end
 
   local lang = vim.treesitter.language.get_lang(ft)
   local ok, parser = false, nil
@@ -224,6 +223,7 @@ function M.outline(content, filename, ft)
 
   local root = parser:parse()[1]:root()
   local lines = vim.split(content, '\n')
+  local symbols = {}
   local outline_lines = {}
   local depth = 0
 
@@ -239,7 +239,7 @@ function M.outline(content, filename, ft)
       table.insert(outline_lines, string.rep('  ', depth) .. signature_start)
 
       -- Store symbol information
-      table.insert(output.symbols, {
+      table.insert(symbols, {
         name = name,
         signature = signature_start,
         type = type,
@@ -269,15 +269,45 @@ function M.outline(content, filename, ft)
   if #outline_lines > 0 then
     output.original = content
     output.content = table.concat(outline_lines, '\n')
+    output.symbols = symbols
   end
 
   return output
 end
 
+--- Get data for a file
+---@param filename string
+---@param filetype string
+---@return CopilotChat.context.embed?
+local function get_file(filename, filetype)
+  local modified = utils.file_mtime(filename)
+  if not modified then
+    return nil
+  end
+
+  local cached = file_cache[filename]
+  if cached and cached.modified >= modified then
+    return cached.outline
+  end
+
+  local content = utils.read_file(filename)
+  if content then
+    local outline = build_outline(content, filename, filetype)
+    file_cache[filename] = {
+      outline = outline,
+      modified = modified,
+    }
+
+    return outline
+  end
+
+  return nil
+end
+
 --- Get list of all files in workspace
 ---@param winnr number?
 ---@param with_content boolean?
----@return table<CopilotChat.copilot.embed>
+---@return table<CopilotChat.context.embed>
 function M.files(winnr, with_content)
   local cwd = utils.win_cwd(winnr)
   local files = utils.scan_dir(cwd, {
@@ -291,24 +321,22 @@ function M.files(winnr, with_content)
   if with_content then
     async.util.scheduler()
 
-    files = vim.tbl_map(function(file)
-      return {
-        name = utils.filepath(file),
-        ft = utils.filetype(file),
-      }
-    end, files)
-    files = vim.tbl_filter(function(file)
-      return file.ft ~= nil
-    end, files)
+    files = vim.tbl_filter(
+      function(file)
+        return file.ft ~= nil
+      end,
+      vim.tbl_map(function(file)
+        return {
+          name = utils.filepath(file),
+          ft = utils.filetype(file),
+        }
+      end, files)
+    )
 
     for _, file in ipairs(files) do
-      local content = utils.read_file(file.name)
-      if content then
-        table.insert(out, {
-          content = content,
-          filename = file.name,
-          filetype = file.ft,
-        })
+      local file_data = get_file(file.name, file.ft)
+      if file_data then
+        table.insert(out, file_data)
       end
     end
 
@@ -338,28 +366,20 @@ end
 
 --- Get the content of a file
 ---@param filename string
----@return CopilotChat.copilot.embed?
+---@return CopilotChat.context.embed?
 function M.file(filename)
-  local content = utils.read_file(filename)
-  if not content then
-    return nil
-  end
-
   async.util.scheduler()
-  if not utils.filetype(filename) then
+  local ft = utils.filetype(filename)
+  if not ft then
     return nil
   end
 
-  return {
-    content = content,
-    filename = utils.filepath(filename),
-    filetype = utils.filetype(filename),
-  }
+  return get_file(utils.filepath(filename), ft)
 end
 
 --- Get the content of a buffer
 ---@param bufnr? number
----@return CopilotChat.copilot.embed?
+---@return CopilotChat.context.embed?
 function M.buffer(bufnr)
   async.util.scheduler()
   bufnr = bufnr or vim.api.nvim_get_current_buf()
@@ -373,17 +393,17 @@ function M.buffer(bufnr)
     return nil
   end
 
-  return {
-    content = table.concat(content, '\n'),
-    filename = utils.filepath(vim.api.nvim_buf_get_name(bufnr)),
-    filetype = vim.bo[bufnr].filetype,
-  }
+  return build_outline(
+    table.concat(content, '\n'),
+    utils.filepath(vim.api.nvim_buf_get_name(bufnr)),
+    vim.bo[bufnr].filetype
+  )
 end
 
 --- Get current git diff
 ---@param type string?
 ---@param winnr number
----@return CopilotChat.copilot.embed?
+---@return CopilotChat.context.embed?
 function M.gitdiff(type, winnr)
   type = type or 'unstaged'
   local cwd = utils.win_cwd(winnr)
@@ -411,7 +431,7 @@ end
 
 --- Return contents of specified register
 ---@param register string?
----@return CopilotChat.copilot.embed?
+---@return CopilotChat.context.embed?
 function M.register(register)
   register = register or '+'
   local lines = vim.fn.getreg(register)
@@ -429,18 +449,13 @@ end
 --- Filter embeddings based on the query
 ---@param copilot CopilotChat.Copilot
 ---@param prompt string
----@param embeddings table<CopilotChat.copilot.embed>
----@return table<CopilotChat.copilot.embed>
+---@param embeddings table<CopilotChat.context.embed>
+---@return table<CopilotChat.context.embed>
 function M.filter_embeddings(copilot, prompt, embeddings)
   -- If we dont need to embed anything, just return directly
   if #embeddings < MULTI_FILE_THRESHOLD then
     return embeddings
   end
-
-  -- Map embeddings to outlines
-  embeddings = vim.tbl_map(function(embed)
-    return M.outline(embed.content, embed.filename, embed.filetype)
-  end, embeddings)
 
   -- Rank embeddings by symbols
   embeddings = data_ranked_by_symbols(prompt, embeddings, TOP_SYMBOLS)

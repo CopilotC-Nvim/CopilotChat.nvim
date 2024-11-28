@@ -7,25 +7,10 @@ local utils = require('CopilotChat.utils')
 --- @field bufnr number
 --- @field winnr number
 
----@class CopilotChat.config.selection.diagnostic
----@field content string
----@field start_line number
----@field end_line number
----@field severity string
-
----@class CopilotChat.config.selection
----@field content string
----@field start_line number
----@field end_line number
----@field filename string
----@field filetype string
----@field bufnr number
----@field diagnostics table<CopilotChat.config.selection.diagnostic>?
-
 ---@class CopilotChat.config.context
 ---@field description string?
 ---@field input fun(callback: fun(input: string?), source: CopilotChat.config.source)?
----@field resolve fun(input: string?, source: CopilotChat.config.source):table<CopilotChat.copilot.embed>
+---@field resolve fun(input: string?, source: CopilotChat.config.source):table<CopilotChat.context.embed>
 
 ---@class CopilotChat.config.prompt : CopilotChat.config.shared
 ---@field prompt string?
@@ -76,7 +61,7 @@ local utils = require('CopilotChat.utils')
 ---@field temperature number?
 ---@field headless boolean?
 ---@field callback fun(response: string, source: CopilotChat.config.source)?
----@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.config.selection?
+---@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.select.selection?
 ---@field window CopilotChat.config.window?
 ---@field show_help boolean?
 ---@field show_folds boolean?

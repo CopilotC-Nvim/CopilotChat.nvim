@@ -719,7 +719,7 @@ require('CopilotChat').setup({
 
 ## Roadmap (Wishlist)
 
-- Caching for contexts
+- Improved caching for context (persistence through restarts/smarter caching)
 - General QOL improvements
 
 ## Development
