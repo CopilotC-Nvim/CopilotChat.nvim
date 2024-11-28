@@ -228,9 +228,14 @@ return {
       end,
     },
     files = {
-      description = 'Includes all non-hidden filenames in the current workspace in chat context.',
-      resolve = function(_, source)
-        return context.files(source.winnr)
+      description = 'Includes all non-hidden files in the current workspace in chat context. By default includes only filenames, includes also content with `full` input. Including all content can be slow on big workspaces so use with care. Supports input.',
+      input = function(callback)
+        vim.ui.select({ 'list', 'full' }, {
+          prompt = 'Select files content> ',
+        }, callback)
+      end,
+      resolve = function(input, source)
+        return context.files(source.winnr, input == 'full')
       end,
     },
     git = {
