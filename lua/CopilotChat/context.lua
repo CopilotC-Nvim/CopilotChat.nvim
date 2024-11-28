@@ -358,10 +358,11 @@ function M.file(filename)
 end
 
 --- Get the content of a buffer
----@param bufnr number
+---@param bufnr? number
 ---@return CopilotChat.copilot.embed?
 function M.buffer(bufnr)
   async.util.scheduler()
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
 
   if not utils.buf_valid(bufnr) then
     return nil

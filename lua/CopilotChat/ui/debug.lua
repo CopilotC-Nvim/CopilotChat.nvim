@@ -1,3 +1,4 @@
+local async = require('plenary.async')
 local log = require('plenary.log')
 local utils = require('CopilotChat.utils')
 local context = require('CopilotChat.context')
@@ -23,7 +24,7 @@ local function build_debug_info()
     '',
   }
 
-  local buf = context.buffer(vim.api.nvim_get_current_buf())
+  local buf = context.buffer()
   local outline = buf and context.outline(buf.content, buf.filename, buf.filetype)
   if outline then
     table.insert(lines, 'Current buffer symbols:')
@@ -76,42 +77,59 @@ local Debug = class(function(self)
   end)
 end, Overlay)
 
+function Debug:close()
+  if not self.winnr then
+    return
+  end
+
+  if vim.api.nvim_win_is_valid(self.winnr) then
+    vim.api.nvim_win_close(self.winnr, true)
+  end
+
+  self.winnr = nil
+end
+
 function Debug:open()
   self:validate()
+  self:close()
 
-  local lines = build_debug_info()
-  local height = math.min(vim.o.lines - 3, #lines)
-  local width = 0
-  for _, line in ipairs(lines) do
-    width = math.max(width, #line)
-  end
+  async.run(function()
+    local lines = build_debug_info()
+    async.util.scheduler()
 
-  local win_opts = {
-    title = 'CopilotChat.nvim Debug Info',
-    relative = 'editor',
-    width = width,
-    height = height,
-    row = math.floor((vim.o.lines - height) / 2) - 1,
-    col = math.floor((vim.o.columns - width) / 2),
-    style = 'minimal',
-    border = 'rounded',
-    zindex = 50,
-  }
+    local height = math.min(vim.o.lines - 3, #lines)
+    local width = 0
+    for _, line in ipairs(lines) do
+      width = math.max(width, #line)
+    end
 
-  if not utils.is_stable() then
-    win_opts.footer = "Press 'q' to close this window."
-  end
+    local win_opts = {
+      title = 'CopilotChat.nvim Debug Info',
+      relative = 'editor',
+      width = width,
+      height = height,
+      row = math.floor((vim.o.lines - height) / 2) - 1,
+      col = math.floor((vim.o.columns - width) / 2),
+      style = 'minimal',
+      border = 'rounded',
+      zindex = 50,
+    }
 
-  -- Open window
-  local winnr = vim.api.nvim_open_win(self.bufnr, true, win_opts)
-  vim.wo[winnr].wrap = true
-  vim.wo[winnr].linebreak = true
-  vim.wo[winnr].cursorline = true
-  vim.wo[winnr].conceallevel = 2
+    if not utils.is_stable() then
+      win_opts.footer = "Press 'q' to close this window."
+    end
 
-  -- Show content
-  self:show(table.concat(lines, '\n'), winnr, 'markdown')
-  vim.api.nvim_win_set_cursor(winnr, { 1, 0 })
+    -- Open window
+    self.winnr = vim.api.nvim_open_win(self.bufnr, true, win_opts)
+    vim.wo[self.winnr].wrap = true
+    vim.wo[self.winnr].linebreak = true
+    vim.wo[self.winnr].cursorline = true
+    vim.wo[self.winnr].conceallevel = 2
+
+    -- Show content
+    self:show(table.concat(lines, '\n'), self.winnr, 'markdown')
+    vim.api.nvim_win_set_cursor(self.winnr, { 1, 0 })
+  end)
 end
 
 return Debug
