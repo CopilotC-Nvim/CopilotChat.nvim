@@ -230,6 +230,25 @@ function M.quick_hash(str)
   return #str .. str:sub(1, 32) .. str:sub(-32)
 end
 
+--- Make a string from arguments
+---@vararg any The arguments
+---@return string
+function M.make_string(...)
+  local t = {}
+  for i = 1, select('#', ...) do
+    local x = select(i, ...)
+
+    if type(x) == 'table' then
+      x = vim.inspect(x)
+    else
+      x = tostring(x)
+    end
+
+    t[#t + 1] = x
+  end
+  return table.concat(t, ' ')
+end
+
 --- Get current working directory for target window
 ---@param winnr number? The buffer number
 ---@return string
@@ -255,7 +274,7 @@ M.curl_get = async.wrap(function(url, opts, callback)
     vim.tbl_deep_extend('force', opts, {
       callback = callback,
       on_error = function(err)
-        err = err and err.stderr or vim.inspect(err)
+        err = M.make_string(err and err.stderr or err)
         callback(nil, err)
       end,
     })
@@ -271,7 +290,7 @@ M.curl_post = async.wrap(function(url, opts, callback)
     vim.tbl_deep_extend('force', opts, {
       callback = callback,
       on_error = function(err)
-        err = err and err.stderr or vim.inspect(err)
+        err = M.make_string(err and err.stderr or err)
         callback(nil, err)
       end,
     })
@@ -286,10 +305,6 @@ M.scan_dir = async.wrap(function(path, opts, callback)
     path,
     vim.tbl_deep_extend('force', opts, {
       on_exit = callback,
-      on_error = function(err)
-        err = err and err.stderr or vim.inspect(err)
-        callback(nil, err)
-      end,
     })
   )
 end, 3)
