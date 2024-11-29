@@ -48,7 +48,7 @@ local function get_diagnostics_in_range(bufnr, start_line, end_line)
 end
 
 --- Select and process current visual selection
---- @param source CopilotChat.config.source
+--- @param source CopilotChat.source
 --- @return CopilotChat.select.selection|nil
 function M.visual(source)
   local bufnr = source.bufnr
@@ -82,7 +82,7 @@ function M.visual(source)
 end
 
 --- Select and process whole buffer
---- @param source CopilotChat.config.source
+--- @param source CopilotChat.source
 --- @return CopilotChat.select.selection|nil
 function M.buffer(source)
   local bufnr = source.bufnr
@@ -105,7 +105,7 @@ function M.buffer(source)
 end
 
 --- Select and process current line
---- @param source CopilotChat.config.source
+--- @param source CopilotChat.source
 --- @return CopilotChat.select.selection|nil
 function M.line(source)
   local bufnr = source.bufnr
@@ -130,7 +130,7 @@ function M.line(source)
 end
 
 --- Select and process contents of unnamed register ("). This register contains last deleted, changed or yanked content.
---- @param source CopilotChat.config.source
+--- @param source CopilotChat.source
 --- @return CopilotChat.select.selection|nil
 function M.unnamed(source)
   local bufnr = source.bufnr

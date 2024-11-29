@@ -3,14 +3,10 @@ local context = require('CopilotChat.context')
 local select = require('CopilotChat.select')
 local utils = require('CopilotChat.utils')
 
---- @class CopilotChat.config.source
---- @field bufnr number
---- @field winnr number
-
 ---@class CopilotChat.config.context
 ---@field description string?
----@field input fun(callback: fun(input: string?), source: CopilotChat.config.source)?
----@field resolve fun(input: string?, source: CopilotChat.config.source):table<CopilotChat.context.embed>
+---@field input fun(callback: fun(input: string?), source: CopilotChat.source)?
+---@field resolve fun(input: string?, source: CopilotChat.source):table<CopilotChat.context.embed>
 
 ---@class CopilotChat.config.prompt : CopilotChat.config.shared
 ---@field prompt string?
@@ -59,8 +55,8 @@ local utils = require('CopilotChat.utils')
 ---@field context string|table<string>|nil
 ---@field temperature number?
 ---@field headless boolean?
----@field callback fun(response: string, source: CopilotChat.config.source)?
----@field selection nil|fun(source: CopilotChat.config.source):CopilotChat.select.selection?
+---@field callback fun(response: string, source: CopilotChat.source)?
+---@field selection nil|fun(source: CopilotChat.source):CopilotChat.select.selection?
 ---@field window CopilotChat.config.window?
 ---@field show_help boolean?
 ---@field show_folds boolean?
