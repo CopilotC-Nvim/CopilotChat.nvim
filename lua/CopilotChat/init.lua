@@ -15,9 +15,13 @@ local M = {}
 local PLUGIN_NAME = 'CopilotChat'
 local WORD = '([^%s]+)'
 
+--- @class CopilotChat.source
+--- @field bufnr number
+--- @field winnr number
+
 --- @class CopilotChat.state
 --- @field copilot CopilotChat.Copilot?
---- @field source CopilotChat.config.source?
+--- @field source CopilotChat.source?
 --- @field last_prompt string?
 --- @field last_response string?
 --- @field chat CopilotChat.ui.Chat?
