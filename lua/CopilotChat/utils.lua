@@ -162,6 +162,21 @@ function M.debounce(id, fn, delay)
   M.timers[id] = vim.defer_fn(fn, delay)
 end
 
+--- Create key-value list from table
+---@param tbl table The table
+---@return table
+function M.kv_list(tbl)
+  local result = {}
+  for k, v in pairs(tbl) do
+    table.insert(result, {
+      key = k,
+      value = v,
+    })
+  end
+
+  return result
+end
+
 --- Check if a buffer is valid
 ---@param bufnr number? The buffer number
 ---@return boolean

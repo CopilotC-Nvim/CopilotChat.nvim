@@ -24,7 +24,7 @@ local function build_debug_info()
     '',
   }
 
-  local buf = context.buffer()
+  local buf = context.buffer(0)
   if buf then
     if buf.symbols then
       table.insert(lines, 'Current buffer symbols:')

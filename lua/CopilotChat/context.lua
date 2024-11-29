@@ -307,7 +307,7 @@ end
 
 --- Get list of all files in workspace
 ---@param winnr number?
----@param with_content boolean?
+---@param with_content boolean
 ---@return table<CopilotChat.context.embed>
 function M.files(winnr, with_content)
   local cwd = utils.win_cwd(winnr)
@@ -366,9 +366,13 @@ function M.files(winnr, with_content)
 end
 
 --- Get the content of a file
----@param filename string
+---@param filename? string
 ---@return CopilotChat.context.embed?
 function M.file(filename)
+  if not filename or filename == '' then
+    return nil
+  end
+
   async.util.scheduler()
   local ft = utils.filetype(filename)
   if not ft then
@@ -379,11 +383,10 @@ function M.file(filename)
 end
 
 --- Get the content of a buffer
----@param bufnr? number
+---@param bufnr number
 ---@return CopilotChat.context.embed?
 function M.buffer(bufnr)
   async.util.scheduler()
-  bufnr = bufnr or vim.api.nvim_get_current_buf()
 
   if not utils.buf_valid(bufnr) then
     return nil
@@ -405,6 +408,10 @@ end
 ---@param url string
 ---@return CopilotChat.context.embed?
 function M.url(url)
+  if not url or url == '' then
+    return nil
+  end
+
   local content = url_cache[url]
   if not content then
     local out = utils.system({ 'lynx', '-dump', url })
@@ -423,11 +430,10 @@ function M.url(url)
 end
 
 --- Get current git diff
----@param type string?
+---@param type string
 ---@param winnr number
 ---@return CopilotChat.context.embed?
 function M.gitdiff(type, winnr)
-  type = type or 'unstaged'
   local cwd = utils.win_cwd(winnr)
   local cmd = {
     'git',
@@ -452,10 +458,9 @@ function M.gitdiff(type, winnr)
 end
 
 --- Return contents of specified register
----@param register string?
+---@param register string
 ---@return CopilotChat.context.embed?
 function M.register(register)
-  register = register or '+'
   local lines = vim.fn.getreg(register)
   if not lines or lines == '' then
     return nil
