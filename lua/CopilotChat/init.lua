@@ -683,7 +683,7 @@ function M.ask(prompt, config)
   -- Retrieve the selection
   local selection = get_selection(config)
 
-  async.run(function()
+  local ok, err = pcall(async.run, function()
     local embeddings, embedded_prompt = resolve_embeddings(prompt, config)
     prompt = embedded_prompt
 
@@ -764,6 +764,13 @@ function M.ask(prompt, config)
       config.callback(response, state.source)
     end
   end)
+
+  if not ok then
+    log.error(err)
+    if not config.headless then
+      show_error(err)
+    end
+  end
 end
 
 --- Stop current copilot output and optionally reset the chat ten show the help message.
