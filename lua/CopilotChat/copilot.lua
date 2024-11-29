@@ -473,7 +473,6 @@ function Copilot:fetch_agents()
 
   out['copilot'] = { name = 'Copilot', default = true, description = 'Default noop agent' }
 
-  log.info('Agents fetched')
   log.trace(agents)
   self.agents = out
   return out
@@ -502,8 +501,6 @@ function Copilot:enable_policy(model)
     log.warn('Failed to enable policy for ', model, ': ', (err or response.body))
     return
   end
-
-  log.info('Policy enabled for ' .. model)
 end
 
 --- Ask a question to Copilot
