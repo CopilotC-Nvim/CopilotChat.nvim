@@ -11,9 +11,9 @@
 > [!NOTE]
 > Plugin was rewritten to Lua from Python. Please check the [migration guide from version 1 to version 2](/MIGRATION.md) for more information.
 
-- [Prerequisites](#prerequisites)
+- [Requirements](#requirements)
 - [Installation](#installation)
-  - [Lazy.nvim](#lazy.nvim)
+  - [Lazy.nvim](#lazynvim)
   - [Vim-Plug](#vim-plug)
   - [Manual](#manual)
 - [Usage](#usage)
@@ -35,29 +35,19 @@
 - [Development](#development)
 - [Contributors ✨](#contributors-)
 
-## Prerequisites
+## Requirements
 
-- [Neovim 0.9.5+](https://neovim.io/)
-  - Older versions are not supported, and for best compatibility 0.10.0+ is preferred
-- [curl](https://curl.se/)
-  - 8.0.0+ is recommended for best compatibility
-  - Should be installed by default on most systems and also shipped with Neovim
-
-Also make sure [Copilot chat in the IDE](https://github.com/settings/copilot) setting is enabled in GitHub settings.
-
-**Optional:**
-
-- [tiktoken_core](https://github.com/gptlang/lua-tiktoken)
-  - Used for more accurate token counting
+- [Neovim 0.9.5+](https://neovim.io/) - Older versions are not supported, and for best compatibility 0.10.0+ is preferred
+- [curl](https://curl.se/) - 8.0.0+ is recommended for best compatibility. Should be installed by default on most systems and also shipped with Neovim
+- [Copilot chat in the IDE](https://github.com/settings/copilot) setting enabled in GitHub settings.
+- _Optional:_ [tiktoken_core](https://github.com/gptlang/lua-tiktoken) - Used for more accurate token counting
   - For Arch Linux users, you can install [`luajit-tiktoken-bin`](https://aur.archlinux.org/packages/luajit-tiktoken-bin) or [`lua51-tiktoken-bin`](https://aur.archlinux.org/packages/lua51-tiktoken-bin) from aur
   - Alternatively, install via luarocks: `sudo luarocks install --lua-version 5.1 tiktoken_core`
   - Alternatively, download a pre-built binary from [lua-tiktoken releases](https://github.com/gptlang/lua-tiktoken/releases). You can check your Lua PATH in Neovim by doing `:lua print(package.cpath)`. Save the binary as `tiktoken_core.so` in any of the given paths.
-- [git](https://git-scm.com/)
-  - Used for fetching git diffs for `git` context
+- _Optional:_ [git](https://git-scm.com/) - Used for fetching git diffs for `git` context
   - For Arch Linux users, you can install [`git`](https://archlinux.org/packages/extra/x86_64/git) from the official repositories
   - For other systems, use your package manager to install `git`. For windows use the installer provided from git site
-- [lynx](https://lynx.invisible-island.net/)
-  - Used for fetching textual representation of URLs for `url` context
+- _Optional:_ [lynx](https://lynx.invisible-island.net/) - Used for fetching textual representation of URLs for `url` context
   - For Arch Linux users, you can install [`lynx`](https://archlinux.org/packages/extra/x86_64/lynx) from the official repositories
   - For other systems, use your package manager to install `lynx`. For windows use the installer provided from lynx site
 
@@ -66,7 +56,7 @@ Also make sure [Copilot chat in the IDE](https://github.com/settings/copilot) se
 
 ## Installation
 
-### Lazy.nvim
+### [Lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
 return {
@@ -88,7 +78,7 @@ return {
 
 See @jellydn for [configuration](https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/copilot-chat-v2.lua)
 
-### Vim-Plug
+### [Vim-Plug](https://github.com/junegunn/vim-plug)
 
 Similar to the lazy setup, you can use the following configuration:
 
