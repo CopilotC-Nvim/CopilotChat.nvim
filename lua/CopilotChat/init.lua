@@ -924,7 +924,7 @@ function M.setup(config)
     M.log_level(M.config.log_level)
   end
 
-  vim.api.nvim_set_hl(0, 'CopilotChatSpinner', { link = 'CursorColumn', default = true })
+  vim.api.nvim_set_hl(0, 'CopilotChatSpinner', { link = 'DiagnosticInfo', default = true })
   vim.api.nvim_set_hl(0, 'CopilotChatHelp', { link = 'DiagnosticInfo', default = true })
   vim.api.nvim_set_hl(0, 'CopilotChatSelection', { link = 'Visual', default = true })
   vim.api.nvim_set_hl(
