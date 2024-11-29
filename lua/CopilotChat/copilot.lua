@@ -11,6 +11,7 @@
 local log = require('plenary.log')
 local prompts = require('CopilotChat.prompts')
 local tiktoken = require('CopilotChat.tiktoken')
+local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local class = utils.class
 local temp_file = utils.temp_file
@@ -405,6 +406,8 @@ function Copilot:fetch_models()
     return self.models
   end
 
+  notify.publish(notify.STATUS, 'Fetching models')
+
   local response, err = utils.curl_get(
     'https://api.githubcopilot.com/models',
     vim.tbl_extend('force', self.request_args, {
@@ -433,7 +436,6 @@ function Copilot:fetch_models()
     end
   end
 
-  log.info('Models fetched')
   log.trace(models)
   self.models = out
   return out
@@ -445,6 +447,8 @@ function Copilot:fetch_agents()
   if self.agents then
     return self.agents
   end
+
+  notify.publish(notify.STATUS, 'Fetching agents')
 
   local response, err = utils.curl_get(
     'https://api.githubcopilot.com/agents',
@@ -481,6 +485,8 @@ function Copilot:enable_policy(model)
   if self.policies[model] then
     return
   end
+
+  notify.publish(notify.STATUS, 'Enabling ' .. model .. ' policy')
 
   local response, err = utils.curl_post(
     'https://api.githubcopilot.com/models/' .. model .. '/policy',
@@ -611,6 +617,8 @@ function Copilot:ask(prompt, opts)
       return
     end
 
+    notify.publish(notify.STATUS, '')
+
     local ok, content = pcall(vim.json.decode, line, {
       luanil = {
         object = true,
@@ -723,6 +731,8 @@ function Copilot:ask(prompt, opts)
   if is_stream then
     args.stream = stream_func
   end
+
+  notify.publish(notify.STATUS, 'Thinking')
 
   local response, err = utils.curl_post(url, args)
 
@@ -866,6 +876,8 @@ function Copilot:embed(inputs)
   if not inputs or #inputs == 0 then
     return {}
   end
+
+  notify.publish(notify.STATUS, 'Generating embeddings for ' .. #inputs .. ' inputs')
 
   -- Initialize essentials
   local model = EMBED_MODEL

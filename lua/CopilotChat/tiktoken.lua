@@ -1,5 +1,5 @@
 local async = require('plenary.async')
-local log = require('plenary.log')
+local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local current_tokenizer = nil
 local cache_dir = vim.fn.stdpath('cache')
@@ -22,7 +22,8 @@ local function load_tiktoken_data(tokenizer)
     return cache_path
   end
 
-  log.info('Downloading tiktoken data from ' .. tiktoken_url)
+  notify.publish(notify.STATUS, 'Downloading tiktoken data from ' .. tiktoken_url)
+
   utils.curl_get(tiktoken_url, {
     output = cache_path,
   })

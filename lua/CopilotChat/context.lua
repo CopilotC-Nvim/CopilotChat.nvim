@@ -17,6 +17,7 @@
 
 local async = require('plenary.async')
 local log = require('plenary.log')
+local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local file_cache = {}
 local url_cache = {}
@@ -311,10 +312,15 @@ end
 ---@return table<CopilotChat.context.embed>
 function M.files(winnr, with_content)
   local cwd = utils.win_cwd(winnr)
+
+  notify.publish(notify.STATUS, 'Scanning files')
+
   local files = utils.scan_dir(cwd, {
     add_dirs = false,
     respect_gitignore = true,
   })
+
+  notify.publish(notify.STATUS, 'Reading files')
 
   local out = {}
 
@@ -373,6 +379,8 @@ function M.file(filename)
     return nil
   end
 
+  notify.publish(notify.STATUS, 'Reading file ' .. filename)
+
   async.util.scheduler()
   local ft = utils.filetype(filename)
   if not ft then
@@ -414,6 +422,7 @@ function M.url(url)
 
   local content = url_cache[url]
   if not content then
+    notify.publish(notify.STATUS, 'Fetching ' .. url)
     local out = utils.system({ 'lynx', '-dump', url })
     if not out or out.code ~= 0 then
       return nil
@@ -434,6 +443,8 @@ end
 ---@param winnr number
 ---@return CopilotChat.context.embed?
 function M.gitdiff(type, winnr)
+  notify.publish(notify.STATUS, 'Fetching git diff')
+
   local cwd = utils.win_cwd(winnr)
   local cmd = {
     'git',
