@@ -17,8 +17,9 @@ local temp_file = utils.temp_file
 
 --- Constants
 local CONTEXT_FORMAT = '[#file:%s](#file:%s-context)'
-local BIG_FILE_THRESHOLD = 2000
-local BIG_EMBED_THRESHOLD = 300
+local LINE_CHARACTERS = 100
+local BIG_FILE_THRESHOLD = 2000 * LINE_CHARACTERS
+local BIG_EMBED_THRESHOLD = 200 * LINE_CHARACTERS
 local EMBED_MODEL = 'text-embedding-3-small'
 local TRUNCATED = '... (truncated)'
 local TIMEOUT = 30000
@@ -74,26 +75,35 @@ local function get_cached_token()
   return nil
 end
 
---- Generate line numbers for the given content
----@param content string: The content to generate line numbers for
+--- Generate content block with line numbers, truncating if necessary
+---@param content string: The content
+---@param threshold number: The threshold for truncation
 ---@param start_line number|nil: The starting line number
 ---@return string
-local function generate_line_numbers(content, start_line)
+local function generate_content_block(content, threshold, start_line)
   local lines = vim.split(content, '\n')
-  if #lines > BIG_FILE_THRESHOLD then
-    lines = vim.list_slice(lines, 1, BIG_FILE_THRESHOLD)
-    table.insert(lines, TRUNCATED)
-  end
+  local total_chars = 0
 
-  local total_lines = #lines
-  local max_length = #tostring(total_lines)
   for i, line in ipairs(lines) do
-    local formatted_line_number = string.format('%' .. max_length .. 'd', i - 1 + (start_line or 1))
-    lines[i] = formatted_line_number .. ': ' .. line
+    total_chars = total_chars + #line
+    if total_chars > threshold then
+      lines = vim.list_slice(lines, 1, i)
+      table.insert(lines, TRUNCATED)
+      break
+    end
   end
 
-  content = table.concat(lines, '\n')
-  return content
+  if start_line ~= -1 then
+    local total_lines = #lines
+    local max_length = #tostring(total_lines)
+    for i, line in ipairs(lines) do
+      local formatted_line_number =
+        string.format('%' .. max_length .. 'd', i - 1 + (start_line or 1))
+      lines[i] = formatted_line_number .. ': ' .. line
+    end
+  end
+
+  return table.concat(lines, '\n')
 end
 
 --- Generate messages for the given selection
@@ -122,7 +132,7 @@ local function generate_selection_messages(selection)
     .. string.format(
       '```%s\n%s\n```',
       filetype,
-      generate_line_numbers(content, selection.start_line)
+      generate_content_block(content, BIG_FILE_THRESHOLD, selection.start_line)
     )
 
   if selection.diagnostics then
@@ -178,12 +188,15 @@ local function generate_embeddings_messages(embeddings)
         '# FILE:%s CONTEXT\n```%s\n%s\n```',
         filename:upper(),
         filetype,
-        generate_line_numbers(table.concat(
-          vim.tbl_map(function(e)
-            return vim.trim(e.content)
-          end, group),
-          '\n'
-        ))
+        generate_content_block(
+          table.concat(
+            vim.tbl_map(function(e)
+              return vim.trim(e.content)
+            end, group),
+            '\n'
+          ),
+          BIG_FILE_THRESHOLD
+        )
       ),
       role = 'user',
     })
@@ -261,13 +274,7 @@ local function generate_embedding_request(inputs, model, threshold)
   return {
     dimensions = 512,
     input = vim.tbl_map(function(embedding)
-      local lines = vim.split(embedding.content, '\n')
-      if #lines > threshold then
-        lines = vim.list_slice(lines, 1, threshold)
-        table.insert(lines, TRUNCATED)
-      end
-      local content = table.concat(lines, '\n')
-
+      local content = generate_content_block(embedding.content, threshold, -1)
       if embedding.filetype == 'raw' then
         return content
       else
@@ -909,7 +916,7 @@ function Copilot:embed(inputs)
         attempts = attempts + 1
         -- If we have few items and the request failed, try reducing threshold first
         if #batch <= 5 then
-          threshold = math.max(5, math.floor(threshold / 2))
+          threshold = math.max(5 * LINE_CHARACTERS, math.floor(threshold / 2))
           log.debug(string.format('Reducing threshold to %d and retrying...', threshold))
         else
           -- Otherwise reduce batch size first
