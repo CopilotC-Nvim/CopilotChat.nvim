@@ -39,15 +39,15 @@
 
 - [Neovim 0.9.5+](https://neovim.io/) - Older versions are not supported, and for best compatibility 0.10.0+ is preferred
 - [curl](https://curl.se/) - 8.0.0+ is recommended for best compatibility. Should be installed by default on most systems and also shipped with Neovim
-- [Copilot chat in the IDE](https://github.com/settings/copilot) setting enabled in GitHub settings.
-- _Optional:_ [tiktoken_core](https://github.com/gptlang/lua-tiktoken) - Used for more accurate token counting
+- [Copilot chat in the IDE](https://github.com/settings/copilot) setting enabled in GitHub settings
+- _(Optional)_ [tiktoken_core](https://github.com/gptlang/lua-tiktoken) - Used for more accurate token counting
   - For Arch Linux users, you can install [`luajit-tiktoken-bin`](https://aur.archlinux.org/packages/luajit-tiktoken-bin) or [`lua51-tiktoken-bin`](https://aur.archlinux.org/packages/lua51-tiktoken-bin) from aur
   - Alternatively, install via luarocks: `sudo luarocks install --lua-version 5.1 tiktoken_core`
   - Alternatively, download a pre-built binary from [lua-tiktoken releases](https://github.com/gptlang/lua-tiktoken/releases). You can check your Lua PATH in Neovim by doing `:lua print(package.cpath)`. Save the binary as `tiktoken_core.so` in any of the given paths.
-- _Optional:_ [git](https://git-scm.com/) - Used for fetching git diffs for `git` context
+- _(Optional)_ [git](https://git-scm.com/) - Used for fetching git diffs for `git` context
   - For Arch Linux users, you can install [`git`](https://archlinux.org/packages/extra/x86_64/git) from the official repositories
   - For other systems, use your package manager to install `git`. For windows use the installer provided from git site
-- _Optional:_ [lynx](https://lynx.invisible-island.net/) - Used for fetching textual representation of URLs for `url` context
+- _(Optional)_ [lynx](https://lynx.invisible-island.net/) - Used for fetching textual representation of URLs for `url` context
   - For Arch Linux users, you can install [`lynx`](https://archlinux.org/packages/extra/x86_64/lynx) from the official repositories
   - For other systems, use your package manager to install `lynx`. For windows use the installer provided from lynx site
 
@@ -135,6 +135,7 @@ See @deathbeam for [configuration](https://github.com/deathbeam/dotfiles/blob/ma
 - `:CopilotChatDebugInfo` - Show debug information
 - `:CopilotChatModels` - View and select available models. This is reset when a new instance is made. Please set your model in `init.lua` for persistence.
 - `:CopilotChatAgents` - View and select available agents. This is reset when a new instance is made. Please set your agent in `init.lua` for persistence.
+- `:CopilotChat<PromptName>` - Ask a question with a specific prompt. For example, `:CopilotChatExplain` will ask a question with the `Explain` prompt. See [Prompts](#prompts) for more information.
 
 ### Chat Mappings
 
