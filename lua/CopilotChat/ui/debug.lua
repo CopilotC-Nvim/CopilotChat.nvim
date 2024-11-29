@@ -26,21 +26,23 @@ local function build_debug_info()
 
   local buf = context.buffer()
   if buf then
-    table.insert(lines, 'Current buffer symbols:')
-    for _, symbol in ipairs(buf.symbols) do
-      table.insert(
-        lines,
-        string.format(
-          '%s `%s` (%s %s %s %s) - `%s`',
-          symbol.type,
-          symbol.name,
-          symbol.start_row,
-          symbol.start_col,
-          symbol.end_row,
-          symbol.end_col,
-          symbol.signature
+    if buf.symbols then
+      table.insert(lines, 'Current buffer symbols:')
+      for _, symbol in ipairs(buf.symbols) do
+        table.insert(
+          lines,
+          string.format(
+            '%s `%s` (%s %s %s %s) - `%s`',
+            symbol.type,
+            symbol.name,
+            symbol.start_row,
+            symbol.start_col,
+            symbol.end_row,
+            symbol.end_col,
+            symbol.signature
+          )
         )
-      )
+      end
     end
     table.insert(lines, 'Current buffer outline:')
     table.insert(lines, '`' .. buf.filename .. '`')
