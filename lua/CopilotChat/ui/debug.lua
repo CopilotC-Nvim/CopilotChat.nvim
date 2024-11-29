@@ -43,7 +43,9 @@ local function build_debug_info()
           )
         )
       end
+      table.insert(lines, '')
     end
+
     table.insert(lines, 'Current buffer outline:')
     table.insert(lines, '`' .. buf.filename .. '`')
     table.insert(lines, '```' .. buf.filetype)
