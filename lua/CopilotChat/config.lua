@@ -146,7 +146,7 @@ return {
   -- default contexts
   contexts = {
     buffer = {
-      description = 'Includes specified buffer in chat context (default current). Supports input.',
+      description = 'Includes specified buffer in chat context. Supports input (default current).',
       input = function(callback)
         vim.ui.select(
           vim.tbl_map(
@@ -169,13 +169,14 @@ return {
         )
       end,
       resolve = function(input, source)
+        input = input and tonumber(input) or source.bufnr
         return {
-          context.buffer(input and tonumber(input) or source.bufnr),
+          context.buffer(input),
         }
       end,
     },
     buffers = {
-      description = 'Includes all buffers in chat context (default listed). Supports input.',
+      description = 'Includes all buffers in chat context. Supports input (default listed).',
       input = function(callback)
         vim.ui.select({ 'listed', 'visible' }, {
           prompt = 'Select buffer scope> ',
@@ -212,33 +213,58 @@ return {
       end,
     },
     files = {
-      description = 'Includes all non-hidden files in the current workspace in chat context. By default includes only filenames, includes also content with `full` input. Including all content can be slow on big workspaces so use with care. Supports input.',
+      description = 'Includes all non-hidden files in the current workspace in chat context. Supports input (default list).',
       input = function(callback)
-        vim.ui.select({ 'list', 'full' }, {
+        local choices = utils.kv_list({
+          list = 'Only lists file names',
+          full = 'Includes file content for each file found. Can be slow on large workspaces, use with care.',
+        })
+
+        vim.ui.select(choices, {
           prompt = 'Select files content> ',
-        }, callback)
+          format_item = function(choice)
+            return choice.key .. ' - ' .. choice.value
+          end,
+        }, function(choice)
+          callback(choice and choice.key)
+        end)
       end,
       resolve = function(input, source)
         return context.files(source.winnr, input == 'full')
       end,
     },
     git = {
-      description = 'Includes current git diff in chat context (default unstaged). Supports input.',
+      description = 'Requires `git`. Includes current git diff in chat context. Supports input (default unstaged).',
       input = function(callback)
         vim.ui.select({ 'unstaged', 'staged' }, {
           prompt = 'Select diff type> ',
         }, callback)
       end,
       resolve = function(input, source)
+        input = input or 'unstaged'
         return {
           context.gitdiff(input, source.winnr),
         }
       end,
     },
-    register = {
-      description = 'Includes contents of register in chat context (default +, e.g clipboard). Supports input.',
+    url = {
+      description = 'Requires `lynx`. Includes content of provided URL in chat context. Supports input.',
       input = function(callback)
-        local registers = {
+        vim.ui.input({
+          prompt = 'Enter URL> ',
+          default = 'https://',
+        }, callback)
+      end,
+      resolve = function(input)
+        return {
+          context.url(input),
+        }
+      end,
+    },
+    register = {
+      description = 'Includes contents of register in chat context. Supports input (default +, e.g clipboard).',
+      input = function(callback)
+        local choices = utils.kv_list({
           ['+'] = 'synchronized with the system clipboard',
           ['*'] = 'synchronized with the selection clipboard',
           ['"'] = 'last deleted, changed, or yanked content',
@@ -250,40 +276,21 @@ return {
           ['#'] = 'alternate buffer',
           ['='] = 'result of an expression',
           ['/'] = 'last search pattern',
-        }
+        })
 
-        vim.ui.select(
-          vim.tbl_map(function(k)
-            return { id = k, name = k .. ' - ' .. (registers[k] or '') }
-          end, vim.tbl_keys(registers)),
-          {
-            prompt = 'Select a register> ',
-            format_item = function(item)
-              return item.name
-            end,
-          },
-          function(choice)
-            callback(choice and choice.id)
-          end
-        )
+        vim.ui.select(choices, {
+          prompt = 'Select a register> ',
+          format_item = function(choice)
+            return choice.key .. ' - ' .. choice.value
+          end,
+        }, function(choice)
+          callback(choice and choice.key)
+        end)
       end,
       resolve = function(input)
+        input = input or '+'
         return {
           context.register(input),
-        }
-      end,
-    },
-    url = {
-      description = 'Includes content of provided URL in chat context. Requires `lynx`. Supports input.',
-      input = function(callback)
-        vim.ui.input({
-          prompt = 'Enter URL> ',
-          default = 'https://',
-        }, callback)
-      end,
-      resolve = function(input)
-        return {
-          context.url(input),
         }
       end,
     },
