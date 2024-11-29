@@ -281,6 +281,34 @@ local function resolve_embeddings(prompt, config)
   return embeddings:values(), prompt
 end
 
+local function resolve_agent(prompt, config)
+  local agents = vim.tbl_keys(state.copilot:list_agents())
+  local selected_agent = config.agent
+  prompt = prompt:gsub('@' .. WORD, function(match)
+    if vim.tbl_contains(agents, match) then
+      selected_agent = match
+      return ''
+    end
+    return '@' .. match
+  end)
+
+  return selected_agent, prompt
+end
+
+local function resolve_model(prompt, config)
+  local models = vim.tbl_keys(state.copilot:list_models())
+  local selected_model = config.model
+  prompt = prompt:gsub('%$' .. WORD, function(match)
+    if vim.tbl_contains(models, match) then
+      selected_model = match
+      return ''
+    end
+    return '$' .. match
+  end)
+
+  return selected_model, prompt
+end
+
 ---@param start_of_chat boolean?
 local function finish(start_of_chat)
   if not start_of_chat then
@@ -684,28 +712,9 @@ function M.ask(prompt, config)
   local selection = get_selection(config)
 
   local ok, err = pcall(async.run, function()
-    local embeddings, embedded_prompt = resolve_embeddings(prompt, config)
-    prompt = embedded_prompt
-
-    local agents = vim.tbl_keys(state.copilot:list_agents())
-    local selected_agent = config.agent
-    prompt = prompt:gsub('@' .. WORD, function(match)
-      if vim.tbl_contains(agents, match) then
-        selected_agent = match
-        return ''
-      end
-      return '@' .. match
-    end)
-
-    local models = vim.tbl_keys(state.copilot:list_models())
-    local selected_model = config.model
-    prompt = prompt:gsub('%$' .. WORD, function(match)
-      if vim.tbl_contains(models, match) then
-        selected_model = match
-        return ''
-      end
-      return '$' .. match
-    end)
+    local embeddings, prompt = resolve_embeddings(prompt, config)
+    local selected_agent, prompt = resolve_agent(prompt, config)
+    local selected_model, prompt = resolve_model(prompt, config)
 
     local has_output = false
     local query_ok, filtered_embeddings =
@@ -874,6 +883,14 @@ function M.setup(config)
           config.mappings[name] = {
             normal = key,
           }
+        end
+
+        if name == 'show_system_prompt' then
+          utils.deprecate('config.mappings.' .. name, 'config.mappings.show_info')
+        end
+
+        if name == 'show_user_context' or name == 'show_user_selection' then
+          utils.deprecate('config.mappings.' .. name, 'config.mappings.show_context')
         end
       end
     end
@@ -1137,30 +1154,73 @@ function M.setup(config)
         state.diff:show(diff, state.chat.winnr)
       end)
 
-      map_key('show_system_prompt', bufnr, function()
+      map_key('show_info', bufnr, function()
         local section = state.chat:get_closest_section()
-        local system_prompt = state.chat.config.system_prompt
-        if section and not section.answer then
-          _, system_prompt = resolve_prompts(section.content, system_prompt)
-        end
-        if not system_prompt then
+        if not section or section.answer then
           return
         end
 
-        state.overlay:show(vim.trim(system_prompt) .. '\n', state.chat.winnr, 'markdown')
+        local lines = {}
+        local config = state.chat.config
+        local prompt, system_prompt = resolve_prompts(section.content, config.system_prompt)
+
+        async.run(function()
+          local selected_agent = resolve_agent(prompt, config)
+          local selected_model = resolve_model(prompt, config)
+
+          if selected_model then
+            table.insert(lines, '**Model**')
+            table.insert(lines, '```')
+            table.insert(lines, selected_model)
+            table.insert(lines, '```')
+            table.insert(lines, '')
+          end
+
+          if selected_agent then
+            table.insert(lines, '**Agent**')
+            table.insert(lines, '```')
+            table.insert(lines, selected_agent)
+            table.insert(lines, '```')
+            table.insert(lines, '')
+          end
+
+          if system_prompt then
+            table.insert(lines, '**System Prompt**')
+            table.insert(lines, '```')
+            for _, line in ipairs(vim.split(vim.trim(system_prompt), '\n')) do
+              table.insert(lines, line)
+            end
+            table.insert(lines, '```')
+            table.insert(lines, '')
+          end
+
+          async.util.scheduler()
+          state.overlay:show(
+            vim.trim(table.concat(lines, '\n')) .. '\n',
+            state.chat.winnr,
+            'markdown'
+          )
+        end)
       end)
 
-      map_key('show_user_selection', bufnr, function()
+      map_key('show_context', bufnr, function()
+        local section = state.chat:get_closest_section()
+        if not section or section.answer then
+          return
+        end
+
+        local lines = {}
+
         local selection = get_selection(state.chat.config)
-        if not selection then
-          return
+        if selection then
+          table.insert(lines, '**Selection**')
+          table.insert(lines, '```' .. selection.filetype)
+          for _, line in ipairs(vim.split(selection.content, '\n')) do
+            table.insert(lines, line)
+          end
+          table.insert(lines, '```')
+          table.insert(lines, '')
         end
-
-        state.overlay:show(selection.content, state.chat.winnr, selection.filetype)
-      end)
-
-      map_key('show_user_context', bufnr, function()
-        local section = state.chat:get_closest_section()
 
         async.run(function()
           local embeddings = {}
@@ -1168,21 +1228,29 @@ function M.setup(config)
             embeddings = resolve_embeddings(section.content, state.chat.config)
           end
 
-          local text = ''
           for _, embedding in ipairs(embeddings) do
-            local lines = vim.split(embedding.content, '\n')
-            local preview = table.concat(vim.list_slice(lines, 1, math.min(10, #lines)), '\n')
-            local header = string.format('**`%s`** (%s lines)', embedding.filename, #lines)
-            if #lines > 10 then
+            local embed_lines = vim.split(embedding.content, '\n')
+            local preview = vim.list_slice(embed_lines, 1, math.min(10, #embed_lines))
+            local header = string.format('**%s** (%s lines)', embedding.filename, #embed_lines)
+            if #embed_lines > 10 then
               header = header .. ' (truncated)'
             end
 
-            text = text
-              .. string.format('%s\n```%s\n%s\n```\n\n', header, embedding.filetype, preview)
+            table.insert(lines, header)
+            table.insert(lines, '```' .. embedding.filetype)
+            for _, line in ipairs(preview) do
+              table.insert(lines, line)
+            end
+            table.insert(lines, '```')
+            table.insert(lines, '')
           end
 
           async.util.scheduler()
-          state.overlay:show(vim.trim(text) .. '\n', state.chat.winnr, 'markdown')
+          state.overlay:show(
+            vim.trim(table.concat(lines, '\n')) .. '\n',
+            state.chat.winnr,
+            'markdown'
+          )
         end)
       end)
 

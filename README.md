@@ -148,9 +148,8 @@ See @deathbeam for [configuration](https://github.com/deathbeam/dotfiles/blob/ma
 - `gq` - Add all diffs from chat to quickfix list
 - `gy` - Yank nearest diff to register (defaults to `"`)
 - `gd` - Show diff between source and nearest diff
-- `gp` - Show system prompt for current chat
-- `gs` - Show current user selection
-- `gc` - Show current user context
+- `gi` - Show info about current chat (model, agent, system prompt)
+- `gc` - Show current chat context
 - `gh` - Show help message
 
 The mappings can be customized by setting the `mappings` table in your configuration. Each mapping can have:
@@ -562,13 +561,10 @@ Also see [here](/lua/CopilotChat/config.lua):
     show_diff = {
       normal = 'gd',
     },
-    show_system_prompt = {
-      normal = 'gp',
+    show_info = {
+      normal = 'gi',
     },
-    show_user_selection = {
-      normal = 'gs',
-    },
-    show_user_context = {
+    show_context = {
       normal = 'gc',
     },
     show_help = {
