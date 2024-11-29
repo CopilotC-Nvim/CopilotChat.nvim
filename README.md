@@ -47,7 +47,7 @@
 - _(Optional)_ [git](https://git-scm.com/) - Used for fetching git diffs for `git` context
   - For Arch Linux users, you can install [`git`](https://archlinux.org/packages/extra/x86_64/git) from the official repositories
   - For other systems, use your package manager to install `git`. For windows use the installer provided from git site
-- _(Optional)_ [lynx](https://lynx.invisible-island.net/) - Used for fetching textual representation of URLs for `url` context
+- _(Optional)_ [lynx](https://lynx.invisible-island.net/) - Used for improved fetching of URLs for `url` context
   - For Arch Linux users, you can install [`lynx`](https://archlinux.org/packages/extra/x86_64/lynx) from the official repositories
   - For other systems, use your package manager to install `lynx`. For windows use the installer provided from lynx site
 
@@ -281,7 +281,7 @@ Default contexts are:
 - `git` - Requires `git`. Includes current git diff in chat context. Supports input (default unstaged).
   - `git:unstaged` - Includes unstaged changes in chat context.
   - `git:staged` - Includes staged changes in chat context.
-- `url` - Requires `lynx`. Includes content of provided URL in chat context. Supports input.
+- `url` - Includes content of provided URL in chat context. Supports input.
 - `register` - Includes contents of register in chat context. Supports input (default +, e.g clipboard).
 
 You can define custom contexts like this:

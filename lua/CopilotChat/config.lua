@@ -248,7 +248,7 @@ return {
       end,
     },
     url = {
-      description = 'Requires `lynx`. Includes content of provided URL in chat context. Supports input.',
+      description = 'Includes content of provided URL in chat context. Supports input.',
       input = function(callback)
         vim.ui.input({
           prompt = 'Enter URL> ',
