@@ -423,11 +423,45 @@ function M.url(url)
   local content = url_cache[url]
   if not content then
     notify.publish(notify.STATUS, 'Fetching ' .. url)
-    local out = utils.system({ 'lynx', '-dump', url })
-    if not out or out.code ~= 0 then
-      return nil
+
+    local ok, out = async.util.apcall(utils.system, { 'lynx', '-dump', url })
+    if ok and out and out.code == 0 then
+      -- Use lynx to fetch content
+      content = out.stdout
+    else
+      -- Fallback to curl if lynx fails
+      local response = utils.curl_get(url, { raw = { '-L' } })
+      if not response or not response.body then
+        return nil
+      end
+
+      content = vim.trim(response
+        .body
+        -- Remove script, style tags and their contents first
+        :gsub(
+          '<script.-</script>',
+          ''
+        )
+        :gsub('<style.-</style>', '')
+        -- Remove XML/CDATA in one go
+        :gsub('<!?%[?[%w%s]*%]?>', '')
+        -- Remove all HTML tags (both opening and closing) in one go
+        :gsub(
+          '<%/?%w+[^>]*>',
+          ' '
+        )
+        -- Handle common HTML entities
+        :gsub('&(%w+);', {
+          nbsp = ' ',
+          lt = '<',
+          gt = '>',
+          amp = '&',
+          quot = '"',
+        })
+        -- Remove any remaining HTML entities (numeric or named)
+        :gsub('&#?%w+;', ''))
     end
-    content = out.stdout
+
     url_cache[url] = content
   end
 

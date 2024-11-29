@@ -82,7 +82,7 @@ function M.check()
   local lynx_version = run_command('lynx', '-version')
   if lynx_version == false then
     warn(
-      'lynx: missing, optional for fetching url contents. See "https://lynx.invisible-island.net/".'
+      'lynx: missing, optional for improved fetching of url contents. See "https://lynx.invisible-island.net/".'
     )
   else
     ok('lynx: ' .. lynx_version)
