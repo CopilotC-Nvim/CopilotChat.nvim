@@ -48,9 +48,8 @@ local utils = require('CopilotChat.utils')
 ---@field quickfix_diffs CopilotChat.config.mapping?
 ---@field yank_diff CopilotChat.config.mapping.register?
 ---@field show_diff CopilotChat.config.mapping?
----@field show_system_prompt CopilotChat.config.mapping?
----@field show_user_selection CopilotChat.config.mapping?
----@field show_user_context CopilotChat.config.mapping?
+---@field show_info CopilotChat.config.mapping?
+---@field show_context CopilotChat.config.mapping?
 ---@field show_help CopilotChat.config.mapping?
 
 ---@class CopilotChat.config.shared
@@ -378,13 +377,10 @@ return {
     show_diff = {
       normal = 'gd',
     },
-    show_system_prompt = {
-      normal = 'gp',
+    show_info = {
+      normal = 'gi',
     },
-    show_user_selection = {
-      normal = 'gs',
-    },
-    show_user_context = {
+    show_context = {
       normal = 'gc',
     },
     show_help = {
