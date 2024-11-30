@@ -180,14 +180,7 @@ return {
       end,
       resolve = function(input)
         input = input or 'listed'
-        return vim.tbl_map(
-          context.buffer,
-          vim.tbl_filter(function(b)
-            return utils.buf_valid(b)
-              and vim.fn.buflisted(b) == 1
-              and (input == 'listed' or #vim.fn.win_findbuf(b) > 0)
-          end, vim.api.nvim_list_bufs())
-        )
+        return context.buffers(input)
       end,
     },
     file = {

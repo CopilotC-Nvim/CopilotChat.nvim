@@ -412,6 +412,22 @@ function M.buffer(bufnr)
   )
 end
 
+--- Get content of all buffers
+---@param buf_type string
+---@return table<CopilotChat.context.embed>
+function M.buffers(buf_type)
+  async.util.scheduler()
+
+  return vim.tbl_map(
+    M.buffer,
+    vim.tbl_filter(function(b)
+      return utils.buf_valid(b)
+        and vim.fn.buflisted(b) == 1
+        and (buf_type == 'listed' or #vim.fn.win_findbuf(b) > 0)
+    end, vim.api.nvim_list_bufs())
+  )
+end
+
 --- Get the content of an URL
 ---@param url string
 ---@return CopilotChat.context.embed?
