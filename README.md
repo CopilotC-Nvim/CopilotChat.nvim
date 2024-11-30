@@ -8,6 +8,10 @@
 
 ![image](https://github.com/user-attachments/assets/9ee30811-0fb8-4500-91f6-34ea6b26adea)
 
+
+https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
+
+
 > [!NOTE]
 > Plugin was rewritten to Lua from Python. Please check the [migration guide from version 1 to version 2](/MIGRATION.md) for more information.
 
@@ -624,7 +628,7 @@ To chat with Copilot using the entire content of the buffer, you can add the fol
   }
 ```
 
-[![Chat with buffer](https://i.gyazo.com/9b8cbf1d78a19f326282a6520bc9aab0.gif)](https://gyazo.com/9b8cbf1d78a19f326282a6520bc9aab0)
+[![chat-with-buffer](https://i.gyazo.com/9b8cbf1d78a19f326282a6520bc9aab0.gif)](https://gyazo.com/9b8cbf1d78a19f326282a6520bc9aab0)
 
 </details>
 
@@ -671,7 +675,7 @@ Requires [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) plug
   },
 ```
 
-![image](https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/14360883-7535-4ee3-aca1-79f6c39f626b)
+![telescope-integration](https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/14360883-7535-4ee3-aca1-79f6c39f626b)
 
 </details>
 
@@ -694,7 +698,7 @@ Requires [fzf-lua](https://github.com/ibhagwan/fzf-lua) plugin to be installed.
   },
 ```
 
-![image](https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/743455bb-9517-48a8-a7a1-81215dc3b747)
+![fzf-lua-integration](https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/743455bb-9517-48a8-a7a1-81215dc3b747)
 
 </details>
 
@@ -718,7 +722,7 @@ require('CopilotChat').setup({
 })
 ```
 
-![image](https://github.com/user-attachments/assets/d8dc16f8-3f61-43fa-bfb9-83f240ae30e8)
+![render-markdown-integration](https://github.com/user-attachments/assets/d8dc16f8-3f61-43fa-bfb9-83f240ae30e8)
 
 </details>
 
