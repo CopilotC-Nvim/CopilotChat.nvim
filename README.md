@@ -8,9 +8,7 @@
 
 ![image](https://github.com/user-attachments/assets/9ee30811-0fb8-4500-91f6-34ea6b26adea)
 
-
 https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
-
 
 > [!NOTE]
 > Plugin was rewritten to Lua from Python. Please check the [migration guide from version 1 to version 2](/MIGRATION.md) for more information.
