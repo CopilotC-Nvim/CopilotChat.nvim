@@ -279,7 +279,7 @@ Default contexts are:
 - `file` - Includes content of provided file in chat context. Supports input.
 - `files` - Includes all non-hidden files in the current workspace in chat context. Supports input (default list).
   - `files:list` - Only lists file names.
-  - `files:content` - Includes file content for each file found. Can be slow on large workspaces, use with care.
+  - `files:full` - Includes file content for each file found. Can be slow on large workspaces, use with care.
 - `git` - Requires `git`. Includes current git diff in chat context. Supports input (default unstaged).
   - `git:unstaged` - Includes unstaged changes in chat context.
   - `git:staged` - Includes staged changes in chat context.
