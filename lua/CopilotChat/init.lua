@@ -201,25 +201,24 @@ local function apply_diff(diff, config)
 end
 
 ---@param prompt string
----@param system_prompt string?
----@return string, string
-local function resolve_prompts(prompt, system_prompt)
+---@param config CopilotChat.config.shared
+---@return string, CopilotChat.config
+local function resolve_prompts(prompt, config)
   local prompts_to_use = M.prompts()
   local depth = 0
   local MAX_DEPTH = 10
 
-  local function resolve(inner_prompt, inner_system_prompt)
+  local function resolve(inner_prompt, inner_config)
     if depth >= MAX_DEPTH then
-      return inner_prompt, inner_system_prompt
+      return inner_prompt, inner_config
     end
     depth = depth + 1
 
     inner_prompt = string.gsub(inner_prompt, '/' .. WORD, function(match)
       local p = prompts_to_use[match]
       if p then
-        local resolved_prompt, resolved_system_prompt =
-          resolve(p.prompt or '', p.system_prompt or inner_system_prompt)
-        inner_system_prompt = resolved_system_prompt
+        local resolved_prompt, resolved_config = resolve(p.prompt or '', p)
+        inner_config = vim.tbl_deep_extend('force', inner_config, resolved_config)
         return resolved_prompt
       end
 
@@ -227,10 +226,10 @@ local function resolve_prompts(prompt, system_prompt)
     end)
 
     depth = depth - 1
-    return inner_prompt, inner_system_prompt
+    return inner_prompt, inner_config
   end
 
-  return resolve(prompt, system_prompt)
+  return resolve(prompt, config)
 end
 
 ---@param prompt string
@@ -621,6 +620,7 @@ function M.toggle(config)
   end
 end
 
+--- Get the last response.
 --- @returns string
 function M.response()
   return state.last_response
@@ -702,13 +702,14 @@ function M.ask(prompt, config)
   end
 
   -- Resolve prompt references
-  local resolved_prompt, system_prompt = resolve_prompts(prompt, config.system_prompt)
+  local prompt, config = resolve_prompts(prompt, config)
+  local system_prompt = config.system_prompt
 
   -- Remove sticky prefix
   prompt = vim.trim(table.concat(
     vim.tbl_map(function(l)
       return l:gsub('^>%s+', '')
-    end, vim.split(resolved_prompt, '\n')),
+    end, vim.split(prompt, '\n')),
     '\n'
   ))
 
@@ -1165,8 +1166,8 @@ function M.setup(config)
         end
 
         local lines = {}
-        local config = state.chat.config
-        local prompt, system_prompt = resolve_prompts(section.content, config.system_prompt)
+        local prompt, config = resolve_prompts(section.content, state.chat.config)
+        local system_prompt = config.system_prompt
 
         async.run(function()
           local selected_agent = resolve_agent(prompt, config)
