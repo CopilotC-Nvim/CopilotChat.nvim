@@ -3,10 +3,9 @@
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
 
-1. Copilot Chat for Neovim               |CopilotChat-copilot-chat-for-neovim|
-2. Requirements                                     |CopilotChat-requirements|
-3. Installation                                     |CopilotChat-installation|
-4. Usage                                                   |CopilotChat-usage|
+1. Requirements                                     |CopilotChat-requirements|
+2. Installation                                     |CopilotChat-installation|
+3. Usage                                                   |CopilotChat-usage|
   - Commands                                            |CopilotChat-commands|
   - Chat Mappings                                  |CopilotChat-chat-mappings|
   - Prompts                                              |CopilotChat-prompts|
@@ -17,22 +16,14 @@ Table of Contents                              *CopilotChat-table-of-contents*
   - Contexts                                            |CopilotChat-contexts|
   - Selections                                        |CopilotChat-selections|
   - API                                                      |CopilotChat-api|
-5. Configuration                                   |CopilotChat-configuration|
+4. Configuration                                   |CopilotChat-configuration|
   - Default configuration                  |CopilotChat-default-configuration|
   - Customizing buffers                      |CopilotChat-customizing-buffers|
-6. Tips                                                     |CopilotChat-tips|
-7. Roadmap                                               |CopilotChat-roadmap|
-8. Development                                       |CopilotChat-development|
-9. Contributors                                     |CopilotChat-contributors|
-10. Links                                                  |CopilotChat-links|
-
-==============================================================================
-1. Copilot Chat for Neovim               *CopilotChat-copilot-chat-for-neovim*
-
-<https://github.com/CopilotC-Nvim/CopilotChat.nvim/releases/latest>
-</.github/workflows/ci.yml> |CopilotChat-| </doc/CopilotChat.txt>
-<https://discord.gg/vy6hJsTWaZ>
-<https://dotfyle.com/plugins/CopilotC-Nvim/CopilotChat.nvim>
+5. Tips                                                     |CopilotChat-tips|
+6. Roadmap                                               |CopilotChat-roadmap|
+7. Development                                       |CopilotChat-development|
+8. Contributors                                     |CopilotChat-contributors|
+9. Links                                                   |CopilotChat-links|
 
 
 https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
@@ -63,7 +54,7 @@ https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
 
 
 ==============================================================================
-2. Requirements                                     *CopilotChat-requirements*
+1. Requirements                                     *CopilotChat-requirements*
 
 - Neovim 0.9.5+ <https://neovim.io/> - Older versions are not supported, and for best compatibility 0.10.0+ is preferred
 - curl <https://curl.se/> - 8.0.0+ is recommended for best compatibility. Should be installed by default on most systems and also shipped with Neovim
@@ -84,7 +75,7 @@ https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
   and `popup` to your `completeopt` to make the chat completion behave well.
 
 ==============================================================================
-3. Installation                                     *CopilotChat-installation*
+2. Installation                                     *CopilotChat-installation*
 
 
 LAZY.NVIM ~
@@ -107,7 +98,7 @@ LAZY.NVIM ~
     }
 <
 
-See @jellydn for configuration
+See @jellydn <https://github.com/jellydn> for configuration
 <https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/copilot-chat-v2.lua>
 
 
@@ -152,12 +143,12 @@ MANUAL ~
     }
 <
 
-See @deathbeam for configuration
-<https://github.com/deathbeam/dotfiles/blob/master/nvim/.config/nvim/lua/config/copilot.lua#L14>
+See @deathbeam <https://github.com/deathbeam> for configuration
+<https://github.com/deathbeam/dotfiles/blob/master/nvim/.config/nvim/lua/config/copilot.lua>
 
 
 ==============================================================================
-4. Usage                                                   *CopilotChat-usage*
+3. Usage                                                   *CopilotChat-usage*
 
 
 COMMANDS                                                *CopilotChat-commands*
@@ -483,7 +474,7 @@ API                                                          *CopilotChat-api*
 
 
 ==============================================================================
-5. Configuration                                   *CopilotChat-configuration*
+4. Configuration                                   *CopilotChat-configuration*
 
 
 DEFAULT CONFIGURATION                      *CopilotChat-default-configuration*
@@ -673,7 +664,7 @@ You can set local options for the buffers that are created by this plugin:
 
 
 ==============================================================================
-6. Tips                                                     *CopilotChat-tips*
+5. Tips                                                     *CopilotChat-tips*
 
 Quick chat with your buffer ~
 
@@ -778,14 +769,14 @@ installed.
 
 
 ==============================================================================
-7. Roadmap                                               *CopilotChat-roadmap*
+6. Roadmap                                               *CopilotChat-roadmap*
 
 - Improved caching for context (persistence through restarts/smarter caching)
 - General QOL improvements
 
 
 ==============================================================================
-8. Development                                       *CopilotChat-development*
+7. Development                                       *CopilotChat-development*
 
 
 INSTALLING PRE-COMMIT TOOL ~
@@ -801,7 +792,7 @@ This will install the pre-commit tool and the pre-commit hooks.
 
 
 ==============================================================================
-9. Contributors                                     *CopilotChat-contributors*
+8. Contributors                                     *CopilotChat-contributors*
 
 If you want to contribute to this project, please read the CONTRIBUTING.md
 </CONTRIBUTING.md> file.
@@ -819,23 +810,17 @@ STARGAZERS OVER TIME ~
 <https://starchart.cc/CopilotC-Nvim/CopilotChat.nvim>
 
 ==============================================================================
-10. Links                                                  *CopilotChat-links*
+9. Links                                                   *CopilotChat-links*
 
-1. *Release*: https://img.shields.io/github/v/release/CopilotC-Nvim/CopilotChat.nvim?logo=github&style=flat-square
-2. *Build*: https://img.shields.io/github/actions/workflow/status/CopilotC-Nvim/CopilotChat.nvim/ci.yml?logo=github&style=flat-square
-3. *Contributors*: https://img.shields.io/github/all-contributors/CopilotC-Nvim/CopilotChat.nvim?color=ee8449&logo=github&label=contributors&style=flat-square
-4. *Documentation*: https://img.shields.io/badge/documentation-yes-brightgreen.svg?logo=vim&style=flat-square
-5. *Discord*: https://img.shields.io/discord/1200633211236122665?logo=discord&label=discord&style=flat-square
-6. *Dotfyle*: https://dotfyle.com/plugins/CopilotC-Nvim/CopilotChat.nvim/shield?style=flat-square
-7. *image*: https://github.com/user-attachments/assets/9ee30811-0fb8-4500-91f6-34ea6b26adea
-8. *@jellydn*: 
-9. *@deathbeam*: 
-10. *chat-with-buffer*: https://i.gyazo.com/9b8cbf1d78a19f326282a6520bc9aab0.gif
-11. *inline-chat*: https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/608e3c9b-8569-408d-a5d1-2213325fc93c
-12. *telescope-integration*: https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/14360883-7535-4ee3-aca1-79f6c39f626b
-13. *fzf-lua-integration*: https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/743455bb-9517-48a8-a7a1-81215dc3b747
-14. *render-markdown-integration*: https://github.com/user-attachments/assets/d8dc16f8-3f61-43fa-bfb9-83f240ae30e8
-15. *Stargazers over time*: https://starchart.cc/CopilotC-Nvim/CopilotChat.nvim.svg
+1. *image*: https://github.com/user-attachments/assets/9ee30811-0fb8-4500-91f6-34ea6b26adea
+2. *@jellydn*: 
+3. *@deathbeam*: 
+4. *chat-with-buffer*: https://i.gyazo.com/9b8cbf1d78a19f326282a6520bc9aab0.gif
+5. *inline-chat*: https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/608e3c9b-8569-408d-a5d1-2213325fc93c
+6. *telescope-integration*: https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/14360883-7535-4ee3-aca1-79f6c39f626b
+7. *fzf-lua-integration*: https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/743455bb-9517-48a8-a7a1-81215dc3b747
+8. *render-markdown-integration*: https://github.com/user-attachments/assets/d8dc16f8-3f61-43fa-bfb9-83f240ae30e8
+9. *Stargazers over time*: https://starchart.cc/CopilotC-Nvim/CopilotChat.nvim.svg
 
 Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
 
