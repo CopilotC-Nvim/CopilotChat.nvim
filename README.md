@@ -1,4 +1,4 @@
-#  Copilot Chat for Neovim
+# Copilot Chat for Neovim
 
 [![Release](https://img.shields.io/github/v/release/CopilotC-Nvim/CopilotChat.nvim?logo=github&style=flat-square)](https://github.com/CopilotC-Nvim/CopilotChat.nvim/releases/latest)
 [![Build](https://img.shields.io/github/actions/workflow/status/CopilotC-Nvim/CopilotChat.nvim/ci.yml?logo=github&style=flat-square)](/.github/workflows/ci.yml)
