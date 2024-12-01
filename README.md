@@ -407,6 +407,10 @@ local prompts = chat.prompts()
 -- Get last copilot response (also can be used for integrations and custom keymaps)
 local response = chat.response()
 
+-- Retrieve current chat config
+local config = chat.config
+print(config.model)
+
 -- Pick a prompt using vim.ui.select
 local actions = require("CopilotChat.actions")
 
