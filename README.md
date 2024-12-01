@@ -4,7 +4,7 @@
 [![pre-commit.ci](https://results.pre-commit.ci/badge/github/CopilotC-Nvim/CopilotChat.nvim/main.svg)](https://results.pre-commit.ci/latest/github/CopilotC-Nvim/CopilotChat.nvim/main)
 [![Discord](https://img.shields.io/discord/1200633211236122665.svg)](https://discord.gg/vy6hJsTWaZ)
 [![Dotfyle](https://dotfyle.com/plugins/CopilotC-Nvim/CopilotChat.nvim/shield?style=flat)](https://dotfyle.com/plugins/CopilotC-Nvim/CopilotChat.nvim)
-[![All Contributors](https://img.shields.io/github/all-contributors/CopilotC-Nvim/CopilotChat.nvim?color=ee8449&style=flat&link=%23contributors-)](#contributors)
+[![All Contributors](https://img.shields.io/github/all-contributors/CopilotC-Nvim/CopilotChat.nvim?color=ee8449&style=flat)](#contributors)
 
 ![image](https://github.com/user-attachments/assets/9ee30811-0fb8-4500-91f6-34ea6b26adea)
 
@@ -33,11 +33,11 @@ https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
   - [Default configuration](#default-configuration)
   - [Customizing buffers](#customizing-buffers)
 - [Tips](#tips)
-- [Roadmap (Wishlist)](#roadmap-wishlist)
+- [Roadmap](#roadmap)
 - [Development](#development)
-- [Contributors ✨](#contributors-)
+- [Contributors](#contributors)
 
-## Requirements
+# Requirements
 
 - [Neovim 0.9.5+](https://neovim.io/) - Older versions are not supported, and for best compatibility 0.10.0+ is preferred
 - [curl](https://curl.se/) - 8.0.0+ is recommended for best compatibility. Should be installed by default on most systems and also shipped with Neovim
@@ -56,7 +56,7 @@ https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
 > [!WARNING]
 > If you are on neovim < 0.11.0, you also might want to add `noinsert` and `popup` to your `completeopt` to make the chat completion behave well.
 
-## Installation
+# Installation
 
 ### [Lazy.nvim](https://github.com/folke/lazy.nvim)
 
@@ -122,9 +122,9 @@ require("CopilotChat").setup {
 
 See @deathbeam for [configuration](https://github.com/deathbeam/dotfiles/blob/master/nvim/.config/nvim/lua/config/copilot.lua#L14)
 
-## Usage
+# Usage
 
-### Commands
+## Commands
 
 - `:CopilotChat <input>?` - Open chat window with optional input
 - `:CopilotChatOpen` - Open chat window
@@ -139,7 +139,7 @@ See @deathbeam for [configuration](https://github.com/deathbeam/dotfiles/blob/ma
 - `:CopilotChatAgents` - View and select available agents. This is reset when a new instance is made. Please set your agent in `init.lua` for persistence.
 - `:CopilotChat<PromptName>` - Ask a question with a specific prompt. For example, `:CopilotChatExplain` will ask a question with the `Explain` prompt. See [Prompts](#prompts) for more information.
 
-### Chat Mappings
+## Chat Mappings
 
 - `<Tab>` - Trigger completion menu for special tokens or accept current completion (see help)
 - `q`/`<C-c>` - Close the chat window
@@ -174,7 +174,7 @@ For example, to change the submit prompt mapping:
 }
 ```
 
-### Prompts
+## Prompts
 
 You can ask Copilot to do various tasks with prompts. You can reference prompts with `/PromptName` in chat or call with command `:CopilotChat<PromptName>`.  
 Default prompts are:
@@ -202,7 +202,7 @@ You can define custom prompts like this (only `prompt` is required):
 }
 ```
 
-### System Prompts
+## System Prompts
 
 System prompts specify the behavior of the AI model. You can reference system prompts with `/PROMPT_NAME` in chat.
 Default system prompts are:
@@ -224,7 +224,7 @@ You can define custom system prompts like this (works same as `prompts` so you c
 }
 ```
 
-### Sticky Prompts
+## Sticky Prompts
 
 You can set sticky prompt in chat by prefixing the text with `> ` using markdown blockquote syntax.  
 The sticky prompt will be copied at start of every new prompt in chat window. You can freely edit the sticky prompt, only rule is `> ` prefix at beginning of line.  
@@ -243,7 +243,7 @@ List all files in the workspace
 What is 1 + 11
 ```
 
-### Models
+## Models
 
 You can list available models with `:CopilotChatModels` command. Model determines the AI model used for the chat.  
 You can set the model in the prompt by using `$` followed by the model name or default model via config using `model` key.  
@@ -257,7 +257,7 @@ Default models are:
 For more information about models, see [here](https://docs.github.com/en/copilot/using-github-copilot/asking-github-copilot-questions-in-your-ide#ai-models-for-copilot-chat)  
 You can use more models from [here](https://github.com/marketplace/models) by using `@models` agent from [here](https://github.com/marketplace/models-github) (example: `@models Using Mistral-small, what is 1 + 11`)
 
-### Agents
+## Agents
 
 Agents are used to determine the AI agent used for the chat. You can list available agents with `:CopilotChatAgents` command.  
 You can set the agent in the prompt by using `@` followed by the agent name or default agent via config using `agent` key.  
@@ -266,7 +266,7 @@ Default "noop" agent is `copilot`.
 For more information about extension agents, see [here](https://docs.github.com/en/copilot/using-github-copilot/using-extensions-to-integrate-external-tools-with-copilot-chat)  
 You can install more agents from [here](https://github.com/marketplace?type=apps&copilot_app=true)
 
-### Contexts
+## Contexts
 
 Contexts are used to determine the context of the chat.  
 You can add context to the prompt by using `#` followed by the context name or default context via config using `context` (can be single or array) key.  
@@ -325,7 +325,7 @@ You can define custom contexts like this:
 What is my birthday
 ```
 
-### Selections
+## Selections
 
 Selections are used to determine the source of the chat (so basically what to chat about).  
 Selections are configurable either by default or by prompt.  
@@ -348,7 +348,7 @@ You can chain multiple selections like this:
 }
 ```
 
-### API
+## API
 
 ```lua
 local chat = require("CopilotChat")
@@ -419,9 +419,9 @@ actions.pick(actions.prompt_actions({
 chat.log_level("debug")
 ```
 
-## Configuration
+# Configuration
 
-### Default configuration
+## Default configuration
 
 Also see [here](/lua/CopilotChat/config.lua):
 
@@ -478,9 +478,9 @@ Also see [here](/lua/CopilotChat/config.lua):
   chat_autocomplete = true, -- Enable chat autocompletion (when disabled, requires manual `mappings.complete` trigger)
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
 
-  question_header = '## User ', -- Header to use for user questions
-  answer_header = '## Copilot ', -- Header to use for AI answers
-  error_header = '## Error ', -- Header to use for errors
+  question_header = '# User ', -- Header to use for user questions
+  answer_header = '# Copilot ', -- Header to use for AI answers
+  error_header = '# Error ', -- Header to use for errors
   separator = '───', -- Separator to use in chat
 
   -- default contexts
@@ -585,7 +585,7 @@ Also see [here](/lua/CopilotChat/config.lua):
 }
 ```
 
-### Customizing buffers
+## Customizing buffers
 
 You can set local options for the buffers that are created by this plugin: `copilot-diff`, `copilot-system-prompt`, `copilot-user-selection`, `copilot-chat`.
 
@@ -603,7 +603,7 @@ vim.api.nvim_create_autocmd('BufEnter', {
 })
 ```
 
-## Tips
+# Tips
 
 <details>
 <summary>Quick chat with your buffer</summary>
@@ -724,12 +724,12 @@ require('CopilotChat').setup({
 
 </details>
 
-## Roadmap (Wishlist)
+# Roadmap
 
 - Improved caching for context (persistence through restarts/smarter caching)
 - General QOL improvements
 
-## Development
+# Development
 
 ### Installing Pre-commit Tool
 
@@ -741,7 +741,7 @@ make install-pre-commit
 
 This will install the pre-commit tool and the pre-commit hooks.
 
-## Contributors ✨
+# Contributors
 
 If you want to contribute to this project, please read the [CONTRIBUTING.md](/CONTRIBUTING.md) file.
 
