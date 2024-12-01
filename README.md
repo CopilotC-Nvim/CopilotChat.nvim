@@ -9,35 +9,11 @@
 [![Discord](https://img.shields.io/discord/1200633211236122665?logo=discord&label=discord&style=for-the-badge)](https://discord.gg/vy6hJsTWaZ)
 [![Dotfyle](https://dotfyle.com/plugins/CopilotC-Nvim/CopilotChat.nvim/shield?style=for-the-badge)](https://dotfyle.com/plugins/CopilotC-Nvim/CopilotChat.nvim)
 
-</div>
-
 ![image](https://github.com/user-attachments/assets/9ee30811-0fb8-4500-91f6-34ea6b26adea)
 
 https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
 
-- [Requirements](#requirements)
-- [Installation](#installation)
-  - [Lazy.nvim](#lazynvim)
-  - [Vim-Plug](#vim-plug)
-  - [Manual](#manual)
-- [Usage](#usage)
-  - [Commands](#commands)
-  - [Chat Mappings](#chat-mappings)
-  - [Prompts](#prompts)
-  - [System Prompts](#system-prompts)
-  - [Sticky Prompts](#sticky-prompts)
-  - [Models](#models)
-  - [Agents](#agents)
-  - [Contexts](#contexts)
-  - [Selections](#selections)
-  - [API](#api)
-- [Configuration](#configuration)
-  - [Default configuration](#default-configuration)
-  - [Customizing buffers](#customizing-buffers)
-- [Tips](#tips)
-- [Roadmap](#roadmap)
-- [Development](#development)
-- [Contributors](#contributors)
+</div>
 
 # Requirements
 
