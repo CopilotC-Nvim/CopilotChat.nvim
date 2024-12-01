@@ -11,7 +11,10 @@ M.listeners = {}
 ---@param data any
 function M.publish(event_name, data)
   if M.listeners[event_name] then
-    log.debug(event_name .. ':', data)
+    if data and data ~= '' then
+      log.debug(event_name .. ':', data)
+    end
+
     for _, callback in ipairs(M.listeners[event_name]) do
       callback(data)
     end
