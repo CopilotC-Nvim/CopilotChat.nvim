@@ -1,17 +1,15 @@
 # Copilot Chat for Neovim
 
-[![Documentation](https://img.shields.io/badge/documentation-yes-brightgreen.svg)](https://copilotc-nvim.github.io/CopilotChat.nvim/)
-[![pre-commit.ci](https://results.pre-commit.ci/badge/github/CopilotC-Nvim/CopilotChat.nvim/main.svg)](https://results.pre-commit.ci/latest/github/CopilotC-Nvim/CopilotChat.nvim/main)
-[![Discord](https://img.shields.io/discord/1200633211236122665.svg)](https://discord.gg/vy6hJsTWaZ)
-[![Dotfyle](https://dotfyle.com/plugins/CopilotC-Nvim/CopilotChat.nvim/shield?style=flat)](https://dotfyle.com/plugins/CopilotC-Nvim/CopilotChat.nvim)
-[![All Contributors](https://img.shields.io/github/all-contributors/CopilotC-Nvim/CopilotChat.nvim?color=ee8449&style=flat)](#contributors)
+[![Release](https://img.shields.io/github/v/release/CopilotC-Nvim/CopilotChat.nvim?logo=github&style=flat-square)](https://github.com/CopilotC-Nvim/CopilotChat.nvim/releases/latest)
+[![Build](https://img.shields.io/github/actions/workflow/status/CopilotC-Nvim/CopilotChat.nvim/ci.yml?logo=github&style=flat-square)](/.github/workflows/ci.yml)
+[![Contributors](https://img.shields.io/github/all-contributors/CopilotC-Nvim/CopilotChat.nvim?color=ee8449&logo=github&label=contributors&style=flat-square)](#contributors)
+[![Documentation](https://img.shields.io/badge/documentation-yes-brightgreen.svg?logo=vim&style=flat-square)](/doc/CopilotChat.txt)
+[![Discord](https://img.shields.io/discord/1200633211236122665?logo=discord&label=discord&style=flat-square)](https://discord.gg/vy6hJsTWaZ)
+[![Dotfyle](https://dotfyle.com/plugins/CopilotC-Nvim/CopilotChat.nvim/shield?style=flat-square)](https://dotfyle.com/plugins/CopilotC-Nvim/CopilotChat.nvim)
 
 ![image](https://github.com/user-attachments/assets/9ee30811-0fb8-4500-91f6-34ea6b26adea)
 
 https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
-
-> [!NOTE]
-> Plugin was rewritten to Lua from Python. Please check the [migration guide from version 1 to version 2](/MIGRATION.md) for more information.
 
 - [Requirements](#requirements)
 - [Installation](#installation)
