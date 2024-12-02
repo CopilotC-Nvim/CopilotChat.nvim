@@ -20,7 +20,7 @@ jobs:
       # Give the default GITHUB_TOKEN write permission to commit and push the changed files back to the repository.
       contents: write
     name: pandoc to vimdoc
-    if: ${{ github.ref == 'refs/heads/canary' }}
+    if: ${{ github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v4
         with:
