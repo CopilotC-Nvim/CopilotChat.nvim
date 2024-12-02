@@ -42,7 +42,6 @@ https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
 return {
   {
     "CopilotC-Nvim/CopilotChat.nvim",
-    branch = "canary",
     dependencies = {
       { "github/copilot.vim" }, -- or zbirenbaum/copilot.lua
       { "nvim-lua/plenary.nvim" }, -- for curl, log wrapper
@@ -66,7 +65,7 @@ Similar to the lazy setup, you can use the following configuration:
 call plug#begin()
 Plug 'github/copilot.vim'
 Plug 'nvim-lua/plenary.nvim'
-Plug 'CopilotC-Nvim/CopilotChat.nvim', { 'branch': 'canary' }
+Plug 'CopilotC-Nvim/CopilotChat.nvim', { 'branch': 'main' }
 call plug#end()
 
 lua << EOF
@@ -87,7 +86,7 @@ cd ~/.config/nvim/pack/copilotchat/start
 git clone https://github.com/github/copilot.vim
 git clone https://github.com/nvim-lua/plenary.nvim
 
-git clone -b canary https://github.com/CopilotC-Nvim/CopilotChat.nvim
+git clone -b main https://github.com/CopilotC-Nvim/CopilotChat.nvim
 ```
 
 2. Add to your configuration (e.g. `~/.config/nvim/init.lua`)
