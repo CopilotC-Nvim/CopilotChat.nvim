@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 December 01
+*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 December 02
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -57,7 +57,6 @@ LAZY.NVIM ~
     return {
       {
         "CopilotC-Nvim/CopilotChat.nvim",
-        branch = "canary",
         dependencies = {
           { "github/copilot.vim" }, -- or zbirenbaum/copilot.lua
           { "nvim-lua/plenary.nvim" }, -- for curl, log wrapper
@@ -83,7 +82,7 @@ Similar to the lazy setup, you can use the following configuration:
     call plug#begin()
     Plug 'github/copilot.vim'
     Plug 'nvim-lua/plenary.nvim'
-    Plug 'CopilotC-Nvim/CopilotChat.nvim', { 'branch': 'canary' }
+    Plug 'CopilotC-Nvim/CopilotChat.nvim', { 'branch': 'main' }
     call plug#end()
     
     lua << EOF
@@ -105,7 +104,7 @@ MANUAL ~
     git clone https://github.com/github/copilot.vim
     git clone https://github.com/nvim-lua/plenary.nvim
     
-    git clone -b canary https://github.com/CopilotC-Nvim/CopilotChat.nvim
+    git clone -b main https://github.com/CopilotC-Nvim/CopilotChat.nvim
 <
 
 1. Add to your configuration (e.g. `~/.config/nvim/init.lua`)
@@ -260,7 +259,7 @@ by using `$` followed by the model name or default model via config using
 `model` key. Default models are:
 
 - `gpt-4o` - This is the default Copilot Chat model. It is a versatile, multimodal model that excels in both text and image processing and is designed to provide fast, reliable responses. It also has superior performance in non-English languages. Gpt-4o is hosted on Azure.
-- `claude-3.5-sonnet` - This model excels at coding tasks across the entire software development lifecycle, from initial design to bug fixes, maintenance to optimizations. GitHub Copilot uses Claude 3.5 Sonnet hosted on Amazon Web Services.
+- `claude-3.5-sonnet` - This model excels at coding tasks across the entire software development lifecycle, from initial design to bug fixes, maintenance to optimizations. GitHub Copilot uses Claude 3.5 Sonnet hosted on Amazon Web Services. Clause is **not available everywhere** so if you do not see it, try github codespaces or VPN.
 - `o1-preview` - This model is focused on advanced reasoning and solving complex problems, in particular in math and science. It responds more slowly than the gpt-4o model. You can make 10 requests to this model per day. o1-preview is hosted on Azure.
 - `o1-mini` - This is the faster version of the o1-preview model, balancing the use of complex reasoning with the need for faster responses. It is best suited for code generation and small context operations. You can make 50 requests to this model per day. o1-mini is hosted on Azure.
 
@@ -617,9 +616,8 @@ Also see here </lua/CopilotChat/config.lua>:
 
 CUSTOMIZING BUFFERS                          *CopilotChat-customizing-buffers*
 
-You can set local options for the buffers that are created by this plugin:
-`copilot-diff`, `copilot-system-prompt`, `copilot-user-selection`,
-`copilot-chat`.
+You can set local options for the buffers that are created by this plugin,
+`copilot-chat`, `copilot-diff`, `copilot-overlay`:
 
 >lua
     vim.api.nvim_create_autocmd('BufEnter', {
