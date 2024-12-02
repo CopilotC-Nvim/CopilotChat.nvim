@@ -568,7 +568,7 @@ Also see [here](/lua/CopilotChat/config.lua):
 
 ## Customizing buffers
 
-You can set local options for the buffers that are created by this plugin: `copilot-diff`, `copilot-system-prompt`, `copilot-user-selection`, `copilot-chat`.
+You can set local options for the buffers that are created by this plugin, `copilot-chat`, `copilot-diff`, `copilot-overlay`:
 
 ```lua
 vim.api.nvim_create_autocmd('BufEnter', {
