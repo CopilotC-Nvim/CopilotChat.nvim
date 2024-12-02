@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 December 01
+*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2024 December 02
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -57,7 +57,6 @@ LAZY.NVIM ~
     return {
       {
         "CopilotC-Nvim/CopilotChat.nvim",
-        branch = "canary",
         dependencies = {
           { "github/copilot.vim" }, -- or zbirenbaum/copilot.lua
           { "nvim-lua/plenary.nvim" }, -- for curl, log wrapper
@@ -83,7 +82,7 @@ Similar to the lazy setup, you can use the following configuration:
     call plug#begin()
     Plug 'github/copilot.vim'
     Plug 'nvim-lua/plenary.nvim'
-    Plug 'CopilotC-Nvim/CopilotChat.nvim', { 'branch': 'canary' }
+    Plug 'CopilotC-Nvim/CopilotChat.nvim', { 'branch': 'main' }
     call plug#end()
     
     lua << EOF
@@ -105,7 +104,7 @@ MANUAL ~
     git clone https://github.com/github/copilot.vim
     git clone https://github.com/nvim-lua/plenary.nvim
     
-    git clone -b canary https://github.com/CopilotC-Nvim/CopilotChat.nvim
+    git clone -b main https://github.com/CopilotC-Nvim/CopilotChat.nvim
 <
 
 1. Add to your configuration (e.g. `~/.config/nvim/init.lua`)
