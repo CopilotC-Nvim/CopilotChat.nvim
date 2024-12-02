@@ -875,6 +875,8 @@ end
 --- Set up the plugin
 ---@param config CopilotChat.config?
 function M.setup(config)
+  utils.deprecate("'canary' branch", "'main' branch")
+
   -- Handle changed configuration
   if config then
     if config.mappings then
