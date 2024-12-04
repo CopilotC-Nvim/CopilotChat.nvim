@@ -49,7 +49,7 @@ local function build_debug_info()
     table.insert(lines, 'Current buffer outline:')
     table.insert(lines, '`' .. buf.filename .. '`')
     table.insert(lines, '```' .. buf.filetype)
-    local outline_lines = vim.split(buf.content, '\n')
+    local outline_lines = vim.split(buf.outline or buf.content, '\n')
     for _, line in ipairs(outline_lines) do
       table.insert(lines, line)
     end

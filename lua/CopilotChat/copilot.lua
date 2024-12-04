@@ -78,23 +78,23 @@ end
 
 --- Generate content block with line numbers, truncating if necessary
 ---@param content string: The content
+---@param outline string?: The outline
 ---@param threshold number: The threshold for truncation
 ---@param start_line number|nil: The starting line number
 ---@return string
-local function generate_content_block(content, threshold, start_line)
-  local lines = vim.split(content, '\n')
-  local total_chars = 0
-
-  for i, line in ipairs(lines) do
-    total_chars = total_chars + #line
-    if total_chars > threshold then
-      lines = vim.list_slice(lines, 1, i)
-      table.insert(lines, TRUNCATED)
-      break
-    end
+local function generate_content_block(content, outline, threshold, start_line)
+  local total_chars = #content
+  if total_chars > threshold and outline then
+    content = outline
+    total_chars = #content
+  end
+  if total_chars > threshold then
+    content = content:sub(1, threshold)
+    content = content .. '\n' .. TRUNCATED
   end
 
   if start_line ~= -1 then
+    local lines = vim.split(content, '\n')
     local total_lines = #lines
     local max_length = #tostring(total_lines)
     for i, line in ipairs(lines) do
@@ -102,9 +102,11 @@ local function generate_content_block(content, threshold, start_line)
         string.format('%' .. max_length .. 'd', i - 1 + (start_line or 1))
       lines[i] = formatted_line_number .. ': ' .. line
     end
+
+    return table.concat(lines, '\n')
   end
 
-  return table.concat(lines, '\n')
+  return content
 end
 
 --- Generate messages for the given selection
@@ -133,7 +135,7 @@ local function generate_selection_messages(selection)
     .. string.format(
       '```%s\n%s\n```',
       filetype,
-      generate_content_block(content, BIG_FILE_THRESHOLD, selection.start_line)
+      generate_content_block(content, nil, BIG_FILE_THRESHOLD, selection.start_line)
     )
 
   if selection.diagnostics then
@@ -170,40 +172,18 @@ end
 --- Generate messages for the given embeddings
 --- @param embeddings table<CopilotChat.context.embed>
 local function generate_embeddings_messages(embeddings)
-  local files = {}
-  for _, embedding in ipairs(embeddings) do
-    local filename = embedding.filename or 'unknown'
-    if not files[filename] then
-      files[filename] = {}
-    end
-    table.insert(files[filename], embedding)
-  end
-
-  local out = {}
-
-  for filename, group in pairs(files) do
-    local filetype = group[1].filetype or 'text'
-    table.insert(out, {
-      context = string.format(CONTEXT_FORMAT, filename, filename),
+  return vim.tbl_map(function(embedding)
+    return {
+      context = string.format(CONTEXT_FORMAT, embedding.filename, embedding.filename),
       content = string.format(
         '# FILE:%s CONTEXT\n```%s\n%s\n```',
-        filename:upper(),
-        filetype,
-        generate_content_block(
-          table.concat(
-            vim.tbl_map(function(e)
-              return vim.trim(e.content)
-            end, group),
-            '\n'
-          ),
-          BIG_FILE_THRESHOLD
-        )
+        embedding.filename:upper(),
+        embedding.filetype or 'text',
+        generate_content_block(embedding.content, embedding.outline, BIG_FILE_THRESHOLD)
       ),
       role = 'user',
-    })
-  end
-
-  return out
+    }
+  end, embeddings)
 end
 
 local function generate_ask_request(
@@ -275,7 +255,8 @@ local function generate_embedding_request(inputs, model, threshold)
   return {
     dimensions = 512,
     input = vim.tbl_map(function(embedding)
-      local content = generate_content_block(embedding.content, threshold, -1)
+      local content =
+        generate_content_block(embedding.outline or embedding.content, nil, threshold, -1)
       if embedding.filetype == 'raw' then
         return content
       else
