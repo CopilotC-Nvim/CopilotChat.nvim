@@ -44,7 +44,7 @@ return {
     "CopilotC-Nvim/CopilotChat.nvim",
     dependencies = {
       { "github/copilot.vim" }, -- or zbirenbaum/copilot.lua
-      { "nvim-lua/plenary.nvim" }, -- for curl, log wrapper
+      { "nvim-lua/plenary.nvim", branch = "master" }, -- for curl, log and async functions
     },
     build = "make tiktoken", -- Only on MacOS or Linux
     opts = {
@@ -65,7 +65,7 @@ Similar to the lazy setup, you can use the following configuration:
 call plug#begin()
 Plug 'github/copilot.vim'
 Plug 'nvim-lua/plenary.nvim'
-Plug 'CopilotC-Nvim/CopilotChat.nvim', { 'branch': 'main' }
+Plug 'CopilotC-Nvim/CopilotChat.nvim'
 call plug#end()
 
 lua << EOF
@@ -86,7 +86,7 @@ cd ~/.config/nvim/pack/copilotchat/start
 git clone https://github.com/github/copilot.vim
 git clone https://github.com/nvim-lua/plenary.nvim
 
-git clone -b main https://github.com/CopilotC-Nvim/CopilotChat.nvim
+git clone https://github.com/CopilotC-Nvim/CopilotChat.nvim
 ```
 
 2. Add to your configuration (e.g. `~/.config/nvim/init.lua`)
