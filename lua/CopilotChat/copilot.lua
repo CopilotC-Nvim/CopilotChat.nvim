@@ -605,11 +605,12 @@ function Copilot:ask(prompt, opts)
       full_response = err
     end
 
+    log.debug('Finishing stream', err)
     finished = true
     job:shutdown(0)
   end
 
-  local function parse_line(line)
+  local function parse_line(line, job)
     if not line then
       return
     end
@@ -624,7 +625,13 @@ function Copilot:ask(prompt, opts)
     })
 
     if not ok then
-      return content
+      if job then
+        finish_stream(
+          'Failed to parse response: ' .. utils.make_string(content) .. '\n' .. line,
+          job
+        )
+      end
+      return
     end
 
     if content.copilot_references then
@@ -649,6 +656,14 @@ function Copilot:ask(prompt, opts)
 
     last_message = content
     local choice = content.choices[1]
+
+    if choice.finish_reason then
+      if job then
+        finish_stream(nil, job)
+      end
+      return
+    end
+
     content = choice.message and choice.message.content or choice.delta and choice.delta.content
 
     if not content then
@@ -664,10 +679,11 @@ function Copilot:ask(prompt, opts)
 
   local function parse_stream_line(line, job)
     line = vim.trim(line)
-    if not vim.startswith(line, 'data: ') then
+    if not vim.startswith(line, 'data:') then
       return
     end
-    line = line:gsub('^data:%s*', '')
+    line = line:gsub('^data:', '')
+    line = vim.trim(line)
 
     if line == '[DONE]' then
       if job then
@@ -676,10 +692,7 @@ function Copilot:ask(prompt, opts)
       return
     end
 
-    local err = parse_line(line)
-    if err and job then
-      finish_stream('Failed to parse response: ' .. utils.make_string(err) .. '\n' .. line, job)
-    end
+    parse_line(line, job)
   end
 
   local function stream_func(err, line, job)
