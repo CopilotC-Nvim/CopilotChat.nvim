@@ -65,7 +65,7 @@ local OFF_SIDE_RULE_LANGUAGES = {
 }
 
 local TOP_SYMBOLS = 100
-local TOP_RELATED = 20
+local TOP_RELATED = 25
 local MULTI_FILE_THRESHOLD = 5
 
 --- Compute the cosine similarity between two vectors
@@ -324,6 +324,24 @@ function M.files(winnr, with_content)
 
   local out = {}
 
+  -- Create file list in chunks
+  local chunk_size = 100
+  for i = 1, #files, chunk_size do
+    local chunk = {}
+    for j = i, math.min(i + chunk_size - 1, #files) do
+      table.insert(chunk, files[j])
+    end
+
+    local chunk_number = math.floor(i / chunk_size)
+    local chunk_name = chunk_number == 0 and 'file_map' or 'file_map' .. tostring(chunk_number)
+
+    table.insert(out, {
+      content = table.concat(chunk, '\n'),
+      filename = chunk_name,
+      filetype = 'text',
+    })
+  end
+
   -- Read all files if we want content as well
   if with_content then
     async.util.scheduler()
@@ -346,26 +364,6 @@ function M.files(winnr, with_content)
         table.insert(out, file_data)
       end
     end
-
-    return out
-  end
-
-  -- Create file list in chunks
-  local chunk_size = 100
-  for i = 1, #files, chunk_size do
-    local chunk = {}
-    for j = i, math.min(i + chunk_size - 1, #files) do
-      table.insert(chunk, files[j])
-    end
-
-    local chunk_number = math.floor(i / chunk_size)
-    local chunk_name = chunk_number == 0 and 'file_map' or 'file_map' .. tostring(chunk_number)
-
-    table.insert(out, {
-      content = table.concat(chunk, '\n'),
-      filename = chunk_name,
-      filetype = 'text',
-    })
   end
 
   return out
