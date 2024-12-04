@@ -11,7 +11,7 @@
 ---@field content string
 ---@field filename string
 ---@field filetype string
----@field original string?
+---@field outline string?
 ---@field symbols table<string, CopilotChat.context.symbol>?
 ---@field embedding table<number>?
 
@@ -64,7 +64,7 @@ local OFF_SIDE_RULE_LANGUAGES = {
   'fsharp',
 }
 
-local TOP_SYMBOLS = 64
+local TOP_SYMBOLS = 100
 local TOP_RELATED = 20
 local MULTI_FILE_THRESHOLD = 5
 
@@ -204,6 +204,7 @@ end
 ---@param ft string
 ---@return CopilotChat.context.embed
 local function build_outline(content, filename, ft)
+  ---@type CopilotChat.context.embed
   local output = {
     filename = filename,
     filetype = ft,
@@ -269,8 +270,7 @@ local function build_outline(content, filename, ft)
   parse_node(root)
 
   if #outline_lines > 0 then
-    output.original = content
-    output.content = table.concat(outline_lines, '\n')
+    output.outline = table.concat(outline_lines, '\n')
     output.symbols = symbols
   end
 
@@ -571,10 +571,7 @@ function M.filter_embeddings(copilot, prompt, embeddings)
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
   end
 
-  -- Return embeddings with original content
-  return vim.tbl_map(function(item)
-    return vim.tbl_extend('force', item, { content = item.original or item.content })
-  end, embeddings)
+  return embeddings
 end
 
 return M
