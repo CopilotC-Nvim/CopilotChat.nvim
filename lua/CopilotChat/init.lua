@@ -599,6 +599,10 @@ function M.open(config)
   end
 
   config = vim.tbl_deep_extend('force', M.config, config or {})
+  if config.headless then
+    return
+  end
+
   utils.return_to_normal_mode()
   state.chat:open(config)
   state.chat:follow()
@@ -676,17 +680,16 @@ end
 ---@param prompt string?
 ---@param config CopilotChat.config.shared?
 function M.ask(prompt, config)
-  config = vim.tbl_deep_extend('force', M.config, config or {})
-  vim.diagnostic.reset(vim.api.nvim_create_namespace('copilot_diagnostics'))
-
-  if not config.headless then
-    M.open(config)
-  end
+  M.open(config)
 
   prompt = vim.trim(prompt or '')
   if prompt == '' then
     return
   end
+
+  vim.diagnostic.reset(vim.api.nvim_create_namespace('copilot_diagnostics'))
+  config = vim.tbl_deep_extend('force', state.chat.config, config or {})
+  config = vim.tbl_deep_extend('force', M.config, config or {})
 
   if not config.headless then
     if config.clear_chat_on_new_prompt then
