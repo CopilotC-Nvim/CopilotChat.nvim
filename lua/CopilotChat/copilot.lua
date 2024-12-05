@@ -303,8 +303,6 @@ local Copilot = class(function(self, proxy, allow_insecure)
     proxy = proxy,
     insecure = allow_insecure,
     raw = {
-      -- Properly fail on errors
-      '--fail-with-body',
       -- Retry failed requests twice
       '--retry',
       '2',
