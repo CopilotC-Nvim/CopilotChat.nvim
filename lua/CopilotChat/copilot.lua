@@ -635,25 +635,19 @@ function Copilot:ask(prompt, opts)
 
     last_message = content
     local choice = content.choices[1]
-
-    if choice.finish_reason then
-      if job then
-        finish_stream(nil, job)
-      end
-      return
-    end
-
     content = choice.message and choice.message.content or choice.delta and choice.delta.content
 
-    if not content then
-      return
+    if content then
+      full_response = full_response .. content
     end
 
-    if on_progress then
+    if content and on_progress then
       on_progress(content)
     end
 
-    full_response = full_response .. content
+    if choice.finish_reason and job then
+      finish_stream(nil, job)
+    end
   end
 
   local function parse_stream_line(line, job)
