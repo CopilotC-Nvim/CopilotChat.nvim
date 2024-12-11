@@ -274,7 +274,7 @@ local function resolve_embeddings(prompt, config)
   local embeddings = utils.ordered_map()
   for _, context_data in ipairs(contexts) do
     local context_value = M.config.contexts[context_data.name]
-    for _, embedding in ipairs(context_value.resolve(context_data.input, state.source)) do
+    for _, embedding in ipairs(context_value.resolve(context_data.input, state.source or {})) do
       if embedding then
         embeddings:set(embedding.filename, embedding)
       end
@@ -460,7 +460,7 @@ local function trigger_complete()
         local value_str = tostring(value)
         vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { value_str })
         vim.api.nvim_win_set_cursor(0, { row, col + #value_str })
-      end, state.source)
+      end, state.source or {})
     end
 
     return
