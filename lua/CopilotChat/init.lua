@@ -459,7 +459,11 @@ local function trigger_complete()
 
         local value_str = tostring(value)
         vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { value_str })
+        vim.api.nvim_buf_set_lines(bufnr, row, row, false, { '' })
         vim.api.nvim_win_set_cursor(0, { row, col + #value_str })
+        vim.schedule(function()
+          vim.cmd('startinsert')
+        end)
       end, state.source or {})
     end
 
