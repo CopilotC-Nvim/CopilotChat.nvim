@@ -227,7 +227,7 @@ You can set the model in the prompt by using `$` followed by the model name or d
 Default models are:
 
 - `gpt-4o` - This is the default Copilot Chat model. It is a versatile, multimodal model that excels in both text and image processing and is designed to provide fast, reliable responses. It also has superior performance in non-English languages. Gpt-4o is hosted on Azure.
-- `claude-3.5-sonnet` - This model excels at coding tasks across the entire software development lifecycle, from initial design to bug fixes, maintenance to optimizations. GitHub Copilot uses Claude 3.5 Sonnet hosted on Amazon Web Services. Clause is **not available everywhere** so if you do not see it, try github codespaces or VPN.
+- `claude-3.5-sonnet` - This model excels at coding tasks across the entire software development lifecycle, from initial design to bug fixes, maintenance to optimizations. GitHub Copilot uses Claude 3.5 Sonnet hosted on Amazon Web Services. Claude is **not available everywhere** so if you do not see it, try github codespaces or VPN.
 - `o1-preview` - This model is focused on advanced reasoning and solving complex problems, in particular in math and science. It responds more slowly than the gpt-4o model. You can make 10 requests to this model per day. o1-preview is hosted on Azure.
 - `o1-mini` - This is the faster version of the o1-preview model, balancing the use of complex reasoning with the need for faster responses. It is best suited for code generation and small context operations. You can make 50 requests to this model per day. o1-mini is hosted on Azure.
 
