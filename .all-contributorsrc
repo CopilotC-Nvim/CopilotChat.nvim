@@ -298,6 +298,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/14937572?v=4",
       "profile": "https://atko.space",
       "contributions": ["code"]
+    },
+    {
+      "login": "abdennourzahaf",
+      "name": "abdennourzahaf",
+      "avatar_url": "https://avatars.githubusercontent.com/u/62243290?v=4",
+      "profile": "https://github.com/abdennourzahaf",
+      "contributions": ["doc"]
     }
   ],
   "contributorsPerLine": 7,
