@@ -600,6 +600,10 @@ function M.open(config)
 
   config = vim.tbl_deep_extend('force', M.config, config or {})
   if config.headless then
+    state.source = {
+      bufnr = vim.api.nvim_get_current_buf(),
+      winnr = vim.api.nvim_get_current_win(),
+    }
     return
   end
 
