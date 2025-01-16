@@ -459,9 +459,13 @@ local function trigger_complete()
 
         local value_str = tostring(value)
         vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { value_str })
-        vim.api.nvim_buf_set_lines(bufnr, row, row, false, { '' })
-        vim.api.nvim_win_set_cursor(0, { row, col + #value_str })
+
+        local next_line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1]
+        if not next_line or next_line ~= '' then
+          vim.api.nvim_buf_set_lines(bufnr, row, row, false, { '' })
+        end
         vim.schedule(function()
+          vim.api.nvim_win_set_cursor(0, { row + 1, 0 })
           vim.cmd('startinsert')
         end)
       end, state.source or {})
