@@ -495,7 +495,7 @@ end
 
 --- Get the completion items for the chat window, for use with custom completion providers
 ---@param callback function(table)
-function M.complete_items(callback)
+function M.complete_items(callback, skip_scheduler)
   async.run(function()
     local models = state.copilot:list_models()
     local agents = state.copilot:list_agents()
@@ -564,7 +564,9 @@ function M.complete_items(callback)
       return a.kind < b.kind
     end)
 
-    async.util.scheduler()
+    if not skip_scheduler then
+      async.util.scheduler()
+    end
     callback(items)
   end)
 end
@@ -611,6 +613,11 @@ function M.open(config)
   state.chat:open(config)
   state.chat:follow()
   state.chat:focus()
+
+  -- building the initial completion list takes time and api
+  -- calls to github, this ensures that it is ready so
+  -- autocomplete is faster
+  M.complete_items(function() end, true)
 end
 
 --- Close the chat window.
