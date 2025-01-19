@@ -19,13 +19,14 @@ function M.pick(pick_actions, opts)
         id = name,
         text = name,
         file = name,
+        preview = {
+          text = pick_actions.actions[name].prompt,
+          ft = 'text',
+        },
       }
     end, vim.tbl_keys(pick_actions.actions)),
-    preview = 'text',
+    preview = 'preview',
     title = pick_actions.prompt,
-    layout = {
-      preview = false,
-    },
     confirm = function(picker)
       local selected = picker:selected({ fallback = true })
       if selected and #selected > 0 then
