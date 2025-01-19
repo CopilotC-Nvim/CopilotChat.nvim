@@ -1,0 +1,44 @@
+local snacks = require('snacks')
+local chat = require('CopilotChat')
+local utils = require('CopilotChat.utils')
+
+local M = {}
+
+--- Pick an action from a list of actions
+---@param pick_actions CopilotChat.integrations.actions?: A table with the actions to pick from
+---@param opts table?: snacks options
+function M.pick(pick_actions, opts)
+  if not pick_actions or not pick_actions.actions or vim.tbl_isempty(pick_actions.actions) then
+    return
+  end
+
+  utils.return_to_normal_mode()
+  opts = vim.tbl_extend('force', {
+    items = vim.tbl_map(function(name)
+      return {
+        id = name,
+        text = name,
+        file = name,
+      }
+    end, vim.tbl_keys(pick_actions.actions)),
+    preview = 'text',
+    title = pick_actions.prompt,
+    layout = {
+      preview = false,
+    },
+    confirm = function(picker)
+      local selected = picker:selected({ fallback = true })
+      if selected and #selected > 0 then
+        local action = pick_actions.actions[selected[1].id]
+        vim.defer_fn(function()
+          chat.ask(action.prompt, action)
+        end, 100)
+      end
+      picker:close()
+    end,
+  }, opts or {})
+
+  snacks.picker(opts)
+end
+
+return M
