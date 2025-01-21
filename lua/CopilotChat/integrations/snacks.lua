@@ -26,6 +26,14 @@ function M.pick(pick_actions, opts)
       }
     end, vim.tbl_keys(pick_actions.actions)),
     preview = 'preview',
+    win = {
+      preview = {
+        wo = {
+          wrap = true,
+          linebreak = true,
+        },
+      },
+    },
     title = pick_actions.prompt,
     confirm = function(picker)
       local selected = picker:current()
