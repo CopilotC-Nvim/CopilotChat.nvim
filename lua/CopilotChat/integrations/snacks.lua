@@ -28,9 +28,9 @@ function M.pick(pick_actions, opts)
     preview = 'preview',
     title = pick_actions.prompt,
     confirm = function(picker)
-      local selected = picker:selected({ fallback = true })
-      if selected and #selected > 0 then
-        local action = pick_actions.actions[selected[1].id]
+      local selected = picker:current()
+      if selected then
+        local action = pick_actions.actions[selected.id]
         vim.defer_fn(function()
           chat.ask(action.prompt, action)
         end, 100)
