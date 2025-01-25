@@ -305,6 +305,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/62243290?v=4",
       "profile": "https://github.com/abdennourzahaf",
       "contributions": ["doc"]
+    },
+    {
+      "login": "josiahdenton",
+      "name": "Josiah",
+      "avatar_url": "https://avatars.githubusercontent.com/u/44758384?v=4",
+      "profile": "https://github.com/josiahdenton",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
