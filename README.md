@@ -682,6 +682,27 @@ Requires [fzf-lua](https://github.com/ibhagwan/fzf-lua) plugin to be installed.
 </details>
 
 <details>
+<summary>snacks.nvim integration</summary>
+
+Requires [snacks.nvim](https://github.com/folke/snacks.nvim) plugin to be installed and the [picker](https://github.com/folke/snacks.nvim/blob/main/docs/picker.md) to be configured.
+
+```lua
+-- lazy.nvim keys
+
+  -- Show prompts actions with snacks.nvim picker
+  {
+    "<leader>ccp",
+    function()
+      local actions = require("CopilotChat.actions")
+      require("CopilotChat.integrations.snacks").pick(actions.prompt_actions())
+    end,
+    desc = "CopilotChat - Prompt actions",
+  },
+```
+
+</details>
+
+<details>
 <summary>render-markdown integration</summary>
 
 Requires [render-markdown](https://github.com/MeanderingProgrammer/render-markdown.nvim) plugin to be installed.
