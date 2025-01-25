@@ -312,6 +312,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/44758384?v=4",
       "profile": "https://github.com/josiahdenton",
       "contributions": ["code"]
+    },
+    {
+      "login": "tku137",
+      "name": "Tony Fischer",
+      "avatar_url": "https://avatars.githubusercontent.com/u/3052212?v=4",
+      "profile": "https://github.com/tku137",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
