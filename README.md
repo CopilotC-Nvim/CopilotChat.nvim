@@ -17,7 +17,7 @@ https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
 
 # Requirements
 
-- [Neovim 0.9.5+](https://neovim.io/) - Older versions are not supported, and for best compatibility 0.10.0+ is preferred
+- [Neovim 0.10.0+](https://neovim.io/) - Older versions are not officially supported
 - [curl](https://curl.se/) - 8.0.0+ is recommended for best compatibility. Should be installed by default on most systems and also shipped with Neovim
 - [Copilot chat in the IDE](https://github.com/settings/copilot) setting enabled in GitHub settings
 - _(Optional)_ [tiktoken_core](https://github.com/gptlang/lua-tiktoken) - Used for more accurate token counting
