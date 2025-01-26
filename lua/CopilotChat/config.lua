@@ -56,7 +56,7 @@ local utils = require('CopilotChat.utils')
 ---@field temperature number?
 ---@field headless boolean?
 ---@field callback fun(response: string, source: CopilotChat.source)?
----@field selection nil|fun(source: CopilotChat.source):CopilotChat.select.selection?
+---@field selection false|nil|fun(source: CopilotChat.source):CopilotChat.select.selection?
 ---@field window CopilotChat.config.window?
 ---@field show_help boolean?
 ---@field show_folds boolean?

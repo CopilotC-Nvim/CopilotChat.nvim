@@ -57,10 +57,10 @@ function M.check()
         'nvim: outdated, please upgrade to a up to date nightly version. See "https://github.com/neovim/neovim".'
       )
     end
-  elseif vim.fn.has('nvim-0.9.5') == 1 then
+  elseif vim.fn.has('nvim-0.10.0') == 1 then
     ok('nvim: ' .. vim_version)
   else
-    error('nvim: unsupported, please upgrade to 0.9.5 or later. See "https://neovim.io/".')
+    error('nvim: unsupported, please upgrade to 0.10.0 or later. See "https://neovim.io/".')
   end
 
   start('CopilotChat.nvim [commands]')
