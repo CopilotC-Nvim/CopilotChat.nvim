@@ -19,7 +19,11 @@ function M.pick(pick_actions, opts)
   end
 
   utils.return_to_normal_mode()
-  opts = themes.get_dropdown(opts or {})
+
+  if not (opts and opts.theme) then
+    opts = themes.get_dropdown(opts or {})
+  end
+
   pickers
     .new(opts, {
       prompt_title = pick_actions.prompt,
