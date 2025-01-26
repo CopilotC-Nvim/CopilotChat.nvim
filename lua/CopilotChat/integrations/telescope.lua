@@ -20,9 +20,9 @@ function M.pick(pick_actions, opts)
 
   utils.return_to_normal_mode()
 
-  -- if opt.theme is not set, use the default theme
-  opts = opts or {}
-  opts = opts.theme or themes.get_dropdown(opts)
+  if not (opts and opts.theme) then
+    opts = themes.get_dropdown(opts or {})
+  end
 
   pickers
     .new(opts, {
