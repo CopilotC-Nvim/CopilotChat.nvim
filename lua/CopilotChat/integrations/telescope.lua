@@ -13,21 +13,16 @@ local M = {}
 --- Pick an action from a list of actions
 ---@param pick_actions CopilotChat.integrations.actions?: A table with the actions to pick from
 ---@param opts table?: Telescope options
----@param theme string?: Telescope theme
-function M.pick(pick_actions, opts, theme)
+function M.pick(pick_actions, opts)
   if not pick_actions or not pick_actions.actions or vim.tbl_isempty(pick_actions.actions) then
     return
   end
 
   utils.return_to_normal_mode()
-  theme = theme or 'dropdown'
-  local theme_functions = {
-    dropdown = themes.get_dropdown,
-    ivy = themes.get_ivy,
-    cursor = themes.get_cursor,
-  }
 
-  opts = (theme_functions[theme] or themes.get_dropdown)(opts or {})
+  -- if opt.theme is not set, use the default theme
+  opts = opts or {}
+  opts = opts.theme or themes.get_dropdown(opts)
 
   pickers
     .new(opts, {
