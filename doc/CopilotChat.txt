@@ -29,7 +29,7 @@ Table of Contents                              *CopilotChat-table-of-contents*
 ==============================================================================
 1. Requirements                                     *CopilotChat-requirements*
 
-- Neovim 0.9.5+ <https://neovim.io/> - Older versions are not supported, and for best compatibility 0.10.0+ is preferred
+- Neovim 0.10.0+ <https://neovim.io/> - Older versions are not officially supported
 - curl <https://curl.se/> - 8.0.0+ is recommended for best compatibility. Should be installed by default on most systems and also shipped with Neovim
 - Copilot chat in the IDE <https://github.com/settings/copilot> setting enabled in GitHub settings
 - _(Optional)_ tiktoken_core <https://github.com/gptlang/lua-tiktoken> - Used for more accurate token counting
@@ -792,7 +792,7 @@ If you want to contribute to this project, please read the CONTRIBUTING.md
 Thanks goes to these wonderful people (emoji key
 <https://allcontributors.org/docs/en/emoji-key>):
 
-gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻neutrinoA4💻 📖Jack Muratore💻Adriel Velazquez💻 📖Tomas Slusny💻 📖Nisal📖Tobias Gårdhus📖Petr Dlouhý📖Dylan Madisetti💻Aaron Weisberg💻 📖Jose Tlacuilo💻 📖Kevin Traver💻 📖dTry💻Arata Furukawa💻Ling💻Ivan Frolov💻Folke Lemaitre💻 📖GitMurf💻Dmitrii Lipin💻jinzhongjia📖guill💻Sjon-Paul Brown💻Renzo Mondragón💻 📖fjchen7💻Radosław Woźniak💻JakubPecenka💻thomastthai📖Tomáš Janoušek💻Toddneal Stallworth📖Sergey Alexandrov💻Léopold Mebazaa💻JunKi Jin💻abdennourzahaf📖Josiah💻Tony Fischer💻 📖This project follows the all-contributors
+gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻neutrinoA4💻 📖Jack Muratore💻Adriel Velazquez💻 📖Tomas Slusny💻 📖Nisal📖Tobias Gårdhus📖Petr Dlouhý📖Dylan Madisetti💻Aaron Weisberg💻 📖Jose Tlacuilo💻 📖Kevin Traver💻 📖dTry💻Arata Furukawa💻Ling💻Ivan Frolov💻Folke Lemaitre💻 📖GitMurf💻Dmitrii Lipin💻jinzhongjia📖guill💻Sjon-Paul Brown💻Renzo Mondragón💻 📖fjchen7💻Radosław Woźniak💻JakubPecenka💻thomastthai📖Tomáš Janoušek💻Toddneal Stallworth📖Sergey Alexandrov💻Léopold Mebazaa💻JunKi Jin💻abdennourzahaf📖Josiah💻Tony Fischer💻 📖Kohei Wada💻This project follows the all-contributors
 <https://github.com/all-contributors/all-contributors> specification.
 Contributions of any kind are welcome!
 
