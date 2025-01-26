@@ -319,6 +319,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/3052212?v=4",
       "profile": "https://github.com/tku137",
       "contributions": ["code", "doc"]
+    },
+    {
+      "login": "Kohei-Wada",
+      "name": "Kohei Wada",
+      "avatar_url": "https://avatars.githubusercontent.com/u/64008205?v=4",
+      "profile": "https://qiita.com/program3152019",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
