@@ -8,6 +8,8 @@
 ---@field content string
 ---@field start_line number
 ---@field end_line number
+---@field start_col number
+---@field end_col number
 ---@field filename string
 ---@field filetype string
 ---@field bufnr number
@@ -95,6 +97,8 @@ function M.visual(source)
     filetype = vim.bo[bufnr].filetype,
     start_line = start_line,
     end_line = finish_line,
+    start_col = start_col,
+    end_col = finish_col,
     bufnr = bufnr,
     diagnostics = get_diagnostics_in_range(bufnr, start_line, finish_line),
   }
