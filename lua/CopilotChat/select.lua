@@ -64,13 +64,21 @@ function M.visual(source)
 
   -- Visual Line mode, adjusting the end column
   local ok, lines
-  if mode == "V" then
+  if mode == 'V' then
     ok, lines = pcall(vim.api.nvim_buf_get_lines, bufnr, start_line - 1, finish_line, false)
     if not ok then
       return nil
     end
   else
-    ok, lines = pcall(vim.api.nvim_buf_get_text, bufnr, start_line - 1, start_col, finish_line - 1, finish_col + 1, {})
+    ok, lines = pcall(
+      vim.api.nvim_buf_get_text,
+      bufnr,
+      start_line - 1,
+      start_col,
+      finish_line - 1,
+      finish_col + 1,
+      {}
+    )
     if not ok then
       return nil
     end
