@@ -726,6 +726,35 @@ require('CopilotChat').setup({
 
 </details>
 
+<details>
+<summary>Ask a quick question with Perplexity</summary>
+
+Requires [PerplexityAI Agent](https://github.com/marketplace/perplexityai) to be added to [GitHub](https://github.com/) account.
+
+This sets the `selection = false` to be able to ask generic questions unrelated to current code.
+
+```lua
+-- lazy.nvim keys
+
+  -- Ask the Perplexity agent a quick question
+  {
+    "<leader>ccs",
+    function()
+      local input = vim.fn.input("Perplexity: ")
+      if input ~= "" then
+        require("CopilotChat").ask(input, {
+          agent = "perplexityai",
+          selection = false,
+        })
+      end
+    end,
+    desc = "CopilotChat - Perplexity Search",
+    mode = { "n", "v" },
+  },
+```
+
+</details>
+
 # Roadmap
 
 - Improved caching for context (persistence through restarts/smarter caching)
