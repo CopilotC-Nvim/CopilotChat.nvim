@@ -51,9 +51,10 @@ end
 --- @param source CopilotChat.source
 --- @return CopilotChat.select.selection|nil
 function M.visual(source)
-  local bufnr = source.bufnr
-  local start_line = unpack(vim.api.nvim_buf_get_mark(bufnr, '<'))
-  local finish_line = unpack(vim.api.nvim_buf_get_mark(bufnr, '>'))
+  local bufnr = source.bufnr or 0
+  local mode = source.mode
+  local start_line, start_col = unpack(vim.api.nvim_buf_get_mark(bufnr, '<'))
+  local finish_line, finish_col = unpack(vim.api.nvim_buf_get_mark(bufnr, '>'))
   if start_line == 0 or finish_line == 0 then
     return nil
   end
@@ -61,10 +62,20 @@ function M.visual(source)
     start_line, finish_line = finish_line, start_line
   end
 
-  local ok, lines = pcall(vim.api.nvim_buf_get_lines, bufnr, start_line - 1, finish_line, false)
-  if not ok then
-    return nil
+  -- Visual Line mode, adjusting the end column
+  local ok, lines
+  if mode == "V" then
+    ok, lines = pcall(vim.api.nvim_buf_get_lines, bufnr, start_line - 1, finish_line, false)
+    if not ok then
+      return nil
+    end
+  else
+    ok, lines = pcall(vim.api.nvim_buf_get_text, bufnr, start_line - 1, start_col, finish_line - 1, finish_col + 1, {})
+    if not ok then
+      return nil
+    end
   end
+
   local lines_content = table.concat(lines, '\n')
   if vim.trim(lines_content) == '' then
     return nil
@@ -85,6 +96,7 @@ end
 --- @param source CopilotChat.source
 --- @return CopilotChat.select.selection|nil
 function M.buffer(source)
+  source.mode = nil
   local bufnr = source.bufnr
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   if not lines or #lines == 0 then
