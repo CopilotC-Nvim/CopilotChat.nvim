@@ -459,7 +459,15 @@ local function trigger_complete()
 
         local value_str = tostring(value)
         vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { value_str })
-        vim.api.nvim_win_set_cursor(0, { row, col + #value_str })
+
+        local next_line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1]
+        if not next_line or next_line ~= '' then
+          vim.api.nvim_buf_set_lines(bufnr, row, row, false, { '' })
+        end
+        vim.schedule(function()
+          vim.api.nvim_win_set_cursor(0, { row + 1, 0 })
+          vim.cmd('startinsert')
+        end)
       end, state.source or {})
     end
 
@@ -491,7 +499,7 @@ end
 
 --- Get the completion items for the chat window, for use with custom completion providers
 ---@param callback function(table)
-function M.complete_items(callback)
+function M.complete_items(callback, skip_scheduler)
   async.run(function()
     local models = state.copilot:list_models()
     local agents = state.copilot:list_agents()
@@ -560,7 +568,9 @@ function M.complete_items(callback)
       return a.kind < b.kind
     end)
 
-    async.util.scheduler()
+    if not skip_scheduler then
+      async.util.scheduler()
+    end
     callback(items)
   end)
 end
@@ -611,6 +621,11 @@ function M.open(config)
   state.chat:open(config)
   state.chat:follow()
   state.chat:focus()
+
+  -- building the initial completion list takes time and api
+  -- calls to github, this ensures that it is ready so
+  -- autocomplete is faster
+  M.complete_items(function() end, true)
 end
 
 --- Close the chat window.
