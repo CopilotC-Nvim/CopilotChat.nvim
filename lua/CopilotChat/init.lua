@@ -58,11 +58,11 @@ local function get_selection(config)
   state.source.mode = state.source_mode or 'n'
 
   if
-      config
-      and config.selection
-      and utils.buf_valid(bufnr)
-      and winnr
-      and vim.api.nvim_win_is_valid(winnr)
+    config
+    and config.selection
+    and utils.buf_valid(bufnr)
+    and winnr
+    and vim.api.nvim_win_is_valid(winnr)
   then
     return config.selection(state.source)
   end
@@ -85,21 +85,27 @@ local function highlight_selection(clear, config)
 
   local selection = get_selection(config)
   if
-      not selection
-      or not utils.buf_valid(selection.bufnr)
-      or not selection.start_line
-      or not selection.end_line
+    not selection
+    or not utils.buf_valid(selection.bufnr)
+    or not selection.start_line
+    or not selection.end_line
   then
     return
   end
 
   if selection.start_col and selection.end_col then
-    vim.api.nvim_buf_set_extmark(selection.bufnr, selection_ns, selection.start_line - 1, selection.start_col, {
-      hl_group = 'CopilotChatSelection',
-      end_row = selection.end_line - 1,
-      end_col = selection.end_col,
-      strict = false,
-    })
+    vim.api.nvim_buf_set_extmark(
+      selection.bufnr,
+      selection_ns,
+      selection.start_line - 1,
+      selection.start_col,
+      {
+        hl_group = 'CopilotChatSelection',
+        end_row = selection.end_line - 1,
+        end_col = selection.end_col,
+        strict = false,
+      }
+    )
   else
     vim.api.nvim_buf_set_extmark(selection.bufnr, selection_ns, selection.start_line - 1, 0, {
       hl_group = 'CopilotChatSelection',
@@ -164,7 +170,7 @@ local function get_diff(config)
     -- If we found a valid buffer, get the reference content
     if bufnr and utils.buf_valid(bufnr) then
       reference =
-          table.concat(vim.api.nvim_buf_get_lines(bufnr, start_line - 1, end_line, false), '\n')
+        table.concat(vim.api.nvim_buf_get_lines(bufnr, start_line - 1, end_line, false), '\n')
       filetype = vim.bo[bufnr].filetype
     end
   end
@@ -753,7 +759,7 @@ function M.ask(prompt, config)
 
     local has_output = false
     local query_ok, filtered_embeddings =
-        pcall(context.filter_embeddings, state.copilot, prompt, embeddings)
+      pcall(context.filter_embeddings, state.copilot, prompt, embeddings)
 
     if not query_ok then
       async.util.scheduler()
@@ -765,21 +771,21 @@ function M.ask(prompt, config)
     end
 
     local ask_ok, response, token_count, token_max_count =
-        pcall(state.copilot.ask, state.copilot, prompt, {
-          selection = selection,
-          embeddings = filtered_embeddings,
-          system_prompt = system_prompt,
-          model = selected_model,
-          agent = selected_agent,
-          temperature = config.temperature,
-          no_history = config.headless,
-          on_progress = vim.schedule_wrap(function(token)
-            if not config.headless then
-              state.chat:append(token)
-            end
-            has_output = true
-          end),
-        })
+      pcall(state.copilot.ask, state.copilot, prompt, {
+        selection = selection,
+        embeddings = filtered_embeddings,
+        system_prompt = system_prompt,
+        model = selected_model,
+        agent = selected_agent,
+        temperature = config.temperature,
+        no_history = config.headless,
+        on_progress = vim.schedule_wrap(function(token)
+          if not config.headless then
+            state.chat:append(token)
+          end
+          has_output = true
+        end),
+      })
 
     async.util.scheduler()
 
@@ -1107,9 +1113,9 @@ function M.setup(config)
 
       map_key('jump_to_diff', bufnr, function()
         if
-            not state.source
-            or not state.source.winnr
-            or not vim.api.nvim_win_is_valid(state.source.winnr)
+          not state.source
+          or not state.source.winnr
+          or not vim.api.nvim_win_is_valid(state.source.winnr)
         then
           return
         end
