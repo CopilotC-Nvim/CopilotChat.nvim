@@ -51,7 +51,7 @@ end
 --- @param source CopilotChat.source
 --- @return CopilotChat.select.selection|nil
 function M.visual(source)
-  local bufnr = source.bufnr or 0
+  local bufnr = source.bufnr
   local mode = source.mode
   local start_line, start_col = unpack(vim.api.nvim_buf_get_mark(bufnr, '<'))
   local finish_line, finish_col = unpack(vim.api.nvim_buf_get_mark(bufnr, '>'))
