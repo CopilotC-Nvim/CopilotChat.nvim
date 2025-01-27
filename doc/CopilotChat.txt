@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0         Last change: 2025 January 26
+*CopilotChat.txt*         For NVIM v0.8.0         Last change: 2025 January 27
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -757,6 +757,34 @@ installed.
       error_header = '> [!ERROR] Error',
       -- rest of your config
     })
+<
+
+Ask a quick question with Perplexity ~
+
+Requires PerplexityAI Agent <https://github.com/marketplace/perplexityai> to be
+added to GitHub <https://github.com/> account.
+
+This sets the `selection = false` to be able to ask generic questions unrelated
+to current code.
+
+>lua
+    -- lazy.nvim keys
+    
+      -- Ask the Perplexity agent a quick question
+      {
+        "<leader>ccs",
+        function()
+          local input = vim.fn.input("Perplexity: ")
+          if input ~= "" then
+            require("CopilotChat").ask(input, {
+              agent = "perplexityai",
+              selection = false,
+            })
+          end
+        end,
+        desc = "CopilotChat - Perplexity Search",
+        mode = { "n", "v" },
+      },
 <
 
 
