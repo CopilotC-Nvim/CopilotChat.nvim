@@ -726,6 +726,35 @@ require('CopilotChat').setup({
 
 </details>
 
+<details>
+<summary>Ask a quick question with Perplexity</summary>
+
+Requires [PerplexityAI Agent](https://github.com/marketplace/perplexityai) to be added to [GitHub](https://github.com/) account.
+
+This sets the `selection = false` to be able to ask generic questions unrelated to current code.
+
+```lua
+-- lazy.nvim keys
+
+  -- Ask the Perplexity agent a quick question
+  {
+    "<leader>ccs",
+    function()
+      local input = vim.fn.input("Perplexity: ")
+      if input ~= "" then
+        require("CopilotChat").ask(input, {
+          agent = "perplexityai",
+          selection = false,
+        })
+      end
+    end,
+    desc = "CopilotChat - Perplexity Search",
+    mode = { "n", "v" },
+  },
+```
+
+</details>
+
 # Roadmap
 
 - Improved caching for context (persistence through restarts/smarter caching)
@@ -813,6 +842,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/josiahdenton"><img src="https://avatars.githubusercontent.com/u/44758384?v=4?s=100" width="100px;" alt="Josiah"/><br /><sub><b>Josiah</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=josiahdenton" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/tku137"><img src="https://avatars.githubusercontent.com/u/3052212?v=4?s=100" width="100px;" alt="Tony Fischer"/><br /><sub><b>Tony Fischer</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=tku137" title="Code">💻</a> <a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=tku137" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://qiita.com/program3152019"><img src="https://avatars.githubusercontent.com/u/64008205?v=4?s=100" width="100px;" alt="Kohei Wada"/><br /><sub><b>Kohei Wada</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=Kohei-Wada" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://zags.dev"><img src="https://avatars.githubusercontent.com/u/79172513?v=4?s=100" width="100px;" alt="Sebastian Yaghoubi"/><br /><sub><b>Sebastian Yaghoubi</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=syaghoubi00" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>

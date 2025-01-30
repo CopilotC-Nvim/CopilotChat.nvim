@@ -326,6 +326,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/64008205?v=4",
       "profile": "https://qiita.com/program3152019",
       "contributions": ["code"]
+    },
+    {
+      "login": "syaghoubi00",
+      "name": "Sebastian Yaghoubi",
+      "avatar_url": "https://avatars.githubusercontent.com/u/79172513?v=4",
+      "profile": "https://zags.dev",
+      "contributions": ["doc"]
     }
   ],
   "contributorsPerLine": 7,
