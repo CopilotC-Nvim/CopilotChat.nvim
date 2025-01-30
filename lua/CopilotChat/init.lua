@@ -18,10 +18,12 @@ local WORD = '([^%s]+)'
 --- @class CopilotChat.source
 --- @field bufnr number
 --- @field winnr number
+--- @field mode string
 
 --- @class CopilotChat.state
 --- @field copilot CopilotChat.Copilot?
 --- @field source CopilotChat.source?
+--- @field source_mode string?
 --- @field last_prompt string?
 --- @field last_response string?
 --- @field chat CopilotChat.ui.Chat?
@@ -33,6 +35,9 @@ local state = {
 
   -- Current state tracking
   source = nil,
+
+  -- Window visual selection tracking
+  source_mode = nil,
 
   -- Last state tracking
   last_prompt = nil,
@@ -50,6 +55,7 @@ local state = {
 local function get_selection(config)
   local bufnr = state.source and state.source.bufnr
   local winnr = state.source and state.source.winnr
+  state.source.mode = state.source_mode or 'n'
 
   if
     config
@@ -87,11 +93,26 @@ local function highlight_selection(clear, config)
     return
   end
 
-  vim.api.nvim_buf_set_extmark(selection.bufnr, selection_ns, selection.start_line - 1, 0, {
-    hl_group = 'CopilotChatSelection',
-    end_row = selection.end_line,
-    strict = false,
-  })
+  if selection.start_col and selection.end_col then
+    vim.api.nvim_buf_set_extmark(
+      selection.bufnr,
+      selection_ns,
+      selection.start_line - 1,
+      selection.start_col,
+      {
+        hl_group = 'CopilotChatSelection',
+        end_row = selection.end_line - 1,
+        end_col = selection.end_col,
+        strict = false,
+      }
+    )
+  else
+    vim.api.nvim_buf_set_extmark(selection.bufnr, selection_ns, selection.start_line - 1, 0, {
+      hl_group = 'CopilotChatSelection',
+      end_row = selection.end_line,
+      strict = false,
+    })
+  end
 end
 
 --- Updates the selection based on previous window
@@ -102,6 +123,7 @@ local function update_selection(config)
     state.source = {
       bufnr = vim.api.nvim_win_get_buf(prev_winnr),
       winnr = prev_winnr,
+      mode = state.source_mode or 'n',
     }
   end
 
@@ -180,7 +202,8 @@ local function jump_to_diff(winnr, bufnr, start_line, end_line, config)
   pcall(vim.api.nvim_buf_set_mark, bufnr, '>', end_line, 0, {})
   pcall(vim.api.nvim_buf_set_mark, bufnr, '[', start_line, 0, {})
   pcall(vim.api.nvim_buf_set_mark, bufnr, ']', end_line, 0, {})
-  update_selection(config)
+  local mode = vim.fn.mode()
+  update_selection(config, mode)
 end
 
 ---@param diff CopilotChat.ui.Diff.Diff?
@@ -593,6 +616,8 @@ end
 --- Open the chat window.
 ---@param config CopilotChat.config.shared?
 function M.open(config)
+  local source_mode = vim.fn.mode()
+
   -- If we are already in chat window, do nothing
   if state.chat:active() then
     return
@@ -603,6 +628,7 @@ function M.open(config)
     state.source = {
       bufnr = vim.api.nvim_get_current_buf(),
       winnr = vim.api.nvim_get_current_win(),
+      mode = source_mode,
     }
     return
   end
@@ -621,6 +647,7 @@ end
 --- Toggle the chat window.
 ---@param config CopilotChat.config.shared?
 function M.toggle(config)
+  state.source_mode = vim.fn.mode()
   if state.chat:visible() then
     M.close()
   else
@@ -684,6 +711,8 @@ end
 ---@param prompt string?
 ---@param config CopilotChat.config.shared?
 function M.ask(prompt, config)
+  state.source_mode = vim.fn.mode()
+
   M.open(config)
 
   prompt = vim.trim(prompt or '')
@@ -1117,6 +1146,7 @@ function M.setup(config)
       end)
 
       map_key('quickfix_diffs', bufnr, function()
+        local source_mode = vim.fn.mode()
         local selection = get_selection(state.chat.config)
         local items = {}
 
