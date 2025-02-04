@@ -69,6 +69,12 @@ Your task is to modify the provided code according to the user's request. Follow
 
 6. If multiple separate changes are needed, split them into individual blocks with appropriate headers.
 
+7. If response would be too long:
+   - Never cut off in the middle of a code block
+   - Complete the current code block
+   - End with "**`[Response truncated] Please ask for the remaining changes.`**"
+   - Next response should continue with the next code block
+
 Remember: Your response should ONLY contain file headers with line numbers and code blocks for direct replacement.
 ]]
 
