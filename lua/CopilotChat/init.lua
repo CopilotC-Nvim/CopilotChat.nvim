@@ -6,11 +6,6 @@ local context = require('CopilotChat.context')
 local prompts = require('CopilotChat.prompts')
 local utils = require('CopilotChat.utils')
 
-local Chat = require('CopilotChat.ui.chat')
-local Diff = require('CopilotChat.ui.diff')
-local Overlay = require('CopilotChat.ui.overlay')
-local Debug = require('CopilotChat.ui.debug')
-
 local M = {}
 local PLUGIN_NAME = 'CopilotChat'
 local WORD = '([^%s]+)'
@@ -959,34 +954,38 @@ function M.setup(config)
   if state.overlay then
     state.overlay:delete()
   end
-  state.overlay = Overlay('copilot-overlay', overlay_help, function(bufnr)
+  state.overlay = require('CopilotChat.ui.overlay')('copilot-overlay', overlay_help, function(bufnr)
     map_key('close', bufnr, function()
       state.overlay:restore(state.chat.winnr, state.chat.bufnr)
     end)
   end)
 
   if not state.debug then
-    state.debug = Debug()
+    state.debug = require('CopilotChat.ui.debug')()
   end
 
   if state.diff then
     state.diff:delete()
   end
-  state.diff = Diff(diff_help, function(bufnr)
-    map_key('close', bufnr, function()
-      state.diff:restore(state.chat.winnr, state.chat.bufnr)
-    end)
+  state.diff = require('CopilotChat.ui.diff')(
+    M.config.mappings.show_diff.full_diff,
+    diff_help,
+    function(bufnr)
+      map_key('close', bufnr, function()
+        state.diff:restore(state.chat.winnr, state.chat.bufnr)
+      end)
 
-    map_key('accept_diff', bufnr, function()
-      apply_diff(state.diff:get_diff(), state.chat.config)
-    end)
-  end)
+      map_key('accept_diff', bufnr, function()
+        apply_diff(state.diff:get_diff(), state.chat.config)
+      end)
+    end
+  )
 
   if state.chat then
     state.chat:close(state.source and state.source.bufnr or nil)
     state.chat:delete()
   end
-  state.chat = Chat(
+  state.chat = require('CopilotChat.ui.chat')(
     M.config.question_header,
     M.config.answer_header,
     M.config.separator,

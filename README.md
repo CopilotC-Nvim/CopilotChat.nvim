@@ -556,10 +556,11 @@ Also see [here](/lua/CopilotChat/config.lua):
     },
     yank_diff = {
       normal = 'gy',
-      register = '"',
+      register = '"', -- Default register to use for yanking
     },
     show_diff = {
       normal = 'gd',
+      full_diff = false, -- Show full diff instead of unified diff when showing diff window
     },
     show_info = {
       normal = 'gi',
