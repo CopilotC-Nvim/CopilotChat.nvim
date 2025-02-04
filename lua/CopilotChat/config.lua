@@ -283,6 +283,12 @@ return {
         }
       end,
     },
+    quickfix = {
+      description = 'Includes quickfix list file contents in chat context.',
+      resolve = function()
+        return context.quickfix()
+      end,
+    },
   },
 
   -- default prompts
@@ -377,8 +383,11 @@ return {
     jump_to_diff = {
       normal = 'gj',
     },
+    quickfix_answers = {
+      normal = 'gqa',
+    },
     quickfix_diffs = {
-      normal = 'gq',
+      normal = 'gqd',
     },
     yank_diff = {
       normal = 'gy',

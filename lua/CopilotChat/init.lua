@@ -1145,6 +1145,39 @@ function M.setup(config)
         )
       end)
 
+      map_key('quickfix_answers', bufnr, function()
+        local items = {}
+        for i, section in ipairs(state.chat.sections) do
+          if section.answer then
+            local prev_section = state.chat.sections[i - 1]
+            local text = ''
+            if prev_section then
+              text = vim.trim(
+                table.concat(
+                  vim.api.nvim_buf_get_lines(
+                    bufnr,
+                    prev_section.start_line - 1,
+                    prev_section.end_line,
+                    false
+                  ),
+                  ' '
+                )
+              )
+            end
+
+            table.insert(items, {
+              bufnr = bufnr,
+              lnum = section.start_line,
+              end_lnum = section.end_line,
+              text = text,
+            })
+          end
+        end
+
+        vim.fn.setqflist(items)
+        vim.cmd('copen')
+      end)
+
       map_key('quickfix_diffs', bufnr, function()
         local source_mode = vim.fn.mode()
         local selection = get_selection(state.chat.config)
