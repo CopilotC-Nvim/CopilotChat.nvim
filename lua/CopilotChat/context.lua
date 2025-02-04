@@ -282,6 +282,8 @@ end
 ---@param filetype string
 ---@return CopilotChat.context.embed?
 local function get_file(filename, filetype)
+  notify.publish(notify.STATUS, 'Reading file ' .. filename)
+
   local modified = utils.file_mtime(filename)
   if not modified then
     return nil
@@ -376,8 +378,6 @@ function M.file(filename)
   if not filename or filename == '' then
     return nil
   end
-
-  notify.publish(notify.STATUS, 'Reading file ' .. filename)
 
   async.util.scheduler()
   local ft = utils.filetype(filename)
@@ -530,6 +530,46 @@ function M.register(register)
     filename = 'vim_register_' .. register,
     filetype = '',
   }
+end
+
+--- Get the content of the quickfix list
+---@return table<CopilotChat.context.embed>
+function M.quickfix()
+  async.util.scheduler()
+
+  local items = vim.fn.getqflist()
+  if not items or #items == 0 then
+    return {}
+  end
+
+  local unique_files = {}
+  for _, item in ipairs(items) do
+    local filename = item.filename or vim.api.nvim_buf_get_name(item.bufnr)
+    if filename then
+      unique_files[filename] = true
+    end
+  end
+
+  local files = vim.tbl_filter(
+    function(file)
+      return file.ft ~= nil
+    end,
+    vim.tbl_map(function(file)
+      return {
+        name = utils.filepath(file),
+        ft = utils.filetype(file),
+      }
+    end, vim.tbl_values(unique_files))
+  )
+
+  local out = {}
+  for _, file in ipairs(files) do
+    local file_data = get_file(file.name, file.ft)
+    if file_data then
+      table.insert(out, file_data)
+    end
+  end
+  return out
 end
 
 --- Filter embeddings based on the query

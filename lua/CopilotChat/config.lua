@@ -283,6 +283,12 @@ return {
         }
       end,
     },
+    quickfix = {
+      description = 'Includes quickfix list file contents in chat context.',
+      resolve = function()
+        return context.quickfix()
+      end,
+    },
   },
 
   -- default prompts

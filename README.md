@@ -262,6 +262,7 @@ Default contexts are:
   - `git:staged` - Includes staged changes in chat context.
 - `url` - Includes content of provided URL in chat context. Supports input.
 - `register` - Includes contents of register in chat context. Supports input (default +, e.g clipboard).
+- `quickfix` - Includes quickfix list file contents in chat context.
 
 You can define custom contexts like this:
 
@@ -485,6 +486,9 @@ Also see [here](/lua/CopilotChat/config.lua):
       -- see config.lua for implementation
     },
     register = {
+      -- see config.lua for implementation
+    },
+    quickfix = {
       -- see config.lua for implementation
     },
   },
