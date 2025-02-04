@@ -30,8 +30,11 @@ local utils = require('CopilotChat.utils')
 ---@field insert string?
 ---@field detail string?
 
----@class CopilotChat.config.mapping.register : CopilotChat.config.mapping
+---@class CopilotChat.config.mapping.yank_diff : CopilotChat.config.mapping
 ---@field register string?
+
+---@class CopilotChat.config.mapping.show_diff : CopilotChat.config.mapping
+---@field full_diff boolean?
 
 ---@class CopilotChat.config.mappings
 ---@field complete CopilotChat.config.mapping?
@@ -42,8 +45,8 @@ local utils = require('CopilotChat.utils')
 ---@field accept_diff CopilotChat.config.mapping?
 ---@field jump_to_diff CopilotChat.config.mapping?
 ---@field quickfix_diffs CopilotChat.config.mapping?
----@field yank_diff CopilotChat.config.mapping.register?
----@field show_diff CopilotChat.config.mapping?
+---@field yank_diff CopilotChat.config.mapping.yank_diff?
+---@field show_diff CopilotChat.config.mapping.show_diff?
 ---@field show_info CopilotChat.config.mapping?
 ---@field show_context CopilotChat.config.mapping?
 ---@field show_help CopilotChat.config.mapping?
@@ -391,10 +394,11 @@ return {
     },
     yank_diff = {
       normal = 'gy',
-      register = '"',
+      register = '"', -- Default register to use for yanking
     },
     show_diff = {
       normal = 'gd',
+      full_diff = false, -- Show full diff instead of unified diff when showing diff window
     },
     show_info = {
       normal = 'gi',
