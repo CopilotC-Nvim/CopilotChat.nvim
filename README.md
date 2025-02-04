@@ -127,8 +127,8 @@ See [@deathbeam](https://github.com/deathbeam) for [configuration](https://githu
 - `gj` - Jump to section of nearest diff. If in different buffer, jumps there; creates buffer if needed (works best with `COPILOT_GENERATE` prompt)
 - `gqa` - Add all answers from chat to quickfix list
 - `gqd` - Add all diffs from chat to quickfix list
-- `gy` - Yank nearest diff to register (defaults to `"`)
-- `gd` - Show diff between source and nearest diff
+- `gy` - Yank nearest diff to register (defaults to `"`). Use `mappings.yank_diff.register` config option to set register
+- `gd` - Show diff between source and nearest diff. Use `mappings.show_diff.full_diff` boolean config option to show full diff instead of unified diff
 - `gi` - Show info about current chat (model, agent, system prompt)
 - `gc` - Show current chat context
 - `gh` - Show help message
@@ -139,7 +139,7 @@ The mappings can be customized by setting the `mappings` table in your configura
 - `insert`: Key for insert mode
 - `detail`: Description of what the mapping does
 
-For example, to change the submit prompt mapping:
+For example, to change the submit prompt mapping or show_diff full diff option:
 
 ```lua
 {
@@ -147,6 +147,9 @@ For example, to change the submit prompt mapping:
       submit_prompt = {
         normal = '<Leader>s',
         insert = '<C-s>'
+      }
+      show_diff = {
+        full_diff = true
       }
     }
 }
