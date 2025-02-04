@@ -125,7 +125,8 @@ See [@deathbeam](https://github.com/deathbeam) for [configuration](https://githu
 - `gr` - Toggle sticky prompt for the line under cursor
 - `<C-y>` - Accept nearest diff (works best with `COPILOT_GENERATE` prompt)
 - `gj` - Jump to section of nearest diff. If in different buffer, jumps there; creates buffer if needed (works best with `COPILOT_GENERATE` prompt)
-- `gq` - Add all diffs from chat to quickfix list
+- `gqa` - Add all answers from chat to quickfix list
+- `gqd` - Add all diffs from chat to quickfix list
 - `gy` - Yank nearest diff to register (defaults to `"`)
 - `gd` - Show diff between source and nearest diff
 - `gi` - Show info about current chat (model, agent, system prompt)
@@ -547,8 +548,11 @@ Also see [here](/lua/CopilotChat/config.lua):
     jump_to_diff = {
       normal = 'gj',
     },
+    quickfix_answers = {
+      normal = 'gqa',
+    },
     quickfix_diffs = {
-      normal = 'gq',
+      normal = 'gqd',
     },
     yank_diff = {
       normal = 'gy',

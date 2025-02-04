@@ -383,8 +383,11 @@ return {
     jump_to_diff = {
       normal = 'gj',
     },
+    quickfix_answers = {
+      normal = 'gqa',
+    },
     quickfix_diffs = {
-      normal = 'gq',
+      normal = 'gqd',
     },
     yank_diff = {
       normal = 'gy',
