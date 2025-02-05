@@ -308,16 +308,23 @@ prompt by using `:` followed by the input (or pressing `complete` key after
 `:`). Default contexts are:
 
 - `buffer` - Includes specified buffer in chat context. Supports input (default current).
+    - `buffer:<number>` - Includes buffer with specified number in chat context.
 - `buffers` - Includes all buffers in chat context. Supports input (default listed).
+    - `buffers:listed` - Includes only listed buffers in chat context.
+    - `buffers:all` - Includes all buffers in chat context.
 - `file` - Includes content of provided file in chat context. Supports input.
+    - `file:<path>` - Includes content of specified file in chat context.
 - `files` - Includes all non-hidden files in the current workspace in chat context. Supports input (default list).
     - `files:list` - Only lists file names.
     - `files:full` - Includes file content for each file found. Can be slow on large workspaces, use with care.
-- `git` - Requires `git`. Includes current git diff in chat context. Supports input (default unstaged).
+- `git` - Requires `git`. Includes current git diff in chat context. Supports input (default unstaged, also accepts commit number).
     - `git:unstaged` - Includes unstaged changes in chat context.
     - `git:staged` - Includes staged changes in chat context.
+    - `git:<commit>` - Includes changes from specified commit in chat context.
 - `url` - Includes content of provided URL in chat context. Supports input.
+    - `url:<url>` - Includes content of specified URL in chat context.
 - `register` - Includes contents of register in chat context. Supports input (default +, e.g clipboard).
+    - `register:<register>` - Includes contents of specified register in chat context.
 - `quickfix` - Includes quickfix list file contents in chat context.
 
 You can define custom contexts like this:
