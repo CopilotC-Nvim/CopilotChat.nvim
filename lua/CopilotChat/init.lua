@@ -315,6 +315,23 @@ local function finish(start_of_chat)
 
   state.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
 
+  -- Add default sticky prompts after reset
+  if start_of_chat then
+    if M.config.sticky then
+      local last_prompt = state.last_prompt or ''
+
+      if type(M.config.sticky) == 'table' then
+        for _, sticky in ipairs(M.config.sticky) do
+          last_prompt = last_prompt .. '\n> ' .. sticky
+        end
+      else
+        last_prompt = last_prompt .. '\n> ' .. M.config.sticky
+      end
+
+      state.last_prompt = last_prompt
+    end
+  end
+
   -- Reinsert sticky prompts from last prompt
   if state.last_prompt then
     local has_sticky = false
