@@ -229,7 +229,7 @@ return {
       end,
     },
     git = {
-      description = 'Requires `git`. Includes current git diff in chat context. Supports input (default unstaged).',
+      description = 'Requires `git`. Includes current git diff in chat context. Supports input (default unstaged, also accepts commit number).',
       input = function(callback)
         vim.ui.select({ 'unstaged', 'staged' }, {
           prompt = 'Select diff type> ',

@@ -505,6 +505,10 @@ function M.gitdiff(type, winnr)
 
   if type == 'staged' then
     table.insert(cmd, '--staged')
+  elseif type == 'unstaged' then
+    table.insert(cmd, '--')
+  else
+    table.insert(cmd, type)
   end
 
   local out = utils.system(cmd)
