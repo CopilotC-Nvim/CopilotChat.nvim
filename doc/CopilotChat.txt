@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2025 February 04
+*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2025 February 05
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -254,6 +254,17 @@ and agent selection (see below). Example usage:
     What is 1 + 11
 <
 
+You can also set default sticky prompts in the configuration:
+
+>lua
+    {
+      sticky = {
+        '@models Using Mistral-small',
+        '#files:full',
+      }
+    }
+<
+
 
 MODELS                                                    *CopilotChat-models*
 
@@ -464,11 +475,13 @@ Also see here </lua/CopilotChat/config.lua>:
       -- Shared config starts here (can be passed to functions at runtime and configured via setup function)
     
       system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use (can be specified manually in prompt via /).
+    
       model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
       agent = 'copilot', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
       context = nil, -- Default context or array of contexts to use (can be specified manually in prompt via #).
-      temperature = 0.1, -- GPT result temperature
+      sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat.
     
+      temperature = 0.1, -- GPT result temperature
       headless = false, -- Do not write to chat buffer and use history(useful for using callback for custom processing)
       callback = nil, -- Callback to use when ask response is received
     
