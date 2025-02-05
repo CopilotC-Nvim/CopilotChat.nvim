@@ -56,6 +56,7 @@ local utils = require('CopilotChat.utils')
 ---@field model string?
 ---@field agent string?
 ---@field context string|table<string>|nil
+---@field sticky string|table<string>|nil
 ---@field temperature number?
 ---@field headless boolean?
 ---@field callback fun(response: string, source: CopilotChat.source)?
@@ -90,11 +91,13 @@ return {
   -- Shared config starts here (can be passed to functions at runtime and configured via setup function)
 
   system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use (can be specified manually in prompt via /).
+
   model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   agent = 'copilot', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
   context = nil, -- Default context or array of contexts to use (can be specified manually in prompt via #).
-  temperature = 0.1, -- GPT result temperature
+  sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat.
 
+  temperature = 0.1, -- GPT result temperature
   headless = false, -- Do not write to chat buffer and use history(useful for using callback for custom processing)
   callback = nil, -- Callback to use when ask response is received
 
