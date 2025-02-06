@@ -127,8 +127,8 @@ See [@deathbeam](https://github.com/deathbeam) for [configuration](https://githu
 - `gj` - Jump to section of nearest diff. If in different buffer, jumps there; creates buffer if needed (works best with `COPILOT_GENERATE` prompt)
 - `gqa` - Add all answers from chat to quickfix list
 - `gqd` - Add all diffs from chat to quickfix list
-- `gy` - Yank nearest diff to register (defaults to `"`)
-- `gd` - Show diff between source and nearest diff
+- `gy` - Yank nearest diff to register (defaults to `"`). Use `mappings.yank_diff.register` config option to set register
+- `gd` - Show diff between source and nearest diff. Use `mappings.show_diff.full_diff` boolean config option to show full diff instead of unified diff
 - `gi` - Show info about current chat (model, agent, system prompt)
 - `gc` - Show current chat context
 - `gh` - Show help message
@@ -139,7 +139,7 @@ The mappings can be customized by setting the `mappings` table in your configura
 - `insert`: Key for insert mode
 - `detail`: Description of what the mapping does
 
-For example, to change the submit prompt mapping:
+For example, to change the submit prompt mapping or show_diff full diff option:
 
 ```lua
 {
@@ -147,6 +147,9 @@ For example, to change the submit prompt mapping:
       submit_prompt = {
         normal = '<Leader>s',
         insert = '<C-s>'
+      }
+      show_diff = {
+        full_diff = true
       }
     }
 }
@@ -221,6 +224,17 @@ List all files in the workspace
 What is 1 + 11
 ```
 
+You can also set default sticky prompts in the configuration:
+
+```lua
+{
+  sticky = {
+    '@models Using Mistral-small',
+    '#files:full',
+  }
+}
+```
+
 ## Models
 
 You can list available models with `:CopilotChatModels` command. Model determines the AI model used for the chat.  
@@ -253,16 +267,23 @@ If context supports input, you can set the input in the prompt by using `:` foll
 Default contexts are:
 
 - `buffer` - Includes specified buffer in chat context. Supports input (default current).
+  - `buffer:<number>` - Includes buffer with specified number in chat context.
 - `buffers` - Includes all buffers in chat context. Supports input (default listed).
+  - `buffers:listed` - Includes only listed buffers in chat context.
+  - `buffers:all` - Includes all buffers in chat context.
 - `file` - Includes content of provided file in chat context. Supports input.
+  - `file:<path>` - Includes content of specified file in chat context.
 - `files` - Includes all non-hidden files in the current workspace in chat context. Supports input (default list).
   - `files:list` - Only lists file names.
   - `files:full` - Includes file content for each file found. Can be slow on large workspaces, use with care.
-- `git` - Requires `git`. Includes current git diff in chat context. Supports input (default unstaged).
+- `git` - Requires `git`. Includes current git diff in chat context. Supports input (default unstaged, also accepts commit number).
   - `git:unstaged` - Includes unstaged changes in chat context.
   - `git:staged` - Includes staged changes in chat context.
+  - `git:<commit>` - Includes changes from specified commit in chat context.
 - `url` - Includes content of provided URL in chat context. Supports input.
+  - `url:<url>` - Includes content of specified URL in chat context.
 - `register` - Includes contents of register in chat context. Supports input (default +, e.g clipboard).
+  - `register:<register>` - Includes contents of specified register in chat context.
 - `quickfix` - Includes quickfix list file contents in chat context.
 
 You can define custom contexts like this:
@@ -414,11 +435,13 @@ Also see [here](/lua/CopilotChat/config.lua):
   -- Shared config starts here (can be passed to functions at runtime and configured via setup function)
 
   system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use (can be specified manually in prompt via /).
+
   model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   agent = 'copilot', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
   context = nil, -- Default context or array of contexts to use (can be specified manually in prompt via #).
-  temperature = 0.1, -- GPT result temperature
+  sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat.
 
+  temperature = 0.1, -- GPT result temperature
   headless = false, -- Do not write to chat buffer and use history(useful for using callback for custom processing)
   callback = nil, -- Callback to use when ask response is received
 
@@ -556,10 +579,11 @@ Also see [here](/lua/CopilotChat/config.lua):
     },
     yank_diff = {
       normal = 'gy',
-      register = '"',
+      register = '"', -- Default register to use for yanking
     },
     show_diff = {
       normal = 'gd',
+      full_diff = false, -- Show full diff instead of unified diff when showing diff window
     },
     show_info = {
       normal = 'gi',
@@ -851,6 +875,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/tku137"><img src="https://avatars.githubusercontent.com/u/3052212?v=4?s=100" width="100px;" alt="Tony Fischer"/><br /><sub><b>Tony Fischer</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=tku137" title="Code">💻</a> <a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=tku137" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://qiita.com/program3152019"><img src="https://avatars.githubusercontent.com/u/64008205?v=4?s=100" width="100px;" alt="Kohei Wada"/><br /><sub><b>Kohei Wada</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=Kohei-Wada" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://zags.dev"><img src="https://avatars.githubusercontent.com/u/79172513?v=4?s=100" width="100px;" alt="Sebastian Yaghoubi"/><br /><sub><b>Sebastian Yaghoubi</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=syaghoubi00" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/johncming"><img src="https://avatars.githubusercontent.com/u/11719334?v=4?s=100" width="100px;" alt="johncming"/><br /><sub><b>johncming</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=johncming" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>

@@ -505,6 +505,10 @@ function M.gitdiff(type, winnr)
 
   if type == 'staged' then
     table.insert(cmd, '--staged')
+  elseif type == 'unstaged' then
+    table.insert(cmd, '--')
+  else
+    table.insert(cmd, type)
   end
 
   local out = utils.system(cmd)
@@ -559,7 +563,7 @@ function M.quickfix()
         name = utils.filepath(file),
         ft = utils.filetype(file),
       }
-    end, vim.tbl_values(unique_files))
+    end, vim.tbl_keys(unique_files))
   )
 
   local out = {}

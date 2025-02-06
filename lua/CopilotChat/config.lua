@@ -30,8 +30,11 @@ local utils = require('CopilotChat.utils')
 ---@field insert string?
 ---@field detail string?
 
----@class CopilotChat.config.mapping.register : CopilotChat.config.mapping
+---@class CopilotChat.config.mapping.yank_diff : CopilotChat.config.mapping
 ---@field register string?
+
+---@class CopilotChat.config.mapping.show_diff : CopilotChat.config.mapping
+---@field full_diff boolean?
 
 ---@class CopilotChat.config.mappings
 ---@field complete CopilotChat.config.mapping?
@@ -42,8 +45,8 @@ local utils = require('CopilotChat.utils')
 ---@field accept_diff CopilotChat.config.mapping?
 ---@field jump_to_diff CopilotChat.config.mapping?
 ---@field quickfix_diffs CopilotChat.config.mapping?
----@field yank_diff CopilotChat.config.mapping.register?
----@field show_diff CopilotChat.config.mapping?
+---@field yank_diff CopilotChat.config.mapping.yank_diff?
+---@field show_diff CopilotChat.config.mapping.show_diff?
 ---@field show_info CopilotChat.config.mapping?
 ---@field show_context CopilotChat.config.mapping?
 ---@field show_help CopilotChat.config.mapping?
@@ -53,6 +56,7 @@ local utils = require('CopilotChat.utils')
 ---@field model string?
 ---@field agent string?
 ---@field context string|table<string>|nil
+---@field sticky string|table<string>|nil
 ---@field temperature number?
 ---@field headless boolean?
 ---@field callback fun(response: string, source: CopilotChat.source)?
@@ -87,11 +91,13 @@ return {
   -- Shared config starts here (can be passed to functions at runtime and configured via setup function)
 
   system_prompt = prompts.COPILOT_INSTRUCTIONS, -- System prompt to use (can be specified manually in prompt via /).
+
   model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   agent = 'copilot', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
   context = nil, -- Default context or array of contexts to use (can be specified manually in prompt via #).
-  temperature = 0.1, -- GPT result temperature
+  sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat.
 
+  temperature = 0.1, -- GPT result temperature
   headless = false, -- Do not write to chat buffer and use history(useful for using callback for custom processing)
   callback = nil, -- Callback to use when ask response is received
 
@@ -223,7 +229,7 @@ return {
       end,
     },
     git = {
-      description = 'Requires `git`. Includes current git diff in chat context. Supports input (default unstaged).',
+      description = 'Requires `git`. Includes current git diff in chat context. Supports input (default unstaged, also accepts commit number).',
       input = function(callback)
         vim.ui.select({ 'unstaged', 'staged' }, {
           prompt = 'Select diff type> ',
@@ -391,10 +397,11 @@ return {
     },
     yank_diff = {
       normal = 'gy',
-      register = '"',
+      register = '"', -- Default register to use for yanking
     },
     show_diff = {
       normal = 'gd',
+      full_diff = false, -- Show full diff instead of unified diff when showing diff window
     },
     show_info = {
       normal = 'gi',
