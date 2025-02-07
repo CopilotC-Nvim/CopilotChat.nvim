@@ -646,7 +646,13 @@ function Copilot:ask(prompt, opts)
     end
 
     if choice.finish_reason and job then
-      finish_stream(nil, job)
+      local reason = choice.finish_reason
+      if reason == 'stop' then
+        reason = nil
+      else
+        reason = 'Early stop: ' .. reason
+      end
+      finish_stream(reason, job)
     end
   end
 
