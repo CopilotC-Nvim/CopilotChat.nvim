@@ -340,6 +340,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/11719334?v=4",
       "profile": "https://github.com/johncming",
       "contributions": ["code"]
+    },
+    {
+      "login": "dzonatan",
+      "name": "Rokas Brazdžionis",
+      "avatar_url": "https://avatars.githubusercontent.com/u/5166666?v=4",
+      "profile": "https://github.com/dzonatan",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
