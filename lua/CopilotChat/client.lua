@@ -1,4 +1,4 @@
----@class CopilotChat.copilot.ask.opts
+---@class CopilotChat.Client.ask
 ---@field selection CopilotChat.select.selection?
 ---@field embeddings table<CopilotChat.context.embed>?
 ---@field system_prompt string
@@ -20,63 +20,7 @@ local CONTEXT_FORMAT = '[#file:%s](#file:%s-context)'
 local LINE_CHARACTERS = 100
 local BIG_FILE_THRESHOLD = 2000 * LINE_CHARACTERS
 local BIG_EMBED_THRESHOLD = 200 * LINE_CHARACTERS
-local EMBED_MODEL = 'text-embedding-3-small'
 local TRUNCATED = '... (truncated)'
-local TIMEOUT = 30000
-local VERSION_HEADERS = {
-  ['editor-version'] = 'Neovim/'
-    .. vim.version().major
-    .. '.'
-    .. vim.version().minor
-    .. '.'
-    .. vim.version().patch,
-  ['editor-plugin-version'] = 'CopilotChat.nvim/2.0.0',
-  ['user-agent'] = 'CopilotChat.nvim/2.0.0',
-  ['sec-fetch-site'] = 'none',
-  ['sec-fetch-mode'] = 'no-cors',
-  ['sec-fetch-dest'] = 'empty',
-  ['priority'] = 'u=4, i',
-}
-local MODELS_VERSION_HEADERS = {
-  ['x-ms-useragent'] = VERSION_HEADERS['editor-version'],
-  ['x-ms-user-agent'] = VERSION_HEADERS['editor-version'],
-}
-
---- Get the github oauth cached token
----@return string|nil
-local function get_cached_token()
-  -- loading token from the environment only in GitHub Codespaces
-  local token = os.getenv('GITHUB_TOKEN')
-  local codespaces = os.getenv('CODESPACES')
-  if token and codespaces then
-    return token
-  end
-
-  -- loading token from the file
-  local config_path = utils.config_path()
-  if not config_path then
-    return nil
-  end
-
-  -- token can be sometimes in apps.json sometimes in hosts.json
-  local file_paths = {
-    config_path .. '/github-copilot/hosts.json',
-    config_path .. '/github-copilot/apps.json',
-  }
-
-  for _, file_path in ipairs(file_paths) do
-    if vim.fn.filereadable(file_path) == 1 then
-      local userdata = vim.fn.json_decode(vim.fn.readfile(file_path))
-      for key, value in pairs(userdata) do
-        if string.find(key, 'github.com') then
-          return value.oauth_token
-        end
-      end
-    end
-  end
-
-  return nil
-end
 
 --- Generate content block with line numbers, truncating if necessary
 ---@param content string: The content
@@ -188,25 +132,14 @@ local function generate_embeddings_messages(embeddings)
   end, embeddings)
 end
 
-local function generate_ask_request(
-  history,
-  prompt,
-  system_prompt,
-  generated_messages,
-  model,
-  temperature,
-  max_output_tokens,
-  stream
-)
-  local is_o1 = vim.startswith(model, 'o1')
+local function generate_ask_request(history, prompt, system_prompt, generated_messages)
   local messages = {}
-  local system_role = is_o1 and 'user' or 'system'
   local contexts = {}
 
   if system_prompt ~= '' then
     table.insert(messages, {
       content = system_prompt,
-      role = system_role,
+      role = 'system',
     })
   end
 
@@ -234,50 +167,31 @@ local function generate_ask_request(
     role = 'user',
   })
 
-  local out = {
-    messages = messages,
-    model = model,
-    stream = stream,
-    n = 1,
-  }
-
-  if max_output_tokens then
-    out.max_tokens = max_output_tokens
-  end
-
-  if not is_o1 then
-    out.temperature = temperature
-    out.top_p = 1
-  end
-
-  return out
+  return messages
 end
 
-local function generate_embedding_request(inputs, model, threshold)
-  return {
-    dimensions = 512,
-    input = vim.tbl_map(function(embedding)
-      local content =
-        generate_content_block(embedding.outline or embedding.content, nil, threshold, -1)
-      if embedding.filetype == 'raw' then
-        return content
-      else
-        return string.format(
-          'File: `%s`\n```%s\n%s\n```',
-          embedding.filename,
-          embedding.filetype,
-          content
-        )
-      end
-    end, inputs),
-    model = model,
-  }
+local function generate_embedding_request(inputs, threshold)
+  return vim.tbl_map(function(embedding)
+    local content =
+      generate_content_block(embedding.outline or embedding.content, nil, threshold, -1)
+    if embedding.filetype == 'raw' then
+      return content
+    else
+      return string.format(
+        'File: `%s`\n```%s\n%s\n```',
+        embedding.filename,
+        embedding.filetype,
+        content
+      )
+    end
+  end, inputs)
 end
 
----@class CopilotChat.Copilot : Class
+---@class CopilotChat.Client : Class
+---@field providers table<string, CopilotChat.Provider>
 ---@field history table
+---@field provider_cache table<string, table>
 ---@field embedding_cache table<CopilotChat.context.embed>
----@field policies table<string, boolean>
 ---@field models table<string, table>?
 ---@field agents table<string, table>?
 ---@field current_job string?
@@ -285,264 +199,108 @@ end
 ---@field token table?
 ---@field sessionid string?
 ---@field machineid string
----@field request_args table<string>
-local Copilot = class(function(self, proxy, allow_insecure)
+local Client = class(function(self, providers)
+  self.providers = providers
   self.history = {}
   self.embedding_cache = {}
-  self.policies = {}
   self.models = nil
   self.agents = nil
 
-  self.current_job = nil
-  self.github_token = nil
-  self.token = nil
-  self.sessionid = nil
-  self.machineid = utils.machine_id()
-  self.github_token = get_cached_token()
+  self.provider_cache = {}
+  for provider_name, _ in pairs(providers) do
+    self.provider_cache[provider_name] = {}
+  end
 
-  self.request_args = {
-    timeout = TIMEOUT,
-    proxy = proxy,
-    insecure = allow_insecure,
-    raw = {
-      -- Retry failed requests twice
-      '--retry',
-      '2',
-      -- Wait 1 second between retries
-      '--retry-delay',
-      '1',
-      -- Keep connections alive for better performance
-      '--keepalive-time',
-      '60',
-      -- Disable compression (since responses are already streamed efficiently)
-      '--no-compressed',
-      -- Connect timeout of 10 seconds
-      '--connect-timeout',
-      '10',
-      -- Streaming optimizations
-      '--tcp-nodelay',
-      '--no-buffer',
-    },
-  }
+  self.current_job = nil
+  self.expires_at = nil
+  self.headers = nil
+  self.machineid = utils.machine_id()
 end)
 
 --- Authenticate with GitHub and get the required headers
+---@param provider_name string: The provider to authenticate with
 ---@return table<string, string>
-function Copilot:authenticate(models)
-  if not self.github_token then
-    error(
-      'No GitHub token found, please use `:Copilot auth` to set it up from copilot.lua or `:Copilot setup` for copilot.vim'
-    )
-  end
+function Client:authenticate(provider_name)
+  local provider = self.providers[provider_name]
+  local headers = self.provider_cache[provider_name].headers
+  local expires_at = self.provider_cache[provider_name].expires_at
 
-  if
-    not self.token or (self.token.expires_at and self.token.expires_at <= math.floor(os.time()))
-  then
+  if not headers or (expires_at and expires_at <= math.floor(os.time())) then
+    notify.publish(notify.STATUS, 'Authenticating to provider ' .. provider_name)
+
+    local token, expires_at = provider.get_token()
     local sessionid = utils.uuid() .. tostring(math.floor(os.time() * 1000))
-    local headers = vim.tbl_extend('force', {
-      ['authorization'] = 'token ' .. self.github_token,
-      ['accept'] = 'application/json',
-    }, VERSION_HEADERS)
-
-    local response, err = utils.curl_get(
-      'https://api.github.com/copilot_internal/v2/token',
-      vim.tbl_extend('force', self.request_args, {
-        headers = headers,
-      })
-    )
-
-    if err then
-      error(err)
-    end
-
-    if response.status ~= 200 then
-      error('Failed to authenticate: ' .. tostring(response.status))
-    end
-
-    self.sessionid = sessionid
-    self.token = vim.json.decode(response.body)
+    headers = provider.get_headers(token, sessionid, self.machineid)
+    self.provider_cache[provider_name].headers = headers
+    self.provider_cache[provider_name].expires_at = expires_at
   end
 
-  if models then
-    return vim.tbl_extend('force', {
-      ['authorization'] = 'bearer ' .. self.github_token,
-      ['accept'] = 'application/json',
-      ['content-type'] = 'application/json',
-    }, MODELS_VERSION_HEADERS)
-  end
-
-  return vim.tbl_extend('force', {
-    ['authorization'] = 'Bearer ' .. self.token.token,
-    ['x-request-id'] = utils.uuid(),
-    ['vscode-sessionid'] = self.sessionid,
-    ['vscode-machineid'] = self.machineid,
-    ['copilot-integration-id'] = 'vscode-chat',
-    ['openai-organization'] = 'github-copilot',
-    ['openai-intent'] = 'conversation-panel',
-    ['content-type'] = 'application/json',
-  }, VERSION_HEADERS)
+  return headers
 end
 
 --- Fetch models from the Copilot API
 ---@return table<string, table>
-function Copilot:fetch_models()
+function Client:fetch_models()
   if self.models then
     return self.models
   end
 
-  notify.publish(notify.STATUS, 'Fetching models')
-
-  local out = {}
-
-  -- Github models
-  local response, err = utils.curl_get(
-    'https://api.githubcopilot.com/models',
-    vim.tbl_extend('force', self.request_args, {
-      headers = self:authenticate(),
-    })
-  )
-  if err then
-    error(err)
-  end
-  if response.status ~= 200 then
-    error('Failed to fetch models: ' .. tostring(response.status))
-  end
-
-  local models = vim.json.decode(response.body)['data']
-  for _, model in ipairs(models) do
-    if not model['policy'] or model['policy']['state'] == 'enabled' then
-      self.policies[model['id']] = true
-    end
-
-    if model['capabilities']['type'] == 'chat' then
-      out[model.id] = {
-        name = model.name,
-        provider = 'copilot',
-        version = model.version,
-        tokenizer = model.capabilities.tokenizer,
-        max_prompt_tokens = model.capabilities.limits.max_prompt_tokens,
-        max_output_tokens = model.capabilities.limits.max_output_tokens,
-      }
+  local models = {}
+  for provider_name, provider in pairs(self.providers) do
+    if not provider.disabled and provider.get_models then
+      local headers = self:authenticate(provider_name)
+      notify.publish(notify.STATUS, 'Fetching models from ' .. provider_name)
+      local provider_models = provider.get_models(headers)
+      for _, model in ipairs(provider_models) do
+        model.provider = provider_name
+        if not models[model.id] then
+          models[model.id] = model
+        end
+      end
     end
   end
 
-  -- Marketplace models
-  response, err = utils.curl_post(
-    'https://api.catalog.azureml.ms/asset-gallery/v1.0/models',
-    vim.tbl_extend('force', self.request_args, {
-      headers = {
-        ['content-type'] = 'application/json',
-      },
-      body = [[
-        {
-          "filters": [
-            { "field": "freePlayground", "values": ["true"], "operator": "eq"},
-            { "field": "labels", "values": ["latest"], "operator": "eq"}
-          ],
-          "order": [
-            { "field": "displayName", "direction": "asc" }
-          ]
-        }
-      ]],
-    })
-  )
-  if err then
-    error(err)
-  end
-  if response.status ~= 200 then
-    error('Failed to fetch models: ' .. tostring(response.status))
-  end
-
-  models = vim.json.decode(response.body)['summaries']
-  for _, model in ipairs(models) do
-    if
-      not out[model.name:lower()] and vim.tbl_contains(model.inferenceTasks, 'chat-completion')
-    then
-      out[model.name] = {
-        name = model.displayName,
-        provider = 'github-models',
-        version = model.name .. '-' .. model.version,
-        max_prompt_tokens = model.modelLimits.textLimits.inputContextWindow,
-        max_output_tokens = model.modelLimits.textLimits.maxOutputTokens,
-      }
-
-      self.policies[model.name] = true
-    end
-  end
-
-  log.trace(models)
-  self.models = out
-  return out
+  self.models = models
+  return self.models
 end
 
 --- Fetch agents from the Copilot API
 ---@return table<string, table>
-function Copilot:fetch_agents()
+function Client:fetch_agents()
   if self.agents then
     return self.agents
   end
 
-  notify.publish(notify.STATUS, 'Fetching agents')
-
-  local response, err = utils.curl_get(
-    'https://api.githubcopilot.com/agents',
-    vim.tbl_extend('force', self.request_args, {
-      headers = self:authenticate(),
-    })
-  )
-
-  if err then
-    error(err)
+  local agents = {}
+  for provider_name, provider in pairs(self.providers) do
+    if not provider.disabled and provider.get_agents then
+      local headers = self:authenticate(provider_name)
+      notify.publish(notify.STATUS, 'Fetching agents from ' .. provider_name)
+      local provider_agents = provider.get_agents(headers)
+      for _, agent in ipairs(provider_agents) do
+        agent.provider = provider_name
+        if not agents[agent.id] then
+          agents[agent.id] = agent
+        end
+      end
+    end
   end
 
-  if response.status ~= 200 then
-    error('Failed to fetch agents: ' .. tostring(response.status))
-  end
-
-  local agents = vim.json.decode(response.body)['agents']
-  local out = {}
-  for _, agent in ipairs(agents) do
-    out[agent['slug']] = agent
-  end
-
-  out['copilot'] = { name = 'Copilot', default = true, description = 'Default noop agent' }
-
-  log.trace(agents)
-  self.agents = out
-  return out
-end
-
---- Enable policy for the given model if required
----@param model string: The model to enable policy for
-function Copilot:enable_policy(model)
-  if self.policies[model] then
-    return
-  end
-
-  notify.publish(notify.STATUS, 'Enabling ' .. model .. ' policy')
-
-  local response, err = utils.curl_post(
-    'https://api.githubcopilot.com/models/' .. model .. '/policy',
-    vim.tbl_extend('force', self.request_args, {
-      headers = self:authenticate(),
-      body = vim.json.encode({ state = 'enabled' }),
-    })
-  )
-
-  self.policies[model] = true
-
-  if err or response.status ~= 200 then
-    log.warn('Failed to enable policy for ', model, ': ', (err or response.body))
-    return
-  end
+  self.agents = agents
+  return self.agents
 end
 
 --- Ask a question to Copilot
 ---@param prompt string: The prompt to send to Copilot
----@param opts CopilotChat.copilot.ask.opts: Options for the request
-function Copilot:ask(prompt, opts)
+---@param opts CopilotChat.Client.ask: Options for the request
+function Client:ask(prompt, opts)
   opts = opts or {}
   prompt = vim.trim(prompt)
+
+  if opts.agent == 'none' or opts.agent == 'copilot' then
+    opts.agent = nil
+  end
+
   local embeddings = opts.embeddings or {}
   local selection = opts.selection or {}
   local system_prompt = vim.trim(opts.system_prompt)
@@ -564,18 +322,21 @@ function Copilot:ask(prompt, opts)
 
   local history = no_history and {} or self.history
   local models = self:fetch_models()
-  local agents = self:fetch_agents()
-  local agent_config = agents[agent]
-  if not agent_config then
-    error('Agent not found: ' .. agent)
-  end
   local model_config = models[model]
   if not model_config then
     error('Model not found: ' .. model)
   end
 
+  local provider_name = model_config.provider
+  if not provider_name then
+    error('Provider not found for model: ' .. model)
+  end
+  local provider = self.providers[provider_name]
+  if not provider then
+    error('Provider not found: ' .. provider_name)
+  end
+
   local max_tokens = model_config.max_prompt_tokens
-  local max_output_tokens = model_config.max_output_tokens
   local tokenizer = model_config.tokenizer or 'o200k_base'
   log.debug('Max tokens: ', max_tokens)
   log.debug('Tokenizer: ', tokenizer)
@@ -746,36 +507,19 @@ function Copilot:ask(prompt, opts)
     parse_stream_line(line, job)
   end
 
-  local is_stream = not vim.startswith(model, 'o1')
-  local body = vim.json.encode(
-    generate_ask_request(
-      history,
-      prompt,
-      system_prompt,
-      generated_messages,
-      model,
-      temperature,
-      max_output_tokens,
-      is_stream
-    )
+  local headers = self:authenticate(provider_name)
+  local request = provider.prepare_input(
+    generate_ask_request(history, prompt, system_prompt, generated_messages),
+    opts,
+    model_config
   )
+  local is_stream = request.stream
+  local body = vim.json.encode(request)
 
-  self:enable_policy(model)
-
-  local args = vim.tbl_extend('force', self.request_args, {
+  local args = {
     body = temp_file(body),
-  })
-  local url
-  if not agent_config.default then
-    url = 'https://api.githubcopilot.com/agents/' .. agent .. '?chat'
-    args.headers = self:authenticate()
-  elseif model_config.provider == 'github-models' then
-    url = 'https://models.inference.ai.azure.com/chat/completions'
-    args.headers = self:authenticate(true)
-  else
-    url = 'https://api.githubcopilot.com/chat/completions'
-    args.headers = self:authenticate()
-  end
+    headers = headers,
+  }
 
   if is_stream then
     args.stream = stream_func
@@ -783,7 +527,7 @@ function Copilot:ask(prompt, opts)
 
   notify.publish(notify.STATUS, 'Thinking')
 
-  local response, err = utils.curl_post(url, args)
+  local response, err = utils.curl_post(provider.get_url(opts), args)
 
   if self.current_job ~= job_id then
     return nil, nil, nil
@@ -881,8 +625,8 @@ function Copilot:ask(prompt, opts)
 end
 
 --- List available models
----@return table<string, string>
-function Copilot:list_models()
+---@return table<string, table>
+function Client:list_models()
   local models = self:fetch_models()
 
   -- First deduplicate by version, keeping shortest ID
@@ -912,32 +656,56 @@ function Copilot:list_models()
 end
 
 --- List available agents
----@return table<string, string>
-function Copilot:list_agents()
+---@return table<string, table>
+function Client:list_agents()
   local agents = self:fetch_agents()
 
   local result = vim.tbl_keys(agents)
   table.sort(result)
 
   local out = {}
+  table.insert(out, { id = 'none', name = 'None', description = 'No agent', provider = 'none' })
   for _, id in ipairs(result) do
-    out[id] = agents[id].description
+    table.insert(out, vim.tbl_extend('force', agents[id], { id = id }))
   end
   return out
 end
 
 --- Generate embeddings for the given inputs
 ---@param inputs table<CopilotChat.context.embed>: The inputs to embed
+---@param model string
 ---@return table<CopilotChat.context.embed>
-function Copilot:embed(inputs)
+function Client:embed(inputs, model)
   if not inputs or #inputs == 0 then
     return {}
+  end
+
+  local models = self:fetch_models()
+  local model_config = models[model]
+  if not model_config then
+    error('Model not found: ' .. model)
+  end
+
+  local provider_name = model_config.provider
+  if not provider_name then
+    error('Provider not found for model: ' .. model)
+  end
+  local provider = self.providers[model_config.provider]
+  if not provider then
+    error('Provider not found: ' .. model_config.provider)
+  end
+  provider_name = provider.embeddings
+  if not provider_name then
+    error('Provider not found for embeddings: ' .. provider_name)
+  end
+  provider = self.providers[provider_name]
+  if not provider then
+    error('Provider not found: ' .. provider_name)
   end
 
   notify.publish(notify.STATUS, 'Generating embeddings for ' .. #inputs .. ' inputs')
 
   -- Initialize essentials
-  local model = EMBED_MODEL
   local to_process = {}
   local results = {}
   local initial_chunk_size = 10
@@ -972,14 +740,14 @@ function Copilot:embed(inputs)
     local success = false
     local attempts = 0
     while not success and attempts < 5 do -- Limit total attempts to 5
-      local body = vim.json.encode(generate_embedding_request(batch, model, threshold))
-      local response, err = utils.curl_post(
-        'https://api.githubcopilot.com/embeddings',
-        vim.tbl_extend('force', self.request_args, {
-          headers = self:authenticate(),
-          body = temp_file(body),
-        })
+      local body = vim.json.encode(
+        provider.prepare_input(generate_embedding_request(batch, threshold), {}, {})
       )
+
+      local response, err = utils.curl_post(provider.get_url({}), {
+        headers = self:authenticate(provider_name),
+        body = temp_file(body),
+      })
 
       if err or not response or response.status ~= 200 then
         attempts = attempts + 1
@@ -1030,7 +798,7 @@ end
 
 --- Stop the running job
 ---@return boolean
-function Copilot:stop()
+function Client:stop()
   if self.current_job ~= nil then
     self.current_job = nil
     return true
@@ -1041,7 +809,7 @@ end
 
 --- Reset the history and stop any running job
 ---@return boolean
-function Copilot:reset()
+function Client:reset()
   local stopped = self:stop()
   self.history = {}
   self.embedding_cache = {}
@@ -1051,7 +819,7 @@ end
 --- Save the history to a file
 ---@param name string: The name to save the history to
 ---@param path string: The path to save the history to
-function Copilot:save(name, path)
+function Client:save(name, path)
   local history = vim.json.encode(self.history)
   path = vim.fn.expand(path)
   vim.fn.mkdir(path, 'p')
@@ -1071,7 +839,7 @@ end
 ---@param name string: The name to load the history from
 ---@param path string: The path to load the history from
 ---@return table
-function Copilot:load(name, path)
+function Client:load(name, path)
   path = vim.fn.expand(path) .. '/' .. name .. '.json'
   local file = io.open(path, 'r')
   if not file then
@@ -1093,8 +861,8 @@ end
 
 --- Check if there is a running job
 ---@return boolean
-function Copilot:running()
+function Client:running()
   return self.current_job ~= nil
 end
 
-return Copilot
+return Client
