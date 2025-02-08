@@ -1,7 +1,7 @@
 local async = require('plenary.async')
 local log = require('plenary.log')
 local default_config = require('CopilotChat.config')
-local Copilot = require('CopilotChat.copilot')
+local Client = require('CopilotChat.client')
 local context = require('CopilotChat.context')
 local utils = require('CopilotChat.utils')
 
@@ -14,7 +14,7 @@ local WORD = '([^%s]+)'
 --- @field winnr number
 
 --- @class CopilotChat.state
---- @field copilot CopilotChat.Copilot?
+--- @field client CopilotChat.Client?
 --- @field source CopilotChat.source?
 --- @field last_prompt string?
 --- @field last_response string?
@@ -23,7 +23,7 @@ local WORD = '([^%s]+)'
 --- @field debug CopilotChat.ui.Debug?
 --- @field overlay CopilotChat.ui.Overlay?
 local state = {
-  copilot = nil,
+  client = nil,
 
   -- Current state tracking
   source = nil,
@@ -279,7 +279,7 @@ local function resolve_embeddings(prompt, config)
 end
 
 local function resolve_agent(prompt, config)
-  local agents = vim.tbl_keys(state.copilot:list_agents())
+  local agents = vim.tbl_keys(state.client:list_agents())
   local selected_agent = config.agent
   prompt = prompt:gsub('@' .. WORD, function(match)
     if vim.tbl_contains(agents, match) then
@@ -295,7 +295,7 @@ end
 local function resolve_model(prompt, config)
   local models = vim.tbl_map(function(model)
     return model.id
-  end, state.copilot:list_models())
+  end, state.client:list_models())
 
   local selected_model = config.model
   prompt = prompt:gsub('%$' .. WORD, function(match)
@@ -507,8 +507,8 @@ end
 ---@param callback function(table)
 function M.complete_items(callback)
   async.run(function()
-    local models = state.copilot:list_models()
-    local agents = state.copilot:list_agents()
+    local models = state.client:list_models()
+    local agents = state.client:list_agents()
     local prompts_to_use = M.prompts()
     local items = {}
 
@@ -547,12 +547,13 @@ function M.complete_items(callback)
       }
     end
 
-    for name, description in pairs(agents) do
+    for _, agent in pairs(agents) do
       items[#items + 1] = {
-        word = '@' .. name,
-        abbr = name,
-        kind = 'agent',
-        menu = description,
+        word = '@' .. agent.id,
+        abbr = agent.id,
+        kind = agent.provider,
+        info = agent.description,
+        menu = agent.name,
         icase = 1,
         dup = 0,
         empty = 0,
@@ -649,7 +650,7 @@ end
 --- Select default Copilot GPT model.
 function M.select_model()
   async.run(function()
-    local models = state.copilot:list_models()
+    local models = state.client:list_models()
     local choices = vim.tbl_map(function(model)
       return {
         id = model.id,
@@ -680,21 +681,29 @@ end
 --- Select default Copilot agent.
 function M.select_agent()
   async.run(function()
-    local agents = vim.tbl_keys(state.copilot:list_agents())
-    agents = vim.tbl_map(function(agent)
-      if agent == M.config.agent then
-        return agent .. ' (selected)'
-      end
-
-      return agent
+    local agents = state.client:list_agents()
+    local choices = vim.tbl_map(function(agent)
+      return {
+        id = agent.id,
+        name = agent.name,
+        provider = agent.provider,
+        selected = agent.id == M.config.agent,
+      }
     end, agents)
 
     async.util.scheduler()
-    vim.ui.select(agents, {
+    vim.ui.select(choices, {
       prompt = 'Select an agent> ',
+      format_item = function(item)
+        local out = string.format('%s (%s)', item.id, item.provider)
+        if item.selected then
+          out = '* ' .. out
+        end
+        return out
+      end,
     }, function(choice)
       if choice then
-        M.config.agent = choice:gsub(' %(selected%)', '')
+        M.config.agent = choice.id
       end
     end)
   end)
@@ -718,7 +727,7 @@ function M.ask(prompt, config)
   if not config.headless then
     if config.clear_chat_on_new_prompt then
       M.stop(true)
-    elseif state.copilot:stop() then
+    elseif state.client:stop() then
       finish()
     end
 
@@ -750,7 +759,7 @@ function M.ask(prompt, config)
 
     local has_output = false
     local query_ok, filtered_embeddings =
-      pcall(context.filter_embeddings, state.copilot, prompt, embeddings)
+      pcall(context.filter_embeddings, state.client, prompt, selected_model, embeddings)
 
     if not query_ok then
       async.util.scheduler()
@@ -762,7 +771,7 @@ function M.ask(prompt, config)
     end
 
     local ask_ok, response, token_count, token_max_count =
-      pcall(state.copilot.ask, state.copilot, prompt, {
+      pcall(state.client.ask, state.client, prompt, {
         selection = selection,
         embeddings = filtered_embeddings,
         system_prompt = system_prompt,
@@ -818,12 +827,12 @@ end
 ---@param reset boolean?
 function M.stop(reset)
   if reset then
-    state.copilot:reset()
+    state.client:reset()
     state.chat:clear()
     state.last_prompt = nil
     state.last_response = nil
   else
-    state.copilot:stop()
+    state.client:stop()
   end
 
   finish(reset)
@@ -846,7 +855,7 @@ function M.save(name, history_path)
 
   history_path = history_path or M.config.history_path
   if history_path then
-    state.copilot:save(name, history_path)
+    state.client:save(name, history_path)
   end
 end
 
@@ -865,10 +874,10 @@ function M.load(name, history_path)
     return
   end
 
-  state.copilot:reset()
+  state.client:reset()
   state.chat:clear()
 
-  local history = state.copilot:load(name, history_path)
+  local history = state.client:load(name, history_path)
   for i, message in ipairs(history) do
     if message.role == 'user' then
       if i > 1 then
@@ -945,10 +954,16 @@ function M.setup(config)
 
   M.config = vim.tbl_deep_extend('force', default_config, config or {})
 
-  if state.copilot then
-    state.copilot:stop()
+  -- Save proxy and insecure settings
+  utils.curl_store_args({
+    insecure = M.config.allow_insecure,
+    proxy = M.config.proxy,
+  })
+
+  if state.client then
+    state.client:stop()
   end
-  state.copilot = Copilot(M.config.proxy, M.config.allow_insecure)
+  state.client = Client(M.config.providers)
 
   if M.config.debug then
     M.log_level('debug')
