@@ -115,4 +115,7 @@ return {
 
   -- default mappings
   mappings = require('CopilotChat.config.mappings'),
+
+  -- default providers
+  providers = require('CopilotChat.config.providers'),
 }

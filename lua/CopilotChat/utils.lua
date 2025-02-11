@@ -2,6 +2,23 @@ local async = require('plenary.async')
 local curl = require('plenary.curl')
 local scandir = require('plenary.scandir')
 
+local DEFAULT_REQUEST_ARGS = {
+  timeout = 30000,
+  raw = {
+    '--retry',
+    '2',
+    '--retry-delay',
+    '1',
+    '--keepalive-time',
+    '60',
+    '--no-compressed',
+    '--connect-timeout',
+    '10',
+    '--tcp-nodelay',
+    '--no-buffer',
+  },
+}
+
 local M = {}
 M.timers = {}
 
@@ -298,32 +315,34 @@ end
 ---@param url string The url
 ---@param opts table? The options
 M.curl_get = async.wrap(function(url, opts, callback)
-  curl.get(
-    url,
-    vim.tbl_deep_extend('force', opts or {}, {
-      callback = callback,
-      on_error = function(err)
-        err = M.make_string(err and err.stderr or err)
-        callback(nil, err)
-      end,
-    })
-  )
+  local args = vim.tbl_deep_extend('force', DEFAULT_REQUEST_ARGS, {
+    callback = callback,
+    on_error = function(err)
+      err = M.make_string(err and err.stderr or err)
+      callback(nil, err)
+    end,
+  })
+
+  args = vim.tbl_deep_extend('force', args, opts or {})
+
+  curl.get(url, args)
 end, 3)
 
 --- Send curl post request
 ---@param url string The url
 ---@param opts table? The options
 M.curl_post = async.wrap(function(url, opts, callback)
-  curl.post(
-    url,
-    vim.tbl_deep_extend('force', opts or {}, {
-      callback = callback,
-      on_error = function(err)
-        err = M.make_string(err and err.stderr or err)
-        callback(nil, err)
-      end,
-    })
-  )
+  local args = vim.tbl_deep_extend('force', DEFAULT_REQUEST_ARGS, {
+    callback = callback,
+    on_error = function(err)
+      err = M.make_string(err and err.stderr or err)
+      callback(nil, err)
+    end,
+  })
+
+  args = vim.tbl_deep_extend('force', args, opts or {})
+
+  curl.post(url, args)
 end, 3)
 
 --- Scan a directory
