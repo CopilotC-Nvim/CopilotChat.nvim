@@ -447,7 +447,7 @@ local function key_to_info(name, surround)
   return out
 end
 
-local function trigger_complete()
+local function trigger_complete(with_context)
   local info = M.complete_info()
   local bufnr = vim.api.nvim_get_current_buf()
   local line = vim.api.nvim_get_current_line()
@@ -463,7 +463,7 @@ local function trigger_complete()
     return
   end
 
-  if vim.startswith(prefix, '#') and vim.endswith(prefix, ':') then
+  if with_context and vim.startswith(prefix, '#') and vim.endswith(prefix, ':') then
     local found_context = M.config.contexts[prefix:sub(2, -2)]
     if found_context and found_context.input then
       found_context.input(function(value)
@@ -1047,7 +1047,9 @@ function M.setup(config)
 
       map_key('reset', bufnr, M.reset)
       map_key('close', bufnr, M.close)
-      map_key('complete', bufnr, trigger_complete)
+      map_key('complete', bufnr, function()
+        trigger_complete(true)
+      end)
 
       map_key('submit_prompt', bufnr, function()
         local section = state.chat:get_closest_section()
