@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2025 February 15
+*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2025 February 16
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -15,6 +15,7 @@ Table of Contents                              *CopilotChat-table-of-contents*
   - Agents                                                |CopilotChat-agents|
   - Contexts                                            |CopilotChat-contexts|
   - Selections                                        |CopilotChat-selections|
+  - Providers                                          |CopilotChat-providers|
   - API                                                      |CopilotChat-api|
 4. Configuration                                   |CopilotChat-configuration|
   - Default configuration                  |CopilotChat-default-configuration|
@@ -32,14 +33,14 @@ Table of Contents                              *CopilotChat-table-of-contents*
 - Neovim 0.10.0+ <https://neovim.io/> - Older versions are not officially supported
 - curl <https://curl.se/> - 8.0.0+ is recommended for best compatibility. Should be installed by default on most systems and also shipped with Neovim
 - Copilot chat in the IDE <https://github.com/settings/copilot> setting enabled in GitHub settings
-- _(Optional)_ tiktoken_core <https://github.com/gptlang/lua-tiktoken> - Used for more accurate token counting
+- _Optional_ tiktoken_core <https://github.com/gptlang/lua-tiktoken> - Used for more accurate token counting
     - For Arch Linux users, you can install `luajit-tiktoken-bin` <https://aur.archlinux.org/packages/luajit-tiktoken-bin> or `lua51-tiktoken-bin` <https://aur.archlinux.org/packages/lua51-tiktoken-bin> from aur
     - Alternatively, install via luarocks: `sudo luarocks install --lua-version 5.1 tiktoken_core`
     - Alternatively, download a pre-built binary from lua-tiktoken releases <https://github.com/gptlang/lua-tiktoken/releases>. You can check your Lua PATH in Neovim by doing `:lua print(package.cpath)`. Save the binary as `tiktoken_core.so` in any of the given paths.
-- _(Optional)_ git <https://git-scm.com/> - Used for fetching git diffs for `git` context
+- _Optional_ git <https://git-scm.com/> - Used for fetching git diffs for `git` context
     - For Arch Linux users, you can install `git` <https://archlinux.org/packages/extra/x86_64/git> from the official repositories
     - For other systems, use your package manager to install `git`. For windows use the installer provided from git site
-- _(Optional)_ lynx <https://lynx.invisible-island.net/> - Used for improved fetching of URLs for `url` context
+- _Optional_ lynx <https://lynx.invisible-island.net/> - Used for improved fetching of URLs for `url` context
     - For Arch Linux users, you can install `lynx` <https://archlinux.org/packages/extra/x86_64/lynx> from the official repositories
     - For other systems, use your package manager to install `lynx`. For windows use the installer provided from lynx site
 
@@ -385,6 +386,89 @@ You can chain multiple selections like this:
 <
 
 
+PROVIDERS                                              *CopilotChat-providers*
+
+Providers are modules that implement integration with different AI providers.
+Built-in providers are:
+
+- `copilot` - Default GitHub Copilot provider used for chat and embeddings
+- `github_models` - Provider for GitHub Marketplace models
+
+You can define custom providers by adding them to `providers` config. Provider
+has following fields:
+
+- `disabled?: boolean` - Optional boolean to disable provider
+- `embeddings?: string` - Optional string pointing to provider to use for embeddings
+- `get_token(): string, number?` - Function that returns authentication token and optional expiry timestamp
+- `get_headers(token: string, sessionid: string, machineid: string): table` - Function that returns headers for API requests
+- `get_url(opts: table): string` - Function that returns API endpoint URL for given operation
+- `prepare_input(inputs: table, opts: table, model: table): table` - Function that prepares request body
+- `get_models?(headers: table): table` - Optional function that returns list of available models
+- `get_agents?(headers: table): table` - Optional function that returns list of available agents
+
+Example custom provider:
+
+>lua
+    {
+      providers = {
+        my_provider = {
+          -- Required fields
+          get_token = function()
+            return "my-token", os.time() + 3600 -- Token valid for 1 hour
+          end,
+          get_headers = function(token, sessionid, machineid)
+            return {
+              ["authorization"] = "Bearer " .. token,
+              ["content-type"] = "application/json",
+            }
+          end,
+          get_url = function(opts)
+            if opts.agent then
+              return "https://api.custom.com/agents/" .. opts.agent
+            end
+            return "https://api.custom.com/chat"
+          end,
+          prepare_input = function(inputs, opts, model)
+            return {
+              messages = inputs,
+              temperature = opts.temperature,
+              model = opts.model,
+              stream = true
+            }
+          end,
+    
+          -- Optional fields
+          disabled = false,
+          embeddings = "copilot_embeddings", -- Use copilot for embeddings
+          get_models = function(headers)
+            -- Return list of available models
+            return {
+              {
+                id = "gpt-4",
+                name = "GPT-4",
+                version = "1.0",
+                tokenizer = "gpt2",
+                max_prompt_tokens = 8000,
+                max_output_tokens = 2000,
+              }
+            }
+          end,
+          get_agents = function(headers)
+            -- Return list of available agents
+            return {
+              {
+                id = "agent1",
+                name = "My Agent",
+                description = "Custom agent"
+              }
+            }
+          end
+        }
+      }
+    }
+<
+
+
 API                                                          *CopilotChat-api*
 
 >lua
@@ -529,6 +613,19 @@ Also see here </lua/CopilotChat/config.lua>:
       error_header = '# Error ', -- Header to use for errors
       separator = '───', -- Separator to use in chat
     
+      -- default providers
+      providers = {
+        copilot = {
+          -- see config.lua for implementation
+        },
+        github_models = {
+          -- see config.lua for implementation
+        },
+        copilot_embeddings = {
+          -- see config.lua for implementation
+        },
+      }
+    
       -- default contexts
       contexts = {
         buffer = {
@@ -564,7 +661,6 @@ Also see here </lua/CopilotChat/config.lua>:
         },
         Review = {
           prompt = '> /COPILOT_REVIEW\n\nReview the selected code.',
-          -- see config.lua for implementation
         },
         Fix = {
           prompt = '> /COPILOT_GENERATE\n\nThere is a problem in this code. Rewrite the code to show it with the bug fixed.',
