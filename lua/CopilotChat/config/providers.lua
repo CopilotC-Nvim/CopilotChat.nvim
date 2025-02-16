@@ -1,3 +1,4 @@
+local async = require('plenary.async')
 local utils = require('CopilotChat.utils')
 
 ---@class CopilotChat.Provider.model
@@ -48,6 +49,8 @@ local function get_github_token()
   if cached_github_token then
     return cached_github_token
   end
+
+  async.util.scheduler()
 
   -- loading token from the environment only in GitHub Codespaces
   local token = os.getenv('GITHUB_TOKEN')
