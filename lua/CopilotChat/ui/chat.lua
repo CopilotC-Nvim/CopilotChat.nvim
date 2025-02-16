@@ -14,6 +14,30 @@ function CopilotChatFoldExpr(lnum, separator)
   return '='
 end
 
+function CopilotChatMakeFoldText(winnr, config)
+  vim.w[winnr].CopilotChatFoldText = function (lnum)
+    local nlines = vim.v.foldend - vim.v.foldstart
+    local initial = "+-- " .. nlines .. " "
+
+    local line = vim.fn.getline(lnum)
+    if startswith(line, config.question_header) then
+      return initial .. config.question_header
+    elseif startswith(line, config.answer_header) then
+      return initial .. config.answer_header
+    elseif startswith(line, config.error_header) then
+      return initial .. config.error_header
+    else
+      return initial
+    end
+  end
+
+  return "luaeval(\"vim.w.CopilotChatFoldText(vim.v.lnum)\")"
+end
+
+local function startswith(text, initial)
+  return line:sub(1, to_match:len()) == to_match
+end
+
 ---@param header? string
 ---@return string?, number?, number?
 local function match_header(header)
@@ -467,6 +491,7 @@ function Chat:open(config)
     vim.wo[self.winnr].foldcolumn = '1'
     vim.wo[self.winnr].foldmethod = 'expr'
     vim.wo[self.winnr].foldexpr = "v:lua.CopilotChatFoldExpr(v:lnum, '" .. self.separator .. "')"
+    vim.wo[self.winnr].foldtext = CopilotChatMakeFoldText(winnr, config)
   else
     vim.wo[self.winnr].foldcolumn = '0'
   end
