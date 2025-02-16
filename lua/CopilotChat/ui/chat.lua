@@ -15,9 +15,9 @@ function CopilotChatFoldExpr(lnum, separator)
 end
 
 function CopilotChatMakeFoldText(winnr, config)
-  vim.w[winnr].CopilotChatFoldText = function (lnum)
+  vim.w[winnr].CopilotChatFoldText = function(lnum)
     local nlines = vim.v.foldend - vim.v.foldstart
-    local initial = "+-- " .. nlines .. " "
+    local initial = '+-- ' .. nlines .. ' '
 
     local line = vim.fn.getline(lnum)
     if startswith(line, config.question_header) then
@@ -31,7 +31,7 @@ function CopilotChatMakeFoldText(winnr, config)
     end
   end
 
-  return "luaeval(\"vim.w.CopilotChatFoldText(vim.v.lnum)\")"
+  return 'luaeval("vim.w.CopilotChatFoldText(vim.v.lnum)")'
 end
 
 local function startswith(text, initial)
