@@ -4,7 +4,4 @@ kramdown:
   auto_ids: true
   parse_block_html: true
   input: GFM
-theme: just-the-docs
-title: Copilot Chat for Neovim
-description: Chat with GitHub Copilot in Neovim
-url: https://copilotc-nvim.github.io/CopilotChat.nvim/
+theme: jekyll-theme-midnight
