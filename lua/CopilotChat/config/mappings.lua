@@ -206,6 +206,7 @@ return {
       vim.api.nvim_win_set_cursor(0, cursor)
     end,
   },
+
   accept_diff = {
     normal = '<C-y>',
     insert = '<C-y>',
