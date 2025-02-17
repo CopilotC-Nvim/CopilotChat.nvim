@@ -214,7 +214,6 @@ local Client = class(function(self, providers)
   self.current_job = nil
   self.expires_at = nil
   self.headers = nil
-  self.machineid = utils.machine_id()
 end)
 
 --- Authenticate with GitHub and get the required headers
@@ -229,8 +228,7 @@ function Client:authenticate(provider_name)
     notify.publish(notify.STATUS, 'Authenticating to provider ' .. provider_name)
 
     local token, expires_at = provider.get_token()
-    local sessionid = utils.uuid() .. tostring(math.floor(os.time() * 1000))
-    headers = provider.get_headers(token, sessionid, self.machineid)
+    headers = provider.get_headers(token)
     self.provider_cache[provider_name].headers = headers
     self.provider_cache[provider_name].expires_at = expires_at
   end
