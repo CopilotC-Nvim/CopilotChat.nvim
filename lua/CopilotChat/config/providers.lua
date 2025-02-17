@@ -17,7 +17,7 @@ local utils = require('CopilotChat.utils')
 ---@class CopilotChat.Provider
 ---@field disabled nil|boolean
 ---@field embeddings nil|string
----@field get_headers fun(token:string, sessionid:string, machineid:string):table<string, string>
+---@field get_headers fun(token:string):table<string, string>
 ---@field get_token fun():string,number?
 ---@field get_agents nil|fun(headers:table):table<CopilotChat.Provider.agent>
 ---@field get_models nil|fun(headers:table):table<CopilotChat.Provider.model>
@@ -30,16 +30,6 @@ local EDITOR_VERSION = 'Neovim/'
   .. vim.version().minor
   .. '.'
   .. vim.version().patch
-
-local VERSION_HEADERS = {
-  ['editor-version'] = EDITOR_VERSION,
-  ['editor-plugin-version'] = 'CopilotChat.nvim/2.0.0',
-  ['user-agent'] = 'CopilotChat.nvim/2.0.0',
-  ['sec-fetch-site'] = 'none',
-  ['sec-fetch-mode'] = 'no-cors',
-  ['sec-fetch-dest'] = 'empty',
-  ['priority'] = 'u=4, i',
-}
 
 --- Get the github oauth cached token
 ---@return string|nil
@@ -92,25 +82,21 @@ local M = {}
 M.copilot = {
   embeddings = 'copilot_embeddings',
 
-  get_headers = function(token, sessionid, machineid)
-    return vim.tbl_extend('force', {
-      ['authorization'] = 'Bearer ' .. token,
-      ['x-request-id'] = utils.uuid(),
-      ['vscode-sessionid'] = sessionid,
-      ['vscode-machineid'] = machineid,
-      ['copilot-integration-id'] = 'vscode-chat',
-      ['openai-organization'] = 'github-copilot',
-      ['openai-intent'] = 'conversation-panel',
-      ['content-type'] = 'application/json',
-    }, VERSION_HEADERS)
+  get_headers = function(token)
+    return {
+      ['Authorization'] = 'Bearer ' .. token,
+      ['Editor-Version'] = EDITOR_VERSION,
+      ['Copilot-Integration-Id'] = 'vscode-chat',
+      ['Content-Type'] = 'application/json',
+    }
   end,
 
   get_token = function()
     local response, err = utils.curl_get('https://api.github.com/copilot_internal/v2/token', {
-      headers = vim.tbl_extend('force', {
-        ['authorization'] = 'token ' .. get_github_token(),
-        ['accept'] = 'application/json',
-      }, VERSION_HEADERS),
+      headers = {
+        ['Authorization'] = 'Token ' .. get_github_token(),
+        ['Accept'] = 'application/json',
+      }
     })
 
     if err then
@@ -237,8 +223,8 @@ M.github_models = {
 
   get_headers = function(token)
     return {
-      ['authorization'] = 'bearer ' .. token,
-      ['content-type'] = 'application/json',
+      ['Authorization'] = 'Bearer ' .. token,
+      ['Content-Type'] = 'application/json',
       ['x-ms-useragent'] = EDITOR_VERSION,
       ['x-ms-user-agent'] = EDITOR_VERSION,
     }
