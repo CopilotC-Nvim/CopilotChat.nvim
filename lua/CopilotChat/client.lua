@@ -403,10 +403,11 @@ function Client:ask(prompt, opts)
   end
 
   local function parse_line(line, job)
-    if not line then
+    if not line or line == '' then
       return
     end
 
+    log.debug('Response line: ', line)
     notify.publish(notify.STATUS, '')
 
     local ok, content = pcall(vim.json.decode, line, {
@@ -442,12 +443,14 @@ function Client:ask(prompt, opts)
       end
     end
 
-    if not content.choices or #content.choices == 0 then
-      return
+    local choice
+    if content.choices and #content.choices > 0 then
+      choice = content.choices[1]
+    else
+      choice = content
     end
 
     last_message = content
-    local choice = content.choices[1]
     content = choice.message and choice.message.content or choice.delta and choice.delta.content
 
     if content then
@@ -458,22 +461,22 @@ function Client:ask(prompt, opts)
       on_progress(content)
     end
 
-    if choice.finish_reason and job then
-      local reason = choice.finish_reason
-      if reason == 'stop' then
-        reason = nil
-      else
-        reason = 'Early stop: ' .. reason
+    if job then
+      local reason = choice.finish_reason or choice.done_reason
+
+      if reason then
+        if reason == 'stop' then
+          reason = nil
+        else
+          reason = 'Early stop: ' .. reason
+        end
+        finish_stream(reason, job)
       end
-      finish_stream(reason, job)
     end
   end
 
   local function parse_stream_line(line, job)
     line = vim.trim(line)
-    if not vim.startswith(line, 'data:') then
-      return
-    end
     line = line:gsub('^data:', '')
     line = vim.trim(line)
 
