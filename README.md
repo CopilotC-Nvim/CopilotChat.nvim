@@ -36,7 +36,7 @@ https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
 
 # Installation
 
-### [Lazy.nvim](https://github.com/folke/lazy.nvim)
+## [Lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
 return {
@@ -57,7 +57,7 @@ return {
 
 See [@jellydn](https://github.com/jellydn) for [configuration](https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/copilot-chat-v2.lua)
 
-### [Vim-Plug](https://github.com/junegunn/vim-plug)
+## [Vim-Plug](https://github.com/junegunn/vim-plug)
 
 Similar to the lazy setup, you can use the following configuration:
 
@@ -75,7 +75,7 @@ require("CopilotChat").setup {
 EOF
 ```
 
-### Manual
+## Manual
 
 1. Put the files in the right place
 
@@ -872,14 +872,9 @@ This sets the `selection = false` to be able to ask generic questions unrelated 
 
 </details>
 
-# Roadmap
-
-- Improved caching for context (persistence through restarts/smarter caching)
-- General QOL improvements
-
 # Development
 
-### Installing Pre-commit Tool
+## Installing Pre-commit Tool
 
 For development, you can use the provided Makefile command to install the pre-commit tool:
 
@@ -973,6 +968,6 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 
 This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind are welcome!
 
-### Stargazers over time
+## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/CopilotC-Nvim/CopilotChat.nvim.svg)](https://starchart.cc/CopilotC-Nvim/CopilotChat.nvim)
