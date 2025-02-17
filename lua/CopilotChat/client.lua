@@ -710,6 +710,7 @@ function Client:embed(inputs, model)
     error('Model not found: ' .. model)
   end
 
+  -- Resolve model provider
   local provider_name = model_config.provider
   if not provider_name then
     error('Provider not found for model: ' .. model)
@@ -718,9 +719,11 @@ function Client:embed(inputs, model)
   if not provider then
     error('Provider not found: ' .. model_config.provider)
   end
+
+  -- Resolve embedding provider, and if resolution fails, do not resolve embeddings
   provider_name = provider.embeddings
   if not provider_name then
-    error('Provider not found for embeddings: ' .. provider_name)
+    return inputs
   end
   provider = self.providers[provider_name]
   if not provider then
