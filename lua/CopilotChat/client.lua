@@ -225,9 +225,12 @@ function Client:authenticate(provider_name)
   local expires_at = self.provider_cache[provider_name].expires_at
 
   if not headers or (expires_at and expires_at <= math.floor(os.time())) then
-    notify.publish(notify.STATUS, 'Authenticating to provider ' .. provider_name)
+    local token
+    if provider.get_token then
+      notify.publish(notify.STATUS, 'Authenticating to provider ' .. provider_name)
+      token, expires_at = provider.get_token()
+    end
 
-    local token, expires_at = provider.get_token()
     headers = provider.get_headers(token)
     self.provider_cache[provider_name].headers = headers
     self.provider_cache[provider_name].expires_at = expires_at
@@ -244,20 +247,30 @@ function Client:fetch_models()
   end
 
   local models = {}
-  for provider_name, provider in pairs(self.providers) do
+  local provider_order = vim.tbl_keys(self.providers)
+  table.sort(provider_order)
+  for _, provider_name in ipairs(provider_order) do
+    local provider = self.providers[provider_name]
     if not provider.disabled and provider.get_models then
       local headers = self:authenticate(provider_name)
       notify.publish(notify.STATUS, 'Fetching models from ' .. provider_name)
-      local provider_models = provider.get_models(headers)
-      for _, model in ipairs(provider_models) do
-        model.provider = provider_name
-        if not models[model.id] then
+      local ok, provider_models = pcall(provider.get_models, headers)
+      if ok then
+        for _, model in ipairs(provider_models) do
+          model.provider = provider_name
+          if models[model.id] then
+            model.id = model.id .. ':' .. provider_name
+            model.version = model.version .. ':' .. provider_name
+          end
           models[model.id] = model
         end
+      else
+        log.warn('Failed to fetch models from ' .. provider_name .. ': ' .. provider_models)
       end
     end
   end
 
+  log.debug('Fetched models: ', vim.inspect(models))
   self.models = models
   return self.models
 end
@@ -270,16 +283,24 @@ function Client:fetch_agents()
   end
 
   local agents = {}
-  for provider_name, provider in pairs(self.providers) do
+  local provider_order = vim.tbl_keys(self.providers)
+  table.sort(provider_order)
+  for _, provider_name in ipairs(provider_order) do
+    local provider = self.providers[provider_name]
     if not provider.disabled and provider.get_agents then
       local headers = self:authenticate(provider_name)
       notify.publish(notify.STATUS, 'Fetching agents from ' .. provider_name)
-      local provider_agents = provider.get_agents(headers)
-      for _, agent in ipairs(provider_agents) do
-        agent.provider = provider_name
-        if not agents[agent.id] then
+      local ok, provider_agents = pcall(provider.get_agents, headers)
+      if ok then
+        for _, agent in ipairs(provider_agents) do
+          agent.provider = provider_name
+          if agents[agent.id] then
+            agent.id = provider_name .. ':' .. agent.id
+          end
           agents[agent.id] = agent
         end
+      else
+        log.warn('Failed to fetch agents from ' .. provider_name .. ': ' .. provider_agents)
       end
     end
   end
@@ -508,6 +529,7 @@ function Client:ask(prompt, opts)
     parse_stream_line(line, job)
   end
 
+  opts.model = opts.model:gsub(':' .. provider_name .. '$', '')
   local headers = self:authenticate(provider_name)
   local request = provider.prepare_input(
     generate_ask_request(history, prompt, system_prompt, generated_messages),
