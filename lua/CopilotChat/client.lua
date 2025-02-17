@@ -750,6 +750,7 @@ function Client:embed(inputs, model)
       })
 
       if err or not response or response.status ~= 200 then
+        log.debug('Failed to get embeddings: ', err)
         attempts = attempts + 1
         -- If we have few items and the request failed, try reducing threshold first
         if #batch <= 5 then
