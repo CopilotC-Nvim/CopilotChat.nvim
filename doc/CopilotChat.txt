@@ -5,6 +5,9 @@ Table of Contents                              *CopilotChat-table-of-contents*
 
 1. Requirements                                     |CopilotChat-requirements|
 2. Installation                                     |CopilotChat-installation|
+  - Lazy.nvim                                          |CopilotChat-lazy.nvim|
+  - Vim-Plug                                            |CopilotChat-vim-plug|
+  - Manual                                                |CopilotChat-manual|
 3. Usage                                                   |CopilotChat-usage|
   - Commands                                            |CopilotChat-commands|
   - Chat Mappings                                  |CopilotChat-chat-mappings|
@@ -21,10 +24,11 @@ Table of Contents                              *CopilotChat-table-of-contents*
   - Default configuration                  |CopilotChat-default-configuration|
   - Customizing buffers                      |CopilotChat-customizing-buffers|
 5. Tips                                                     |CopilotChat-tips|
-6. Roadmap                                               |CopilotChat-roadmap|
-7. Development                                       |CopilotChat-development|
-8. Contributors                                     |CopilotChat-contributors|
-9. Links                                                   |CopilotChat-links|
+6. Development                                       |CopilotChat-development|
+  - Installing Pre-commit Tool        |CopilotChat-installing-pre-commit-tool|
+7. Contributors                                     |CopilotChat-contributors|
+  - Stargazers over time                    |CopilotChat-stargazers-over-time|
+8. Links                                                   |CopilotChat-links|
 
 
 ==============================================================================
@@ -52,7 +56,7 @@ Table of Contents                              *CopilotChat-table-of-contents*
 2. Installation                                     *CopilotChat-installation*
 
 
-LAZY.NVIM ~
+LAZY.NVIM                                              *CopilotChat-lazy.nvim*
 
 >lua
     return {
@@ -75,7 +79,7 @@ See @jellydn <https://github.com/jellydn> for configuration
 <https://github.com/jellydn/lazy-nvim-ide/blob/main/lua/plugins/extras/copilot-chat-v2.lua>
 
 
-VIM-PLUG ~
+VIM-PLUG                                                *CopilotChat-vim-plug*
 
 Similar to the lazy setup, you can use the following configuration:
 
@@ -94,7 +98,7 @@ Similar to the lazy setup, you can use the following configuration:
 <
 
 
-MANUAL ~
+MANUAL                                                    *CopilotChat-manual*
 
 1. Put the files in the right place
 
@@ -910,17 +914,10 @@ to current code.
 
 
 ==============================================================================
-6. Roadmap                                               *CopilotChat-roadmap*
-
-- Improved caching for context (persistence through restarts/smarter caching)
-- General QOL improvements
+6. Development                                       *CopilotChat-development*
 
 
-==============================================================================
-7. Development                                       *CopilotChat-development*
-
-
-INSTALLING PRE-COMMIT TOOL ~
+INSTALLING PRE-COMMIT TOOL            *CopilotChat-installing-pre-commit-tool*
 
 For development, you can use the provided Makefile command to install the
 pre-commit tool:
@@ -933,7 +930,7 @@ This will install the pre-commit tool and the pre-commit hooks.
 
 
 ==============================================================================
-8. Contributors                                     *CopilotChat-contributors*
+7. Contributors                                     *CopilotChat-contributors*
 
 If you want to contribute to this project, please read the CONTRIBUTING.md
 </CONTRIBUTING.md> file.
@@ -946,12 +943,12 @@ gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguy
 Contributions of any kind are welcome!
 
 
-STARGAZERS OVER TIME ~
+STARGAZERS OVER TIME                        *CopilotChat-stargazers-over-time*
 
 <https://starchart.cc/CopilotC-Nvim/CopilotChat.nvim>
 
 ==============================================================================
-9. Links                                                   *CopilotChat-links*
+8. Links                                                   *CopilotChat-links*
 
 1. *@jellydn*: 
 2. *@deathbeam*: 
