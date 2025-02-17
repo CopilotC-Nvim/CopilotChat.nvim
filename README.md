@@ -373,10 +373,10 @@ Here's how to implement an [ollama](https://ollama.com/) provider:
         }
       end,
 
-      -- Optional: Get available models
-      get_models = function()
+      -- Required (for non embeddngs): Get available models
+      get_models = function(headers)
         local utils = require('CopilotChat.utils')
-        local response = utils.curl_get('http://localhost:11434/api/tags')
+        local response = utils.curl_get('http://localhost:11434/api/tags', { headers = headers })
         if not response or response.status ~= 200 then
           error('Failed to fetch models: ' .. tostring(response and response.status))
         end
@@ -411,7 +411,7 @@ Here's how to implement an [ollama](https://ollama.com/) provider:
 }
 ```
 
-#### Provider Interface
+### Provider Interface
 
 Custom providers can implement these methods:
 
