@@ -360,63 +360,49 @@ You can define custom providers by adding them to `providers` config. Provider h
 - `get_models?(headers: table): table` - Optional function that returns list of available models
 - `get_agents?(headers: table): table` - Optional function that returns list of available agents
 
-Example custom provider:
+Here is how you implement [ollama](https://ollama.com/) provider for example:
 
 ```lua
 {
   providers = {
-    my_provider = {
-      -- Required fields
-      get_token = function()
-        return "my-token", os.time() + 3600 -- Token valid for 1 hour
-      end,
-      get_headers = function(token, sessionid, machineid)
+    ollama = {
+      get_headers = function()
         return {
-          ["authorization"] = "Bearer " .. token,
-          ["content-type"] = "application/json",
-        }
-      end,
-      get_url = function(opts)
-        if opts.agent then
-          return "https://api.custom.com/agents/" .. opts.agent
-        end
-        return "https://api.custom.com/chat"
-      end,
-      prepare_input = function(inputs, opts, model)
-        return {
-          messages = inputs,
-          temperature = opts.temperature,
-          model = opts.model,
-          stream = true
+          ['Content-Type'] = 'application/json',
         }
       end,
 
-      -- Optional fields
-      disabled = false,
-      embeddings = "copilot_embeddings", -- Use copilot for embeddings
-      get_models = function(headers)
-        -- Return list of available models
+      get_models = function()
+        local response = cutils.curl_get('http://localhost:11434/api/tags')
+
+        if not response or response.status ~= 200 then
+          error('Failed to fetch models: ' .. tostring(response and response.status))
+        end
+
+        local models = {}
+        for _, model in ipairs(vim.json.decode(response.body)['models']) do
+          table.insert(models, {
+            id = model.name,
+            name = model.name,
+            version = "latest",
+            tokenizer = "o200k_base",
+          })
+        end
+
+        return models
+      end,
+
+      prepare_input = function(inputs, opts)
         return {
-          {
-            id = "gpt-4",
-            name = "GPT-4",
-            version = "1.0",
-            tokenizer = "gpt2",
-            max_prompt_tokens = 8000,
-            max_output_tokens = 2000,
-          }
+          model = opts.model,
+          messages = inputs,
+          stream = true,
         }
       end,
-      get_agents = function(headers)
-        -- Return list of available agents
-        return {
-          {
-            id = "agent1",
-            name = "My Agent",
-            description = "Custom agent"
-          }
-        }
-      end
+
+      get_url = function()
+        return 'http://localhost:11434/api/chat'
+      end,
     }
   }
 }
@@ -564,47 +550,39 @@ Also see [here](/lua/CopilotChat/config.lua):
   separator = '───', -- Separator to use in chat
 
   -- default providers
+  -- see config/providers.lua for implementation
   providers = {
     copilot = {
-      -- see config.lua for implementation
     },
     github_models = {
-      -- see config.lua for implementation
     },
     copilot_embeddings = {
-      -- see config.lua for implementation
     },
   }
 
   -- default contexts
+  -- see config/contexts.lua for implementation
   contexts = {
     buffer = {
-      -- see config.lua for implementation
     },
     buffers = {
-      -- see config.lua for implementation
     },
     file = {
-      -- see config.lua for implementation
     },
     files = {
-      -- see config.lua for implementation
     },
     git = {
-      -- see config.lua for implementation
     },
     url = {
-      -- see config.lua for implementation
     },
     register = {
-      -- see config.lua for implementation
     },
     quickfix = {
-      -- see config.lua for implementation
     },
   },
 
   -- default prompts
+  -- see config/prompts.lua for implementation
   prompts = {
     Explain = {
       prompt = '> /COPILOT_EXPLAIN\n\nWrite an explanation for the selected code as paragraphs of text.',
@@ -630,6 +608,7 @@ Also see [here](/lua/CopilotChat/config.lua):
   },
 
   -- default mappings
+  -- see config/mappings.lua for implementation
   mappings = {
     complete = {
       insert = '<Tab>',
