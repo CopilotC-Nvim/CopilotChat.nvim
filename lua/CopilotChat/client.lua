@@ -295,7 +295,7 @@ function Client:fetch_agents()
         for _, agent in ipairs(provider_agents) do
           agent.provider = provider_name
           if agents[agent.id] then
-            agent.id = provider_name .. ':' .. agent.id
+            agent.id = agent.id .. ':' .. provider_name
           end
           agents[agent.id] = agent
         end
@@ -529,6 +529,7 @@ function Client:ask(prompt, opts)
     parse_stream_line(line, job)
   end
 
+  opts.agent = opts.agent and opts.agent:gsub(':' .. provider_name .. '$', '')
   opts.model = opts.model:gsub(':' .. provider_name .. '$', '')
   local headers = self:authenticate(provider_name)
   local request = provider.prepare_input(
