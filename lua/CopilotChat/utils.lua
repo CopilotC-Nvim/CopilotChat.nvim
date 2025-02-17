@@ -414,4 +414,37 @@ M.system = async.wrap(function(cmd, callback)
   vim.system(cmd, { text = true }, callback)
 end, 2)
 
+--- Get the info for a key.
+---@param name string
+---@param surround string|nil
+---@return string
+function M.key_to_info(name, key, surround)
+  if not surround then
+    surround = ''
+  end
+
+  local out = ''
+  if key.normal and key.normal ~= '' then
+    out = out .. surround .. key.normal .. surround
+  end
+  if key.insert and key.insert ~= '' and key.insert ~= key.normal then
+    if out ~= '' then
+      out = out .. ' or '
+    end
+    out = out .. surround .. key.insert .. surround .. ' in insert mode'
+  end
+
+  if out == '' then
+    return out
+  end
+
+  out = out .. ' to ' .. name:gsub('_', ' ')
+
+  if key.detail and key.detail ~= '' then
+    out = out .. '. ' .. key.detail
+  end
+
+  return out
+end
+
 return M

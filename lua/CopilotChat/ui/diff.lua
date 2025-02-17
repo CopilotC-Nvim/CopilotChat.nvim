@@ -15,8 +15,7 @@ local class = utils.class
 ---@field hl_ns number
 ---@field diff CopilotChat.ui.Diff.Diff?
 ---@field augroup number
----@field full_diff boolean
-local Diff = class(function(self, full_diff, help, on_buf_create)
+local Diff = class(function(self, help, on_buf_create)
   Overlay.init(self, 'copilot-diff', help, on_buf_create)
   self.hl_ns = vim.api.nvim_create_namespace('copilot-chat-highlights')
   vim.api.nvim_set_hl(self.hl_ns, '@diff.plus', { bg = utils.blend_color('DiffAdd', 20) })
@@ -24,18 +23,18 @@ local Diff = class(function(self, full_diff, help, on_buf_create)
   vim.api.nvim_set_hl(self.hl_ns, '@diff.delta', { bg = utils.blend_color('DiffChange', 20) })
 
   self.augroup = vim.api.nvim_create_augroup('CopilotChatDiff', { clear = true })
-  self.full_diff = full_diff
   self.diff = nil
 end, Overlay)
 
 ---@param diff CopilotChat.ui.Diff.Diff
 ---@param winnr number
-function Diff:show(diff, winnr)
+---@param full_diff boolean
+function Diff:show(diff, winnr, full_diff)
   self.diff = diff
   self:validate()
   vim.api.nvim_win_set_hl_ns(winnr, self.hl_ns)
 
-  if not self.full_diff then
+  if not full_diff then
     -- Create unified diff view
     Overlay.show(
       self,
@@ -102,9 +101,7 @@ end
 ---@param winnr number
 ---@param bufnr number
 function Diff:restore(winnr, bufnr)
-  if self.full_diff then
-    vim.cmd('diffoff')
-  end
+  vim.cmd('diffoff')
   Overlay.restore(self, winnr, bufnr)
   vim.api.nvim_win_set_hl_ns(winnr, 0)
 end
