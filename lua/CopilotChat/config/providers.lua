@@ -96,7 +96,7 @@ M.copilot = {
       headers = {
         ['Authorization'] = 'Token ' .. get_github_token(),
         ['Accept'] = 'application/json',
-      }
+      },
     })
 
     if err then
