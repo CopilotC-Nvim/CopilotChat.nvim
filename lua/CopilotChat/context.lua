@@ -524,6 +524,8 @@ end
 ---@param register string
 ---@return CopilotChat.context.embed?
 function M.register(register)
+  async.util.scheduler()
+
   local lines = vim.fn.getreg(register)
   if not lines or lines == '' then
     return nil
