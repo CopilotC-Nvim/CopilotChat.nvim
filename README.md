@@ -358,59 +358,6 @@ Providers are modules that implement integration with different AI providers.
 - `copilot` - Default GitHub Copilot provider used for chat and embeddings
 - `github_models` - Provider for GitHub Marketplace models
 
-### Ollama Example
-
-Here's how to implement an [ollama](https://ollama.com/) provider:
-
-```lua
-{
-  providers = {
-    ollama = {
-      -- Required: Headers for API requests
-      get_headers = function()
-        return {
-          ['Content-Type'] = 'application/json',
-        }
-      end,
-
-      -- Required (for non embeddngs): Get available models
-      get_models = function(headers)
-        local utils = require('CopilotChat.utils')
-        local response = utils.curl_get('http://localhost:11434/api/tags', { headers = headers })
-        if not response or response.status ~= 200 then
-          error('Failed to fetch models: ' .. tostring(response and response.status))
-        end
-
-        local models = {}
-        for _, model in ipairs(vim.json.decode(response.body)['models']) do
-          table.insert(models, {
-            id = model.name,
-            name = model.name,
-            version = "latest",
-            tokenizer = "o200k_base",
-          })
-        end
-        return models
-      end,
-
-      -- Required: Prepare request body
-      prepare_input = function(inputs, opts)
-        return {
-          model = opts.model,
-          messages = inputs,
-          stream = true,
-        }
-      end,
-
-      -- Required: Get API endpoint URL
-      get_url = function()
-        return 'http://localhost:11434/api/chat'
-      end,
-    }
-  }
-}
-```
-
 ### Provider Interface
 
 Custom providers can implement these methods:
@@ -440,6 +387,57 @@ Custom providers can implement these methods:
 
   -- Optional: Get available agents
   get_agents?(headers: table): table,
+}
+```
+
+### Ollama Example
+
+Here's how to implement an [ollama](https://ollama.com/) provider:
+
+```lua
+{
+  providers = {
+    ollama = { 
+      embeddings = 'copilot_embeddings', -- Use Copilot as embedding provider
+
+      get_headers = function()
+        return {
+          ['Content-Type'] = 'application/json',
+        }
+      end,
+
+      get_models = function(headers)
+        local utils = require('CopilotChat.utils')
+        local response = utils.curl_get('http://localhost:11434/api/tags', { headers = headers })
+        if not response or response.status ~= 200 then
+          error('Failed to fetch models: ' .. tostring(response and response.status))
+        end
+
+        local models = {}
+        for _, model in ipairs(vim.json.decode(response.body)['models']) do
+          table.insert(models, {
+            id = model.name,
+            name = model.name,
+            version = "latest",
+            tokenizer = "o200k_base",
+          })
+        end
+        return models
+      end,
+
+      prepare_input = function(inputs, opts)
+        return {
+          model = opts.model,
+          messages = inputs,
+          stream = true,
+        }
+      end,
+
+      get_url = function()
+        return 'http://localhost:11434/api/chat'
+      end,
+    }
+  }
 }
 ```
 

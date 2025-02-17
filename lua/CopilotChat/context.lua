@@ -73,6 +73,10 @@ local MULTI_FILE_THRESHOLD = 5
 ---@param b table<number>
 ---@return number
 local function spatial_distance_cosine(a, b)
+  if not a or not b then
+    return 0
+  end
+
   local dot_product = 0
   local magnitude_a = 0
   local magnitude_b = 0
