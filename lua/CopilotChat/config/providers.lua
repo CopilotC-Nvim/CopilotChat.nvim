@@ -8,7 +8,6 @@ local utils = require('CopilotChat.utils')
 ---@field tokenizer string
 ---@field max_prompt_tokens number
 ---@field max_output_tokens number
----@field policy boolean
 
 ---@class CopilotChat.Provider.agent
 ---@field id string
@@ -186,8 +185,6 @@ M.copilot = {
           headers = headers,
           body = vim.json.encode({ state = 'enabled' }),
         })
-
-        model.policy = true
       end
     end
 
@@ -280,10 +277,9 @@ M.github_models = {
           id = model.name,
           name = model.displayName,
           version = model.name .. '-' .. model.version,
+          tokenizer = 'o200k_base',
           max_prompt_tokens = model.modelLimits.textLimits.inputContextWindow,
           max_output_tokens = model.modelLimits.textLimits.maxOutputTokens,
-          tokenizer = 'o200k_base',
-          policy = true,
         })
       end
     end
