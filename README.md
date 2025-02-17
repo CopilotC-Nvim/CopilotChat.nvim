@@ -397,7 +397,7 @@ Here's how to implement an [ollama](https://ollama.com/) provider:
 ```lua
 {
   providers = {
-    ollama = { 
+    ollama = {
       embeddings = 'copilot_embeddings', -- Use Copilot as embedding provider
 
       get_headers = function()
