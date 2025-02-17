@@ -18,7 +18,6 @@ local WORD = '([^%s]+)'
 --- @field last_response string?
 --- @field chat CopilotChat.ui.Chat?
 --- @field diff CopilotChat.ui.Diff?
---- @field debug CopilotChat.ui.Debug?
 --- @field overlay CopilotChat.ui.Overlay?
 local state = {
   client = nil,
@@ -34,7 +33,6 @@ local state = {
   chat = nil,
   diff = nil,
   overlay = nil,
-  debug = nil,
 }
 
 --- Highlights the selection in the source buffer.
@@ -785,13 +783,12 @@ end
 function M.log_level(level)
   M.config.log_level = level
   M.config.debug = level == 'debug'
-  local logfile = string.format('%s/%s.log', vim.fn.stdpath('state'), PLUGIN_NAME)
+
   log.new({
     plugin = PLUGIN_NAME,
     level = level,
-    outfile = logfile,
+    outfile = M.config.log_path,
   }, true)
-  log.logfile = logfile
 end
 
 --- Set up the plugin
@@ -880,10 +877,6 @@ function M.setup(config)
       state.overlay:restore(state.chat.winnr, state.chat.bufnr)
     end)
   end)
-
-  if not state.debug then
-    state.debug = require('CopilotChat.ui.debug')()
-  end
 
   if state.diff then
     state.diff:delete()
@@ -1022,9 +1015,6 @@ function M.setup(config)
   end, { force = true })
   vim.api.nvim_create_user_command('CopilotChatReset', function()
     M.reset()
-  end, { force = true })
-  vim.api.nvim_create_user_command('CopilotChatDebugInfo', function()
-    state.debug:open()
   end, { force = true })
 
   local function complete_load()

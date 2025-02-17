@@ -116,7 +116,6 @@ Commands are used to control the chat interface:
 | `:CopilotChatReset`        | Reset chat window             |
 | `:CopilotChatSave <name>?` | Save chat history             |
 | `:CopilotChatLoad <name>?` | Load chat history             |
-| `:CopilotChatDebugInfo`    | Show debug info               |
 | `:CopilotChatModels`       | View/select available models  |
 | `:CopilotChatAgents`       | View/select available agents  |
 | `:CopilotChat<PromptName>` | Use specific prompt template  |
@@ -500,6 +499,8 @@ Below are all available configuration options with their default values:
   allow_insecure = false, -- Allow insecure server connections
 
   chat_autocomplete = true, -- Enable chat autocompletion (when disabled, requires manual `mappings.complete` trigger)
+
+  log_path = vim.fn.stdpath('state') .. '/CopilotChat.log', -- Default path to log file
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
 
   question_header = '# User ', -- Header to use for user questions

@@ -352,22 +352,22 @@ return {
       local system_prompt = config.system_prompt
 
       async.run(function()
-        local selected_agent = copilot.resolve_agent(prompt, config)
-        local selected_model = copilot.resolve_model(prompt, config)
+        local _, selected_agent = pcall(copilot.resolve_agent, prompt, config)
+        local _, selected_model = pcall(copilot.resolve_model, prompt, config)
+
+        async.util.scheduler()
+        table.insert(lines, '**Logs**: `' .. chat.config.log_path .. '`')
+        table.insert(lines, '**History**: `' .. chat.config.history_path .. '`')
+        table.insert(lines, '**Temp Files**: `' .. vim.fn.fnamemodify(os.tmpname(), ':h') .. '`')
+        table.insert(lines, '')
 
         if selected_model then
-          table.insert(lines, '**Model**')
-          table.insert(lines, '```')
-          table.insert(lines, selected_model)
-          table.insert(lines, '```')
+          table.insert(lines, '**Model**: `' .. selected_model .. '`')
           table.insert(lines, '')
         end
 
         if selected_agent then
-          table.insert(lines, '**Agent**')
-          table.insert(lines, '```')
-          table.insert(lines, selected_agent)
-          table.insert(lines, '```')
+          table.insert(lines, '**Agent**: `' .. selected_agent .. '`')
           table.insert(lines, '')
         end
 
@@ -381,7 +381,6 @@ return {
           table.insert(lines, '')
         end
 
-        async.util.scheduler()
         overlay:show(vim.trim(table.concat(lines, '\n')) .. '\n', chat.winnr, 'markdown')
       end)
     end,
