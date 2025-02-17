@@ -18,7 +18,7 @@ local utils = require('CopilotChat.utils')
 ---@field disabled nil|boolean
 ---@field embeddings nil|string
 ---@field get_headers fun(token:string):table<string, string>
----@field get_token fun():string,number?
+---@field get_token nil|fun():string,number?
 ---@field get_agents nil|fun(headers:table):table<CopilotChat.Provider.agent>
 ---@field get_models nil|fun(headers:table):table<CopilotChat.Provider.model>
 ---@field prepare_input fun(inputs:table, opts:CopilotChat.Client.ask, model:table):table
