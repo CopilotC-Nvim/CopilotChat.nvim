@@ -375,7 +375,8 @@ Here's how to implement an [ollama](https://ollama.com/) provider:
 
       -- Optional: Get available models
       get_models = function()
-        local response = cutils.curl_get('http://localhost:11434/api/tags')
+        local utils = require('CopilotChat.utils')
+        local response = utils.curl_get('http://localhost:11434/api/tags')
         if not response or response.status ~= 200 then
           error('Failed to fetch models: ' .. tostring(response and response.status))
         end
