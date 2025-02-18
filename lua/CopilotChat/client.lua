@@ -809,6 +809,24 @@ function Client:embed(inputs, model)
   return results
 end
 
+--- Search for the given query
+---@param query string: The query to search for
+---@param repository string: The repository to search in
+---@param model string: The model to use for search
+---@return table<CopilotChat.context.embed>
+function Client:search(query, repository, model)
+  local models = self:fetch_models()
+
+  local provider_name, search = resolve_provider_function('search', model, models, self.providers)
+  local headers = self:authenticate(provider_name)
+  local ok, response = pcall(search, query, repository, headers)
+  if not ok then
+    log.warn('Failed to search: ', response)
+    return {}
+  end
+  return response
+end
+
 --- Stop the running job
 ---@return boolean
 function Client:stop()

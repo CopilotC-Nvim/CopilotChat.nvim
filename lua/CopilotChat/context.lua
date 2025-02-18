@@ -647,6 +647,20 @@ function M.quickfix()
   return out
 end
 
+--- Get the content of the current workspace
+---@param prompt string
+---@param model string
+function M.workspace(prompt, model)
+  local git_remote =
+    vim.trim(utils.system({ 'git', 'config', '--get', 'remote.origin.url' }).stdout)
+  local repo_path = git_remote:match('github.com[:/](.+).git$')
+  if not repo_path then
+    error('Could not determine GitHub repository from git remote: ' .. git_remote)
+  end
+
+  return client:search(prompt, repo_path, model)
+end
+
 --- Filter embeddings based on the query
 ---@param prompt string
 ---@param model string
