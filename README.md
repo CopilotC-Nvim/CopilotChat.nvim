@@ -876,6 +876,9 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/johncming"><img src="https://avatars.githubusercontent.com/u/11719334?v=4?s=100" width="100px;" alt="johncming"/><br /><sub><b>johncming</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=johncming" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/dzonatan"><img src="https://avatars.githubusercontent.com/u/5166666?v=4?s=100" width="100px;" alt="Rokas Brazdžionis"/><br /><sub><b>Rokas Brazdžionis</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=dzonatan" title="Code">💻</a></td>
     </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/unlimitedsola"><img src="https://avatars.githubusercontent.com/u/3632663?v=4?s=100" width="100px;" alt="Sola"/><br /><sub><b>Sola</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=unlimitedsola" title="Documentation">📖</a> <a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=unlimitedsola" title="Code">💻</a></td>
+    </tr>
   </tbody>
 </table>
 
