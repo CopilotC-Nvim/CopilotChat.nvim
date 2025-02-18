@@ -219,10 +219,9 @@ end
 
 --- Resolve the embeddings from the prompt.
 ---@param prompt string
----@param model string
 ---@param config CopilotChat.config.shared
 ---@return table<CopilotChat.context.embed>, string
-function M.resolve_embeddings(prompt, model, config)
+function M.resolve_embeddings(prompt, config)
   local contexts = {}
   local function parse_context(prompt_context)
     local split = vim.split(prompt_context, ':')
@@ -262,7 +261,7 @@ function M.resolve_embeddings(prompt, model, config)
   for _, context_data in ipairs(contexts) do
     local context_value = M.config.contexts[context_data.name]
     for _, embedding in
-      ipairs(context_value.resolve(context_data.input, state.source or {}, prompt, model))
+      ipairs(context_value.resolve(context_data.input, state.source or {}, prompt))
     do
       if embedding then
         embeddings:set(embedding.filename, embedding)
