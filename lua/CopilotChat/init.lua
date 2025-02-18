@@ -1,6 +1,7 @@
 local async = require('plenary.async')
 local log = require('plenary.log')
 local context = require('CopilotChat.context')
+local client = require('CopilotChat.client')
 local utils = require('CopilotChat.utils')
 
 local M = {}
@@ -12,7 +13,6 @@ local WORD = '([^%s]+)'
 --- @field winnr number
 
 --- @class CopilotChat.state
---- @field client CopilotChat.Client?
 --- @field source CopilotChat.source?
 --- @field last_prompt string?
 --- @field last_response string?
@@ -20,8 +20,6 @@ local WORD = '([^%s]+)'
 --- @field diff CopilotChat.ui.Diff?
 --- @field overlay CopilotChat.ui.Overlay?
 local state = {
-  client = nil,
-
   -- Current state tracking
   source = nil,
 
@@ -221,9 +219,10 @@ end
 
 --- Resolve the embeddings from the prompt.
 ---@param prompt string
+---@param model string
 ---@param config CopilotChat.config.shared
 ---@return table<CopilotChat.context.embed>, string
-function M.resolve_embeddings(prompt, config)
+function M.resolve_embeddings(prompt, model, config)
   local contexts = {}
   local function parse_context(prompt_context)
     local split = vim.split(prompt_context, ':')
@@ -262,7 +261,9 @@ function M.resolve_embeddings(prompt, config)
   local embeddings = utils.ordered_map()
   for _, context_data in ipairs(contexts) do
     local context_value = M.config.contexts[context_data.name]
-    for _, embedding in ipairs(context_value.resolve(context_data.input, state.source or {})) do
+    for _, embedding in
+      ipairs(context_value.resolve(context_data.input, state.source or {}, prompt, model))
+    do
       if embedding then
         embeddings:set(embedding.filename, embedding)
       end
@@ -276,7 +277,7 @@ end
 ---@param prompt string
 ---@param config CopilotChat.config.shared
 function M.resolve_agent(prompt, config)
-  local agents = vim.tbl_keys(state.client:list_agents())
+  local agents = vim.tbl_keys(client:list_agents())
   local selected_agent = config.agent
   prompt = prompt:gsub('@' .. WORD, function(match)
     if vim.tbl_contains(agents, match) then
@@ -295,7 +296,7 @@ end
 function M.resolve_model(prompt, config)
   local models = vim.tbl_map(function(model)
     return model.id
-  end, state.client:list_models())
+  end, client:list_models())
 
   local selected_model = config.model
   prompt = prompt:gsub('%$' .. WORD, function(match)
@@ -393,8 +394,8 @@ end
 ---@param callback function(table)
 function M.complete_items(callback)
   async.run(function()
-    local models = state.client:list_models()
-    local agents = state.client:list_agents()
+    local models = client:list_models()
+    local agents = client:list_agents()
     local prompts_to_use = M.prompts()
     local items = {}
 
@@ -536,7 +537,7 @@ end
 --- Select default Copilot GPT model.
 function M.select_model()
   async.run(function()
-    local models = state.client:list_models()
+    local models = client:list_models()
     local choices = vim.tbl_map(function(model)
       return {
         id = model.id,
@@ -567,7 +568,7 @@ end
 --- Select default Copilot agent.
 function M.select_agent()
   async.run(function()
-    local agents = state.client:list_agents()
+    local agents = client:list_agents()
     local choices = vim.tbl_map(function(agent)
       return {
         id = agent.id,
@@ -613,7 +614,7 @@ function M.ask(prompt, config)
   if not config.headless then
     if config.clear_chat_on_new_prompt then
       M.stop(true)
-    elseif state.client:stop() then
+    elseif client:stop() then
       finish()
     end
 
@@ -642,13 +643,13 @@ function M.ask(prompt, config)
   local selection = M.get_selection(config)
 
   local ok, err = pcall(async.run, function()
-    local embeddings, prompt = M.resolve_embeddings(prompt, config)
     local selected_agent, prompt = M.resolve_agent(prompt, config)
     local selected_model, prompt = M.resolve_model(prompt, config)
+    local embeddings, prompt = M.resolve_embeddings(prompt, selected_model, config)
 
     local has_output = false
     local query_ok, filtered_embeddings =
-      pcall(context.filter_embeddings, state.client, prompt, selected_model, embeddings)
+      pcall(context.filter_embeddings, prompt, selected_model, embeddings)
 
     if not query_ok then
       async.util.scheduler()
@@ -659,22 +660,21 @@ function M.ask(prompt, config)
       return
     end
 
-    local ask_ok, response, token_count, token_max_count =
-      pcall(state.client.ask, state.client, prompt, {
-        history = history,
-        selection = selection,
-        embeddings = filtered_embeddings,
-        system_prompt = system_prompt,
-        model = selected_model,
-        agent = selected_agent,
-        temperature = config.temperature,
-        on_progress = vim.schedule_wrap(function(token)
-          if not config.headless then
-            state.chat:append(token)
-          end
-          has_output = true
-        end),
-      })
+    local ask_ok, response, token_count, token_max_count = pcall(client.ask, client, prompt, {
+      history = history,
+      selection = selection,
+      embeddings = filtered_embeddings,
+      system_prompt = system_prompt,
+      model = selected_model,
+      agent = selected_agent,
+      temperature = config.temperature,
+      on_progress = vim.schedule_wrap(function(token)
+        if not config.headless then
+          state.chat:append(token)
+        end
+        has_output = true
+      end),
+    })
 
     async.util.scheduler()
 
@@ -716,12 +716,12 @@ end
 ---@param reset boolean?
 function M.stop(reset)
   if reset then
-    state.client:reset()
+    client:reset()
     state.chat:clear()
     state.last_prompt = nil
     state.last_response = nil
   else
-    state.client:stop()
+    client:stop()
   end
 
   finish(reset)
@@ -791,7 +791,7 @@ function M.load(name, history_path)
     },
   })
 
-  state.client:reset()
+  client:reset()
   state.chat:clear()
   state.chat:load_history(history)
   log.info('Loaded history from ' .. history_path)
@@ -873,10 +873,9 @@ function M.setup(config)
     proxy = M.config.proxy,
   })
 
-  if state.client then
-    state.client:stop()
-  end
-  state.client = require('CopilotChat.client')(M.config.providers)
+  -- Load the providers
+  client:stop()
+  client:load_providers(M.config.providers)
 
   if M.config.debug then
     M.log_level('debug')

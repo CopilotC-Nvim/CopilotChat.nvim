@@ -5,7 +5,7 @@ local utils = require('CopilotChat.utils')
 ---@class CopilotChat.config.context
 ---@field description string?
 ---@field input fun(callback: fun(input: string?), source: CopilotChat.source)?
----@field resolve fun(input: string?, source: CopilotChat.source):table<CopilotChat.context.embed>
+---@field resolve fun(input: string?, source: CopilotChat.source, prompt: string, model: string):table<CopilotChat.context.embed>
 
 ---@type table<string, CopilotChat.config.context>
 return {

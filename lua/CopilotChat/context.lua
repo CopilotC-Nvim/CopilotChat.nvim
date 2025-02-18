@@ -14,9 +14,11 @@
 ---@field outline string?
 ---@field symbols table<string, CopilotChat.context.symbol>?
 ---@field embedding table<number>?
+---@field score?
 
 local async = require('plenary.async')
 local log = require('plenary.log')
+local client = require('CopilotChat.client')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local file_cache = {}
@@ -100,7 +102,7 @@ local function data_ranked_by_relatedness(query, data, top_n)
     return vim.tbl_extend(
       'force',
       item,
-      { score = spatial_distance_cosine(item.embedding, query.embedding) }
+      { score = item.score or spatial_distance_cosine(item.embedding, query.embedding) }
     )
   end, data)
 
@@ -583,12 +585,11 @@ function M.quickfix()
 end
 
 --- Filter embeddings based on the query
----@param client CopilotChat.Client
 ---@param prompt string
 ---@param model string
 ---@param embeddings table<CopilotChat.context.embed>
 ---@return table<CopilotChat.context.embed>
-function M.filter_embeddings(client, prompt, model, embeddings)
+function M.filter_embeddings(prompt, model, embeddings)
   -- If we dont need to embed anything, just return directly
   if #embeddings < MULTI_FILE_THRESHOLD then
     return embeddings

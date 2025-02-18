@@ -187,6 +187,21 @@ local function generate_embedding_request(inputs, threshold)
   end, inputs)
 end
 
+local function generate_references(references)
+  local out = ''
+
+  for _, reference in ipairs(references) do
+    out = out .. '\n[' .. reference.name .. '](' .. reference.url .. ')'
+  end
+
+  if out == '' then
+    return out
+  end
+
+  out = '\n\n**`References:`**' .. out
+  return out
+end
+
 ---@class CopilotChat.Client : Class
 ---@field providers table<string, CopilotChat.Provider>
 ---@field provider_cache table<string, table>
@@ -198,17 +213,12 @@ end
 ---@field token table?
 ---@field sessionid string?
 ---@field machineid string
-local Client = class(function(self, providers)
-  self.providers = providers
+local Client = class(function(self)
+  self.providers = {}
   self.embedding_cache = {}
   self.models = nil
   self.agents = nil
-
   self.provider_cache = {}
-  for provider_name, _ in pairs(providers) do
-    self.provider_cache[provider_name] = {}
-  end
-
   self.current_job = nil
   self.expires_at = nil
   self.headers = nil
@@ -359,6 +369,14 @@ function Client:ask(prompt, opts)
   log.debug('Tokenizer: ', tokenizer)
   tiktoken.load(tokenizer)
 
+  local references = {}
+  for _, embed in ipairs(embeddings) do
+    table.insert(references, {
+      name = embed.filename,
+      url = embed.filename,
+    })
+  end
+
   local generated_messages = {}
   local selection_messages = generate_selection_messages(selection)
   local embeddings_messages = generate_embeddings_messages(embeddings)
@@ -408,7 +426,6 @@ function Client:ask(prompt, opts)
   local errored = false
   local finished = false
   local full_response = ''
-  local full_references = ''
 
   local function finish_stream(err, job)
     if err then
@@ -450,14 +467,10 @@ function Client:ask(prompt, opts)
       for _, reference in ipairs(content.copilot_references) do
         local metadata = reference.metadata
         if metadata and metadata.display_name and metadata.display_url then
-          full_references = full_references
-            .. '\n'
-            .. '['
-            .. metadata.display_name
-            .. ']'
-            .. '('
-            .. metadata.display_url
-            .. ')'
+          table.insert(references, {
+            name = metadata.display_name,
+            url = metadata.display_url,
+          })
         end
       end
     end
@@ -615,8 +628,9 @@ function Client:ask(prompt, opts)
     return
   end
 
+  local full_references = generate_references(references)
+  log.info('References: ', full_references)
   if full_references ~= '' then
-    full_references = '\n\n**`References:`**' .. full_references
     full_response = full_response .. full_references
     if on_progress then
       on_progress(full_references)
@@ -833,4 +847,13 @@ function Client:running()
   return self.current_job ~= nil
 end
 
-return Client
+--- Load providers to client
+function Client:load_providers(providers)
+  self.providers = providers
+  for provider_name, _ in pairs(providers) do
+    self.provider_cache[provider_name] = {}
+  end
+end
+
+--- @type CopilotChat.Client
+return Client()
