@@ -31,9 +31,10 @@ local EDITOR_VERSION = 'Neovim/'
   .. '.'
   .. vim.version().patch
 
---- Get the github oauth cached token
----@return string|nil
 local cached_github_token = nil
+
+--- Get the github copilot oauth cached token (gu_ token)
+---@return string
 local function get_github_token()
   if cached_github_token then
     return cached_github_token
@@ -84,10 +85,11 @@ M.copilot = {
 
   get_headers = function(token)
     return {
-      ['Authorization'] = 'Bearer ' .. token,
-      ['Editor-Version'] = EDITOR_VERSION,
-      ['Copilot-Integration-Id'] = 'vscode-chat',
-      ['Content-Type'] = 'application/json',
+      ['authorization'] = 'Bearer ' .. token,
+      ['editor-version'] = EDITOR_VERSION,
+      ['editor-plugin-version'] = 'CopilotChat.nvim/*',
+      ['copilot-integration-id'] = 'vscode-chat',
+      ['content-type'] = 'application/json',
     }
   end,
 
