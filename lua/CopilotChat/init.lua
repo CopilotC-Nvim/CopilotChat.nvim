@@ -644,7 +644,7 @@ function M.ask(prompt, config)
   local ok, err = pcall(async.run, function()
     local selected_agent, prompt = M.resolve_agent(prompt, config)
     local selected_model, prompt = M.resolve_model(prompt, config)
-    local embeddings, prompt = M.resolve_embeddings(prompt, selected_model, config)
+    local embeddings, prompt = M.resolve_embeddings(prompt, config)
 
     local has_output = false
     local query_ok, filtered_embeddings =
