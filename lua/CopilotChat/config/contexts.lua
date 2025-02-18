@@ -1,3 +1,4 @@
+local async = require('plenary.async')
 local context = require('CopilotChat.context')
 local utils = require('CopilotChat.utils')
 
@@ -54,10 +55,12 @@ return {
     description = 'Includes content of provided file in chat context. Supports input.',
     input = function(callback, source)
       local cwd = utils.win_cwd(source.winnr)
-      local files = vim.tbl_filter(function(file)
-        return vim.fn.isdirectory(file) == 0
-      end, vim.fn.glob(cwd .. '/**/*', false, true))
+      local files = utils.scan_dir(cwd, {
+        add_dirs = false,
+        respect_gitignore = true,
+      })
 
+      async.util.scheduler()
       vim.ui.select(files, {
         prompt = 'Select a file> ',
       }, callback)

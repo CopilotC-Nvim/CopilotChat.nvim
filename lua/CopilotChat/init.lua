@@ -350,15 +350,17 @@ function M.trigger_complete(with_context)
   if with_context and vim.startswith(prefix, '#') and vim.endswith(prefix, ':') then
     local found_context = M.config.contexts[prefix:sub(2, -2)]
     if found_context and found_context.input then
-      found_context.input(function(value)
-        if not value then
-          return
-        end
+      async.run(function()
+        found_context.input(function(value)
+          if not value then
+            return
+          end
 
-        local value_str = tostring(value)
-        vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { value_str })
-        vim.api.nvim_win_set_cursor(0, { row, col + #value_str })
-      end, state.source or {})
+          local value_str = tostring(value)
+          vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { value_str })
+          vim.api.nvim_win_set_cursor(0, { row, col + #value_str })
+        end, state.source or {})
+      end)
     end
 
     return
