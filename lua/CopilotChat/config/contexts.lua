@@ -58,6 +58,7 @@ return {
       local files = utils.scan_dir(cwd, {
         add_dirs = false,
         respect_gitignore = true,
+        max_files = 1000,
       })
 
       async.util.scheduler()
@@ -76,7 +77,7 @@ return {
     input = function(callback)
       local choices = utils.kv_list({
         list = 'Only lists file names',
-        full = 'Includes file content for each file found. Can be slow on large workspaces, use with care.',
+        full = 'Includes file content for each file found, up to a limit.',
       })
 
       vim.ui.select(choices, {
