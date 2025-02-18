@@ -46,7 +46,7 @@ local select = require('CopilotChat.select')
 ---@field answer_header string?
 ---@field error_header string?
 ---@field separator string?
----@field providers table<string, CopilotChat.Provider?>
+---@field providers table<string, CopilotChat.Provider>?
 ---@field contexts table<string, CopilotChat.config.context>?
 ---@field prompts table<string, CopilotChat.config.prompt|string>?
 ---@field mappings CopilotChat.config.mappings?
