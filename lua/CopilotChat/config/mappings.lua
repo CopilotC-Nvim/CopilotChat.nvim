@@ -99,7 +99,7 @@ end
 ---@field normal string?
 ---@field insert string?
 ---@field detail string?
----@field callback fun(overlay: CopilotChat.ui.Overlay, diff: CopilotChat.ui.Diff.Diff, chat: CopilotChat.ui.Chat, source: CopilotChat.source)
+---@field callback fun(overlay: CopilotChat.ui.Overlay, diff: CopilotChat.ui.Diff, chat: CopilotChat.ui.Chat, source: CopilotChat.source)
 
 ---@class CopilotChat.config.mapping.yank_diff : CopilotChat.config.mapping
 ---@field register string?
@@ -121,7 +121,6 @@ end
 ---@field show_info CopilotChat.config.mapping?
 ---@field show_context CopilotChat.config.mapping?
 ---@field show_help CopilotChat.config.mapping?
-
 return {
   complete = {
     insert = '<Tab>',
@@ -317,12 +316,12 @@ return {
     normal = 'gy',
     register = '"', -- Default register to use for yanking
     callback = function(overlay, diff, chat)
-      local content = get_diff(chat)
-      if not content then
+      local block = chat:get_closest_block()
+      if not block then
         return
       end
 
-      vim.fn.setreg(copilot.config.mappings.yank_diff.register, content.change)
+      vim.fn.setreg(copilot.config.mappings.yank_diff.register, block.content)
     end,
   },
 

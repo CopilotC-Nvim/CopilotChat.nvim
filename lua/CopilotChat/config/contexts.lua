@@ -6,6 +6,7 @@ local utils = require('CopilotChat.utils')
 ---@field input fun(callback: fun(input: string?), source: CopilotChat.source)?
 ---@field resolve fun(input: string?, source: CopilotChat.source):table<CopilotChat.context.embed>
 
+---@type table<string, CopilotChat.config.context>
 return {
   buffer = {
     description = 'Includes specified buffer in chat context. Supports input (default current).',

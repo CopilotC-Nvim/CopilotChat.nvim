@@ -79,6 +79,7 @@ Your task is to modify the provided code according to the user's request. Follow
 Remember: Your response should ONLY contain file headers with line numbers and code blocks for direct replacement.
 ]]
 
+---@type table<string, CopilotChat.config.prompt>
 return {
   COPILOT_INSTRUCTIONS = {
     system_prompt = COPILOT_INSTRUCTIONS,
