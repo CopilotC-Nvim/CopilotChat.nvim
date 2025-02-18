@@ -8,6 +8,7 @@
 ---@field temperature number?
 ---@field on_progress nil|fun(response: string):nil
 
+local async = require('plenary.async')
 local log = require('plenary.log')
 local tiktoken = require('CopilotChat.tiktoken')
 local notify = require('CopilotChat.notify')
@@ -187,21 +188,6 @@ local function generate_embedding_request(inputs, threshold)
   end, inputs)
 end
 
-local function generate_references(references)
-  local out = ''
-
-  for _, reference in ipairs(references) do
-    out = out .. '\n[' .. reference.name .. '](' .. reference.url .. ')'
-  end
-
-  if out == '' then
-    return out
-  end
-
-  out = '\n\n**`References:`**' .. out
-  return out
-end
-
 ---@class CopilotChat.Client : Class
 ---@field providers table<string, CopilotChat.Provider>
 ---@field provider_cache table<string, table>
@@ -235,7 +221,6 @@ function Client:authenticate(provider_name)
   if not headers or (expires_at and expires_at <= math.floor(os.time())) then
     local token
     if provider.get_token then
-      notify.publish(notify.STATUS, 'Authenticating to provider ' .. provider_name)
       token, expires_at = provider.get_token()
     end
 
@@ -260,8 +245,8 @@ function Client:fetch_models()
   for _, provider_name in ipairs(provider_order) do
     local provider = self.providers[provider_name]
     if not provider.disabled and provider.get_models then
-      local headers = self:authenticate(provider_name)
       notify.publish(notify.STATUS, 'Fetching models from ' .. provider_name)
+      local headers = self:authenticate(provider_name)
       local ok, provider_models = pcall(provider.get_models, headers)
       if ok then
         for _, model in ipairs(provider_models) do
@@ -296,8 +281,8 @@ function Client:fetch_agents()
   for _, provider_name in ipairs(provider_order) do
     local provider = self.providers[provider_name]
     if not provider.disabled and provider.get_agents then
-      local headers = self:authenticate(provider_name)
       notify.publish(notify.STATUS, 'Fetching agents from ' .. provider_name)
+      local headers = self:authenticate(provider_name)
       local ok, provider_agents = pcall(provider.get_agents, headers)
       if ok then
         for _, agent in ipairs(provider_agents) do
@@ -320,6 +305,7 @@ end
 --- Ask a question to Copilot
 ---@param prompt string: The prompt to send to Copilot
 ---@param opts CopilotChat.Client.ask: Options for the request
+---@return string, table, number, number
 function Client:ask(prompt, opts)
   opts = opts or {}
   prompt = vim.trim(prompt)
@@ -369,10 +355,13 @@ function Client:ask(prompt, opts)
   log.debug('Tokenizer: ', tokenizer)
   tiktoken.load(tokenizer)
 
+  notify.publish(notify.STATUS, 'Generating request')
+
+  async.util.scheduler()
   local references = {}
   for _, embed in ipairs(embeddings) do
     table.insert(references, {
-      name = embed.filename,
+      name = utils.filename(embed.filename),
       url = embed.filename,
     })
   end
@@ -540,6 +529,8 @@ function Client:ask(prompt, opts)
     parse_stream_line(line, job)
   end
 
+  notify.publish(notify.STATUS, 'Thinking')
+
   opts.agent = opts.agent and opts.agent:gsub(':' .. provider_name .. '$', '')
   opts.model = opts.model:gsub(':' .. provider_name .. '$', '')
   local headers = self:authenticate(provider_name)
@@ -560,12 +551,10 @@ function Client:ask(prompt, opts)
     args.stream = stream_func
   end
 
-  notify.publish(notify.STATUS, 'Thinking')
-
   local response, err = utils.curl_post(provider.get_url(opts), args)
 
   if self.current_job ~= job_id then
-    return nil, nil, nil
+    return
   end
 
   self.current_job = nil
@@ -628,20 +617,12 @@ function Client:ask(prompt, opts)
     return
   end
 
-  local full_references = generate_references(references)
-  log.info('References: ', full_references)
-  if full_references ~= '' then
-    full_response = full_response .. full_references
-    if on_progress then
-      on_progress(full_references)
-    end
-  end
-
   log.trace('Full response: ', full_response)
   log.debug('Last message: ', last_message)
 
   return full_response,
-    last_message and last_message.usage and last_message.usage.total_tokens,
+    references,
+    last_message and last_message.usage and last_message.usage.total_tokens or 0,
     max_tokens
 end
 
