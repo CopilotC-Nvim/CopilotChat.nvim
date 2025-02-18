@@ -66,17 +66,19 @@ local OFF_SIDE_RULE_LANGUAGES = {
   'fsharp',
 }
 
-local TOP_SYMBOLS = 100
-local TOP_RELATED = 25
+local MIN_SYMBOL_SIMILARITY = 0.4 -- Symbol-based matching can be more lenient
+local MIN_SEMANTIC_SIMILARITY = 0.3 -- Cosine similarity should be stricter for relevance
 local MULTI_FILE_THRESHOLD = 5
+local MAX_FILES = 2500
 
 --- Compute the cosine similarity between two vectors
 ---@param a table<number>
 ---@param b table<number>
+---@param def number
 ---@return number
-local function spatial_distance_cosine(a, b)
+local function spatial_distance_cosine(a, b, def)
   if not a or not b then
-    return 0
+    return def or 0
   end
 
   local dot_product = 0
@@ -95,78 +97,83 @@ end
 --- Rank data by relatedness to the query
 ---@param query CopilotChat.context.embed
 ---@param data table<CopilotChat.context.embed>
----@param top_n number
+---@param min_similarity number
 ---@return table<CopilotChat.context.embed>
-local function data_ranked_by_relatedness(query, data, top_n)
-  data = vim.tbl_map(function(item)
-    return vim.tbl_extend(
-      'force',
-      item,
-      { score = item.score or spatial_distance_cosine(item.embedding, query.embedding) }
-    )
-  end, data)
-
-  table.sort(data, function(a, b)
-    return a.score > b.score
-  end)
-
-  return vim.list_slice(data, 1, top_n)
-end
-
---- Rank data by symbols
----@param query string
----@param data table<CopilotChat.context.embed>
----@param top_n number
-local function data_ranked_by_symbols(query, data, top_n)
-  local query_terms = {}
-  for term in query:lower():gmatch('%w+') do
-    query_terms[term] = true
-  end
-
+local function data_ranked_by_relatedness(query, data, min_similarity)
   local results = {}
-  for _, entry in ipairs(data) do
-    local score = 0
-    local filename = entry.filename and entry.filename:lower() or ''
-
-    -- Filename matches (highest priority)
-    for term in pairs(query_terms) do
-      if filename:find(term, 1, true) then
-        score = score + 15
-        if vim.fn.fnamemodify(filename, ':t'):gsub('%..*$', '') == term then
-          score = score + 10
-        end
-      end
+  for _, item in ipairs(data) do
+    local similarity = spatial_distance_cosine(item.embedding, query.embedding, item.score)
+    if similarity >= min_similarity then
+      table.insert(results, vim.tbl_extend('force', item, { score = similarity }))
     end
-
-    -- Symbol matches
-    if entry.symbols then
-      for _, symbol in ipairs(entry.symbols) do
-        for term in pairs(query_terms) do
-          -- Check symbol name (high priority)
-          if symbol.name and symbol.name:lower():find(term, 1, true) then
-            score = score + 5
-            if symbol.name:lower() == term then
-              score = score + 3
-            end
-          end
-
-          -- Check signature (medium priority)
-          -- This catches parameter names, return types, etc
-          if symbol.signature and symbol.signature:lower():find(term, 1, true) then
-            score = score + 2
-          end
-        end
-      end
-    end
-
-    table.insert(results, vim.tbl_extend('force', entry, { score = score }))
   end
 
   table.sort(results, function(a, b)
     return a.score > b.score
   end)
 
-  return vim.list_slice(results, 1, top_n)
+  return results
+end
+
+--- Rank data by symbols
+---@param prompt string
+---@param data table<CopilotChat.context.embed>
+---@param min_similarity number
+---@return table<CopilotChat.context.embed>
+local function data_ranked_by_symbols(prompt, data, min_similarity)
+  local query_terms = {}
+  for term in prompt:lower():gmatch('%w+') do
+    query_terms[term] = true
+  end
+
+  local results = {}
+  for _, entry in ipairs(data) do
+    local total_terms = 0
+    local matched_terms = 0
+    local filename = entry.filename and entry.filename:lower() or ''
+
+    -- Calculate similarity score based on term matches
+    for term in pairs(query_terms) do
+      total_terms = total_terms + 1
+
+      -- Filename matches
+      if filename:find(term, 1, true) then
+        matched_terms = matched_terms + 1
+        if vim.fn.fnamemodify(filename, ':t'):gsub('%..*$', '') == term then
+          matched_terms = matched_terms + 0.5 -- Bonus for exact filename match
+        end
+      end
+
+      -- Symbol matches
+      if entry.symbols then
+        for _, symbol in ipairs(entry.symbols) do
+          if symbol.name and symbol.name:lower():find(term, 1, true) then
+            matched_terms = matched_terms + 1
+            if symbol.name:lower() == term then
+              matched_terms = matched_terms + 0.5 -- Bonus for exact symbol match
+            end
+          end
+          if symbol.signature and symbol.signature:lower():find(term, 1, true) then
+            matched_terms = matched_terms + 0.5 -- Partial credit for signature matches
+          end
+        end
+      end
+    end
+
+    -- Calculate similarity score (0 to 1 range)
+    local similarity = matched_terms / (total_terms * 2) -- Denominator accounts for potential bonuses
+
+    -- Only include results above similarity threshold
+    if similarity >= min_similarity then
+      table.insert(results, vim.tbl_extend('force', entry, { score = similarity }))
+    end
+  end
+
+  table.sort(results, function(a, b)
+    return a.score > b.score
+  end)
+
+  return results
 end
 
 --- Get the full signature of a declaration
@@ -326,6 +333,7 @@ function M.files(winnr, with_content)
   local files = utils.scan_dir(cwd, {
     add_dirs = false,
     respect_gitignore = true,
+    max_files = MAX_FILES,
   })
 
   notify.publish(notify.STATUS, 'Reading files')
@@ -596,7 +604,7 @@ function M.filter_embeddings(prompt, model, embeddings)
   end
 
   -- Rank embeddings by symbols
-  embeddings = data_ranked_by_symbols(prompt, embeddings, TOP_SYMBOLS)
+  embeddings = data_ranked_by_symbols(prompt, embeddings, MIN_SYMBOL_SIMILARITY)
   log.debug('Ranked data:', #embeddings)
   for i, item in ipairs(embeddings) do
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
@@ -615,7 +623,7 @@ function M.filter_embeddings(prompt, model, embeddings)
   -- Rate embeddings by relatedness to the query
   local embedded_query = table.remove(embeddings, #embeddings)
   log.debug('Embedded query:', embedded_query.content)
-  embeddings = data_ranked_by_relatedness(embedded_query, embeddings, TOP_RELATED)
+  embeddings = data_ranked_by_relatedness(embedded_query, embeddings, MIN_SEMANTIC_SIMILARITY)
   log.debug('Ranked embeddings:', #embeddings)
   for i, item in ipairs(embeddings) do
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))

@@ -363,7 +363,12 @@ M.scan_dir = async.wrap(function(path, opts, callback)
   scandir.scan_dir_async(
     path,
     vim.tbl_deep_extend('force', opts, {
-      on_exit = callback,
+      on_exit = function(files)
+        if opts.max_files then
+          files = vim.list_slice(files, 1, opts.max_files)
+        end
+        callback(files)
+      end,
     })
   )
 end, 3)
