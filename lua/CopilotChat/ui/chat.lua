@@ -145,6 +145,12 @@ function Chat:render()
       separator_found = true
       if current_section then
         current_section.end_line = l - 1
+        current_section.content = vim.trim(
+          table.concat(
+            vim.list_slice(lines, current_section.start_line, current_section.end_line),
+            '\n'
+          )
+        )
         table.insert(sections, current_section)
       end
       current_section = {
@@ -156,6 +162,12 @@ function Chat:render()
       separator_found = true
       if current_section then
         current_section.end_line = l - 1
+        current_section.content = vim.trim(
+          table.concat(
+            vim.list_slice(lines, current_section.start_line, current_section.end_line),
+            '\n'
+          )
+        )
         table.insert(sections, current_section)
       end
       current_section = {
@@ -166,6 +178,12 @@ function Chat:render()
     elseif l == line_count then
       if current_section then
         current_section.end_line = l
+        current_section.content = vim.trim(
+          table.concat(
+            vim.list_slice(lines, current_section.start_line, current_section.end_line),
+            '\n'
+          )
+        )
         table.insert(sections, current_section)
       end
     end
@@ -212,6 +230,10 @@ function Chat:render()
         }
       elseif line == '```' and current_block then
         current_block.end_line = l - 1
+        current_block.content = table.concat(
+          vim.list_slice(lines, current_block.start_line, current_block.end_line),
+          '\n'
+        )
         table.insert(current_section.blocks, current_block)
         current_block = nil
       end
@@ -259,18 +281,11 @@ function Chat:get_closest_section()
     return nil
   end
 
-  local section_content = vim.api.nvim_buf_get_lines(
-    self.bufnr,
-    closest_section.start_line - 1,
-    closest_section.end_line,
-    false
-  )
-
   return {
     answer = closest_section.answer,
     start_line = closest_section.start_line,
     end_line = closest_section.end_line,
-    content = table.concat(section_content, '\n'),
+    content = closest_section.content,
   }
 end
 
@@ -299,19 +314,50 @@ function Chat:get_closest_block()
     return nil
   end
 
-  local block_content = vim.api.nvim_buf_get_lines(
-    self.bufnr,
-    closest_block.start_line - 1,
-    closest_block.end_line,
-    false
-  )
-
   return {
     header = closest_block.header,
     start_line = closest_block.start_line,
     end_line = closest_block.end_line,
-    content = table.concat(block_content, '\n'),
+    content = closest_block.content,
   }
+end
+
+function Chat:parse_history()
+  self:render()
+
+  local history = {}
+  for _, section in ipairs(self.sections) do
+    if section.content then
+      if section.answer then
+        table.insert(history, {
+          content = section.content,
+          role = 'assistant',
+        })
+      else
+        table.insert(history, {
+          content = section.content,
+          role = 'user',
+        })
+      end
+    end
+  end
+
+  return history
+end
+
+function Chat:load_history(history)
+  for i, message in ipairs(history) do
+    if message.role == 'user' then
+      if i > 1 then
+        self:append('\n\n')
+      end
+      self:append(self.question_header .. self.separator .. '\n\n')
+      self:append(message.content)
+    elseif message.role == 'assistant' then
+      self:append('\n\n' .. self.answer_header .. self.separator .. '\n\n')
+      self:append(message.content)
+    end
+  end
 end
 
 function Chat:clear_prompt()

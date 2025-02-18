@@ -623,7 +623,7 @@ function M.ask(prompt, config)
 
   -- Resolve prompt references
   local prompt, config = M.resolve_prompts(prompt, config)
-  local system_prompt = config.system_prompt
+  local system_prompt = config.system_prompt or ''
 
   -- Remove sticky prefix
   prompt = vim.trim(table.concat(
@@ -632,6 +632,9 @@ function M.ask(prompt, config)
     end, vim.split(prompt, '\n')),
     '\n'
   ))
+
+  -- Retrieve the history
+  local history = config.headless and {} or state.chat:parse_history()
 
   -- Retrieve the selection
   local selection = M.get_selection(config)
@@ -656,13 +659,13 @@ function M.ask(prompt, config)
 
     local ask_ok, response, token_count, token_max_count =
       pcall(state.client.ask, state.client, prompt, {
+        history = history,
         selection = selection,
         embeddings = filtered_embeddings,
         system_prompt = system_prompt,
         model = selected_model,
         agent = selected_agent,
         temperature = config.temperature,
-        no_history = config.headless,
         on_progress = vim.schedule_wrap(function(token)
           if not config.headless then
             state.chat:append(token)
@@ -738,9 +741,23 @@ function M.save(name, history_path)
   end
 
   history_path = history_path or M.config.history_path
-  if history_path then
-    state.client:save(name, history_path)
+  if not history_path then
+    return
   end
+
+  local history = vim.json.encode(state.chat:parse_history())
+  history_path = vim.fn.expand(history_path)
+  vim.fn.mkdir(history_path, 'p')
+  history_path = history_path .. '/' .. name .. '.json'
+  local file = io.open(history_path, 'w')
+  if not file then
+    log.error('Failed to save history to ' .. history_path)
+    return
+  end
+  file:write(history)
+  file:close()
+
+  log.info('Saved history to ' .. history_path)
 end
 
 --- Load the chat history from a file.
@@ -758,20 +775,31 @@ function M.load(name, history_path)
     return
   end
 
+  history_path = vim.fn.expand(history_path) .. '/' .. name .. '.json'
+  local file = io.open(history_path, 'r')
+  if not file then
+    return
+  end
+  local history = file:read('*a')
+  file:close()
+  history = vim.json.decode(history, {
+    luanil = {
+      array = true,
+      object = true,
+    },
+  })
+
   state.client:reset()
   state.chat:clear()
+  state.chat:load_history(history)
+  log.info('Loaded history from ' .. history_path)
 
-  local history = state.client:load(name, history_path)
-  for i, message in ipairs(history) do
-    if message.role == 'user' then
-      if i > 1 then
-        state.chat:append('\n\n')
-      end
-      state.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
-      state.chat:append(message.content)
-    elseif message.role == 'assistant' then
-      state.chat:append('\n\n' .. M.config.answer_header .. M.config.separator .. '\n\n')
-      state.chat:append(message.content)
+  if #history > 0 then
+    local last = history[#history]
+    if last and last.role == 'user' then
+      state.chat:append('\n\n')
+      state.chat:finish()
+      return
     end
   end
 
