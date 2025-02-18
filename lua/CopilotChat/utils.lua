@@ -238,6 +238,13 @@ function M.filetype(filename)
   return ft
 end
 
+--- Get the file name
+---@param filepath string The file path
+---@return string
+function M.filename(filepath)
+  return vim.fn.fnamemodify(filepath, ':t')
+end
+
 --- Get the file path
 ---@param filename string The file name
 ---@return string

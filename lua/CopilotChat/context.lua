@@ -14,7 +14,7 @@
 ---@field outline string?
 ---@field symbols table<string, CopilotChat.context.symbol>?
 ---@field embedding table<number>?
----@field score?
+---@field score number?
 
 local async = require('plenary.async')
 local log = require('plenary.log')
@@ -66,8 +66,8 @@ local OFF_SIDE_RULE_LANGUAGES = {
   'fsharp',
 }
 
-local MIN_SYMBOL_SIMILARITY = 0.4 -- Symbol-based matching can be more lenient
-local MIN_SEMANTIC_SIMILARITY = 0.3 -- Cosine similarity should be stricter for relevance
+local MIN_SYMBOL_SIMILARITY = 0.3
+local MIN_SEMANTIC_SIMILARITY = 0.4
 local MULTI_FILE_THRESHOLD = 5
 local MAX_FILES = 2500
 
@@ -115,65 +115,106 @@ local function data_ranked_by_relatedness(query, data, min_similarity)
   return results
 end
 
---- Rank data by symbols
----@param prompt string
----@param data table<CopilotChat.context.embed>
----@param min_similarity number
----@return table<CopilotChat.context.embed>
-local function data_ranked_by_symbols(prompt, data, min_similarity)
-  local query_terms = {}
-  for term in prompt:lower():gmatch('%w+') do
-    query_terms[term] = true
+-- Create trigrams from text (e.g., "hello" -> {"hel", "ell", "llo"})
+local function get_trigrams(text)
+  local trigrams = {}
+  text = text:lower()
+  for i = 1, #text - 2 do
+    trigrams[text:sub(i, i + 2)] = true
+  end
+  return trigrams
+end
+
+-- Calculate Jaccard similarity between two trigram sets
+local function trigram_similarity(set1, set2)
+  local intersection = 0
+  local union = 0
+
+  -- Count intersection and union
+  for trigram in pairs(set1) do
+    if set2[trigram] then
+      intersection = intersection + 1
+    end
+    union = union + 1
+  end
+
+  for trigram in pairs(set2) do
+    if not set1[trigram] then
+      union = union + 1
+    end
+  end
+
+  return intersection / union
+end
+
+local function data_ranked_by_symbols(query, data, min_similarity)
+  -- Get query trigrams including compound versions
+  local query_trigrams = {}
+
+  -- Add trigrams for each word
+  for term in query:lower():gmatch('%w+') do
+    for trigram in pairs(get_trigrams(term)) do
+      query_trigrams[trigram] = true
+    end
+  end
+
+  -- Add trigrams for compound query
+  local compound_query = query:lower():gsub('[^%w]', '')
+  for trigram in pairs(get_trigrams(compound_query)) do
+    query_trigrams[trigram] = true
   end
 
   local results = {}
+  local max_score = 0
+
   for _, entry in ipairs(data) do
-    local total_terms = 0
-    local matched_terms = 0
-    local filename = entry.filename and entry.filename:lower() or ''
+    local score = 0
+    local basename = vim.fn.fnamemodify(entry.filename, ':t'):gsub('%..*$', '')
 
-    -- Calculate similarity score based on term matches
-    for term in pairs(query_terms) do
-      total_terms = total_terms + 1
+    -- Get trigrams for basename and compound version
+    local file_trigrams = get_trigrams(basename)
+    local compound_trigrams = get_trigrams(basename:gsub('[^%w]', ''))
 
-      -- Filename matches
-      if filename:find(term, 1, true) then
-        matched_terms = matched_terms + 1
-        if vim.fn.fnamemodify(filename, ':t'):gsub('%..*$', '') == term then
-          matched_terms = matched_terms + 0.5 -- Bonus for exact filename match
+    -- Calculate similarities
+    local name_sim = trigram_similarity(query_trigrams, file_trigrams)
+    local compound_sim = trigram_similarity(query_trigrams, compound_trigrams)
+
+    -- Take best match
+    score = math.max(name_sim, compound_sim)
+
+    -- Add symbol matches
+    if entry.symbols then
+      local symbol_score = 0
+      for _, symbol in ipairs(entry.symbols) do
+        if symbol.name then
+          local symbol_trigrams = get_trigrams(symbol.name)
+          local sym_sim = trigram_similarity(query_trigrams, symbol_trigrams)
+          symbol_score = math.max(symbol_score, sym_sim)
         end
       end
-
-      -- Symbol matches
-      if entry.symbols then
-        for _, symbol in ipairs(entry.symbols) do
-          if symbol.name and symbol.name:lower():find(term, 1, true) then
-            matched_terms = matched_terms + 1
-            if symbol.name:lower() == term then
-              matched_terms = matched_terms + 0.5 -- Bonus for exact symbol match
-            end
-          end
-          if symbol.signature and symbol.signature:lower():find(term, 1, true) then
-            matched_terms = matched_terms + 0.5 -- Partial credit for signature matches
-          end
-        end
-      end
+      score = score + (symbol_score * 0.5) -- Weight symbol matches less
     end
 
-    -- Calculate similarity score (0 to 1 range)
-    local similarity = matched_terms / (total_terms * 2) -- Denominator accounts for potential bonuses
-
-    -- Only include results above similarity threshold
-    if similarity >= min_similarity then
-      table.insert(results, vim.tbl_extend('force', entry, { score = similarity }))
+    if score > 0 then
+      max_score = math.max(max_score, score)
+      table.insert(results, vim.tbl_extend('force', entry, { score = score }))
     end
   end
 
-  table.sort(results, function(a, b)
+  -- Normalize and filter results
+  local filtered_results = {}
+  for _, result in ipairs(results) do
+    result.score = result.score / max_score
+    if result.score >= min_similarity then
+      table.insert(filtered_results, result)
+    end
+  end
+
+  table.sort(filtered_results, function(a, b)
     return a.score > b.score
   end)
 
-  return results
+  return filtered_results
 end
 
 --- Get the full signature of a declaration
@@ -602,6 +643,8 @@ function M.filter_embeddings(prompt, model, embeddings)
   if #embeddings < MULTI_FILE_THRESHOLD then
     return embeddings
   end
+
+  notify.publish(notify.STATUS, 'Ranking embeddings')
 
   -- Rank embeddings by symbols
   embeddings = data_ranked_by_symbols(prompt, embeddings, MIN_SYMBOL_SIMILARITY)

@@ -65,6 +65,7 @@ end
 ---@field spinner CopilotChat.ui.Spinner
 ---@field sections table<CopilotChat.ui.Chat.Section>
 ---@field config CopilotChat.config.shared
+---@field references table
 ---@field token_count number?
 ---@field token_max_count number?
 local Chat = class(function(self, question_header, answer_header, separator, help, on_buf_create)
@@ -82,6 +83,7 @@ local Chat = class(function(self, question_header, answer_header, separator, hel
 
   -- Variables
   self.config = {}
+  self.references = {}
   self.token_count = nil
   self.token_max_count = nil
 end, Overlay)
@@ -248,6 +250,16 @@ function Chat:render()
         msg = msg .. '\n'
       end
       msg = msg .. self.token_count .. '/' .. self.token_max_count .. ' tokens used'
+    end
+
+    if self.references and #self.references > 0 then
+      if msg ~= '' then
+        msg = msg .. '\n'
+      end
+      msg = msg .. '\nReferences:\n'
+      for _, ref in ipairs(self.references) do
+        msg = msg .. '  ' .. ref.name .. '\n'
+      end
     end
 
     self:show_help(msg, last_section.start_line - last_section.end_line - 1)
@@ -438,6 +450,7 @@ end
 
 function Chat:clear()
   self:validate()
+  self.references = {}
   self.token_count = nil
   self.token_max_count = nil
   vim.bo[self.bufnr].modifiable = true

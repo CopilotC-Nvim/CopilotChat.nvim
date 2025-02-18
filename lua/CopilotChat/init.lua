@@ -659,21 +659,22 @@ function M.ask(prompt, config)
       return
     end
 
-    local ask_ok, response, token_count, token_max_count = pcall(client.ask, client, prompt, {
-      history = history,
-      selection = selection,
-      embeddings = filtered_embeddings,
-      system_prompt = system_prompt,
-      model = selected_model,
-      agent = selected_agent,
-      temperature = config.temperature,
-      on_progress = vim.schedule_wrap(function(token)
-        if not config.headless then
-          state.chat:append(token)
-        end
-        has_output = true
-      end),
-    })
+    local ask_ok, response, references, token_count, token_max_count =
+      pcall(client.ask, client, prompt, {
+        history = history,
+        selection = selection,
+        embeddings = filtered_embeddings,
+        system_prompt = system_prompt,
+        model = selected_model,
+        agent = selected_agent,
+        temperature = config.temperature,
+        on_progress = vim.schedule_wrap(function(token)
+          if not config.headless then
+            state.chat:append(token)
+          end
+          has_output = true
+        end),
+      })
 
     async.util.scheduler()
 
@@ -691,6 +692,7 @@ function M.ask(prompt, config)
 
     if not config.headless then
       state.last_response = response
+      state.chat.references = references
       state.chat.token_count = token_count
       state.chat.token_max_count = token_max_count
     end
