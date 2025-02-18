@@ -347,6 +347,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/5166666?v=4",
       "profile": "https://github.com/dzonatan",
       "contributions": ["code"]
+    },
+    {
+      "login": "unlimitedsola",
+      "name": "Sola",
+      "avatar_url": "https://avatars.githubusercontent.com/u/3632663?v=4",
+      "profile": "https://github.com/unlimitedsola",
+      "contributions": ["doc", "code"]
     }
   ],
   "contributorsPerLine": 7,
