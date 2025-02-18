@@ -1,11 +1,11 @@
 ---@class CopilotChat.Client.ask
+---@field history table
 ---@field selection CopilotChat.select.selection?
 ---@field embeddings table<CopilotChat.context.embed>?
 ---@field system_prompt string
 ---@field model string
 ---@field agent string
 ---@field temperature number?
----@field no_history boolean?
 ---@field on_progress nil|fun(response: string):nil
 
 local log = require('plenary.log')
@@ -189,7 +189,6 @@ end
 
 ---@class CopilotChat.Client : Class
 ---@field providers table<string, CopilotChat.Provider>
----@field history table
 ---@field provider_cache table<string, table>
 ---@field embedding_cache table<CopilotChat.context.embed>
 ---@field models table<string, table>?
@@ -201,7 +200,6 @@ end
 ---@field machineid string
 local Client = class(function(self, providers)
   self.providers = providers
-  self.history = {}
   self.embedding_cache = {}
   self.models = nil
   self.agents = nil
@@ -320,18 +318,19 @@ function Client:ask(prompt, opts)
     opts.agent = nil
   end
 
+  local history = opts.history or {}
   local embeddings = opts.embeddings or {}
   local selection = opts.selection or {}
   local system_prompt = vim.trim(opts.system_prompt)
   local model = opts.model
   local agent = opts.agent
   local temperature = opts.temperature or 0.1
-  local no_history = opts.no_history or false
   local on_progress = opts.on_progress
   local job_id = utils.uuid()
   self.current_job = job_id
 
   log.trace('System prompt: ', system_prompt)
+  log.trace('History: ', #history)
   log.trace('Selection: ', selection.content)
   log.debug('Prompt: ', prompt)
   log.debug('Embeddings: ', #embeddings)
@@ -339,7 +338,6 @@ function Client:ask(prompt, opts)
   log.debug('Agent: ', agent)
   log.debug('Temperature: ', temperature)
 
-  local history = no_history and {} or self.history
   local models = self:fetch_models()
   local model_config = models[model]
   if not model_config then
@@ -628,21 +626,6 @@ function Client:ask(prompt, opts)
   log.trace('Full response: ', full_response)
   log.debug('Last message: ', last_message)
 
-  table.insert(history, {
-    content = prompt,
-    role = 'user',
-  })
-
-  table.insert(history, {
-    content = full_response,
-    role = 'assistant',
-  })
-
-  if not no_history then
-    log.debug('History size increased to ' .. #history)
-    self.history = history
-  end
-
   return full_response,
     last_message and last_message.usage and last_message.usage.total_tokens,
     max_tokens
@@ -842,49 +825,6 @@ function Client:reset()
   self.history = {}
   self.embedding_cache = {}
   return stopped
-end
-
---- Save the history to a file
----@param name string: The name to save the history to
----@param path string: The path to save the history to
-function Client:save(name, path)
-  local history = vim.json.encode(self.history)
-  path = vim.fn.expand(path)
-  vim.fn.mkdir(path, 'p')
-  path = path .. '/' .. name .. '.json'
-  local file = io.open(path, 'w')
-  if not file then
-    log.error('Failed to save history to ' .. path)
-    return
-  end
-
-  file:write(history)
-  file:close()
-  log.info('Saved Copilot history to ' .. path)
-end
-
---- Load the history from a file
----@param name string: The name to load the history from
----@param path string: The path to load the history from
----@return table
-function Client:load(name, path)
-  path = vim.fn.expand(path) .. '/' .. name .. '.json'
-  local file = io.open(path, 'r')
-  if not file then
-    return {}
-  end
-
-  local history = file:read('*a')
-  file:close()
-  self.history = vim.json.decode(history, {
-    luanil = {
-      object = true,
-      array = true,
-    },
-  })
-
-  log.info('Loaded Copilot history from ' .. path)
-  return self.history
 end
 
 --- Check if there is a running job
