@@ -287,7 +287,7 @@ M.copilot_embeddings = {
   prepare_input = function(inputs)
     return {
       dimensions = 512,
-      inputs = inputs,
+      input = inputs,
       model = 'text-embedding-3-small',
     }
   end,
