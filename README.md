@@ -416,9 +416,7 @@ Here's how to implement an [ollama](https://ollama.com/) provider:
         for _, model in ipairs(vim.json.decode(response.body)['models']) do
           table.insert(models, {
             id = model.name,
-            name = model.name,
-            version = "latest",
-            tokenizer = "o200k_base",
+            name = model.name
           })
         end
         return models
