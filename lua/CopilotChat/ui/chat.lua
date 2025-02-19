@@ -252,17 +252,23 @@ function Chat:render()
       msg = msg .. self.token_count .. '/' .. self.token_max_count .. ' tokens used'
     end
 
+    self:show_help(msg, last_section.start_line - last_section.end_line - 1)
+
     if self.references and #self.references > 0 then
-      if msg ~= '' then
-        msg = msg .. '\n'
-      end
-      msg = msg .. '\nReferences:\n'
+      msg = 'References:\n'
       for _, ref in ipairs(self.references) do
         msg = msg .. '  ' .. ref.name .. '\n'
       end
-    end
 
-    self:show_help(msg, last_section.start_line - last_section.end_line - 1)
+      vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, last_section.start_line - 2, 0, {
+        hl_mode = 'combine',
+        priority = 100,
+        virt_lines_above = true,
+        virt_lines = vim.tbl_map(function(t)
+          return { { t, 'CopilotChatHelp' } }
+        end, vim.split(msg, '\n')),
+      })
+    end
   else
     self:clear_help()
   end

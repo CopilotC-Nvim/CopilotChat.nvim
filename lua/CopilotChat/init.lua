@@ -77,6 +77,7 @@ local function finish(start_of_chat)
       local last_prompt = state.last_prompt or ''
 
       if type(M.config.sticky) == 'table' then
+        ---@diagnostic disable-next-line: param-type-mismatch
         for _, sticky in ipairs(M.config.sticky) do
           last_prompt = last_prompt .. '\n> ' .. sticky
         end
