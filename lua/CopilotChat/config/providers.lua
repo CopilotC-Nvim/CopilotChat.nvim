@@ -4,15 +4,15 @@ local utils = require('CopilotChat.utils')
 ---@class CopilotChat.Provider.model
 ---@field id string
 ---@field name string
----@field version string
----@field tokenizer string
----@field max_prompt_tokens number
----@field max_output_tokens number
+---@field version string?
+---@field tokenizer string?
+---@field max_prompt_tokens number?
+---@field max_output_tokens number?
 
 ---@class CopilotChat.Provider.agent
 ---@field id string
 ---@field name string
----@field description string
+---@field description string?
 
 ---@class CopilotChat.Provider
 ---@field disabled nil|boolean
