@@ -236,11 +236,9 @@ M.github_models = {
     return get_github_token(), nil
   end,
 
-  get_models = function()
+  get_models = function(headers)
     local response = utils.curl_post('https://api.catalog.azureml.ms/asset-gallery/v1.0/models', {
-      headers = {
-        ['content-type'] = 'application/json',
-      },
+      headers = headers,
       body = [[
         {
           "filters": [
