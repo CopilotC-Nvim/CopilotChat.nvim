@@ -251,6 +251,10 @@ function Client:fetch_models()
       if ok then
         for _, model in ipairs(provider_models) do
           model.provider = provider_name
+          if not model.version then
+            model.version = model.id
+          end
+
           if models[model.id] then
             model.id = model.id .. ':' .. provider_name
             model.version = model.version .. ':' .. provider_name
@@ -353,7 +357,10 @@ function Client:ask(prompt, opts)
   local tokenizer = model_config.tokenizer or 'o200k_base'
   log.debug('Max tokens: ', max_tokens)
   log.debug('Tokenizer: ', tokenizer)
-  tiktoken.load(tokenizer)
+
+  if max_tokens and tokenizer then
+    tiktoken.load(tokenizer)
+  end
 
   notify.publish(notify.STATUS, 'Generating request')
 
@@ -369,45 +376,54 @@ function Client:ask(prompt, opts)
   local generated_messages = {}
   local selection_messages = generate_selection_messages(selection)
   local embeddings_messages = generate_embeddings_messages(embeddings)
-  local generated_tokens = 0
-  for _, message in ipairs(selection_messages) do
-    generated_tokens = generated_tokens + tiktoken.count(message.content)
-    table.insert(generated_messages, message)
-  end
 
-  -- Count required tokens that we cannot reduce
-  local prompt_tokens = tiktoken.count(prompt)
-  local system_tokens = tiktoken.count(system_prompt)
-  local required_tokens = prompt_tokens + system_tokens + generated_tokens
-
-  -- Reserve space for first embedding
-  local reserved_tokens = #embeddings_messages > 0
-      and tiktoken.count(embeddings_messages[1].content)
-    or 0
-
-  -- Calculate how many tokens we can use for history
-  local history_limit = max_tokens - required_tokens - reserved_tokens
-  local history_tokens = 0
-  for _, msg in ipairs(history) do
-    history_tokens = history_tokens + tiktoken.count(msg.content)
-  end
-
-  -- If we're over history limit, truncate history from the beginning
-  while history_tokens > history_limit and #history > 0 do
-    local removed = table.remove(history, 1)
-    history_tokens = history_tokens - tiktoken.count(removed.content)
-  end
-
-  -- Now add as many files as possible with remaining token budget (back to front)
-  local remaining_tokens = max_tokens - required_tokens - history_tokens
-  for i = #embeddings_messages, 1, -1 do
-    local message = embeddings_messages[i]
-    local tokens = tiktoken.count(message.content)
-    if remaining_tokens - tokens >= 0 then
-      remaining_tokens = remaining_tokens - tokens
+  if max_tokens then
+    -- Count tokens from embeddings
+    local generated_tokens = 0
+    for _, message in ipairs(selection_messages) do
+      generated_tokens = generated_tokens + tiktoken.count(message.content)
       table.insert(generated_messages, message)
-    else
-      break
+    end
+
+    -- Count required tokens that we cannot reduce
+    local prompt_tokens = tiktoken.count(prompt)
+    local system_tokens = tiktoken.count(system_prompt)
+    local required_tokens = prompt_tokens + system_tokens + generated_tokens
+
+    -- Reserve space for first embedding
+    local reserved_tokens = #embeddings_messages > 0
+        and tiktoken.count(embeddings_messages[1].content)
+      or 0
+
+    -- Calculate how many tokens we can use for history
+    local history_limit = max_tokens - required_tokens - reserved_tokens
+    local history_tokens = 0
+    for _, msg in ipairs(history) do
+      history_tokens = history_tokens + tiktoken.count(msg.content)
+    end
+
+    -- If we're over history limit, truncate history from the beginning
+    while history_tokens > history_limit and #history > 0 do
+      local removed = table.remove(history, 1)
+      history_tokens = history_tokens - tiktoken.count(removed.content)
+    end
+
+    -- Now add as many files as possible with remaining token budget (back to front)
+    local remaining_tokens = max_tokens - required_tokens - history_tokens
+    for i = #embeddings_messages, 1, -1 do
+      local message = embeddings_messages[i]
+      local tokens = tiktoken.count(message.content)
+      if remaining_tokens - tokens >= 0 then
+        remaining_tokens = remaining_tokens - tokens
+        table.insert(generated_messages, message)
+      else
+        break
+      end
+    end
+  else
+    -- Add all embedding messages as we cant limit them
+    for _, message in ipairs(embeddings_messages) do
+      table.insert(generated_messages, message)
     end
   end
 
