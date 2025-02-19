@@ -69,6 +69,7 @@ local OFF_SIDE_RULE_LANGUAGES = {
 local MIN_SYMBOL_SIMILARITY = 0.3
 local MIN_SEMANTIC_SIMILARITY = 0.4
 local MULTI_FILE_THRESHOLD = 5
+local MIN_RESULTS = 3
 local MAX_FILES = 2500
 
 --- Compute the cosine similarity between two vectors
@@ -103,16 +104,22 @@ local function data_ranked_by_relatedness(query, data, min_similarity)
   local results = {}
   for _, item in ipairs(data) do
     local similarity = spatial_distance_cosine(item.embedding, query.embedding, item.score)
-    if similarity >= min_similarity then
-      table.insert(results, vim.tbl_extend('force', item, { score = similarity }))
-    end
+    table.insert(results, vim.tbl_extend('force', item, { score = similarity }))
   end
 
   table.sort(results, function(a, b)
     return a.score > b.score
   end)
 
-  return results
+  -- Take top MAX_RESULTS items that meet threshold, or at least MIN_RESULTS items
+  local filtered = {}
+  for i, result in ipairs(results) do
+    if (result.score >= min_similarity) or (i <= MIN_RESULTS) then
+      table.insert(filtered, result)
+    end
+  end
+
+  return filtered
 end
 
 -- Create trigrams from text (e.g., "hello" -> {"hel", "ell", "llo"})
@@ -168,7 +175,7 @@ local function data_ranked_by_symbols(query, data, min_similarity)
   local max_score = 0
 
   for _, entry in ipairs(data) do
-    local score = 0
+    local score = entry.score or 0
     local basename = vim.fn.fnamemodify(entry.filename, ':t'):gsub('%..*$', '')
 
     -- Get trigrams for basename and compound version
@@ -201,18 +208,23 @@ local function data_ranked_by_symbols(query, data, min_similarity)
     end
   end
 
-  -- Normalize and filter results
-  local filtered_results = {}
+  -- Normalize scores
   for _, result in ipairs(results) do
     result.score = result.score / max_score
-    if result.score >= min_similarity then
+  end
+
+  -- Sort by score first
+  table.sort(results, function(a, b)
+    return a.score > b.score
+  end)
+
+  -- Filter results while preserving top scores
+  local filtered_results = {}
+  for i, result in ipairs(results) do
+    if (result.score >= min_similarity) or (i <= MIN_RESULTS) then
       table.insert(filtered_results, result)
     end
   end
-
-  table.sort(filtered_results, function(a, b)
-    return a.score > b.score
-  end)
 
   return filtered_results
 end

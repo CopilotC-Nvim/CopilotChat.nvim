@@ -427,6 +427,8 @@ function Client:ask(prompt, opts)
     end
   end
 
+  log.debug('Generated messages: ', #generated_messages)
+
   local last_message = nil
   local errored = false
   local finished = false
