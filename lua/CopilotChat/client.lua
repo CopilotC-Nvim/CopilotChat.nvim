@@ -482,6 +482,9 @@ function Client:ask(prompt, opts)
     end
   else
     -- Add all embedding messages as we cant limit them
+    for _, message in ipairs(selection_messages) do
+      table.insert(generated_messages, message)
+    end
     for _, message in ipairs(embeddings_messages) do
       table.insert(generated_messages, message)
     end
