@@ -356,6 +356,7 @@ Providers are modules that implement integration with different AI providers.
 
 - `copilot` - Default GitHub Copilot provider used for chat and embeddings
 - `github_models` - Provider for GitHub Marketplace models
+- `copilot_embeddings` - Provider for Copilot embeddings, not standalone
 
 ### Provider Interface
 
@@ -366,26 +367,26 @@ Custom providers can implement these methods:
   -- Optional: Disable provider
   disabled?: boolean,
 
-  -- Optional: Provider to use for embeddings
-  embeddings?: string,
+  -- Optional: Embeddings provider name or function
+  embed?: string|function,
 
-  -- Optional: Get authentication token
-  get_token(): string, number?,
+  -- Required: Get request headers with optional expiration time
+  get_headers(): table<string,string>, number?,
 
-  -- Required: Get request headers
-  get_headers(token: string): table,
+  -- Optional: Get API endpoint URL
+  get_url?(opts: CopilotChat.Provider.options): string,
 
-  -- Required: Get API endpoint URL
-  get_url(opts: table): string,
+  -- Optional: Prepare request input
+  prepare_input?(inputs: table<CopilotChat.Provider.input>, opts: CopilotChat.Provider.options): table,
 
-  -- Required: Prepare request body
-  prepare_input(inputs: table, opts: table, model: table): table,
+  -- Optional: Prepare response output
+  prepare_output?(output: table, opts: CopilotChat.Provider.options): CopilotChat.Provider.output,
 
   -- Optional: Get available models
-  get_models?(headers: table): table,
+  get_models?(headers: table): table<CopilotChat.Provider.model>,
 
-  -- Optional: Get available agents
-  get_agents?(headers: table): table,
+  -- Optional: Get available agents 
+  get_agents?(headers: table): table<CopilotChat.Provider.agent>,
 }
 ```
 
