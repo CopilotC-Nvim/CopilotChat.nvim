@@ -3,14 +3,8 @@
 ---@field actions table<string, CopilotChat.config.prompt>: A table with the actions to pick from
 
 local chat = require('CopilotChat')
-local utils = require('CopilotChat.utils')
 
 local M = {}
-
-function M.help_actions()
-  utils.deprecate('help_actions()', 'prompt_actions()')
-  return M.prompt_actions()
-end
 
 --- User prompt actions
 ---@param config CopilotChat.config.shared?: The chat configuration
