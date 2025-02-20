@@ -390,48 +390,9 @@ Custom providers can implement these methods:
 }
 ```
 
-### Ollama Example
+### External Providers
 
-Here's how to implement an [ollama](https://ollama.com/) provider:
-
-```lua
-{
-  providers = {
-    ollama = {
-      embed = 'copilot_embeddings', -- Use Copilot as embedding provider
-
-      -- Copy copilot input and output processing
-      prepare_input = require('CopilotChat.config.providers').copilot.prepare_input,
-      prepare_output = require('CopilotChat.config.providers').copilot.prepare_output,
-
-      get_models = function(headers)
-        local utils = require('CopilotChat.utils')
-        local response, err = utils.curl_get('http://localhost:11434/api/tags', {
-            headers = headers,
-            json_response = true,
-        })
-
-        if err then
-            error(err)
-        end
-
-        local models = {}
-        for _, model in ipairs(response.body.models) do
-          table.insert(models, {
-            id = model.name,
-            name = model.name
-          })
-        end
-        return models
-      end,
-
-      get_url = function()
-        return 'http://localhost:11434/api/chat'
-      end,
-    }
-  }
-}
-```
+For external providers (Ollama, LM Studio), see the [external providers wiki page](https://github.com/CopilotC-Nvim/CopilotChat.nvim/wiki/External-Providers).
 
 # Configuration
 
@@ -682,84 +643,9 @@ chat.setup({
 })
 ```
 
-# Tips and Examples
+# Examples
 
-## Quick Chat with Buffer
-
-Set up a quick chat command that uses the entire buffer content:
-
-```lua
--- Quick chat keybinding
-vim.keymap.set('n', '<leader>ccq', function()
-  local input = vim.fn.input("Quick Chat: ")
-  if input ~= "" then
-    require("CopilotChat").ask(input, {
-      selection = require("CopilotChat.select").buffer
-    })
-  end
-end, { desc = "CopilotChat - Quick chat" })
-```
-
-## Inline Chat Window
-
-Configure the chat window to appear inline near the cursor:
-
-```lua
-require("CopilotChat").setup({
-  window = {
-    layout = 'float',
-    relative = 'cursor',
-    width = 1,
-    height = 0.4,
-    row = 1
-  }
-})
-```
-
-## Telescope Integration
-
-Requires [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim):
-
-```lua
-vim.keymap.set('n', '<leader>ccp', function()
-  local actions = require("CopilotChat.actions")
-  require("CopilotChat.integrations.telescope").pick(actions.prompt_actions())
-end, { desc = "CopilotChat - Prompt actions" })
-```
-
-## Quick Search with Perplexity
-
-Requires [PerplexityAI Agent](https://github.com/marketplace/perplexityai):
-
-```lua
-vim.keymap.set({ 'n', 'v' }, '<leader>ccs', function()
-  local input = vim.fn.input("Perplexity: ")
-  if input ~= "" then
-    require("CopilotChat").ask(input, {
-      agent = "perplexityai",
-      selection = false,
-    })
-  end
-end, { desc = "CopilotChat - Perplexity Search" })
-```
-
-## Markdown Rendering
-
-Use [render-markdown.nvim](https://github.com/MeanderingProgrammer/render-markdown.nvim) for better chat display:
-
-```lua
--- Register copilot-chat filetype
-require('render-markdown').setup({
-  file_types = { 'markdown', 'copilot-chat' },
-})
-
--- Adjust chat display settings
-require('CopilotChat').setup({
-  highlight_headers = false,
-  separator = '---',
-  error_header = '> [!ERROR] Error',
-})
-```
+For examples, see the [examples wiki page](https://github.com/CopilotC-Nvim/CopilotChat.nvim/wiki/Examples-and-Tips).
 
 # Development
 
