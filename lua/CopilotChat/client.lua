@@ -268,12 +268,7 @@ function Client:authenticate(provider_name)
   local expires_at = self.provider_cache[provider_name].expires_at
 
   if not headers or (expires_at and expires_at <= math.floor(os.time())) then
-    local token
-    if provider.get_token then
-      token, expires_at = provider.get_token()
-    end
-
-    headers = provider.get_headers(token)
+    headers, expires_at = provider.get_headers()
     self.provider_cache[provider_name].headers = headers
     self.provider_cache[provider_name].expires_at = expires_at
   end

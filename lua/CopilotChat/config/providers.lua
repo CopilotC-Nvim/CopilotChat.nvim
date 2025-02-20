@@ -39,8 +39,7 @@ local utils = require('CopilotChat.utils')
 
 ---@class CopilotChat.Provider
 ---@field disabled nil|boolean
----@field get_headers fun(token:string):table<string, string>
----@field get_token nil|fun():string,number?
+---@field get_headers fun():table<string, string>,number?
 ---@field get_agents nil|fun(headers:table):table<CopilotChat.Provider.agent>
 ---@field get_models nil|fun(headers:table):table<CopilotChat.Provider.model>
 ---@field embed nil|string|fun(inputs:table<string>, headers:table):table<CopilotChat.Provider.embed>
@@ -107,17 +106,7 @@ local M = {}
 M.copilot = {
   embed = 'copilot_embeddings',
 
-  get_headers = function(token)
-    return {
-      ['authorization'] = 'Bearer ' .. token,
-      ['editor-version'] = EDITOR_VERSION,
-      ['editor-plugin-version'] = 'CopilotChat.nvim/*',
-      ['copilot-integration-id'] = 'vscode-chat',
-      ['content-type'] = 'application/json',
-    }
-  end,
-
-  get_token = function()
+  get_headers = function()
     local response, err = utils.curl_get('https://api.github.com/copilot_internal/v2/token', {
       headers = {
         ['Authorization'] = 'Token ' .. get_github_token(),
@@ -134,7 +123,15 @@ M.copilot = {
     end
 
     local body = vim.json.decode(response.body)
-    return body.token, body.expires_at
+
+    return {
+      ['authorization'] = 'Bearer ' .. body.token,
+      ['editor-version'] = EDITOR_VERSION,
+      ['editor-plugin-version'] = 'CopilotChat.nvim/*',
+      ['copilot-integration-id'] = 'vscode-chat',
+      ['content-type'] = 'application/json',
+    },
+      body.expires_at
   end,
 
   get_agents = function(headers)
@@ -280,17 +277,13 @@ M.copilot = {
 M.github_models = {
   embed = 'copilot_embeddings',
 
-  get_headers = function(token)
+  get_headers = function()
     return {
-      ['Authorization'] = 'Bearer ' .. token,
+      ['Authorization'] = 'Bearer ' .. get_github_token(),
       ['Content-Type'] = 'application/json',
       ['x-ms-useragent'] = EDITOR_VERSION,
       ['x-ms-user-agent'] = EDITOR_VERSION,
     }
-  end,
-
-  get_token = function()
-    return get_github_token(), nil
   end,
 
   get_models = function(headers)
@@ -340,7 +333,6 @@ M.github_models = {
 
 M.copilot_embeddings = {
   get_headers = M.copilot.get_headers,
-  get_token = M.copilot.get_token,
 
   embed = function(inputs, headers)
     local response = utils.curl_post('https://api.githubcopilot.com/embeddings', {
