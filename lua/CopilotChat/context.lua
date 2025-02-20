@@ -99,20 +99,18 @@ end
 ---@param min_similarity number
 ---@return table<CopilotChat.context.embed>
 local function data_ranked_by_relatedness(query, data, min_similarity)
-  local results = {}
   for _, item in ipairs(data) do
     local score = spatial_distance_cosine(item.embedding, query.embedding)
-    score = score or item.score or 0
-    table.insert(results, vim.tbl_extend('force', item, { score = score }))
+    item.score = score or item.score or 0
   end
 
-  table.sort(results, function(a, b)
+  table.sort(data, function(a, b)
     return a.score > b.score
   end)
 
-  -- Take top MAX_RESULTS items that meet threshold, or at least MIN_RESULTS items
+  -- Return top items meeting threshold
   local filtered = {}
-  for i, result in ipairs(results) do
+  for i, result in ipairs(data) do
     if (result.score >= min_similarity) or (i <= MULTI_FILE_THRESHOLD) then
       table.insert(filtered, result)
     end
@@ -170,7 +168,6 @@ local function data_ranked_by_symbols(query, data, min_similarity)
     query_trigrams[trigram] = true
   end
 
-  local results = {}
   local max_score = 0
 
   for _, entry in ipairs(data) do
@@ -200,25 +197,23 @@ local function data_ranked_by_symbols(query, data, min_similarity)
       score = score + (symbol_score * 0.5) -- Weight symbol matches less
     end
 
-    if score > 0 then
-      max_score = math.max(max_score, score)
-      table.insert(results, vim.tbl_extend('force', entry, { score = score }))
-    end
+    max_score = math.max(max_score, score)
+    entry.score = score
   end
 
   -- Normalize scores
-  for _, result in ipairs(results) do
-    result.score = result.score / max_score
+  for _, entry in ipairs(data) do
+    entry.score = entry.score / max_score
   end
 
   -- Sort by score first
-  table.sort(results, function(a, b)
+  table.sort(data, function(a, b)
     return a.score > b.score
   end)
 
   -- Filter results while preserving top scores
   local filtered_results = {}
-  for i, result in ipairs(results) do
+  for i, result in ipairs(data) do
     if (result.score >= min_similarity) or (i <= MULTI_FILE_THRESHOLD) then
       table.insert(filtered_results, result)
     end
