@@ -430,8 +430,8 @@ Custom providers can implement these methods:
       -- Optional: Embeddings provider name or function
       embed?: string|function,
     
-      -- Required: Get request headers with optional expiration time
-      get_headers(): table<string,string>, number?,
+      -- Optional: Get extra request headers with optional expiration time
+      get_headers(?): table<string,string>, number?,
     
       -- Optional: Get API endpoint URL
       get_url?(opts: CopilotChat.Provider.options): string,
@@ -465,21 +465,19 @@ Here’s how to implement an ollama <https://ollama.com/> provider:
           prepare_input = require('CopilotChat.config.providers').copilot.prepare_input,
           prepare_output = require('CopilotChat.config.providers').copilot.prepare_output,
     
-          get_headers = function()
-            return {
-              ['Content-Type'] = 'application/json',
-            }
-          end,
-    
           get_models = function(headers)
             local utils = require('CopilotChat.utils')
-            local response = utils.curl_get('http://localhost:11434/api/tags', { headers = headers })
-            if not response or response.status ~= 200 then
-              error('Failed to fetch models: ' .. tostring(response and response.status))
+            local response, err = utils.curl_get('http://localhost:11434/api/tags', {
+                headers = headers,
+                json_response = true,
+            })
+    
+            if err then
+                error(err)
             end
     
             local models = {}
-            for _, model in ipairs(vim.json.decode(response.body)['models']) do
+            for _, model in ipairs(response.body.models) do
               table.insert(models, {
                 id = model.name,
                 name = model.name
