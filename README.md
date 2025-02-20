@@ -397,7 +397,11 @@ Here's how to implement an [ollama](https://ollama.com/) provider:
 {
   providers = {
     ollama = {
-      embeddings = 'copilot_embeddings', -- Use Copilot as embedding provider
+      embed = 'copilot_embeddings', -- Use Copilot as embedding provider
+
+      -- Copy copilot input and output processing
+      prepare_input = require('CopilotChat.config.providers').copilot.prepare_input,
+      prepare_output = require('CopilotChat.config.providers').copilot.prepare_output,
 
       get_headers = function()
         return {
@@ -420,14 +424,6 @@ Here's how to implement an [ollama](https://ollama.com/) provider:
           })
         end
         return models
-      end,
-
-      prepare_input = function(inputs, opts)
-        return {
-          model = opts.model,
-          messages = inputs,
-          stream = true,
-        }
       end,
 
       get_url = function()
