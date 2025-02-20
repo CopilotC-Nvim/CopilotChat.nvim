@@ -345,7 +345,7 @@ function Chat:parse_history()
 
   local history = {}
   for _, section in ipairs(self.sections) do
-    if section.content then
+    if not utils.empty(section.content) then
       if section.answer then
         table.insert(history, {
           content = section.content,
