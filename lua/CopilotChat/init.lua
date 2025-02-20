@@ -277,7 +277,10 @@ end
 ---@param prompt string
 ---@param config CopilotChat.config.shared
 function M.resolve_agent(prompt, config)
-  local agents = vim.tbl_keys(client:list_agents())
+  local agents = vim.tbl_map(function(agent)
+    return agent.id
+  end, client:list_agents())
+
   local selected_agent = config.agent
   prompt = prompt:gsub('@' .. WORD, function(match)
     if vim.tbl_contains(agents, match) then

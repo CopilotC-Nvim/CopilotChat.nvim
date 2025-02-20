@@ -394,8 +394,8 @@ function Client:ask(prompt, opts)
   end
 
   local agents = self:fetch_agents()
-  local agent_config = agent and agents[agent] or {}
-  if not agent_config then
+  local agent_config = agent and agents[agent]
+  if agent and not agent_config then
     error('Agent not found: ' .. agent)
   end
 
@@ -412,7 +412,7 @@ function Client:ask(prompt, opts)
     model = vim.tbl_extend('force', model_config, {
       id = opts.model:gsub(':' .. provider_name .. '$', ''),
     }),
-    agent = vim.tbl_extend('force', agent_config, {
+    agent = agent_config and vim.tbl_extend('force', agent_config, {
       id = opts.agent and opts.agent:gsub(':' .. provider_name .. '$', ''),
     }),
     temperature = temperature,
@@ -612,7 +612,7 @@ function Client:ask(prompt, opts)
     args.stream = stream_func
   end
 
-  local response, err = utils.curl_post(provider.get_url(opts), args)
+  local response, err = utils.curl_post(provider.get_url(options), args)
 
   if self.current_job ~= job_id then
     return

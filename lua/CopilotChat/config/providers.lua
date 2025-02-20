@@ -20,7 +20,7 @@ local utils = require('CopilotChat.utils')
 
 ---@class CopilotChat.Provider.options
 ---@field model CopilotChat.Provider.model
----@field agent CopilotChat.Provider.agent
+---@field agent CopilotChat.Provider.agent?
 ---@field temperature number?
 
 ---@class CopilotChat.Provider.input
@@ -46,7 +46,7 @@ local utils = require('CopilotChat.utils')
 ---@field embed nil|string|fun(inputs:table<string>, headers:table):table<CopilotChat.Provider.embed>
 ---@field prepare_input nil|fun(inputs:table<CopilotChat.Provider.input>, opts:CopilotChat.Provider.options):table
 ---@field prepare_output nil|fun(output:table, opts:CopilotChat.Provider.options):CopilotChat.Provider.output
----@field get_url nil|fun(opts:table):string
+---@field get_url nil|fun(opts:CopilotChat.Provider.options):string
 
 local EDITOR_VERSION = 'Neovim/'
   .. vim.version().major
@@ -270,7 +270,7 @@ M.copilot = {
 
   get_url = function(opts)
     if opts.agent then
-      return 'https://api.githubcopilot.com/agents/' .. opts.agent .. '?chat'
+      return 'https://api.githubcopilot.com/agents/' .. opts.agent.id .. '?chat'
     end
 
     return 'https://api.githubcopilot.com/chat/completions'
