@@ -725,6 +725,14 @@ function M.stop(reset)
     state.chat:clear()
     state.last_prompt = nil
     state.last_response = nil
+
+    -- Clear the selection
+    if state.source and utils.buf_valid(state.source.bufnr) then
+      for _, mark in ipairs({ '<', '>', '[', ']' }) do
+        pcall(vim.api.nvim_buf_del_mark, state.source.bufnr, mark)
+      end
+      highlight_selection(true, state.chat.config)
+    end
   else
     client:stop()
   end
