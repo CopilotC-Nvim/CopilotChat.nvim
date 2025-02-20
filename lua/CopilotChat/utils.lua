@@ -327,21 +327,58 @@ M.curl_store_args = function(args)
   return M.curl_args
 end
 
+--- Decode json
+---@param body string The json string
+---@return table, string?
+M.json_decode = function(body)
+  local ok, data = pcall(vim.json.decode, body, {
+    luanil = {
+      object = true,
+      array = true,
+    },
+  })
+
+  if ok then
+    return data
+  end
+
+  return {}, data
+end
+
 --- Send curl get request
 ---@param url string The url
 ---@param opts table? The options
 M.curl_get = async.wrap(function(url, opts, callback)
   local args = {
-    callback = callback,
     on_error = function(err)
-      err = M.make_string(err and err.stderr or err)
-      callback(nil, err)
+      callback(nil, M.make_string(err and err.stderr or err))
     end,
   }
 
   args = vim.tbl_deep_extend('force', DEFAULT_REQUEST_ARGS, args)
   args = vim.tbl_deep_extend('force', M.curl_args, args)
   args = vim.tbl_deep_extend('force', args, opts or {})
+
+  args.callback = function(response)
+    if response and not vim.startswith(tostring(response.status), '20') then
+      callback(response, response.body)
+      return
+    end
+
+    if not args.json_response then
+      callback(response)
+      return
+    end
+
+    local body, err = M.json_decode(response.body)
+    if err then
+      callback(response, err)
+    else
+      response.body = body
+      callback(response)
+    end
+  end
+
   curl.get(url, args)
 end, 3)
 
@@ -360,6 +397,41 @@ M.curl_post = async.wrap(function(url, opts, callback)
   args = vim.tbl_deep_extend('force', DEFAULT_REQUEST_ARGS, args)
   args = vim.tbl_deep_extend('force', M.curl_args, args)
   args = vim.tbl_deep_extend('force', args, opts or {})
+
+  if args.json_response then
+    args.headers = vim.tbl_deep_extend('force', args.headers or {}, {
+      Accept = 'application/json',
+    })
+  end
+
+  args.callback = function(response)
+    if response and not vim.startswith(tostring(response.status), '20') then
+      callback(response, response.body)
+      return
+    end
+
+    if not args.json_response then
+      callback(response)
+      return
+    end
+
+    local body, err = M.json_decode(response.body)
+    if err then
+      callback(response, err)
+    else
+      response.body = body
+      callback(response)
+    end
+  end
+
+  if args.json_request then
+    args.headers = vim.tbl_deep_extend('force', args.headers or {}, {
+      ['Content-Type'] = 'application/json',
+    })
+
+    args.body = M.temp_file(vim.json.encode(args.body))
+  end
+
   curl.post(url, args)
 end, 3)
 
