@@ -13,8 +13,6 @@
 ---@field bufnr number
 ---@field diagnostics table<CopilotChat.select.selection.diagnostic>?
 
-local utils = require('CopilotChat.utils')
-
 local M = {}
 
 --- Get diagnostics in a given range
@@ -161,16 +159,6 @@ function M.unnamed(source)
     bufnr = bufnr,
     diagnostics = get_diagnostics_in_range(bufnr, start_line, finish_line),
   }
-end
-
-function M.clipboard()
-  utils.deprecate('selection.clipboard', 'context.register:+')
-  return nil
-end
-
-function M.gitdiff()
-  utils.deprecate('selection.gitdiff', 'context.gitdiff')
-  return nil
 end
 
 return M
