@@ -385,7 +385,7 @@ Custom providers can implement these methods:
   -- Optional: Get available models
   get_models?(headers: table): table<CopilotChat.Provider.model>,
 
-  -- Optional: Get available agents 
+  -- Optional: Get available agents
   get_agents?(headers: table): table<CopilotChat.Provider.agent>,
 }
 ```
