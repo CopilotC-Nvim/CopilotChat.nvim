@@ -459,4 +459,23 @@ function M.key_to_info(name, key, surround)
   return out
 end
 
+--- Check if a value is empty
+---@param v any The value
+---@return boolean
+function M.empty(v)
+  if not v then
+    return true
+  end
+
+  if type(v) == 'table' then
+    return vim.tbl_isempty(v)
+  end
+
+  if type(v) == 'string' then
+    return vim.trim(v) == ''
+  end
+
+  return false
+end
+
 return M

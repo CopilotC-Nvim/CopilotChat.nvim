@@ -659,7 +659,7 @@ function Client:ask(prompt, opts)
   end
 
   if is_stream then
-    if not full_response then
+    if utils.empty(full_response) then
       for _, line in ipairs(vim.split(response.body, '\n')) do
         parse_stream_line(line)
       end
@@ -668,7 +668,7 @@ function Client:ask(prompt, opts)
     parse_line(response.body)
   end
 
-  if not full_response then
+  if utils.empty(full_response) then
     error('Failed to get response: empty response')
     return
   end
