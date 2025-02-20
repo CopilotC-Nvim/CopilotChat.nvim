@@ -267,13 +267,15 @@ function Client:authenticate(provider_name)
   local headers = self.provider_cache[provider_name].headers
   local expires_at = self.provider_cache[provider_name].expires_at
 
-  if not headers or (expires_at and expires_at <= math.floor(os.time())) then
+  if
+    provider.get_headers and (not headers or (expires_at and expires_at <= math.floor(os.time())))
+  then
     headers, expires_at = provider.get_headers()
     self.provider_cache[provider_name].headers = headers
     self.provider_cache[provider_name].expires_at = expires_at
   end
 
-  return headers
+  return headers or {}
 end
 
 --- Fetch models from the Copilot API
@@ -599,13 +601,12 @@ function Client:ask(prompt, opts)
     options
   )
   local is_stream = request.stream
-  local body = vim.json.encode(request)
 
   local args = {
-    body = temp_file(body),
+    json_request = true,
+    body = request,
     headers = headers,
   }
-
   if is_stream then
     args.stream = stream_func
   end
@@ -618,41 +619,28 @@ function Client:ask(prompt, opts)
 
   self.current_job = nil
 
-  if err then
-    error(err)
-    return
-  end
-
-  if not response then
-    error('Failed to get response')
-    return
-  end
-
   log.debug('Response status: ', response.status)
   log.debug('Response body: ', response.body)
   log.debug('Response headers: ', response.headers)
 
-  if response.status ~= 200 then
-    if response.status == 401 then
-      local ok, content = pcall(vim.json.decode, response.body, {
-        luanil = {
-          object = true,
-          array = true,
-        },
-      })
+  if err then
+    local error_msg = 'Failed to get response: ' .. err
 
-      if ok and content.authorize_url then
-        error(
-          'Failed to authenticate. Visit following url to authorize '
+    if response then
+      if response.status == 401 then
+        local content = utils.json_decode(response.body)
+        if content.authorize_url then
+          error_msg = 'Failed to authenticate. Visit following url to authorize '
             .. content.slug
             .. ':\n'
             .. content.authorize_url
-        )
-        return
+        end
+      else
+        error_msg = 'Failed to get response: ' .. tostring(response.status) .. '\n' .. response.body
       end
     end
 
-    error('Failed to get response: ' .. tostring(response.status) .. '\n' .. response.body)
+    error(error_msg)
     return
   end
 

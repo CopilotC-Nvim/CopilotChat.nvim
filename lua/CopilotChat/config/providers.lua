@@ -39,7 +39,7 @@ local utils = require('CopilotChat.utils')
 
 ---@class CopilotChat.Provider
 ---@field disabled nil|boolean
----@field get_headers fun():table<string, string>,number?
+---@field get_headers nil|fun():table<string, string>,number?
 ---@field get_agents nil|fun(headers:table):table<CopilotChat.Provider.agent>
 ---@field get_models nil|fun(headers:table):table<CopilotChat.Provider.model>
 ---@field embed nil|string|fun(inputs:table<string>, headers:table):table<CopilotChat.Provider.embed>
@@ -108,9 +108,9 @@ M.copilot = {
 
   get_headers = function()
     local response, err = utils.curl_get('https://api.github.com/copilot_internal/v2/token', {
+      json_response = true,
       headers = {
         ['Authorization'] = 'Token ' .. get_github_token(),
-        ['Accept'] = 'application/json',
       },
     })
 
@@ -118,24 +118,18 @@ M.copilot = {
       error(err)
     end
 
-    if response.status ~= 200 then
-      error('Failed to authenticate: ' .. tostring(response.status))
-    end
-
-    local body = vim.json.decode(response.body)
-
     return {
-      ['authorization'] = 'Bearer ' .. body.token,
-      ['editor-version'] = EDITOR_VERSION,
-      ['editor-plugin-version'] = 'CopilotChat.nvim/*',
-      ['copilot-integration-id'] = 'vscode-chat',
-      ['content-type'] = 'application/json',
+      ['Authorization'] = 'Bearer ' .. response.body.token,
+      ['Editor-Version'] = EDITOR_VERSION,
+      ['Editor-Plugin-Version'] = 'CopilotChat.nvim/*',
+      ['Copilot-Integration-Id'] = 'vscode-chat',
     },
-      body.expires_at
+      response.body.expires_at
   end,
 
   get_agents = function(headers)
     local response, err = utils.curl_get('https://api.githubcopilot.com/agents', {
+      json_response = true,
       headers = headers,
     })
 
@@ -143,13 +137,8 @@ M.copilot = {
       error(err)
     end
 
-    if response.status ~= 200 then
-      error('Failed to fetch agents: ' .. tostring(response.status))
-    end
-
-    local agents = vim.json.decode(response.body)['agents']
     local out = {}
-    for _, agent in ipairs(agents) do
+    for _, agent in ipairs(response.body.agents) do
       table.insert(out, {
         id = agent.slug,
         name = agent.name,
@@ -162,6 +151,7 @@ M.copilot = {
 
   get_models = function(headers)
     local response, err = utils.curl_get('https://api.githubcopilot.com/models', {
+      json_response = true,
       headers = headers,
     })
 
@@ -169,12 +159,8 @@ M.copilot = {
       error(err)
     end
 
-    if response.status ~= 200 then
-      error('Failed to fetch models: ' .. tostring(response.status))
-    end
-
     local models = {}
-    for _, model in ipairs(vim.json.decode(response.body).data) do
+    for _, model in ipairs(response.body.data) do
       if model['capabilities']['type'] == 'chat' then
         table.insert(models, {
           id = model.id,
@@ -192,7 +178,8 @@ M.copilot = {
       if not model.policy then
         utils.curl_post('https://api.githubcopilot.com/models/' .. model.id .. '/policy', {
           headers = headers,
-          body = vim.json.encode({ state = 'enabled' }),
+          json_request = true,
+          body = { state = 'enabled' },
         })
       end
     end
@@ -280,34 +267,34 @@ M.github_models = {
   get_headers = function()
     return {
       ['Authorization'] = 'Bearer ' .. get_github_token(),
-      ['Content-Type'] = 'application/json',
       ['x-ms-useragent'] = EDITOR_VERSION,
       ['x-ms-user-agent'] = EDITOR_VERSION,
     }
   end,
 
   get_models = function(headers)
-    local response = utils.curl_post('https://api.catalog.azureml.ms/asset-gallery/v1.0/models', {
-      headers = headers,
-      body = [[
-        {
-          "filters": [
-            { "field": "freePlayground", "values": ["true"], "operator": "eq"},
-            { "field": "labels", "values": ["latest"], "operator": "eq"}
-          ],
-          "order": [
-            { "field": "displayName", "direction": "asc" }
-          ]
-        }
-      ]],
-    })
+    local response, err =
+      utils.curl_post('https://api.catalog.azureml.ms/asset-gallery/v1.0/models', {
+        headers = headers,
+        json_request = true,
+        json_response = true,
+        body = {
+          filters = {
+            { field = 'freePlayground', values = { 'true' }, operator = 'eq' },
+            { field = 'labels', values = { 'latest' }, operator = 'eq' },
+          },
+          order = {
+            { field = 'displayName', direction = 'asc' },
+          },
+        },
+      })
 
-    if not response or response.status ~= 200 then
-      error('Failed to fetch models: ' .. tostring(response and response.status))
+    if err then
+      error(err)
     end
 
     local models = {}
-    for _, model in ipairs(vim.json.decode(response.body)['summaries']) do
+    for _, model in ipairs(response.body.summaries) do
       if vim.tbl_contains(model.inferenceTasks, 'chat-completion') then
         table.insert(models, {
           id = model.name,
@@ -335,20 +322,22 @@ M.copilot_embeddings = {
   get_headers = M.copilot.get_headers,
 
   embed = function(inputs, headers)
-    local response = utils.curl_post('https://api.githubcopilot.com/embeddings', {
+    local response, err = utils.curl_post('https://api.githubcopilot.com/embeddings', {
       headers = headers,
-      body = utils.temp_file(vim.json.encode({
+      json_request = true,
+      json_response = true,
+      body = {
         dimensions = 512,
         input = inputs,
         model = 'text-embedding-3-small',
-      })),
+      },
     })
 
-    if not response or response.status ~= 200 then
-      error('Failed to embed text: ' .. tostring(response and response.status))
+    if err then
+      error(err)
     end
 
-    return vim.json.decode(response.body).data
+    return response.body.data
   end,
 }
 
