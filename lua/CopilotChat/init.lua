@@ -667,7 +667,7 @@ function M.ask(prompt, config)
 
     local has_output = false
     local query_ok, filtered_embeddings =
-      pcall(context.filter_embeddings, prompt, selected_model, embeddings)
+      pcall(context.filter_embeddings, prompt, selected_model, config.headless, embeddings)
 
     if not query_ok then
       async.util.scheduler()
