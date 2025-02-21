@@ -401,7 +401,7 @@ function M.files(winnr, with_content)
       content = table.concat(chunk, '\n'),
       filename = chunk_name,
       filetype = 'text',
-      score = 0.2, -- Score bonus
+      score = 0.2,
     })
   end
 
@@ -464,11 +464,14 @@ function M.buffer(bufnr)
     return nil
   end
 
-  return build_outline(
+  local out = build_outline(
     table.concat(content, '\n'),
     utils.filepath(vim.api.nvim_buf_get_name(bufnr)),
     vim.bo[bufnr].filetype
   )
+
+  out.score = 0.1
+  return out
 end
 
 --- Get content of all buffers
