@@ -645,9 +645,10 @@ end
 --- Filter embeddings based on the query
 ---@param prompt string
 ---@param model string
+---@param headless boolean
 ---@param embeddings table<CopilotChat.context.embed>
 ---@return table<CopilotChat.context.embed>
-function M.filter_embeddings(prompt, model, embeddings)
+function M.filter_embeddings(prompt, model, headless, embeddings)
   -- If we dont need to embed anything, just return directly
   if #embeddings < MULTI_FILE_THRESHOLD then
     return embeddings
@@ -662,10 +663,21 @@ function M.filter_embeddings(prompt, model, embeddings)
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
   end
 
-  -- Add prompt so it can be embedded
+  -- Build query from history and prompt
+  local query = ''
+  if not headless then
+    for _, message in ipairs(client.history) do
+      if message.role == 'user' then
+        query = query .. '\n' .. message.content
+      end
+    end
+  end
+  query = query .. '\n' .. prompt
+
+  -- Embed the query
   table.insert(embeddings, {
-    content = prompt,
-    filename = 'prompt',
+    content = query,
+    filename = 'query',
     filetype = 'raw',
   })
 
