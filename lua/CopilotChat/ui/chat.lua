@@ -1,7 +1,6 @@
 local Overlay = require('CopilotChat.ui.overlay')
 local Spinner = require('CopilotChat.ui.spinner')
 local utils = require('CopilotChat.utils')
-local is_stable = utils.is_stable
 local class = utils.class
 
 function CopilotChatFoldExpr(lnum, separator)
@@ -493,10 +492,9 @@ function Chat:open(config)
       title = window.title,
       row = window.row or math.floor((vim.o.lines - height) / 2),
       col = window.col or math.floor((vim.o.columns - width) / 2),
+      footer = window.footer,
     }
-    if not is_stable() then
-      win_opts.footer = window.footer
-    end
+
     self.winnr = vim.api.nvim_open_win(self.bufnr, false, win_opts)
   elseif layout == 'vertical' then
     local orig = vim.api.nvim_get_current_win()

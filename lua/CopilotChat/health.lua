@@ -46,18 +46,7 @@ function M.check()
   start('CopilotChat.nvim [core]')
 
   local vim_version = vim.trim(vim.api.nvim_command_output('version'))
-  local dev_number = tonumber(vim_version:match('dev%-(%d+)'))
-
-  if dev_number then
-    local to_check = vim.fn.has('nvim-0.11.0') and 0 or 2500
-    if dev_number >= to_check then
-      ok('nvim: ' .. vim_version)
-    else
-      error(
-        'nvim: outdated, please upgrade to a up to date nightly version. See "https://github.com/neovim/neovim".'
-      )
-    end
-  elseif vim.fn.has('nvim-0.10.0') == 1 then
+  if vim.fn.has('nvim-0.10.0') == 1 then
     ok('nvim: ' .. vim_version)
   else
     error('nvim: unsupported, please upgrade to 0.10.0 or later. See "https://neovim.io/".')
