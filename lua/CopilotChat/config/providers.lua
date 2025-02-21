@@ -137,16 +137,13 @@ M.copilot = {
       error(err)
     end
 
-    local out = {}
-    for _, agent in ipairs(response.body.agents) do
-      table.insert(out, {
+    return vim.tbl_map(function(agent)
+      return {
         id = agent.slug,
         name = agent.name,
         description = agent.description,
-      })
-    end
-
-    return out
+      }
+    end, response.body.agents)
   end,
 
   get_models = function(headers)
@@ -159,10 +156,13 @@ M.copilot = {
       error(err)
     end
 
-    local models = {}
-    for _, model in ipairs(response.body.data) do
-      if model['capabilities']['type'] == 'chat' then
-        table.insert(models, {
+    local models = vim
+      .iter(response.body.data)
+      :filter(function(model)
+        return model['capabilities']['type'] == 'chat'
+      end)
+      :map(function(model)
+        return {
           id = model.id,
           name = model.name,
           version = model.version,
@@ -170,9 +170,9 @@ M.copilot = {
           max_input_tokens = model.capabilities.limits.max_prompt_tokens,
           max_output_tokens = model.capabilities.limits.max_output_tokens,
           policy = not model['policy'] or model['policy']['state'] == 'enabled',
-        })
-      end
-    end
+        }
+      end)
+      :totable()
 
     for _, model in ipairs(models) do
       if not model.policy then
@@ -293,21 +293,22 @@ M.github_models = {
       error(err)
     end
 
-    local models = {}
-    for _, model in ipairs(response.body.summaries) do
-      if vim.tbl_contains(model.inferenceTasks, 'chat-completion') then
-        table.insert(models, {
+    return vim
+      .iter(response.body.summaries)
+      :filter(function(model)
+        return vim.tbl_contains(model.inferenceTasks, 'chat-completion')
+      end)
+      :map(function(model)
+        return {
           id = model.name,
           name = model.displayName,
           version = model.name .. '-' .. model.version,
           tokenizer = 'o200k_base',
           max_input_tokens = model.modelLimits.textLimits.inputContextWindow,
           max_output_tokens = model.modelLimits.textLimits.maxOutputTokens,
-        })
-      end
-    end
-
-    return models
+        }
+      end)
+      :totable()
   end,
 
   prepare_input = M.copilot.prepare_input,
