@@ -252,7 +252,7 @@ function Chat:render()
 
     self:show_help(msg, last_section.start_line - last_section.end_line - 1)
 
-    if self.references and #self.references > 0 then
+    if not utils.empty(self.references) then
       msg = 'References:\n'
       for _, ref in ipairs(self.references) do
         msg = msg .. '  ' .. ref.name .. '\n'
