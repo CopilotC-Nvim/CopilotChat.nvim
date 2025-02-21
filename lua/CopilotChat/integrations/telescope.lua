@@ -13,7 +13,8 @@ local M = {}
 --- Pick an action from a list of actions
 ---@param pick_actions CopilotChat.integrations.actions?: A table with the actions to pick from
 ---@param opts table?: Telescope options
-function M.pick(pick_actions, opts)
+---@param action_callback function?: A callback function to be called with the selected action
+function M.pick(pick_actions, opts, action_callback)
   if not pick_actions or not pick_actions.actions or vim.tbl_isempty(pick_actions.actions) then
     return
   end
@@ -32,7 +33,7 @@ function M.pick(pick_actions, opts)
       }),
       previewer = previewers.new_buffer_previewer({
         define_preview = function(self, entry)
-          vim.api.nvim_win_set_option(self.state.winid, 'wrap', true)
+          vim.api.nvim_set_option_value('wrap', true, { win = self.state.winid })
           vim.api.nvim_buf_set_lines(
             self.state.bufnr,
             0,
@@ -52,7 +53,11 @@ function M.pick(pick_actions, opts)
           end
 
           vim.defer_fn(function()
-            chat.ask(pick_actions.actions[selected[1]].prompt, pick_actions.actions[selected[1]])
+            if not action_callback then
+              chat.ask(pick_actions.actions[selected[1]].prompt, pick_actions.actions[selected[1]])
+            else
+              action_callback(selected)
+            end
           end, 100)
         end)
         return true
