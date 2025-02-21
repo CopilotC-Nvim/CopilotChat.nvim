@@ -535,13 +535,13 @@ function Client:ask(prompt, opts)
     end
 
     local out = provider.prepare_output(content, options)
+    last_message = out
+
     if out.references then
       for _, reference in ipairs(out.references) do
         table.insert(references, reference)
       end
     end
-
-    last_message = out
 
     if out.content then
       full_response = full_response .. out.content
