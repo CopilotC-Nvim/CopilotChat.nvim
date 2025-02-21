@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2025 February 20
+*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2025 February 21
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -19,6 +19,7 @@ Table of Contents                              *CopilotChat-table-of-contents*
 4. Configuration                                   |CopilotChat-configuration|
   - Default Configuration                  |CopilotChat-default-configuration|
   - Customizing Buffers                      |CopilotChat-customizing-buffers|
+  - Customizing Highlights                |CopilotChat-customizing-highlights|
 5. API Reference                                   |CopilotChat-api-reference|
 6. Examples                                             |CopilotChat-examples|
 7. Development                                       |CopilotChat-development|
@@ -640,23 +641,34 @@ Below are all available configuration options with their default values:
 
 CUSTOMIZING BUFFERS                          *CopilotChat-customizing-buffers*
 
-You can set local options for plugin buffers (`copilot-chat`, `copilot-diff`,
-`copilot-overlay`):
+Types of copilot buffers:
+
+- `copilot-chat` - Main chat buffer
+- `copilot-diff` - Diff overlay buffer
+- `copilot-overlay` - Every other overlay buffer (e.g. help, info)
+
+You can set local options for plugin buffers like this:
 
 >lua
     vim.api.nvim_create_autocmd('BufEnter', {
         pattern = 'copilot-*',
         callback = function()
             -- Set buffer-local options
-            vim.opt_local.relativenumber = true
-    
-            -- Add buffer-local mappings
-            vim.keymap.set('n', '<C-p>', function()
-              print(require("CopilotChat").response())
-            end, { buffer = true })
         end
     })
 <
+
+
+CUSTOMIZING HIGHLIGHTS                    *CopilotChat-customizing-highlights*
+
+Types of copilot highlights:
+
+- `CopilotChatSpinner` - Spinner in chat buffer
+- `CopilotChatHelp` - Help messages in chat buffer (help, references)
+- `CopilotChatSelection` - Selection highlight in source buffer
+- `CopilotChatKeyword` - Keyword highlight in chat buffer (e.g. prompts, contexts)
+- `CopilotChatHeader` - Header highlight in chat buffer
+- `CopilotChatSeparator` - Separator highlight in chat buffer
 
 
 ==============================================================================
