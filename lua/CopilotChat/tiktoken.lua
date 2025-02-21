@@ -2,8 +2,6 @@ local async = require('plenary.async')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local current_tokenizer = nil
-local cache_dir = vim.fn.stdpath('cache')
-vim.fn.mkdir(tostring(cache_dir), 'p')
 
 local tiktoken_ok, tiktoken_core = pcall(require, 'tiktoken_core')
 if not tiktoken_ok then
@@ -13,9 +11,14 @@ end
 --- Load tiktoken data from cache or download it
 ---@param tokenizer string The tokenizer to load
 local function load_tiktoken_data(tokenizer)
+  async.util.scheduler()
+
   local tiktoken_url = 'https://openaipublic.blob.core.windows.net/encodings/'
     .. tokenizer
     .. '.tiktoken'
+
+  local cache_dir = vim.fn.stdpath('cache')
+  vim.fn.mkdir(tostring(cache_dir), 'p')
   local cache_path = cache_dir .. '/' .. tiktoken_url:match('.+/(.+)')
 
   if utils.file_exists(cache_path) then
@@ -45,7 +48,6 @@ M.load = function(tokenizer)
   end
 
   local path = load_tiktoken_data(tokenizer)
-  async.util.scheduler()
   local special_tokens = {}
   special_tokens['<|endoftext|>'] = 100257
   special_tokens['<|fim_prefix|>'] = 100258
@@ -54,6 +56,8 @@ M.load = function(tokenizer)
   special_tokens['<|endofprompt|>'] = 100276
   local pat_str =
     "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
+
+  async.util.scheduler()
   tiktoken_core.new(path, special_tokens, pat_str)
   current_tokenizer = tokenizer
 end
