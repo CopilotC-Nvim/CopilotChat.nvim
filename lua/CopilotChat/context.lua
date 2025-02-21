@@ -656,13 +656,6 @@ function M.filter_embeddings(prompt, model, headless, embeddings)
 
   notify.publish(notify.STATUS, 'Ranking embeddings')
 
-  -- Rank embeddings by symbols
-  embeddings = data_ranked_by_symbols(prompt, embeddings, MIN_SYMBOL_SIMILARITY)
-  log.debug('Ranked data:', #embeddings)
-  for i, item in ipairs(embeddings) do
-    log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
-  end
-
   -- Build query from history and prompt
   local query = ''
   if not headless then
@@ -673,6 +666,13 @@ function M.filter_embeddings(prompt, model, headless, embeddings)
     end
   end
   query = query .. '\n' .. prompt
+
+  -- Rank embeddings by symbols
+  embeddings = data_ranked_by_symbols(query, embeddings, MIN_SYMBOL_SIMILARITY)
+  log.debug('Ranked data:', #embeddings)
+  for i, item in ipairs(embeddings) do
+    log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
+  end
 
   -- Embed the query
   table.insert(embeddings, {
