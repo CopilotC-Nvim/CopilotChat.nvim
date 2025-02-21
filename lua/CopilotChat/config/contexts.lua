@@ -39,6 +39,7 @@ return {
       }
     end,
   },
+
   buffers = {
     description = 'Includes all buffers in chat context. Supports input (default listed).',
     input = function(callback)
@@ -51,6 +52,7 @@ return {
       return context.buffers(input)
     end,
   },
+
   file = {
     description = 'Includes content of provided file in chat context. Supports input.',
     input = function(callback, source)
@@ -72,6 +74,7 @@ return {
       }
     end,
   },
+
   files = {
     description = 'Includes all non-hidden files in the current workspace in chat context. Supports input (default list).',
     input = function(callback)
@@ -93,6 +96,7 @@ return {
       return context.files(source.winnr, input == 'full')
     end,
   },
+
   git = {
     description = 'Requires `git`. Includes current git diff in chat context. Supports input (default unstaged, also accepts commit number).',
     input = function(callback)
@@ -107,6 +111,7 @@ return {
       }
     end,
   },
+
   url = {
     description = 'Includes content of provided URL in chat context. Supports input.',
     input = function(callback)
@@ -121,6 +126,7 @@ return {
       }
     end,
   },
+
   register = {
     description = 'Includes contents of register in chat context. Supports input (default +, e.g clipboard).',
     input = function(callback)
@@ -154,6 +160,7 @@ return {
       }
     end,
   },
+
   quickfix = {
     description = 'Includes quickfix list file contents in chat context.',
     resolve = function()

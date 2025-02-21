@@ -13,6 +13,11 @@ function CopilotChatFoldExpr(lnum, separator)
   return '='
 end
 
+local HEADER_PATTERNS = {
+  '%[file:.+%]%((.+)%) line:(%d+)-(%d+)',
+  '%[file:(.+)%] line:(%d+)-(%d+)',
+}
+
 ---@param header? string
 ---@return string?, number?, number?
 local function match_header(header)
@@ -20,20 +25,14 @@ local function match_header(header)
     return
   end
 
-  local header_filename, header_start_line, header_end_line =
-    header:match('%[file:.+%]%((.+)%) line:(%d+)-(%d+)')
-  if not header_filename then
-    header_filename, header_start_line, header_end_line =
-      header:match('%[file:(.+)%] line:(%d+)-(%d+)')
+  for _, pattern in ipairs(HEADER_PATTERNS) do
+    local filename, start_line, end_line = header:match(pattern)
+    if filename then
+      return vim.fn.fnamemodify(filename, ':p:.'),
+        tonumber(start_line) or 1,
+        tonumber(end_line) or tonumber(start_line) or 1
+    end
   end
-
-  if header_filename then
-    header_filename = vim.fn.fnamemodify(header_filename, ':p:.')
-    header_start_line = tonumber(header_start_line) or 1
-    header_end_line = tonumber(header_end_line) or header_start_line
-  end
-
-  return header_filename, header_start_line, header_end_line
 end
 
 ---@class CopilotChat.ui.Chat.Section.Block.Header
@@ -337,29 +336,6 @@ function Chat:get_closest_block()
     end_line = closest_block.end_line,
     content = closest_block.content,
   }
-end
-
-function Chat:parse_history()
-  self:render()
-
-  local history = {}
-  for _, section in ipairs(self.sections) do
-    if not utils.empty(section.content) then
-      if section.answer then
-        table.insert(history, {
-          content = section.content,
-          role = 'assistant',
-        })
-      else
-        table.insert(history, {
-          content = section.content,
-          role = 'user',
-        })
-      end
-    end
-  end
-
-  return history
 end
 
 function Chat:load_history(history)

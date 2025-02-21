@@ -628,7 +628,7 @@ function M.ask(prompt, config)
     return
   end
 
-  vim.diagnostic.reset(vim.api.nvim_create_namespace('copilot_diagnostics'))
+  vim.diagnostic.reset(vim.api.nvim_create_namespace('copilot-chat-diagnostics'))
   config = vim.tbl_deep_extend('force', state.chat.config, config or {})
   config = vim.tbl_deep_extend('force', M.config, config or {})
 
@@ -657,9 +657,6 @@ function M.ask(prompt, config)
     '\n'
   ))
 
-  -- Retrieve the history
-  local history = config.headless and {} or state.chat:parse_history()
-
   -- Retrieve the selection
   local selection = M.get_selection(config)
 
@@ -683,7 +680,7 @@ function M.ask(prompt, config)
 
     local ask_ok, response, references, token_count, token_max_count =
       pcall(client.ask, client, prompt, {
-        history = history,
+        headless = config.headless,
         selection = selection,
         embeddings = filtered_embeddings,
         system_prompt = system_prompt,
@@ -778,7 +775,7 @@ function M.save(name, history_path)
     return
   end
 
-  local history = vim.json.encode(state.chat:parse_history())
+  local history = vim.json.encode(client.history)
   history_path = vim.fn.expand(history_path)
   vim.fn.mkdir(history_path, 'p')
   history_path = history_path .. '/' .. name .. '.json'

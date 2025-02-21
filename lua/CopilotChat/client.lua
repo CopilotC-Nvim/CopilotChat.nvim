@@ -1,5 +1,5 @@
 ---@class CopilotChat.Client.ask
----@field history table
+---@field headless boolean
 ---@field selection CopilotChat.select.selection?
 ---@field embeddings table<CopilotChat.context.embed>?
 ---@field system_prompt string
@@ -20,7 +20,6 @@ local tiktoken = require('CopilotChat.tiktoken')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local class = utils.class
-local temp_file = utils.temp_file
 
 --- Constants
 local CONTEXT_FORMAT = '[#file:%s](#file:%s-context)'
@@ -242,6 +241,7 @@ local function generate_embedding_request(inputs, threshold)
 end
 
 ---@class CopilotChat.Client : Class
+---@field history table<CopilotChat.Provider.input>
 ---@field providers table<string, CopilotChat.Provider>
 ---@field provider_cache table<string, table>
 ---@field embedding_cache table<string, CopilotChat.context.embed>
@@ -250,6 +250,7 @@ end
 ---@field current_job string?
 ---@field headers table<string, string>?
 local Client = class(function(self)
+  self.history = {}
   self.providers = {}
   self.provider_cache = {}
   self.embedding_cache = {}
@@ -364,7 +365,7 @@ function Client:ask(prompt, opts)
     opts.agent = nil
   end
 
-  local history = opts.history or {}
+  local history = opts.headless and {} or self.history
   local embeddings = opts.embeddings or {}
   local selection = opts.selection or {}
   local system_prompt = vim.trim(opts.system_prompt)
@@ -666,6 +667,21 @@ function Client:ask(prompt, opts)
 
   log.trace('Full response: ', full_response)
   log.debug('Last message: ', last_message)
+
+  if not opts.headless then
+    table.insert(history, {
+      content = prompt,
+      role = 'user',
+    })
+
+    table.insert(history, {
+      content = full_response,
+      role = 'assistant',
+    })
+
+    self.history = history
+    log.debug('History size increased to: ', #history)
+  end
 
   return full_response, references, last_message and last_message.total_tokens or 0, max_tokens
 end
