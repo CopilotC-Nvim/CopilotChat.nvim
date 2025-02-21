@@ -16,6 +16,7 @@ local WORD = '([^%s]+)'
 --- @field source CopilotChat.source?
 --- @field last_prompt string?
 --- @field last_response string?
+--- @field highlights_loaded boolean
 --- @field chat CopilotChat.ui.Chat?
 --- @field diff CopilotChat.ui.Diff?
 --- @field overlay CopilotChat.ui.Overlay?
@@ -26,12 +27,28 @@ local state = {
   -- Last state tracking
   last_prompt = nil,
   last_response = nil,
+  highlights_loaded = false,
 
   -- Overlays
   chat = nil,
   diff = nil,
   overlay = nil,
 }
+
+--- Update the highlights in chat buffer
+local function update_highlights()
+  if state.highlights_loaded then
+    return
+  end
+
+  M.complete_items(function(items)
+    for _, item in ipairs(items) do
+      vim.cmd.syntax('match CopilotChatKeyword "' .. vim.pesc(item.word) .. '"')
+    end
+
+    state.highlights_loaded = true
+  end)
+end
 
 --- Highlights the selection in the source buffer.
 ---@param clear boolean
@@ -855,9 +872,10 @@ function M.setup(config)
     M.log_level(M.config.log_level)
   end
 
-  vim.api.nvim_set_hl(0, 'CopilotChatSpinner', { link = 'DiagnosticInfo', default = true })
+  vim.api.nvim_set_hl(0, 'CopilotChatSpinner', { link = 'DiagnosticHint', default = true })
   vim.api.nvim_set_hl(0, 'CopilotChatHelp', { link = 'DiagnosticInfo', default = true })
   vim.api.nvim_set_hl(0, 'CopilotChatSelection', { link = 'Visual', default = true })
+  vim.api.nvim_set_hl(0, 'CopilotChatKeyword', { link = 'Keyword', default = true })
   vim.api.nvim_set_hl(
     0,
     'CopilotChatHeader',
@@ -868,6 +886,8 @@ function M.setup(config)
     'CopilotChatSeparator',
     { link = '@punctuation.special.markdown', default = true }
   )
+
+  state.highlights_loaded = false
 
   local overlay_help = utils.key_to_info('close', M.config.mappings.close)
   if state.overlay then
@@ -908,6 +928,7 @@ function M.setup(config)
           local is_enter = ev.event == 'BufEnter'
 
           if is_enter then
+            update_highlights()
             M.update_selection(state.chat.config)
           else
             highlight_selection(true, state.chat.config)

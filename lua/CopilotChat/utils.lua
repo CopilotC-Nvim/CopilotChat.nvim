@@ -97,12 +97,6 @@ function M.ordered_map()
   }
 end
 
---- Check if the current version of neovim is stable
----@return boolean
-function M.is_stable()
-  return vim.fn.has('nvim-0.10.0') == 0
-end
-
 --- Writes text to a temporary file and returns path
 ---@param text string The text to write
 ---@return string?

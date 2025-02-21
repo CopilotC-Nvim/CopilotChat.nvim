@@ -578,22 +578,33 @@ Below are all available configuration options with their default values:
 
 ## Customizing Buffers
 
-You can set local options for plugin buffers (`copilot-chat`, `copilot-diff`, `copilot-overlay`):
+Types of copilot buffers:
+
+- `copilot-chat` - Main chat buffer
+- `copilot-diff` - Diff overlay buffer
+- `copilot-overlay` - Every other overlay buffer (e.g. help, info)
+
+You can set local options for plugin buffers like this:
 
 ```lua
 vim.api.nvim_create_autocmd('BufEnter', {
     pattern = 'copilot-*',
     callback = function()
         -- Set buffer-local options
-        vim.opt_local.relativenumber = true
-
-        -- Add buffer-local mappings
-        vim.keymap.set('n', '<C-p>', function()
-          print(require("CopilotChat").response())
-        end, { buffer = true })
     end
 })
 ```
+
+## Customizing Highlights
+
+Types of copilot highlights:
+
+- `CopilotChatSpinner` - Spinner in chat buffer
+- `CopilotChatHelp` - Help messages in chat buffer (help, references)
+- `CopilotChatSelection` - Selection highlight in source buffer
+- `CopilotChatKeyword` - Keyword highlight in chat buffer (e.g. prompts, contexts)
+- `CopilotChatHeader` - Header highlight in chat buffer
+- `CopilotChatSeparator` - Separator highlight in chat buffer
 
 # API Reference
 
