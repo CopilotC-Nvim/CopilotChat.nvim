@@ -43,7 +43,8 @@ local function update_highlights()
 
   M.complete_items(function(items)
     for _, item in ipairs(items) do
-      vim.cmd.syntax('match CopilotChatKeyword "' .. vim.pesc(item.word) .. '"')
+      local pattern = vim.fn.escape(item.word, '.-$^*[]')
+      vim.cmd.syntax('match CopilotChatKeyword "' .. pattern .. '"')
     end
 
     state.highlights_loaded = true
