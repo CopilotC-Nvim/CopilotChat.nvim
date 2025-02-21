@@ -244,10 +244,18 @@ M.copilot = {
     local content = message.message and message.message.content
       or message.delta and message.delta.content
 
+    local usage = message.usage and message.usage.total_tokens
+      or output.usage and output.usage.total_tokens
+
+    local finish_reason = message.finish_reason
+      or message.done_reason
+      or output.finish_reason
+      or output.done_reason
+
     return {
       content = content,
-      finish_reason = message.finish_reason or message.done_reason,
-      total_tokens = message.usage and message.usage.total_tokens,
+      finish_reason = finish_reason,
+      total_tokens = usage,
       references = references,
     }
   end,
