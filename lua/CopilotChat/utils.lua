@@ -345,7 +345,7 @@ end
 M.curl_get = async.wrap(function(url, opts, callback)
   local args = {
     on_error = function(err)
-      callback(nil, M.make_string(err and err.stderr or err))
+      callback(nil, err and err.stderr or err)
     end,
   }
 
@@ -383,8 +383,7 @@ M.curl_post = async.wrap(function(url, opts, callback)
   local args = {
     callback = callback,
     on_error = function(err)
-      err = M.make_string(err and err.stderr or err)
-      callback(nil, err)
+      callback(nil, err and err.stderr or err)
     end,
   }
 

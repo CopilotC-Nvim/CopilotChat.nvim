@@ -508,7 +508,10 @@ function Client:ask(prompt, opts)
 
     log.debug('Finishing stream', err)
     finished = true
-    job:shutdown(0)
+
+    if job then
+      job:shutdown(0)
+    end
   end
 
   local function parse_line(line, job)
@@ -519,20 +522,15 @@ function Client:ask(prompt, opts)
     log.debug('Response line: ', line)
     notify.publish(notify.STATUS, '')
 
-    local ok, content = pcall(vim.json.decode, line, {
-      luanil = {
-        object = true,
-        array = true,
-      },
-    })
+    local content, err = utils.json_decode(line)
 
-    if not ok then
-      if job then
-        finish_stream(
-          'Failed to parse response: ' .. utils.make_string(content) .. '\n' .. line,
-          job
-        )
-      end
+    if err then
+      finish_stream(line, job)
+      return
+    end
+
+    if type(content) ~= 'table' then
+      finish_stream(content, job)
       return
     end
 
@@ -550,7 +548,7 @@ function Client:ask(prompt, opts)
       on_progress(out.content)
     end
 
-    if job and out.finish_reason then
+    if out.finish_reason then
       local reason = out.finish_reason
       if reason == 'stop' then
         reason = nil
@@ -563,13 +561,16 @@ function Client:ask(prompt, opts)
 
   local function parse_stream_line(line, job)
     line = vim.trim(line)
+
+    if vim.startswith(line, 'event:') then
+      return
+    end
+
     line = line:gsub('^data:', '')
     line = vim.trim(line)
 
     if line == '[DONE]' then
-      if job then
-        finish_stream(nil, job)
-      end
+      finish_stream(nil, job)
       return
     end
 
@@ -587,7 +588,7 @@ function Client:ask(prompt, opts)
     end
 
     if err then
-      finish_stream('Failed to get response: ' .. utils.make_string(err and err or line), job)
+      finish_stream(err and err or line, job)
       return
     end
 
