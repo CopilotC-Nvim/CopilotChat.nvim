@@ -83,7 +83,9 @@ return {
       }, callback)
     end,
     resolve = function(input, source)
-      return context.files(source.winnr, true, input and utils.glob_to_regex(input))
+      return context.files(source.winnr, true, {
+        search_pattern = input and utils.glob_to_regex(input),
+      })
     end,
   },
 
@@ -95,7 +97,9 @@ return {
       }, callback)
     end,
     resolve = function(input, source)
-      return context.files(source.winnr, false, input and utils.glob_to_regex(input))
+      return context.files(source.winnr, false, {
+        search_pattern = input and utils.glob_to_regex(input),
+      })
     end,
   },
 
