@@ -203,13 +203,13 @@ M.copilot = {
     local out = {
       messages = inputs,
       model = opts.model.id,
-      stream = not is_o1,
-      n = 1,
     }
 
     if not is_o1 then
-      out.temperature = opts.temperature
+      out.n = 1
       out.top_p = 1
+      out.stream = true
+      out.temperature = opts.temperature
     end
 
     if opts.model.max_output_tokens then
