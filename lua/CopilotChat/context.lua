@@ -370,19 +370,21 @@ end
 --- Get list of all files in workspace
 ---@param winnr number?
 ---@param with_content boolean?
----@param filter string?
+---@param search_options table?
 ---@return table<CopilotChat.context.embed>
-function M.files(winnr, with_content, filter)
+function M.files(winnr, with_content, search_options)
   local cwd = utils.win_cwd(winnr)
 
   notify.publish(notify.STATUS, 'Scanning files')
 
-  local files = utils.scan_dir(cwd, {
-    add_dirs = false,
-    respect_gitignore = true,
-    max_files = MAX_FILES,
-    search_pattern = filter,
-  })
+  local files = utils.scan_dir(
+    cwd,
+    vim.tbl_extend('force', {
+      add_dirs = false,
+      respect_gitignore = true,
+      max_files = MAX_FILES,
+    }, search_options)
+  )
 
   notify.publish(notify.STATUS, 'Reading files')
 
