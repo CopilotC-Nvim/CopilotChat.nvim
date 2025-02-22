@@ -292,7 +292,7 @@ You can also set default sticky prompts in the configuration:
     {
       sticky = {
         '@models Using Mistral-small',
-        '#files:full',
+        '#files',
       }
     }
 <
@@ -335,22 +335,24 @@ CONTEXTS                                                *CopilotChat-contexts*
 Contexts provide additional information to the chat. Add context using
 `#context_name[:input]` syntax:
 
-  Context    Input Support   Description
-  ---------- --------------- -------------------------------------
-  buffer     ✓ (number)      Current or specified buffer content
-  buffers    ✓ (type)        All buffers content (listed/all)
-  file       ✓ (path)        Content of specified file
-  files      ✓ (mode)        Workspace files (list/full content)
-  git        ✓ (ref)         Git diff (unstaged/staged/commit)
-  url        ✓ (url)         Content from URL
-  register   ✓ (name)        Content of vim register
-  quickfix   -               Quickfix list file contents
+  Context     Input Support   Description
+  ----------- --------------- -------------------------------------
+  buffer      ✓ (number)      Current or specified buffer content
+  buffers     ✓ (type)        All buffers content (listed/all)
+  file        ✓ (path)        Content of specified file
+  files       ✓ (glob)        Workspace files
+  filenames   ✓ (glob)        Workspace file names
+  git         ✓ (ref)         Git diff (unstaged/staged/commit)
+  url         ✓ (url)         Content from URL
+  register    ✓ (name)        Content of vim register
+  quickfix    -               Quickfix list file contents
 Examples:
 
 >markdown
     > #buffer
     > #buffer:2
-    > #files:list
+    > #files:.lua
+    > #filenames
     > #git:staged
     > #url:https://example.com
 <
