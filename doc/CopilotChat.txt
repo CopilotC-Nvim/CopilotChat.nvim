@@ -3,13 +3,14 @@
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
 
-1. Requirements                                     |CopilotChat-requirements|
+1. Overview                                             |CopilotChat-overview|
+2. Requirements                                     |CopilotChat-requirements|
   - Optional Dependencies                  |CopilotChat-optional-dependencies|
-2. Installation                                     |CopilotChat-installation|
+3. Installation                                     |CopilotChat-installation|
   - lazy.nvim                                          |CopilotChat-lazy.nvim|
   - vim-plug                                            |CopilotChat-vim-plug|
   - Manual                                                |CopilotChat-manual|
-3. Features                                             |CopilotChat-features|
+4. Features                                             |CopilotChat-features|
   - Commands                                            |CopilotChat-commands|
   - Key Mappings                                    |CopilotChat-key-mappings|
   - Prompts                                              |CopilotChat-prompts|
@@ -17,22 +18,37 @@ Table of Contents                              *CopilotChat-table-of-contents*
   - Contexts                                            |CopilotChat-contexts|
   - Selections                                        |CopilotChat-selections|
   - Providers                                          |CopilotChat-providers|
-4. Configuration                                   |CopilotChat-configuration|
+5. Configuration                                   |CopilotChat-configuration|
   - Default Configuration                  |CopilotChat-default-configuration|
   - Customizing Buffers                      |CopilotChat-customizing-buffers|
   - Customizing Highlights                |CopilotChat-customizing-highlights|
-5. API Reference                                   |CopilotChat-api-reference|
-6. Examples                                             |CopilotChat-examples|
-7. Development                                       |CopilotChat-development|
+6. API Reference                                   |CopilotChat-api-reference|
+7. Examples                                             |CopilotChat-examples|
+8. Development                                       |CopilotChat-development|
   - Setup                                                  |CopilotChat-setup|
   - Contributing                                    |CopilotChat-contributing|
-8. Contributors                                     |CopilotChat-contributors|
-9. Stargazers                                         |CopilotChat-stargazers|
-10. Links                                                  |CopilotChat-links|
+9. Contributors                                     |CopilotChat-contributors|
+10. Stargazers                                        |CopilotChat-stargazers|
+11. Links                                                  |CopilotChat-links|
 
 
 ==============================================================================
-1. Requirements                                     *CopilotChat-requirements*
+1. Overview                                             *CopilotChat-overview*
+
+CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat
+capabilities directly into your editor. It provides:
+
+- 🤖 Full GitHub Copilot Chat integration with selective context sharing - only sends what you want to share
+- 💻 Smart workspace context awareness (buffers, files, git diffs, URLs)
+- 🔌 Extensible provider system (supports custom LLM providers like Ollama)
+- 📝 Rich chat interface with code completions and diff acceptance
+- 🎯 Built-in prompts for common tasks (explain, review, fix, optimize, docs, tests)
+- 🔄 Context-aware responses that understand your code and workspace
+- ⚡ Efficient token usage with optional tiktoken support
+
+
+==============================================================================
+2. Requirements                                     *CopilotChat-requirements*
 
 - Neovim 0.10.0+ <https://neovim.io/> - Older versions are not officially supported
 - curl <https://curl.se/> - Version 8.0.0+ recommended for best compatibility
@@ -58,7 +74,7 @@ OPTIONAL DEPENDENCIES                      *CopilotChat-optional-dependencies*
 
 
 ==============================================================================
-2. Installation                                     *CopilotChat-installation*
+3. Installation                                     *CopilotChat-installation*
 
 
 LAZY.NVIM                                              *CopilotChat-lazy.nvim*
@@ -130,7 +146,7 @@ See @deathbeam <https://github.com/deathbeam> for configuration
 
 
 ==============================================================================
-3. Features                                             *CopilotChat-features*
+4. Features                                             *CopilotChat-features*
 
 
 COMMANDS                                                *CopilotChat-commands*
@@ -463,7 +479,7 @@ page
 
 
 ==============================================================================
-4. Configuration                                   *CopilotChat-configuration*
+5. Configuration                                   *CopilotChat-configuration*
 
 
 DEFAULT CONFIGURATION                      *CopilotChat-default-configuration*
@@ -680,7 +696,7 @@ Types of copilot highlights:
 
 
 ==============================================================================
-5. API Reference                                   *CopilotChat-api-reference*
+6. API Reference                                   *CopilotChat-api-reference*
 
 >lua
     local chat = require("CopilotChat")
@@ -730,14 +746,14 @@ Types of copilot highlights:
 
 
 ==============================================================================
-6. Examples                                             *CopilotChat-examples*
+7. Examples                                             *CopilotChat-examples*
 
 For examples, see the examples wiki page
 <https://github.com/CopilotC-Nvim/CopilotChat.nvim/wiki/Examples-and-Tips>.
 
 
 ==============================================================================
-7. Development                                       *CopilotChat-development*
+8. Development                                       *CopilotChat-development*
 
 
 SETUP                                                      *CopilotChat-setup*
@@ -777,7 +793,7 @@ See CONTRIBUTING.md </CONTRIBUTING.md> for detailed guidelines.
 
 
 ==============================================================================
-8. Contributors                                     *CopilotChat-contributors*
+9. Contributors                                     *CopilotChat-contributors*
 
 Thanks goes to these wonderful people (emoji key
 <https://allcontributors.org/docs/en/emoji-key>):
@@ -788,12 +804,12 @@ Contributions of any kind are welcome!
 
 
 ==============================================================================
-9. Stargazers                                         *CopilotChat-stargazers*
+10. Stargazers                                        *CopilotChat-stargazers*
 
 <https://starchart.cc/CopilotC-Nvim/CopilotChat.nvim>
 
 ==============================================================================
-10. Links                                                  *CopilotChat-links*
+11. Links                                                  *CopilotChat-links*
 
 1. *@jellydn*: 
 2. *@deathbeam*: 
