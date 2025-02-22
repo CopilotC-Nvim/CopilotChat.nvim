@@ -19,21 +19,26 @@ https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
 # Requirements
 
 - [Neovim 0.10.0+](https://neovim.io/) - Older versions are not officially supported
-- [curl](https://curl.se/) - 8.0.0+ is recommended for best compatibility. Should be installed by default on most systems and also shipped with Neovim
-- [Copilot chat in the IDE](https://github.com/settings/copilot) setting enabled in GitHub settings
-- _Optional_ [tiktoken_core](https://github.com/gptlang/lua-tiktoken) - Used for more accurate token counting
-  - For Arch Linux users, you can install [`luajit-tiktoken-bin`](https://aur.archlinux.org/packages/luajit-tiktoken-bin) or [`lua51-tiktoken-bin`](https://aur.archlinux.org/packages/lua51-tiktoken-bin) from aur
-  - Alternatively, install via luarocks: `sudo luarocks install --lua-version 5.1 tiktoken_core`
-  - Alternatively, download a pre-built binary from [lua-tiktoken releases](https://github.com/gptlang/lua-tiktoken/releases). You can check your Lua PATH in Neovim by doing `:lua print(package.cpath)`. Save the binary as `tiktoken_core.so` in any of the given paths.
-- _Optional_ [git](https://git-scm.com/) - Used for fetching git diffs for `git` context
-  - For Arch Linux users, you can install [`git`](https://archlinux.org/packages/extra/x86_64/git) from the official repositories
-  - For other systems, use your package manager to install `git`. For windows use the installer provided from git site
-- _Optional_ [lynx](https://lynx.invisible-island.net/) - Used for improved fetching of URLs for `url` context
-  - For Arch Linux users, you can install [`lynx`](https://archlinux.org/packages/extra/x86_64/lynx) from the official repositories
-  - For other systems, use your package manager to install `lynx`. For windows use the installer provided from lynx site
+- [curl](https://curl.se/) - Version 8.0.0+ recommended for best compatibility
+- [Copilot chat in the IDE](https://github.com/settings/copilot) enabled in GitHub settings
 
-> [!WARNING]
-> If you are on neovim < 0.11.0, you also might want to add `noinsert` and `popup` to your `completeopt` to make the chat completion behave well.
+> [!NOTE]  
+> For Neovim < 0.11.0, add `noinsert` and `popup` to your `completeopt` for proper chat completion behavior.
+
+## Optional Dependencies
+
+- [tiktoken_core](https://github.com/gptlang/lua-tiktoken) - For accurate token counting
+    - Arch Linux: Install [`luajit-tiktoken-bin`](https://aur.archlinux.org/packages/luajit-tiktoken-bin) or [`lua51-tiktoken-bin`](https://aur.archlinux.org/packages/lua51-tiktoken-bin) from AUR
+    - Via luarocks: `sudo luarocks install --lua-version 5.1 tiktoken_core`
+    - Manual: Download from [lua-tiktoken releases](https://github.com/gptlang/lua-tiktoken/releases) and save as `tiktoken_core.so` in your Lua path
+
+- [git](https://git-scm.com/) - For git diff context features
+    - Arch Linux: Install from official repositories
+    - Other systems: Use system package manager or official installer
+
+- [lynx](https://lynx.invisible-island.net/) - For improved URL context features  
+    - Arch Linux: Install from official repositories
+    - Other systems: Use system package manager or official installer
 
 # Installation
 
