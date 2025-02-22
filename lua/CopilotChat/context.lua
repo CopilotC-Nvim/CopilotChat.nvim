@@ -369,9 +369,10 @@ end
 
 --- Get list of all files in workspace
 ---@param winnr number?
----@param with_content boolean
+---@param with_content boolean?
+---@param filter string?
 ---@return table<CopilotChat.context.embed>
-function M.files(winnr, with_content)
+function M.files(winnr, with_content, filter)
   local cwd = utils.win_cwd(winnr)
 
   notify.publish(notify.STATUS, 'Scanning files')
@@ -380,6 +381,7 @@ function M.files(winnr, with_content)
     add_dirs = false,
     respect_gitignore = true,
     max_files = MAX_FILES,
+    search_pattern = filter,
   })
 
   notify.publish(notify.STATUS, 'Reading files')
@@ -401,11 +403,11 @@ function M.files(winnr, with_content)
       content = table.concat(chunk, '\n'),
       filename = chunk_name,
       filetype = 'text',
-      score = 0.2,
+      score = 0.1,
     })
   end
 
-  -- Read all files if we want content as well
+  -- Read file contents
   if with_content then
     async.util.scheduler()
 

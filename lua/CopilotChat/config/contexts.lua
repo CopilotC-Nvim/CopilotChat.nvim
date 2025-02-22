@@ -76,24 +76,26 @@ return {
   },
 
   files = {
-    description = 'Includes all non-hidden files in the current workspace in chat context. Supports input (default list).',
+    description = 'Includes all non-hidden files in the current workspace in chat context. Supports input (glob pattern).',
     input = function(callback)
-      local choices = utils.kv_list({
-        list = 'Only lists file names',
-        full = 'Includes file content for each file found, up to a limit.',
-      })
-
-      vim.ui.select(choices, {
-        prompt = 'Select files content> ',
-        format_item = function(choice)
-          return choice.key .. ' - ' .. choice.value
-        end,
-      }, function(choice)
-        callback(choice and choice.key)
-      end)
+      vim.ui.input({
+        prompt = 'Enter glob> ',
+      }, callback)
     end,
     resolve = function(input, source)
-      return context.files(source.winnr, input == 'full')
+      return context.files(source.winnr, true, input and utils.glob_to_regex(input))
+    end,
+  },
+
+  filenames = {
+    description = 'Includes names of all non-hidden files in the current workspace in chat context. Supports input (glob pattern).',
+    input = function(callback)
+      vim.ui.input({
+        prompt = 'Enter glob> ',
+      }, callback)
+    end,
+    resolve = function(input, source)
+      return context.files(source.winnr, false, input and utils.glob_to_regex(input))
     end,
   },
 

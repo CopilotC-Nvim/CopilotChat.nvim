@@ -543,4 +543,25 @@ function M.empty(v)
   return false
 end
 
+--- Convert glob pattern to regex pattern
+---@param glob string The glob pattern
+---@return string?
+function M.glob_to_regex(glob)
+  if not glob or glob == '' then
+    return nil
+  end
+
+  -- Escape regex special chars except * and ?
+  local pattern = glob:gsub('[%^%$%(%)%%%.%[%]%+%-]', '%%%1')
+
+  -- Convert glob to regex pattern
+  pattern = pattern
+    :gsub('%*%*/%*', '.*') -- **/* -> .*
+    :gsub('%*%*', '.*') -- ** -> .*
+    :gsub('%*', '[^/]*') -- * -> [^/]*
+    :gsub('%?', '.') -- ? -> .
+
+  return pattern .. '$'
+end
+
 return M
