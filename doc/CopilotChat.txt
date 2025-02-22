@@ -38,13 +38,14 @@ Table of Contents                              *CopilotChat-table-of-contents*
 CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat
 capabilities directly into your editor. It provides:
 
-- 🤖 Full GitHub Copilot Chat integration with selective context sharing - only sends what you want to share
-- 💻 Smart workspace context awareness (buffers, files, git diffs, URLs)
-- 🔌 Extensible provider system (supports custom LLM providers like Ollama)
-- 📝 Rich chat interface with code completions and diff acceptance
-- 🎯 Built-in prompts for common tasks (explain, review, fix, optimize, docs, tests)
-- 🔄 Context-aware responses that understand your code and workspace
-- ⚡ Efficient token usage with optional tiktoken support
+- 🤖 Native GitHub Copilot Chat integration with official model and agent support (GPT-4o, Claude 3.5 Sonnet, Gemini 2.0 Flash, and more)
+- 💻 Rich workspace context powered by smart embeddings system
+- 🔒 Explicit context sharing - only sends what you specifically request, either as context or selection
+- 🔌 Modular provider architecture supporting both official and custom LLM backends (Ollama, LM Studio, and more)
+- 📝 Interactive chat UI with completion, diffs and quickfix integration
+- 🎯 Powerful prompt system with composable templates and sticky prompts
+- 🔄 Extensible context providers for granular workspace understanding (buffers, files, git diffs, URLs, and more)
+- ⚡ Efficient token usage with tiktoken optimization
 
 
 ==============================================================================
