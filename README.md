@@ -28,17 +28,19 @@ https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
 ## Optional Dependencies
 
 - [tiktoken_core](https://github.com/gptlang/lua-tiktoken) - For accurate token counting
-    - Arch Linux: Install [`luajit-tiktoken-bin`](https://aur.archlinux.org/packages/luajit-tiktoken-bin) or [`lua51-tiktoken-bin`](https://aur.archlinux.org/packages/lua51-tiktoken-bin) from AUR
-    - Via luarocks: `sudo luarocks install --lua-version 5.1 tiktoken_core`
-    - Manual: Download from [lua-tiktoken releases](https://github.com/gptlang/lua-tiktoken/releases) and save as `tiktoken_core.so` in your Lua path
+
+  - Arch Linux: Install [`luajit-tiktoken-bin`](https://aur.archlinux.org/packages/luajit-tiktoken-bin) or [`lua51-tiktoken-bin`](https://aur.archlinux.org/packages/lua51-tiktoken-bin) from AUR
+  - Via luarocks: `sudo luarocks install --lua-version 5.1 tiktoken_core`
+  - Manual: Download from [lua-tiktoken releases](https://github.com/gptlang/lua-tiktoken/releases) and save as `tiktoken_core.so` in your Lua path
 
 - [git](https://git-scm.com/) - For git diff context features
-    - Arch Linux: Install from official repositories
-    - Other systems: Use system package manager or official installer
 
-- [lynx](https://lynx.invisible-island.net/) - For improved URL context features  
-    - Arch Linux: Install from official repositories
-    - Other systems: Use system package manager or official installer
+  - Arch Linux: Install from official repositories
+  - Other systems: Use system package manager or official installer
+
+- [lynx](https://lynx.invisible-island.net/) - For improved URL context features
+  - Arch Linux: Install from official repositories
+  - Other systems: Use system package manager or official installer
 
 # Installation
 
