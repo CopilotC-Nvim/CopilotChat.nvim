@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2025 February 22
+*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2025 February 23
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -683,12 +683,13 @@ CUSTOMIZING HIGHLIGHTS                    *CopilotChat-customizing-highlights*
 
 Types of copilot highlights:
 
-- `CopilotChatSpinner` - Spinner in chat buffer
+- `CopilotChatHeader` - Header highlight in chat buffer
+- `CopilotChatSeparator` - Separator highlight in chat buffer
+- `CopilotChatStatus` - Status and spinner in chat buffer
 - `CopilotChatHelp` - Help messages in chat buffer (help, references)
 - `CopilotChatSelection` - Selection highlight in source buffer
 - `CopilotChatKeyword` - Keyword highlight in chat buffer (e.g. prompts, contexts)
-- `CopilotChatHeader` - Header highlight in chat buffer
-- `CopilotChatSeparator` - Separator highlight in chat buffer
+- `CopilotChatInput` - Input highlight in chat buffer (for contexts)
 
 
 ==============================================================================
