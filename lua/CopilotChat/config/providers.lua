@@ -159,9 +159,9 @@ M.copilot = {
     local models = {}
 
     -- Ensure response.body and response.body.data are valid tables
-    if type(response.body) == "table" and type(response.body.data) == "table" then
+    if type(response.body) == 'table' and type(response.body.data) == 'table' then
       for _, model in ipairs(response.body.data) do
-        if model.capabilities and model.capabilities.type == "chat" then
+        if model.capabilities and model.capabilities.type == 'chat' then
           table.insert(models, {
             id = model.id,
             name = model.name,
@@ -169,12 +169,12 @@ M.copilot = {
             tokenizer = model.capabilities.tokenizer,
             max_input_tokens = model.capabilities.limits.max_prompt_tokens,
             max_output_tokens = model.capabilities.limits.max_output_tokens,
-            policy = not model.policy or model.policy.state == "enabled",
+            policy = not model.policy or model.policy.state == 'enabled',
           })
         end
       end
     else
-      print("Error: response.body.data is not a valid table")
+      print('Error: response.body.data is not a valid table')
     end
 
     for _, model in ipairs(models) do
@@ -307,21 +307,24 @@ M.github_models = {
     local models = {}
 
     -- Ensure response.body and response.body.summaries are valid tables
-    if type(response.body) == "table" and type(response.body.summaries) == "table" then
+    if type(response.body) == 'table' and type(response.body.summaries) == 'table' then
       for _, model in ipairs(response.body.summaries) do
-        if type(model.inferenceTasks) == "table" and vim.tbl_contains(model.inferenceTasks, "chat-completion") then
+        if
+          type(model.inferenceTasks) == 'table'
+          and vim.tbl_contains(model.inferenceTasks, 'chat-completion')
+        then
           table.insert(models, {
             id = model.name,
             name = model.displayName,
-            version = model.name .. "-" .. model.version,
-            tokenizer = "o200k_base",
+            version = model.name .. '-' .. model.version,
+            tokenizer = 'o200k_base',
             max_input_tokens = model.modelLimits.textLimits.inputContextWindow,
             max_output_tokens = model.modelLimits.textLimits.maxOutputTokens,
           })
         end
       end
     else
-      print("Error: response.body.summaries is not a valid table")
+      print('Error: response.body.summaries is not a valid table')
     end
 
     return models
