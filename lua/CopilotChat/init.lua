@@ -131,9 +131,13 @@ local function show_error(err, append_newline)
   err = err or 'Unknown error'
 
   if type(err) == 'string' then
-    local message = err:match('^[^:]+:[^:]+:(.+)') or err
-    message = message:gsub('^%s*', '')
-    err = message
+    while true do
+      local new_err = err:gsub('^[^:]+:%d+: ', '')
+      if new_err == err then
+        break
+      end
+      err = new_err
+    end
   else
     err = utils.make_string(err)
   end

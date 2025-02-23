@@ -772,6 +772,7 @@ function Client:embed(inputs, model)
   while #to_process > 0 do
     local chunk_size = initial_chunk_size -- Reset chunk size for each new batch
     local threshold = BIG_EMBED_THRESHOLD -- Reset threshold for each new batch
+    local last_error = nil
 
     -- Take next chunk
     local batch = {}
@@ -788,6 +789,7 @@ function Client:embed(inputs, model)
 
       if not ok then
         log.debug('Failed to get embeddings: ', data)
+        last_error = data
         attempts = attempts + 1
         -- If we have few items and the request failed, try reducing threshold first
         if #batch <= 5 then
@@ -820,7 +822,7 @@ function Client:embed(inputs, model)
     end
 
     if not success then
-      error('Failed to process embeddings after multiple attempts')
+      error(last_error)
     end
   end
 
