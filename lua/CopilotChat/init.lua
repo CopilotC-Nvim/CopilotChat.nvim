@@ -44,9 +44,14 @@ local function update_highlights()
   M.complete_items(function(items)
     for _, item in ipairs(items) do
       local pattern = vim.fn.escape(item.word, '.-$^*[]')
-      vim.cmd.syntax('match CopilotChatKeyword "' .. pattern .. '"')
+      if vim.startswith(item.word, '#') then
+        vim.cmd('syntax match CopilotChatKeyword "' .. pattern .. '\\(:.\\+\\)\\?" containedin=ALL')
+      else
+        vim.cmd('syntax match CopilotChatKeyword "' .. pattern .. '" containedin=ALL')
+      end
     end
 
+    vim.cmd('syntax match CopilotChatInput ":\\(.\\+\\)" contained containedin=CopilotChatKeyword')
     state.highlights_loaded = true
   end)
 end
@@ -870,10 +875,11 @@ function M.setup(config)
     M.log_level(M.config.log_level)
   end
 
-  vim.api.nvim_set_hl(0, 'CopilotChatSpinner', { link = 'DiagnosticHint', default = true })
+  vim.api.nvim_set_hl(0, 'CopilotChatStatus', { link = 'DiagnosticHint', default = true })
   vim.api.nvim_set_hl(0, 'CopilotChatHelp', { link = 'DiagnosticInfo', default = true })
-  vim.api.nvim_set_hl(0, 'CopilotChatSelection', { link = 'Visual', default = true })
   vim.api.nvim_set_hl(0, 'CopilotChatKeyword', { link = 'Keyword', default = true })
+  vim.api.nvim_set_hl(0, 'CopilotChatInput', { link = 'Special', default = true })
+  vim.api.nvim_set_hl(0, 'CopilotChatSelection', { link = 'Visual', default = true })
   vim.api.nvim_set_hl(
     0,
     'CopilotChatHeader',

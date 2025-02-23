@@ -63,7 +63,7 @@ function Spinner:start()
           hl_mode = 'combine',
           priority = 100,
           virt_text = {
-            { frame, 'CopilotChatSpinner' },
+            { frame, 'CopilotChatStatus' },
           },
         }
       )

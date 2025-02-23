@@ -619,12 +619,13 @@ vim.api.nvim_create_autocmd('BufEnter', {
 
 Types of copilot highlights:
 
-- `CopilotChatSpinner` - Spinner in chat buffer
+- `CopilotChatHeader` - Header highlight in chat buffer
+- `CopilotChatSeparator` - Separator highlight in chat buffer
+- `CopilotChatStatus` - Status and spinner in chat buffer
 - `CopilotChatHelp` - Help messages in chat buffer (help, references)
 - `CopilotChatSelection` - Selection highlight in source buffer
 - `CopilotChatKeyword` - Keyword highlight in chat buffer (e.g. prompts, contexts)
-- `CopilotChatHeader` - Header highlight in chat buffer
-- `CopilotChatSeparator` - Separator highlight in chat buffer
+- `CopilotChatInput` - Input highlight in chat buffer (for contexts)
 
 # API Reference
 
