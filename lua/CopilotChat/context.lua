@@ -23,6 +23,7 @@ local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local file_cache = {}
 local url_cache = {}
+local embedding_cache = {}
 
 local M = {}
 
@@ -661,15 +662,21 @@ function M.filter_embeddings(prompt, model, headless, embeddings)
   notify.publish(notify.STATUS, 'Ranking embeddings')
 
   -- Build query from history and prompt
-  local query = ''
+  local query = prompt
   if not headless then
-    for _, message in ipairs(client.history) do
-      if message.role == 'user' then
-        query = query .. '\n' .. message.content
-      end
-    end
+    query = table.concat(
+      vim
+        .iter(client.history)
+        :filter(function(m)
+          return m.role == 'user'
+        end)
+        :map(function(m)
+          return vim.trim(m.content)
+        end)
+        :totable(),
+      '\n'
+    ) .. '\n' .. prompt
   end
-  query = query .. '\n' .. prompt
 
   -- Rank embeddings by symbols
   embeddings = data_ranked_by_symbols(query, embeddings, MIN_SYMBOL_SIMILARITY)
@@ -678,26 +685,46 @@ function M.filter_embeddings(prompt, model, headless, embeddings)
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
   end
 
-  -- Embed the query
-  table.insert(embeddings, {
+  -- Prepare embeddings for processing
+  local to_process = {}
+  local results = {}
+  for _, input in ipairs(embeddings) do
+    input.filename = input.filename or 'unknown'
+    input.filetype = input.filetype or 'text'
+    if input.content then
+      local cache_key = input.filename .. utils.quick_hash(input.content)
+      if embedding_cache[cache_key] then
+        table.insert(results, embedding_cache[cache_key])
+      else
+        table.insert(to_process, input)
+      end
+    end
+  end
+  table.insert(to_process, {
     content = query,
     filename = 'query',
     filetype = 'raw',
   })
 
-  -- Get embeddings from all items
-  embeddings = client:embed(embeddings, model)
+  -- Embed the data and process the results
+  for _, input in ipairs(client:embed(to_process, model)) do
+    if input.filetype ~= 'raw' then
+      local cache_key = input.filename .. utils.quick_hash(input.content)
+      embedding_cache[cache_key] = input
+    end
+    table.insert(results, input)
+  end
 
   -- Rate embeddings by relatedness to the query
-  local embedded_query = table.remove(embeddings, #embeddings)
+  local embedded_query = table.remove(results, #results)
   log.debug('Embedded query:', embedded_query.content)
-  embeddings = data_ranked_by_relatedness(embedded_query, embeddings, MIN_SEMANTIC_SIMILARITY)
-  log.debug('Ranked embeddings:', #embeddings)
-  for i, item in ipairs(embeddings) do
+  results = data_ranked_by_relatedness(embedded_query, results, MIN_SEMANTIC_SIMILARITY)
+  log.debug('Ranked embeddings:', #results)
+  for i, item in ipairs(results) do
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
   end
 
-  return embeddings
+  return results
 end
 
 return M

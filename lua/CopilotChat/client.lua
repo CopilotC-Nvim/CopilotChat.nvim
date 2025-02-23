@@ -244,7 +244,6 @@ end
 ---@field history table<CopilotChat.Provider.input>
 ---@field providers table<string, CopilotChat.Provider>
 ---@field provider_cache table<string, table>
----@field embedding_cache table<string, CopilotChat.context.embed>
 ---@field models table<string, CopilotChat.Client.model>?
 ---@field agents table<string, CopilotChat.Client.agent>?
 ---@field current_job string?
@@ -253,7 +252,6 @@ local Client = class(function(self)
   self.history = {}
   self.providers = {}
   self.provider_cache = {}
-  self.embedding_cache = {}
   self.models = nil
   self.agents = nil
   self.current_job = nil
@@ -749,24 +747,9 @@ function Client:embed(inputs, model)
   notify.publish(notify.STATUS, 'Generating embeddings for ' .. #inputs .. ' inputs')
 
   -- Initialize essentials
-  local to_process = {}
+  local to_process = inputs
   local results = {}
   local initial_chunk_size = 10
-
-  -- Process each input, using cache when possible
-  for _, input in ipairs(inputs) do
-    input.filename = input.filename or 'unknown'
-    input.filetype = input.filetype or 'text'
-
-    if input.content then
-      local cache_key = input.filename .. utils.quick_hash(input.content)
-      if self.embedding_cache[cache_key] then
-        table.insert(results, self.embedding_cache[cache_key])
-      else
-        table.insert(to_process, input)
-      end
-    end
-  end
 
   -- Process inputs in batches with adaptive chunk size
   while #to_process > 0 do
@@ -814,9 +797,6 @@ function Client:embed(inputs, model)
         for _, embedding in ipairs(data) do
           local result = vim.tbl_extend('force', batch[embedding.index + 1], embedding)
           table.insert(results, result)
-
-          local cache_key = result.filename .. utils.quick_hash(result.content)
-          self.embedding_cache[cache_key] = result
         end
       end
     end
@@ -845,7 +825,6 @@ end
 function Client:reset()
   local stopped = self:stop()
   self.history = {}
-  self.embedding_cache = {}
   return stopped
 end
 
