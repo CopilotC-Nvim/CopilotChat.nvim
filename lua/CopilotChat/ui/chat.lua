@@ -353,7 +353,8 @@ function Chat:load_history(history)
   end
 end
 
-function Chat:clear_prompt()
+---@return CopilotChat.ui.Chat.Section?
+function Chat:get_prompt()
   if not self:visible() then
     return
   end
@@ -364,9 +365,25 @@ function Chat:clear_prompt()
     return
   end
 
+  return section
+end
+
+---@param prompt string?
+function Chat:set_prompt(prompt)
+  if not self:visible() then
+    return
+  end
+
+  local section = self:get_prompt()
+  if not section then
+    return
+  end
+
+  local modifiable = vim.bo[self.bufnr].modifiable
   vim.bo[self.bufnr].modifiable = true
-  vim.api.nvim_buf_set_lines(self.bufnr, section.start_line - 1, section.end_line, false, {})
-  vim.bo[self.bufnr].modifiable = false
+  local lines = prompt and vim.split('\n' .. prompt, '\n') or {}
+  vim.api.nvim_buf_set_lines(self.bufnr, section.start_line - 1, section.end_line, false, lines)
+  vim.bo[self.bufnr].modifiable = modifiable
 end
 
 ---@return boolean

@@ -453,11 +453,6 @@ Below are all available configuration options with their default values:
   headless = false, -- Do not write to chat buffer and use history(useful for using callback for custom processing)
   callback = nil, -- Callback to use when ask response is received
 
-  -- default selection
-  selection = function(source)
-    return select.visual(source) or select.buffer(source)
-  end,
-
   -- default window options
   window = {
     layout = 'vertical', -- 'vertical', 'horizontal', 'float', 'replace'
@@ -499,6 +494,12 @@ Below are all available configuration options with their default values:
   error_header = '# Error ', -- Header to use for errors
   separator = '───', -- Separator to use in chat
 
+  -- default selection
+  -- see config/select.lua for implementation
+  selection = function(source)
+    return select.visual(source) or select.buffer(source)
+  end,
+
   -- default providers
   -- see config/providers.lua for implementation
   providers = {
@@ -535,10 +536,12 @@ Below are all available configuration options with their default values:
   -- see config/prompts.lua for implementation
   prompts = {
     Explain = {
-      prompt = '> /COPILOT_EXPLAIN\n\nWrite an explanation for the selected code as paragraphs of text.',
+      prompt = 'Write an explanation for the selected code as paragraphs of text.',
+      sticky = '/COPILOT_EXPLAIN',
     },
     Review = {
-      prompt = '> /COPILOT_REVIEW\n\nReview the selected code.',
+      prompt = 'Review the selected code.',
+      sticky = '/COPILOT_REVIEW',
     },
     Fix = {
       prompt = 'There is a problem in this code. Identify the issues and rewrite the code with fixes. Explain what was wrong and how your changes address the problems.',
@@ -553,7 +556,8 @@ Below are all available configuration options with their default values:
       prompt = 'Please generate tests for my code.',
     },
     Commit = {
-      prompt = '> #git:staged\n\nWrite commit message for the change with commitizen convention. Keep the title under 50 characters and wrap message at 72 characters. Format as a gitcommit code block.',
+      prompt = 'Write commit message for the change with commitizen convention. Keep the title under 50 characters and wrap message at 72 characters. Format as a gitcommit code block.',
+      sticky = '#git:staged',
     },
   },
 

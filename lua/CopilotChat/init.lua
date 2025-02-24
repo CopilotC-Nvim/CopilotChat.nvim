@@ -36,8 +36,100 @@ local state = {
   overlay = nil,
 }
 
---- Update the highlights in chat buffer
+--- Insert sticky values from config into prompt
+---@param prompt string
+---@param config CopilotChat.config.shared
+local function insert_sticky(prompt, config, override_sticky)
+  prompt = vim.trim(prompt or '')
+  local lines = vim.split(prompt, '\n')
+  local stickies = utils.ordered_map()
+
+  local sticky_indices = {}
+  for i, line in ipairs(lines) do
+    if vim.startswith(line, '> ') then
+      table.insert(sticky_indices, i)
+      stickies:set(vim.trim(line:sub(3)), true)
+    end
+  end
+  for i = #sticky_indices, 1, -1 do
+    table.remove(lines, sticky_indices[i])
+  end
+
+  lines = vim.split(vim.trim(table.concat(lines, '\n')), '\n')
+
+  if config.model and config.model ~= M.config.model then
+    stickies:set('$' .. config.model, true)
+  end
+
+  if config.agent and config.agent ~= M.config.agent then
+    stickies:set('@' .. config.agent, true)
+  end
+
+  if config.context and not vim.deep_equal(config.context, M.config.context) then
+    if type(config.context) == 'table' then
+      ---@diagnostic disable-next-line: param-type-mismatch
+      for _, context in ipairs(config.context) do
+        stickies:set('#' .. context, true)
+      end
+    else
+      stickies:set('#' .. config.context, true)
+    end
+  end
+
+  if config.sticky and (override_sticky or not vim.deep_equal(config.sticky, M.config.sticky)) then
+    if type(config.sticky) == 'table' then
+      ---@diagnostic disable-next-line: param-type-mismatch
+      for _, sticky in ipairs(config.sticky) do
+        stickies:set(sticky, true)
+      end
+    else
+      stickies:set(config.sticky, true)
+    end
+  end
+
+  -- Insert stickies at start of prompt
+  local prompt_lines = {}
+  for _, sticky in ipairs(stickies:keys()) do
+    table.insert(prompt_lines, '> ' .. sticky)
+  end
+  if #prompt_lines > 0 then
+    table.insert(prompt_lines, '')
+  end
+  for _, line in ipairs(lines) do
+    table.insert(prompt_lines, line)
+  end
+  if #lines == 0 then
+    table.insert(prompt_lines, '')
+  end
+
+  return table.concat(prompt_lines, '\n')
+end
+
+--- Update the highlights for chat buffer
 local function update_highlights()
+  local selection_ns = vim.api.nvim_create_namespace('copilot-chat-selection')
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    vim.api.nvim_buf_clear_namespace(buf, selection_ns, 0, -1)
+  end
+
+  if state.chat.config.highlight_selection and state.chat:active() then
+    local selection = M.get_selection()
+    if
+      not selection
+      or not utils.buf_valid(selection.bufnr)
+      or not selection.start_line
+      or not selection.end_line
+    then
+      return
+    end
+
+    vim.api.nvim_buf_set_extmark(selection.bufnr, selection_ns, selection.start_line - 1, 0, {
+      hl_group = 'CopilotChatSelection',
+      end_row = selection.end_line,
+      strict = false,
+    })
+  end
+
   if state.highlights_loaded then
     return
   end
@@ -57,36 +149,6 @@ local function update_highlights()
   end)
 end
 
---- Highlights the selection in the source buffer.
----@param clear boolean
----@param config CopilotChat.config.shared
-local function highlight_selection(clear, config)
-  local selection_ns = vim.api.nvim_create_namespace('copilot-chat-selection')
-  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    vim.api.nvim_buf_clear_namespace(buf, selection_ns, 0, -1)
-  end
-
-  if clear or not config.highlight_selection then
-    return
-  end
-
-  local selection = M.get_selection(config)
-  if
-    not selection
-    or not utils.buf_valid(selection.bufnr)
-    or not selection.start_line
-    or not selection.end_line
-  then
-    return
-  end
-
-  vim.api.nvim_buf_set_extmark(selection.bufnr, selection_ns, selection.start_line - 1, 0, {
-    hl_group = 'CopilotChatSelection',
-    end_row = selection.end_line,
-    strict = false,
-  })
-end
-
 ---@param start_of_chat boolean?
 local function finish(start_of_chat)
   if not start_of_chat then
@@ -95,22 +157,9 @@ local function finish(start_of_chat)
 
   state.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
 
-  -- Add default sticky prompts after reset
+  -- Insert sticky values from config into prompt
   if start_of_chat then
-    if M.config.sticky then
-      local last_prompt = state.last_prompt or ''
-
-      if type(M.config.sticky) == 'table' then
-        ---@diagnostic disable-next-line: param-type-mismatch
-        for _, sticky in ipairs(M.config.sticky) do
-          last_prompt = last_prompt .. '\n> ' .. sticky
-        end
-      else
-        last_prompt = last_prompt .. '\n> ' .. M.config.sticky
-      end
-
-      state.last_prompt = last_prompt
-    end
+    state.last_prompt = insert_sticky(state.last_prompt, M.config, true)
   end
 
   -- Reinsert sticky prompts from last prompt
@@ -199,9 +248,8 @@ local function map_key(name, bufnr, fn)
   end
 end
 
---- Updates the selection based on previous window
----@param config CopilotChat.config.shared
-function M.update_selection(config)
+--- Updates the source buffer based on previous window.
+local function update_source()
   local prev_winnr = vim.fn.win_getid(vim.fn.winnr('#'))
   local prev_bufnr = vim.api.nvim_win_get_buf(prev_winnr)
   if
@@ -214,29 +262,34 @@ function M.update_selection(config)
       winnr = prev_winnr,
     }
   end
-
-  highlight_selection(false, config)
 end
 
---- Resolve the prompts from the prompt.
----@param prompt string
----@param config CopilotChat.config.shared
----@return string, CopilotChat.config
-function M.resolve_prompts(prompt, config)
+--- Resolve the final prompt and config from prompt template.
+---@param prompt string?
+---@param config CopilotChat.config.shared?
+---@return CopilotChat.config.prompt, string
+function M.resolve_prompt(prompt, config)
+  if not prompt then
+    local section = state.chat:get_prompt()
+    if section then
+      prompt = section.content
+    end
+  end
+
   local prompts_to_use = M.prompts()
   local depth = 0
   local MAX_DEPTH = 10
 
-  local function resolve(inner_prompt, inner_config)
+  local function resolve(inner_config, inner_prompt)
     if depth >= MAX_DEPTH then
-      return inner_prompt, inner_config
+      return inner_config, inner_prompt
     end
     depth = depth + 1
 
     inner_prompt = string.gsub(inner_prompt, '/' .. WORD, function(match)
       local p = prompts_to_use[match]
       if p then
-        local resolved_prompt, resolved_config = resolve(p.prompt or '', p)
+        local resolved_config, resolved_prompt = resolve(p, p.prompt or '')
         inner_config = vim.tbl_deep_extend('force', inner_config, resolved_config)
         return resolved_prompt
       end
@@ -245,17 +298,19 @@ function M.resolve_prompts(prompt, config)
     end)
 
     depth = depth - 1
-    return inner_prompt, inner_config
+    return inner_config, inner_prompt
   end
 
-  return resolve(prompt, config)
+  return resolve(config or M.config, prompt or '')
 end
 
---- Resolve the embeddings from the prompt.
----@param prompt string
----@param config CopilotChat.config.shared
+--- Resolve the context embeddings from the prompt.
+---@param prompt string?
+---@param config CopilotChat.config.shared?
 ---@return table<CopilotChat.context.embed>, string
-function M.resolve_embeddings(prompt, config)
+function M.resolve_context(prompt, config)
+  config, prompt = M.resolve_prompt(prompt, config)
+
   local contexts = {}
   local function parse_context(prompt_context)
     local split = vim.split(prompt_context, ':')
@@ -312,14 +367,17 @@ function M.resolve_embeddings(prompt, config)
 end
 
 --- Resolve the agent from the prompt.
----@param prompt string
----@param config CopilotChat.config.shared
+---@param prompt string?
+---@param config CopilotChat.config.shared?
+---@return string, string
 function M.resolve_agent(prompt, config)
+  config, prompt = M.resolve_prompt(prompt, config)
+
   local agents = vim.tbl_map(function(agent)
     return agent.id
   end, client:list_agents())
 
-  local selected_agent = config.agent
+  local selected_agent = config.agent or ''
   prompt = prompt:gsub('@' .. WORD, function(match)
     if vim.tbl_contains(agents, match) then
       selected_agent = match
@@ -332,14 +390,17 @@ function M.resolve_agent(prompt, config)
 end
 
 --- Resolve the model from the prompt.
----@param prompt string
----@param config CopilotChat.config.shared
+---@param prompt string?
+---@param config CopilotChat.config.shared?
+---@return string, string
 function M.resolve_model(prompt, config)
+  config, prompt = M.resolve_prompt(prompt, config)
+
   local models = vim.tbl_map(function(model)
     return model.id
   end, client:list_models())
 
-  local selected_model = config.model
+  local selected_model = config.model or ''
   prompt = prompt:gsub('%$' .. WORD, function(match)
     if vim.tbl_contains(models, match) then
       selected_model = match
@@ -352,23 +413,51 @@ function M.resolve_model(prompt, config)
 end
 
 --- Get the selection from the source buffer.
----@param config CopilotChat.config.shared
 ---@return CopilotChat.select.selection?
-function M.get_selection(config)
+function M.get_selection()
+  local selection = M.config.selection
   local bufnr = state.source and state.source.bufnr
   local winnr = state.source and state.source.winnr
 
-  if
-    config
-    and config.selection
-    and utils.buf_valid(bufnr)
-    and winnr
-    and vim.api.nvim_win_is_valid(winnr)
-  then
-    return config.selection(state.source)
+  if selection and utils.buf_valid(bufnr) and winnr and vim.api.nvim_win_is_valid(winnr) then
+    return selection(state.source)
   end
 
   return nil
+end
+
+--- Sets the selection to specific lines in buffer.
+---@param bufnr number
+---@param start_line number
+---@param end_line number
+---@param clear boolean?
+function M.set_selection(bufnr, start_line, end_line, clear)
+  if not utils.buf_valid(bufnr) then
+    return
+  end
+
+  if clear then
+    for _, mark in ipairs({ '<', '>', '[', ']' }) do
+      pcall(vim.api.nvim_buf_del_mark, bufnr, mark)
+    end
+    update_highlights()
+    return
+  end
+
+  local winnr = vim.fn.win_findbuf(bufnr)[1]
+  if not winnr and state.source then
+    winnr = state.source.winnr
+  end
+  if not winnr then
+    return
+  end
+
+  pcall(vim.api.nvim_buf_set_mark, bufnr, '<', start_line, 0, {})
+  pcall(vim.api.nvim_buf_set_mark, bufnr, '>', end_line, 0, {})
+  pcall(vim.api.nvim_buf_set_mark, bufnr, '[', start_line, 0, {})
+  pcall(vim.api.nvim_buf_set_mark, bufnr, ']', end_line, 0, {})
+  pcall(vim.api.nvim_win_set_cursor, winnr, { start_line, 0 })
+  update_highlights()
 end
 
 --- Trigger the completion for the chat window.
@@ -538,22 +627,19 @@ end
 --- Open the chat window.
 ---@param config CopilotChat.config.shared?
 function M.open(config)
-  -- If we are already in chat window, do nothing
-  if state.chat:active() then
-    return
-  end
-
   config = vim.tbl_deep_extend('force', M.config, config or {})
-  if config.headless then
-    state.source = {
-      bufnr = vim.api.nvim_get_current_buf(),
-      winnr = vim.api.nvim_get_current_win(),
-    }
-    return
+  utils.return_to_normal_mode()
+
+  state.chat:open(config)
+
+  local section = state.chat:get_prompt()
+  if section then
+    local prompt = insert_sticky(section.content, config)
+    if prompt then
+      state.chat:set_prompt(prompt)
+    end
   end
 
-  utils.return_to_normal_mode()
-  state.chat:open(config)
   state.chat:follow()
   state.chat:focus()
 end
@@ -680,16 +766,14 @@ end
 ---@param prompt string?
 ---@param config CopilotChat.config.shared?
 function M.ask(prompt, config)
-  M.open(config)
-
   prompt = vim.trim(prompt or '')
   if prompt == '' then
     return
   end
 
   vim.diagnostic.reset(vim.api.nvim_create_namespace('copilot-chat-diagnostics'))
-  config = vim.tbl_deep_extend('force', state.chat.config, config or {})
   config = vim.tbl_deep_extend('force', M.config, config or {})
+  prompt = insert_sticky(prompt, config)
 
   if not config.headless then
     if config.clear_chat_on_new_prompt then
@@ -698,14 +782,19 @@ function M.ask(prompt, config)
       finish()
     end
 
+    if not state.chat:active() then
+      M.open(config)
+    end
+
     state.last_prompt = prompt
-    state.chat:clear_prompt()
-    state.chat:append('\n\n' .. prompt)
-    state.chat:append('\n\n' .. config.answer_header .. config.separator .. '\n\n')
+    state.chat:set_prompt(prompt)
+    state.chat:append('\n\n' .. M.config.answer_header .. M.config.separator .. '\n\n')
+  else
+    update_source()
   end
 
   -- Resolve prompt references
-  local prompt, config = M.resolve_prompts(prompt, config)
+  config, prompt = M.resolve_prompt(prompt, config)
   local system_prompt = config.system_prompt or ''
 
   -- Remove sticky prefix
@@ -717,12 +806,12 @@ function M.ask(prompt, config)
   ))
 
   -- Retrieve the selection
-  local selection = M.get_selection(config)
+  local selection = M.get_selection()
 
   local ok, err = pcall(async.run, function()
     local selected_agent, prompt = M.resolve_agent(prompt, config)
     local selected_model, prompt = M.resolve_model(prompt, config)
-    local embeddings, prompt = M.resolve_embeddings(prompt, config)
+    local embeddings, prompt = M.resolve_context(prompt, config)
 
     local has_output = false
     local query_ok, filtered_embeddings =
@@ -802,6 +891,8 @@ end
 --- Stop current copilot output and optionally reset the chat ten show the help message.
 ---@param reset boolean?
 function M.stop(reset)
+  local stopped = false
+
   if reset then
     client:reset()
     state.chat:clear()
@@ -809,17 +900,18 @@ function M.stop(reset)
     state.last_response = nil
 
     -- Clear the selection
-    if state.source and utils.buf_valid(state.source.bufnr) then
-      for _, mark in ipairs({ '<', '>', '[', ']' }) do
-        pcall(vim.api.nvim_buf_del_mark, state.source.bufnr, mark)
-      end
-      highlight_selection(true, state.chat.config)
+    if state.source then
+      M.set_selection(state.source.bufnr, 0, 0, true)
     end
+
+    stopped = true
   else
-    client:stop()
+    stopped = client:stop()
   end
 
-  finish(reset)
+  if stopped then
+    finish(reset)
+  end
 end
 
 --- Reset the chat window and show the help message.
@@ -992,13 +1084,11 @@ function M.setup(config)
         buffer = bufnr,
         callback = function(ev)
           local is_enter = ev.event == 'BufEnter'
-
           if is_enter then
-            update_highlights()
-            M.update_selection(state.chat.config)
-          else
-            highlight_selection(true, state.chat.config)
+            update_source()
           end
+
+          vim.schedule(update_highlights)
         end,
       })
 
