@@ -5,7 +5,6 @@ local utils = require('CopilotChat.utils')
 ---@param chat CopilotChat.ui.Chat
 ---@return CopilotChat.ui.Diff.Diff?
 local function get_diff(chat)
-  local config = chat.config
   local block = chat:get_closest_block()
 
   -- If no block found, return nil
@@ -15,7 +14,7 @@ local function get_diff(chat)
 
   -- Initialize variables with selection if available
   local header = block.header
-  local selection = copilot.get_selection(config)
+  local selection = copilot.get_selection()
   local reference = selection and selection.content
   local start_line = selection and selection.start_line
   local end_line = selection and selection.end_line
@@ -64,35 +63,15 @@ local function get_diff(chat)
   }
 end
 
----@param winnr number
----@param bufnr number
----@param start_line number
----@param end_line number
----@param config CopilotChat.config.shared
-local function jump_to_diff(winnr, bufnr, start_line, end_line, config)
-  pcall(vim.api.nvim_buf_set_mark, bufnr, '<', start_line, 0, {})
-  pcall(vim.api.nvim_buf_set_mark, bufnr, '>', end_line, 0, {})
-  pcall(vim.api.nvim_buf_set_mark, bufnr, '[', start_line, 0, {})
-  pcall(vim.api.nvim_buf_set_mark, bufnr, ']', end_line, 0, {})
-  pcall(vim.api.nvim_win_set_cursor, winnr, { start_line, 0 })
-  copilot.update_selection(config)
-end
-
 ---@param diff CopilotChat.ui.Diff.Diff?
----@param config CopilotChat.config.shared
-local function apply_diff(diff, config)
+local function apply_diff(diff)
   if not diff or not diff.bufnr then
-    return
-  end
-
-  local winnr = vim.fn.win_findbuf(diff.bufnr)[1]
-  if not winnr then
     return
   end
 
   local lines = vim.split(diff.change, '\n', { trimempty = false })
   vim.api.nvim_buf_set_lines(diff.bufnr, diff.start_line - 1, diff.end_line, false, lines)
-  jump_to_diff(winnr, diff.bufnr, diff.start_line, diff.start_line + #lines - 1, config)
+  copilot.set_selection(diff.bufnr, diff.start_line, diff.start_line + #lines - 1)
 end
 
 ---@class CopilotChat.config.mapping
@@ -208,7 +187,7 @@ return {
     normal = '<C-y>',
     insert = '<C-y>',
     callback = function(overlay, diff, chat, source)
-      apply_diff(get_diff(chat), chat.config)
+      apply_diff(get_diff(chat))
     end,
   },
 
@@ -234,8 +213,7 @@ return {
 
       source.bufnr = diff_bufnr
       vim.api.nvim_win_set_buf(source.winnr, diff_bufnr)
-
-      jump_to_diff(source.winnr, diff_bufnr, diff.start_line, diff.end_line, chat.config)
+      copilot.set_selection(diff_bufnr, diff.start_line, diff.end_line)
     end,
   },
 
@@ -278,7 +256,7 @@ return {
   quickfix_diffs = {
     normal = 'gqd',
     callback = function(overlay, diff, chat)
-      local selection = copilot.get_selection(chat.config)
+      local selection = copilot.get_selection()
       local items = {}
 
       for _, section in ipairs(chat.sections) do
@@ -345,16 +323,16 @@ return {
       end
 
       local lines = {}
-      local prompt, config = copilot.resolve_prompts(section.content, chat.config)
+      local config, prompt = copilot.resolve_prompt(section.content)
       local system_prompt = config.system_prompt
 
       async.run(function()
-        local _, selected_agent = pcall(copilot.resolve_agent, prompt, config)
-        local _, selected_model = pcall(copilot.resolve_model, prompt, config)
+        local selected_agent = copilot.resolve_agent(prompt, config)
+        local selected_model = copilot.resolve_model(prompt, config)
 
         utils.schedule_main()
-        table.insert(lines, '**Logs**: `' .. chat.config.log_path .. '`')
-        table.insert(lines, '**History**: `' .. chat.config.history_path .. '`')
+        table.insert(lines, '**Logs**: `' .. copilot.config.log_path .. '`')
+        table.insert(lines, '**History**: `' .. copilot.config.history_path .. '`')
         table.insert(lines, '**Temp Files**: `' .. vim.fn.fnamemodify(os.tmpname(), ':h') .. '`')
         table.insert(lines, '')
 
@@ -393,7 +371,7 @@ return {
 
       local lines = {}
 
-      local selection = copilot.get_selection(chat.config)
+      local selection = copilot.get_selection()
       if selection then
         table.insert(lines, '**Selection**')
         table.insert(lines, '```' .. selection.filetype)
@@ -405,10 +383,7 @@ return {
       end
 
       async.run(function()
-        local embeddings = {}
-        if section and not section.answer then
-          embeddings = copilot.resolve_embeddings(section.content, chat.config)
-        end
+        local embeddings = copilot.resolve_context(section.content)
 
         for _, embedding in ipairs(embeddings) do
           local embed_lines = vim.split(embedding.content, '\n')

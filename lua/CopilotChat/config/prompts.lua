@@ -96,11 +96,13 @@ return {
   },
 
   Explain = {
-    prompt = '> /COPILOT_EXPLAIN\n\nWrite an explanation for the selected code as paragraphs of text.',
+    prompt = 'Write an explanation for the selected code as paragraphs of text.',
+    sticky = '/COPILOT_EXPLAIN',
   },
 
   Review = {
-    prompt = '> /COPILOT_REVIEW\n\nReview the selected code.',
+    prompt = 'Review the selected code.',
+    sticky = '/COPILOT_REVIEW',
     callback = function(response, source)
       local diagnostics = {}
       for line in response:gmatch('[^\r\n]+') do
@@ -159,6 +161,7 @@ return {
   },
 
   Commit = {
-    prompt = '> #git:staged\n\nWrite commit message for the change with commitizen convention. Keep the title under 50 characters and wrap message at 72 characters. Format as a gitcommit code block.',
+    prompt = 'Write commit message for the change with commitizen convention. Keep the title under 50 characters and wrap message at 72 characters. Format as a gitcommit code block.',
+    sticky = '#git:staged',
   },
 }
