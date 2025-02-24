@@ -353,7 +353,8 @@ function Chat:load_history(history)
   end
 end
 
-function Chat:clear_prompt()
+---@return CopilotChat.ui.Chat.Section?
+function Chat:get_prompt()
   if not self:visible() then
     return
   end
@@ -361,6 +362,19 @@ function Chat:clear_prompt()
   self:render()
   local section = self.sections[#self.sections]
   if not section or section.answer then
+    return
+  end
+
+  return section
+end
+
+function Chat:clear_prompt()
+  if not self:visible() then
+    return
+  end
+
+  local section = self:get_prompt()
+  if not section then
     return
   end
 
