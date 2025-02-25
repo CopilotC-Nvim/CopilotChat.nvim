@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2025 February 23
+*CopilotChat.txt*         For NVIM v0.8.0        Last change: 2025 February 25
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -33,7 +33,7 @@ Table of Contents                              *CopilotChat-table-of-contents*
 CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat
 capabilities directly into your editor. It provides:
 
-- 🤖 Native GitHub Copilot Chat integration with official model and agent support (GPT-4o, Claude 3.5 Sonnet, Gemini 2.0 Flash, and more)
+- 🤖 Native GitHub Copilot Chat integration with official model and agent support (GPT-4o, Claude 3.7 Sonnet, Gemini 2.0 Flash, and more)
 - 💻 Rich workspace context powered by smart embeddings system
 - 🔒 Explicit context sharing - only sends what you specifically request, either as context or selection
 - 🔌 Modular provider architecture supporting both official and custom LLM backends (Ollama, LM Studio, and more)
