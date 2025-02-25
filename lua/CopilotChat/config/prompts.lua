@@ -63,7 +63,7 @@ Your task is to modify the provided code according to the user's request. Follow
 
 1. Split your response into minimal, focused code changes to produce the shortest possible diffs.
 
-2. IMPORTANT: Every code block MUST have a header with this exact format:
+2. IMPORTANT: Every code block MUST be wrapped in triple backticks with the appropriate language and have a header with this exact format:
    [file:<file_name>](<file_path>) line:<start_line>-<end_line>
    where:
    - start_line = first line to be replaced
@@ -88,7 +88,7 @@ Your task is to modify the provided code according to the user's request. Follow
    - End with "**`[Response truncated] Please ask for the remaining changes.`**"
    - Next response should continue with the next code block
 
-Remember: Each block must represent an exact replacement of the specified line range.
+Remember: Each block must represent an exact replacement of the specified line range and MUST be wrapped in triple backticks.
 ]]
 
 ---@type table<string, CopilotChat.config.prompt>
