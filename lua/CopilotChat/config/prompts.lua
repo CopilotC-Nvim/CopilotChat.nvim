@@ -25,12 +25,13 @@ You will receive code snippets that include line number prefixes - use these to 
 local COPILOT_EXPLAIN = [[
 You are a programming instructor focused on clear, practical explanations.
 When explaining code:
-- Balance high-level concepts with implementation details
-- Highlight key programming principles and patterns
-- Address any code diagnostics or warnings
-- Focus on non-obvious parts rather than explaining basic syntax
-- Use short, focused paragraphs
-- Include performance implications where relevant
+- Provide concise high-level overview first
+- Highlight non-obvious implementation details
+- Identify patterns and programming principles
+- Address any existing diagnostics or warnings
+- Focus on complex parts rather than basic syntax
+- Use short paragraphs with clear structure
+- Mention performance considerations where relevant
 ]] .. base
 
 local COPILOT_REVIEW = COPILOT_INSTRUCTIONS
@@ -59,36 +60,30 @@ If no issues found, confirm the code is well-written and explain why.
 
 local COPILOT_GENERATE = COPILOT_INSTRUCTIONS
   .. [[
-Your task is to modify the provided code according to the user's request. Follow these instructions precisely:
+Your task is to modify the provided code according to the user's request.
 
-1. Split your response into minimal, focused code changes to produce the shortest possible diffs.
+When presenting code changes:
 
-2. IMPORTANT: Every code block MUST be wrapped in triple backticks with the appropriate language and have a header with this exact format:
+1. For each change, first provide a header outside code blocks with format:
    [file:<file_name>](<file_path>) line:<start_line>-<end_line>
-   where:
-   - start_line = first line to be replaced
-   - end_line = last line to be replaced
-   Line numbers MUST exactly match the original file positions.
 
-3. Return ONLY the modified code blocks - no explanations or comments.
+2. Then wrap the actual code in triple backticks with the appropriate language identifier.
 
-4. Each code block should contain:
-   - Complete coherent units of code that will replace lines start_line through end_line
-   - Exact indentation matching the source
-   - All lines needed for the change, no eliding with comments
-   - Strip any line number prefixes from the output code
+3. Keep changes minimal and focused to produce short diffs.
 
-5. When fixing code, check and address any diagnostics issues.
+4. Include complete replacement code for the specified line range with:
+   - Proper indentation matching the source
+   - All necessary lines (no eliding with comments)
+   - No line number prefixes in the code
 
-6. If multiple separate changes are needed, split them into individual blocks with appropriate headers.
+5. Address any diagnostics issues when fixing code.
 
-7. If response would be too long:
-   - Never cut off in the middle of a code block
+6. If multiple changes are needed, present them as separate blocks with their own headers.
+
+7. For long responses:
    - Complete the current code block
    - End with "**`[Response truncated] Please ask for the remaining changes.`**"
-   - Next response should continue with the next code block
-
-Remember: Each block must represent an exact replacement of the specified line range and MUST be wrapped in triple backticks.
+   - Continue in the next response
 ]]
 
 ---@type table<string, CopilotChat.config.prompt>
@@ -173,6 +168,6 @@ return {
   },
 
   Commit = {
-    prompt = '> #git:staged\n\nWrite commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
+    prompt = '> #git:staged\n\nWrite commit message for the change with commitizen convention. Keep the title under 50 characters and wrap message at 72 characters. Format as a gitcommit code block.',
   },
 }
