@@ -86,12 +86,15 @@ local function get_github_token()
   }
 
   for _, file_path in ipairs(file_paths) do
-    if vim.fn.filereadable(file_path) == 1 then
-      local userdata = vim.fn.json_decode(vim.fn.readfile(file_path))
-      for key, value in pairs(userdata) do
-        if string.find(key, 'github.com') then
-          cached_github_token = value.oauth_token
-          return value.oauth_token
+    local file_data = utils.read_file(file_path)
+    if file_data then
+      local parsed_data = utils.json_decode(file_data)
+      if parsed_data then
+        for key, value in pairs(parsed_data) do
+          if string.find(key, 'github.com') then
+            cached_github_token = value.oauth_token
+            return value.oauth_token
+          end
         end
       end
     end
