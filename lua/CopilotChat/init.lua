@@ -761,6 +761,13 @@ function M.ask(prompt, config)
     end
 
     if not config.headless then
+      if not utils.empty(references) and config.references_display == 'write' then
+        state.chat:append('\n\n**`References`**:')
+        for _, ref in ipairs(references) do
+          state.chat:append(string.format('\n[%s](%s)', ref.name, ref.url))
+        end
+      end
+
       finish()
     end
     if config.callback then
