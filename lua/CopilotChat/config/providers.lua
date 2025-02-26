@@ -1,4 +1,3 @@
-local async = require('plenary.async')
 local utils = require('CopilotChat.utils')
 
 ---@class CopilotChat.Provider.model
@@ -58,18 +57,18 @@ local cached_github_token = nil
 
 local function config_path()
   local config = vim.fs.normalize('$XDG_CONFIG_HOME')
-  if config and utils.file_exists(config) then
+  if config and vim.uv.fs_stat(config) then
     return config
   end
   if vim.fn.has('win32') > 0 then
     config = vim.fs.normalize('$LOCALAPPDATA')
-    if not config or not utils.file_exists(config) then
+    if not config or not vim.uv.fs_stat(config) then
       config = vim.fs.normalize('$HOME/AppData/Local')
     end
   else
     config = vim.fs.normalize('$HOME/.config')
   end
-  if config and utils.file_exists(config) then
+  if config and vim.uv.fs_stat(config) then
     return config
   end
 end
