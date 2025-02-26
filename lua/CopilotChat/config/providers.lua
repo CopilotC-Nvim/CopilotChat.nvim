@@ -56,14 +56,30 @@ local EDITOR_VERSION = 'Neovim/'
 
 local cached_github_token = nil
 
+local function config_path()
+  local config = vim.fs.normalize('$XDG_CONFIG_HOME')
+  if config and utils.file_exists(config) then
+    return config
+  end
+  if vim.fn.has('win32') > 0 then
+    config = vim.fs.normalize('$LOCALAPPDATA')
+    if not config or not utils.file_exists(config) then
+      config = vim.fs.normalize('$HOME/AppData/Local')
+    end
+  else
+    config = vim.fs.normalize('$HOME/.config')
+  end
+  if config and utils.file_exists(config) then
+    return config
+  end
+end
+
 --- Get the github copilot oauth cached token (gu_ token)
 ---@return string
 local function get_github_token()
   if cached_github_token then
     return cached_github_token
   end
-
-  async.util.scheduler()
 
   -- loading token from the environment only in GitHub Codespaces
   local token = os.getenv('GITHUB_TOKEN')
@@ -74,7 +90,7 @@ local function get_github_token()
   end
 
   -- loading token from the file
-  local config_path = utils.config_path()
+  local config_path = config_path()
   if not config_path then
     error('Failed to find config path for GitHub token')
   end
