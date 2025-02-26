@@ -643,19 +643,23 @@ Types of copilot highlights:
 local chat = require("CopilotChat")
 
 -- Window Management
-chat.open()     -- Open chat window
-chat.open({     -- Open with custom options
+
+-- Open chat window with optional config
+chat.open({
   window = {
     layout = 'float',
     title = 'Custom Chat',
   },
 })
+
 chat.close()    -- Close chat window
 chat.toggle()   -- Toggle chat window
 chat.reset()    -- Reset chat window
+chat.stop()     -- Stop current output
 
 -- Chat Interaction
-chat.ask("Explain this code.")  -- Basic question
+
+-- Ask a question with optional config
 chat.ask("Explain this code.", {
   selection = require("CopilotChat.select").buffer,
   context = { 'buffers', 'files' },
@@ -663,6 +667,20 @@ chat.ask("Explain this code.", {
     print("Response:", response)
   end,
 })
+
+chat.select_model() -- Open model selector
+chat.select_agent() -- Open agent selector
+
+-- Open prompt selector with optional config
+chat.select_prompt({
+    callback = function(response)
+        print("Response:", response)
+    end,
+})
+
+-- History Management
+chat.save("my_chat", "my_history_path") -- Save chat history with optional history path
+chat.load("my_chat", "my_history_path") -- Load chat history with optional history path
 
 -- Utilities
 chat.response()  -- Get last response
