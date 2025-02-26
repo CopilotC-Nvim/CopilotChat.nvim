@@ -425,7 +425,6 @@ function Client:ask(prompt, opts)
 
   notify.publish(notify.STATUS, 'Generating request')
 
-  async.util.scheduler()
   local references = {}
   for _, embed in ipairs(embeddings) do
     table.insert(references, {
