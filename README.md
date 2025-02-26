@@ -344,6 +344,15 @@ Define your own contexts in the configuration with input handling and resolution
 }
 ```
 
+### Integration with pickers
+
+For `:<input>` pickers to work correctly, you need to replace `vim.ui.select` with your desired picker.
+
+- [fzf-lua](https://github.com/ibhagwan/fzf-lua?tab=readme-ov-file#neovim-api) - call `require('fzf-lua').register_ui_select()`
+- [telescope](https://github.com/nvim-telescope/telescope-ui-select.nvim?tab=readme-ov-file#telescope-setup-and-configuration) - setup `telescope-ui-select.nvim` plugin
+- [snacks.picker](https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#%EF%B8%8F-config) - enable `ui_select` config
+- [mini.pick](https://github.com/echasnovski/mini.pick/blob/main/lua/mini/pick.lua#L1229) - set `vim.ui.select = require('mini.pick').ui_select`
+
 ## Selections
 
 Selections determine the source content for chat interactions. Configure them globally or per-prompt.
