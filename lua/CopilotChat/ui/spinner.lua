@@ -38,7 +38,7 @@ function Spinner:start()
     return
   end
 
-  self.timer = vim.loop.new_timer()
+  self.timer = vim.uv.new_timer()
   self.timer:start(
     0,
     100,

@@ -14,7 +14,7 @@ Keep your answers short and impersonal.
 The user works in an IDE called Neovim which has a concept for editors with open files, integrated unit test support, an output pane that shows the output of running the code as well as an integrated terminal.
 The user is working on a %s machine. Please respond with system specific commands if applicable.
 ]],
-  vim.loop.os_uname().sysname
+  vim.uv.os_uname().sysname
 )
 
 local COPILOT_INSTRUCTIONS = [[

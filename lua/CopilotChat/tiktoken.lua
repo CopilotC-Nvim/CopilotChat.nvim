@@ -21,7 +21,7 @@ local function load_tiktoken_data(tokenizer)
   vim.fn.mkdir(tostring(cache_dir), 'p')
   local cache_path = cache_dir .. '/' .. tiktoken_url:match('.+/(.+)')
 
-  if utils.file_exists(cache_path) then
+  if vim.uv.fs_stat(cache_path) then
     return cache_path
   end
 

@@ -425,13 +425,6 @@ M.scan_dir = async.wrap(function(path, opts, callback)
   )
 end, 3)
 
---- Check if a file exists
----@param path string The file path
-M.file_exists = function(path)
-  local err, stat = async.uv.fs_stat(path)
-  return err == nil and stat ~= nil
-end
-
 --- Get last modified time of a file
 ---@param path string The file path
 ---@return number?
