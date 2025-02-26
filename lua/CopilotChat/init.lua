@@ -627,7 +627,8 @@ function M.select_agent()
 end
 
 --- Select a prompt template to use.
-function M.select_prompt()
+---@param config CopilotChat.config.shared?
+function M.select_prompt(config)
   local prompts = M.prompts()
   local keys = vim.tbl_keys(prompts)
   table.sort(keys)
@@ -652,7 +653,10 @@ function M.select_prompt()
     end,
   }, function(choice)
     if choice then
-      M.ask(prompts[choice.name].prompt, prompts[choice.name])
+      M.ask(
+        prompts[choice.name].prompt,
+        vim.tbl_extend('force', prompts[choice.name], config or {})
+      )
     end
   end)
 end
