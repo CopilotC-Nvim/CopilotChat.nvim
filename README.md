@@ -53,6 +53,22 @@ CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat capabilities
   - Arch Linux: Install from official repositories
   - Other systems: Use system package manager or official installer
 
+## Integration with pickers
+
+For various plugin pickers to work correctly, you need to replace `vim.ui.select` with your desired picker (as the default `vim.ui.select` is very basic). Here are some examples:
+
+- [fzf-lua](https://github.com/ibhagwan/fzf-lua?tab=readme-ov-file#neovim-api) - call `require('fzf-lua').register_ui_select()`
+- [telescope](https://github.com/nvim-telescope/telescope-ui-select.nvim?tab=readme-ov-file#telescope-setup-and-configuration) - setup `telescope-ui-select.nvim` plugin
+- [snacks.picker](https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#%EF%B8%8F-config) - enable `ui_select` config
+- [mini.pick](https://github.com/echasnovski/mini.pick/blob/main/lua/mini/pick.lua#L1229) - set `vim.ui.select = require('mini.pick').ui_select`
+
+Plugin features that use picker:
+
+- `:CopilotChatPrompts` - for selecting prompts
+- `:CopilotChatModels` - for selecting models
+- `:CopilotChatAgents` - for selecting agents
+- `#<context>:<input>` - for selecting context input
+
 # Installation
 
 ## [lazy.nvim](https://github.com/folke/lazy.nvim)
@@ -186,7 +202,7 @@ For example, to change the submit prompt mapping or show_diff full diff option:
 
 ### Predefined Prompts
 
-Predefined prompt templates for common tasks. Reference them with `/PromptName` in chat or use `:CopilotChat<PromptName>`:
+Predefined prompt templates for common tasks. Reference them with `/PromptName` in chat, use `:CopilotChat<PromptName>` or `:CopilotChatPrompts` to select them:
 
 | Prompt     | Description                                      |
 | ---------- | ------------------------------------------------ |
@@ -344,15 +360,6 @@ Define your own contexts in the configuration with input handling and resolution
   }
 }
 ```
-
-### Integration with pickers
-
-For `:<input>` pickers to work correctly, you need to replace `vim.ui.select` with your desired picker.
-
-- [fzf-lua](https://github.com/ibhagwan/fzf-lua?tab=readme-ov-file#neovim-api) - call `require('fzf-lua').register_ui_select()`
-- [telescope](https://github.com/nvim-telescope/telescope-ui-select.nvim?tab=readme-ov-file#telescope-setup-and-configuration) - setup `telescope-ui-select.nvim` plugin
-- [snacks.picker](https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#%EF%B8%8F-config) - enable `ui_select` config
-- [mini.pick](https://github.com/echasnovski/mini.pick/blob/main/lua/mini/pick.lua#L1229) - set `vim.ui.select = require('mini.pick').ui_select`
 
 ## Selections
 
