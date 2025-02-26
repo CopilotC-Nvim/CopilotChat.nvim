@@ -5,6 +5,7 @@ Table of Contents                              *CopilotChat-table-of-contents*
 
 1. Requirements                                     |CopilotChat-requirements|
   - Optional Dependencies                  |CopilotChat-optional-dependencies|
+  - Integration with pickers            |CopilotChat-integration-with-pickers|
 2. Installation                                     |CopilotChat-installation|
   - lazy.nvim                                          |CopilotChat-lazy.nvim|
   - vim-plug                                            |CopilotChat-vim-plug|
@@ -67,6 +68,25 @@ OPTIONAL DEPENDENCIES                      *CopilotChat-optional-dependencies*
 - lynx <https://lynx.invisible-island.net/> - For improved URL context features
     - Arch Linux: Install from official repositories
     - Other systems: Use system package manager or official installer
+
+
+INTEGRATION WITH PICKERS                *CopilotChat-integration-with-pickers*
+
+For various plugin pickers to work correctly, you need to replace
+`vim.ui.select` with your desired picker (as the default `vim.ui.select` is
+very basic). Here are some examples:
+
+- fzf-lua <https://github.com/ibhagwan/fzf-lua?tab=readme-ov-file#neovim-api> - call `require('fzf-lua').register_ui_select()`
+- telescope <https://github.com/nvim-telescope/telescope-ui-select.nvim?tab=readme-ov-file#telescope-setup-and-configuration> - setup `telescope-ui-select.nvim` plugin
+- snacks.picker <https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#%EF%B8%8F-config> - enable `ui_select` config
+- mini.pick <https://github.com/echasnovski/mini.pick/blob/main/lua/mini/pick.lua#L1229> - set `vim.ui.select = require('mini.pick').ui_select`
+
+Plugin features that use picker:
+
+- `:CopilotChatPrompts` - for selecting prompts
+- `:CopilotChatModels` - for selecting models
+- `:CopilotChatAgents` - for selecting agents
+- `#<context>:<input>` - for selecting context input
 
 
 ==============================================================================
@@ -229,7 +249,8 @@ PROMPTS                                                  *CopilotChat-prompts*
 PREDEFINED PROMPTS ~
 
 Predefined prompt templates for common tasks. Reference them with `/PromptName`
-in chat or use `:CopilotChat<PromptName>`:
+in chat, use `:CopilotChat<PromptName>` or `:CopilotChatPrompts` to select
+them:
 
   Prompt     Description
   ---------- --------------------------------------------------
@@ -395,17 +416,6 @@ resolution:
       }
     }
 <
-
-
-INTEGRATION WITH PICKERS ~
-
-For `:<input>` pickers to work correctly, you need to replace `vim.ui.select`
-with your desired picker.
-
-- fzf-lua <https://github.com/ibhagwan/fzf-lua?tab=readme-ov-file#neovim-api> - call `require('fzf-lua').register_ui_select()`
-- telescope <https://github.com/nvim-telescope/telescope-ui-select.nvim?tab=readme-ov-file#telescope-setup-and-configuration> - setup `telescope-ui-select.nvim` plugin
-- snacks.picker <https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#%EF%B8%8F-config> - enable `ui_select` config
-- mini.pick <https://github.com/echasnovski/mini.pick/blob/main/lua/mini/pick.lua#L1229> - set `vim.ui.select = require('mini.pick').ui_select`
 
 
 SELECTIONS                                            *CopilotChat-selections*
