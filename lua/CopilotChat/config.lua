@@ -2,9 +2,9 @@ local prompts = require('CopilotChat.config.prompts')
 local select = require('CopilotChat.select')
 
 ---@class CopilotChat.config.window
----@field layout string?
----@field relative string?
----@field border string?
+---@field layout 'vertical'|'horizontal'|'float'|'replace'?
+---@field relative 'editor'|'win'|'cursor'|'mouse'?
+---@field border 'none'|'single'|'double'|'rounded'|'solid'|'shadow'?
 ---@field width number?
 ---@field height number?
 ---@field row number?
@@ -28,6 +28,7 @@ local select = require('CopilotChat.select')
 ---@field show_folds boolean?
 ---@field highlight_selection boolean?
 ---@field highlight_headers boolean?
+---@field references_display 'virtual'|'write'?
 ---@field auto_follow_cursor boolean?
 ---@field auto_insert_mode boolean?
 ---@field insert_at_end boolean?
@@ -36,7 +37,7 @@ local select = require('CopilotChat.select')
 --- CopilotChat default configuration
 ---@class CopilotChat.config : CopilotChat.config.shared
 ---@field debug boolean?
----@field log_level string?
+---@field log_level 'trace'|'debug'|'info'|'warn'|'error'|'fatal'?
 ---@field proxy string?
 ---@field allow_insecure boolean?
 ---@field chat_autocomplete boolean?
@@ -89,6 +90,7 @@ return {
   show_folds = true, -- Shows folds for sections in chat
   highlight_selection = true, -- Highlight selection
   highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
+  references_display = 'virtual', -- 'virtual', 'write', Display references in chat as virtual text or write to buffer
   auto_follow_cursor = true, -- Auto-follow cursor in chat
   auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
   insert_at_end = false, -- Move cursor to end of buffer when inserting text
