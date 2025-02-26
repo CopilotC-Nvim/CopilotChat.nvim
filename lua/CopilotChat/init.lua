@@ -626,6 +626,37 @@ function M.select_agent()
   end)
 end
 
+--- Select a prompt template to use.
+function M.select_prompt()
+  local prompts = M.prompts()
+  local keys = vim.tbl_keys(prompts)
+  table.sort(keys)
+
+  local choices = vim
+    .iter(keys)
+    :map(function(name)
+      return {
+        name = name,
+        prompt = prompts[name].prompt,
+      }
+    end)
+    :filter(function(choice)
+      return choice.prompt
+    end)
+    :totable()
+
+  vim.ui.select(choices, {
+    prompt = 'Select prompt action> ',
+    format_item = function(item)
+      return string.format('%s: %s', item.name, item.prompt:gsub('\n', ' '))
+    end,
+  }, function(choice)
+    if choice then
+      M.ask(prompts[choice.name].prompt, prompts[choice.name])
+    end
+  end)
+end
+
 --- Ask a question to the Copilot model.
 ---@param prompt string?
 ---@param config CopilotChat.config.shared?
@@ -1025,6 +1056,9 @@ function M.setup(config)
     range = true,
   })
 
+  vim.api.nvim_create_user_command('CopilotChatPrompts', function()
+    M.select_prompt()
+  end, { force = true })
   vim.api.nvim_create_user_command('CopilotChatModels', function()
     M.select_model()
   end, { force = true })

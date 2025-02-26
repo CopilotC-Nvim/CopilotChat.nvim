@@ -134,6 +134,7 @@ Commands are used to control the chat interface:
 | `:CopilotChatReset`        | Reset chat window             |
 | `:CopilotChatSave <name>?` | Save chat history             |
 | `:CopilotChatLoad <name>?` | Load chat history             |
+| `:CopilotChatPrompts`      | View/select prompt templates  |
 | `:CopilotChatModels`       | View/select available models  |
 | `:CopilotChatAgents`       | View/select available agents  |
 | `:CopilotChat<PromptName>` | Use specific prompt template  |
@@ -664,16 +665,8 @@ chat.ask("Explain this code.", {
 })
 
 -- Utilities
-chat.prompts()   -- Get all available prompts
 chat.response()  -- Get last response
 chat.log_level("debug")  -- Set log level
-
-
--- Actions
-local actions = require("CopilotChat.actions")
-actions.pick(actions.prompt_actions({
-    selection = require("CopilotChat.select").visual,
-}))
 
 -- Update config
 chat.setup({
