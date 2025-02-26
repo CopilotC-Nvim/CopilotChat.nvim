@@ -114,17 +114,17 @@ end
 --- Finds the path to the user's config directory
 ---@return string?
 function M.config_path()
-  local config = vim.fn.expand('$XDG_CONFIG_HOME')
+  local config = vim.fs.normalize('$XDG_CONFIG_HOME')
   if config and vim.fn.isdirectory(config) > 0 then
     return config
   end
   if vim.fn.has('win32') > 0 then
-    config = vim.fn.expand('$LOCALAPPDATA')
+    config = vim.fs.normalie('$LOCALAPPDATA')
     if not config or vim.fn.isdirectory(config) == 0 then
-      config = vim.fn.expand('$HOME/AppData/Local')
+      config = vim.fs.normalize('$HOME/AppData/Local')
     end
   else
-    config = vim.fn.expand('$HOME/.config')
+    config = vim.fs.normalize('$HOME/.config')
   end
   if config and vim.fn.isdirectory(config) > 0 then
     return config

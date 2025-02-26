@@ -785,7 +785,7 @@ function M.save(name, history_path)
   end
 
   local history = vim.json.encode(client.history)
-  history_path = vim.fn.expand(history_path)
+  history_path = vim.fs.normalize(history_path)
   vim.fn.mkdir(history_path, 'p')
   history_path = history_path .. '/' .. name .. '.json'
   local file = io.open(history_path, 'w')
@@ -814,7 +814,7 @@ function M.load(name, history_path)
     return
   end
 
-  history_path = vim.fn.expand(history_path) .. '/' .. name .. '.json'
+  history_path = vim.fs.normalize(history_path) .. '/' .. name .. '.json'
   local file = io.open(history_path, 'r')
   if not file then
     return
