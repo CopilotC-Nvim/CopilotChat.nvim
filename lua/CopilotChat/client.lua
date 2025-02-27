@@ -296,13 +296,8 @@ function Client:fetch_models()
       if ok then
         for _, model in ipairs(provider_models) do
           model.provider = provider_name
-          if not model.version then
-            model.version = model.id
-          end
-
           if models[model.id] then
             model.id = model.id .. ':' .. provider_name
-            model.version = model.version .. ':' .. provider_name
           end
           models[model.id] = model
         end
@@ -688,46 +683,41 @@ end
 ---@return table<string, table>
 function Client:list_models()
   local models = self:fetch_models()
+  local result = vim.tbl_keys(models)
 
-  -- First deduplicate by version, keeping shortest ID
-  local version_map = {}
-  for id, model in pairs(models) do
-    local version = model.version or model.id
-    if not version_map[version] or #id < #version_map[version] then
-      version_map[version] = id
-    end
-  end
-
-  local result = vim.tbl_values(version_map)
   table.sort(result, function(a, b)
-    local a_model = models[a]
-    local b_model = models[b]
-    if a_model.provider ~= b_model.provider then
-      return a_model.provider < b_model.provider -- sort by version first
+    a = models[a]
+    b = models[b]
+    if a.provider ~= b.provider then
+      return a.provider < b.provider
     end
-    return a_model.version < b_model.version -- then by provider
+    return a.id < b.id
   end)
 
-  local out = {}
-  for _, id in ipairs(result) do
-    table.insert(out, vim.tbl_extend('force', models[id], { id = id }))
-  end
-  return out
+  return vim.tbl_map(function(id)
+    return models[id]
+  end, result)
 end
 
 --- List available agents
 ---@return table<string, table>
 function Client:list_agents()
   local agents = self:fetch_agents()
-
   local result = vim.tbl_keys(agents)
-  table.sort(result)
 
-  local out = {}
-  table.insert(out, { id = 'none', name = 'None', description = 'No agent', provider = 'none' })
-  for _, id in ipairs(result) do
-    table.insert(out, vim.tbl_extend('force', agents[id], { id = id }))
-  end
+  table.sort(result, function(a, b)
+    a = agents[a]
+    b = agents[b]
+    if a.provider ~= b.provider then
+      return a.provider < b.provider
+    end
+    return a.id < b.id
+  end)
+
+  local out = vim.tbl_map(function(id)
+    return agents[id]
+  end, result)
+  table.insert(out, 1, { id = 'none', name = 'None', description = 'No agent', provider = 'none' })
   return out
 end
 
