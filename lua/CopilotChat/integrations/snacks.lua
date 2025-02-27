@@ -7,6 +7,7 @@ local M = {}
 --- Pick an action from a list of actions
 ---@param pick_actions CopilotChat.integrations.actions?: A table with the actions to pick from
 ---@param opts table?: snacks options
+---@deprecated Use |CopilotChat.select_prompt| instead
 function M.pick(pick_actions, opts)
   if not pick_actions or not pick_actions.actions or vim.tbl_isempty(pick_actions.actions) then
     return

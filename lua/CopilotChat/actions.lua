@@ -9,6 +9,7 @@ local M = {}
 --- User prompt actions
 ---@param config CopilotChat.config.shared?: The chat configuration
 ---@return CopilotChat.integrations.actions?: The prompt actions
+---@deprecated Use |CopilotChat.select_prompt| instead
 function M.prompt_actions(config)
   local actions = {}
   for name, prompt in pairs(chat.prompts()) do
@@ -25,6 +26,7 @@ end
 --- Pick an action from a list of actions
 ---@param pick_actions CopilotChat.integrations.actions?: A table with the actions to pick from
 ---@param opts table?: vim.ui.select options
+---@deprecated Use |CopilotChat.select_prompt| instead
 function M.pick(pick_actions, opts)
   if not pick_actions or not pick_actions.actions or vim.tbl_isempty(pick_actions.actions) then
     return
