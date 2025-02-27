@@ -172,7 +172,7 @@ local function data_ranked_by_symbols(query, data, min_similarity)
   local max_score = 0
 
   for _, entry in ipairs(data) do
-    local basename = vim.fn.fnamemodify(entry.filename, ':t'):gsub('%..*$', '')
+    local basename = utils.filename(entry.filename):gsub('%..*$', '')
 
     -- Get trigrams for basename and compound version
     local file_trigrams = get_trigrams(basename)
