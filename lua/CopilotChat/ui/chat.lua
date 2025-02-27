@@ -28,7 +28,7 @@ local function match_header(header)
   for _, pattern in ipairs(HEADER_PATTERNS) do
     local filename, start_line, end_line = header:match(pattern)
     if filename then
-      return vim.fn.fnamemodify(filename, ':p:.'),
+      return utils.filepath(filename),
         tonumber(start_line) or 1,
         tonumber(end_line) or tonumber(start_line) or 1
     end
