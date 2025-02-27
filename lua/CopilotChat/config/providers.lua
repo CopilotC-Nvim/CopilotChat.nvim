@@ -3,7 +3,6 @@ local utils = require('CopilotChat.utils')
 ---@class CopilotChat.Provider.model
 ---@field id string
 ---@field name string
----@field version string?
 ---@field tokenizer string?
 ---@field max_input_tokens number?
 ---@field max_output_tokens number?
@@ -177,13 +176,12 @@ M.copilot = {
     local models = vim
       .iter(response.body.data)
       :filter(function(model)
-        return model['capabilities']['type'] == 'chat'
+        return model.model_picker_enabled and model.capabilities.type == 'chat'
       end)
       :map(function(model)
         return {
           id = model.id,
           name = model.name,
-          version = model.version,
           tokenizer = model.capabilities.tokenizer,
           max_input_tokens = model.capabilities.limits.max_prompt_tokens,
           max_output_tokens = model.capabilities.limits.max_output_tokens,
@@ -328,7 +326,6 @@ M.github_models = {
         return {
           id = model.name,
           name = model.displayName,
-          version = model.name .. '-' .. model.version,
           tokenizer = 'o200k_base',
           max_input_tokens = model.modelLimits.textLimits.inputContextWindow,
           max_output_tokens = model.modelLimits.textLimits.maxOutputTokens,
