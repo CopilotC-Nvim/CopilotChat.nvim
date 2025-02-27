@@ -58,7 +58,7 @@ function Diff:show(diff, winnr, full_diff)
 
   -- Create modified version by applying the change
   local modified = {}
-  if diff.bufnr and utils.buf_valid(diff.bufnr) then
+  if utils.buf_valid(diff.bufnr) then
     modified = vim.api.nvim_buf_get_lines(diff.bufnr, 0, -1, false)
   end
   local change_lines = vim.split(diff.change, '\n')
@@ -79,7 +79,7 @@ function Diff:show(diff, winnr, full_diff)
 
   Overlay.show(self, table.concat(modified, '\n'), winnr, diff.filetype)
 
-  if diff.bufnr and vim.api.nvim_buf_is_valid(diff.bufnr) then
+  if utils.buf_valid(diff.bufnr) then
     vim.cmd('diffthis')
     vim.api.nvim_set_current_win(vim.fn.bufwinid(diff.bufnr))
     vim.api.nvim_win_set_cursor(0, { diff.start_line, 0 })
