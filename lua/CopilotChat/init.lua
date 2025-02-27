@@ -776,6 +776,7 @@ function M.ask(prompt, config)
   end)
 
   if not ok then
+    async.util.scheduler()
     log.error(err)
     if not config.headless then
       show_error(err)
