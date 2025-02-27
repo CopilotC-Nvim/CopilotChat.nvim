@@ -1070,7 +1070,7 @@ function M.setup(config)
 
   vim.api.nvim_create_user_command('CopilotChatPrompts', function()
     M.select_prompt()
-  end, { force = true })
+  end, { force = true, range = true })
   vim.api.nvim_create_user_command('CopilotChatModels', function()
     M.select_model()
   end, { force = true })
