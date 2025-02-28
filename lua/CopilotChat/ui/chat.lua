@@ -480,7 +480,6 @@ function Chat:open(config)
     end
     vim.cmd(cmd)
     self.winnr = vim.api.nvim_get_current_win()
-    vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
     vim.api.nvim_set_current_win(orig)
   elseif layout == 'horizontal' then
     local orig = vim.api.nvim_get_current_win()
@@ -490,11 +489,9 @@ function Chat:open(config)
     end
     vim.cmd(cmd)
     self.winnr = vim.api.nvim_get_current_win()
-    vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
     vim.api.nvim_set_current_win(orig)
   elseif layout == 'replace' then
     self.winnr = vim.api.nvim_get_current_win()
-    vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
   end
 
   vim.wo[self.winnr].wrap = true
@@ -510,6 +507,7 @@ function Chat:open(config)
     vim.wo[self.winnr].foldcolumn = '0'
   end
 
+  vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
   self:render()
 end
 
