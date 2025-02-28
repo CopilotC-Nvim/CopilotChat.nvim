@@ -354,7 +354,7 @@ return {
         local _, selected_agent = pcall(copilot.resolve_agent, prompt, config)
         local _, selected_model = pcall(copilot.resolve_model, prompt, config)
 
-        async.util.scheduler()
+        utils.schedule_main()
         table.insert(lines, '**Logs**: `' .. chat.config.log_path .. '`')
         table.insert(lines, '**History**: `' .. chat.config.history_path .. '`')
         table.insert(lines, '**Temp Files**: `' .. vim.fn.fnamemodify(os.tmpname(), ':h') .. '`')
@@ -429,7 +429,7 @@ return {
           table.insert(lines, '')
         end
 
-        async.util.scheduler()
+        utils.schedule_main()
         overlay:show(vim.trim(table.concat(lines, '\n')) .. '\n', chat.winnr, 'markdown')
       end)
     end,

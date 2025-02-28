@@ -344,7 +344,7 @@ M.curl_get = async.wrap(function(url, opts, callback)
       return
     end
 
-    local body, err = M.json_decode(response.body)
+    local body, err = M.json_decode(tostring(response.body))
     if err then
       callback(response, err)
     else
@@ -388,7 +388,7 @@ M.curl_post = async.wrap(function(url, opts, callback)
       return
     end
 
-    local body, err = M.json_decode(response.body)
+    local body, err = M.json_decode(tostring(response.body))
     if err then
       callback(response, err)
     else
@@ -463,6 +463,20 @@ end
 M.system = async.wrap(function(cmd, callback)
   vim.system(cmd, { text = true }, callback)
 end, 2)
+
+--- Schedule a function only when needed (not on main thread)
+---@param callback function The callback
+M.schedule_main = async.wrap(function(callback)
+  if vim.in_fast_event() then
+    -- In a fast event, need to schedule
+    vim.schedule(function()
+      callback()
+    end)
+  else
+    -- Already on main thread, call directly
+    callback()
+  end
+end, 1)
 
 --- Get the info for a key.
 ---@param name string

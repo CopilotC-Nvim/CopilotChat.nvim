@@ -496,7 +496,7 @@ function M.complete_items(callback)
       return a.kind < b.kind
     end)
 
-    async.util.scheduler()
+    utils.schedule_main()
     callback(items)
   end)
 end
@@ -577,7 +577,7 @@ function M.select_model()
       }
     end, models)
 
-    async.util.scheduler()
+    utils.schedule_main()
     vim.ui.select(choices, {
       prompt = 'Select a model> ',
       format_item = function(item)
@@ -608,7 +608,7 @@ function M.select_agent()
       }
     end, agents)
 
-    async.util.scheduler()
+    utils.schedule_main()
     vim.ui.select(choices, {
       prompt = 'Select an agent> ',
       format_item = function(item)
@@ -714,7 +714,7 @@ function M.ask(prompt, config)
       pcall(context.filter_embeddings, prompt, selected_model, config.headless, embeddings)
 
     if not query_ok then
-      async.util.scheduler()
+      utils.schedule_main()
       log.error(filtered_embeddings)
       if not config.headless then
         show_error(filtered_embeddings, has_output)
@@ -739,7 +739,7 @@ function M.ask(prompt, config)
         end),
       })
 
-    async.util.scheduler()
+    utils.schedule_main()
 
     if not ask_ok then
       log.error(response)
@@ -776,7 +776,7 @@ function M.ask(prompt, config)
   end)
 
   if not ok then
-    async.util.scheduler()
+    utils.schedule_main()
     log.error(err)
     if not config.headless then
       show_error(err)

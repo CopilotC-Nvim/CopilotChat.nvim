@@ -1,4 +1,3 @@
-local async = require('plenary.async')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local current_tokenizer = nil
@@ -11,7 +10,7 @@ end
 --- Load tiktoken data from cache or download it
 ---@param tokenizer string The tokenizer to load
 local function load_tiktoken_data(tokenizer)
-  async.util.scheduler()
+  utils.schedule_main()
 
   local tiktoken_url = 'https://openaipublic.blob.core.windows.net/encodings/'
     .. tokenizer
@@ -57,7 +56,7 @@ M.load = function(tokenizer)
   local pat_str =
     "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
 
-  async.util.scheduler()
+  utils.schedule_main()
   tiktoken_core.new(path, special_tokens, pat_str)
   current_tokenizer = tokenizer
 end

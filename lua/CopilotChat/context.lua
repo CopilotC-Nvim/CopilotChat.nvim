@@ -412,7 +412,7 @@ function M.files(winnr, with_content, search_options)
 
   -- Read file contents
   if with_content then
-    async.util.scheduler()
+    utils.schedule_main()
 
     files = vim.tbl_filter(
       function(file)
@@ -445,7 +445,7 @@ function M.file(filename)
     return nil
   end
 
-  async.util.scheduler()
+  utils.schedule_main()
   local ft = utils.filetype(filename)
   if not ft then
     return nil
@@ -458,7 +458,7 @@ end
 ---@param bufnr number
 ---@return CopilotChat.context.embed?
 function M.buffer(bufnr)
-  async.util.scheduler()
+  utils.schedule_main()
 
   if not utils.buf_valid(bufnr) then
     return nil
@@ -483,7 +483,7 @@ end
 ---@param buf_type string
 ---@return table<CopilotChat.context.embed>
 function M.buffers(buf_type)
-  async.util.scheduler()
+  utils.schedule_main()
 
   return vim.tbl_map(
     M.buffer,
@@ -593,7 +593,7 @@ end
 ---@param register string
 ---@return CopilotChat.context.embed?
 function M.register(register)
-  async.util.scheduler()
+  utils.schedule_main()
 
   local lines = vim.fn.getreg(register)
   if not lines or lines == '' then
@@ -610,7 +610,7 @@ end
 --- Get the content of the quickfix list
 ---@return table<CopilotChat.context.embed>
 function M.quickfix()
-  async.util.scheduler()
+  utils.schedule_main()
 
   local items = vim.fn.getqflist()
   if not items or #items == 0 then
