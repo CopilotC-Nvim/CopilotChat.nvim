@@ -1,4 +1,3 @@
-local async = require('plenary.async')
 local context = require('CopilotChat.context')
 local utils = require('CopilotChat.utils')
 
@@ -63,7 +62,7 @@ return {
         max_files = 1000,
       })
 
-      async.util.scheduler()
+      utils.schedule_main()
       vim.ui.select(files, {
         prompt = 'Select a file> ',
       }, callback)
