@@ -202,9 +202,14 @@ end
 ---@param config CopilotChat.config.shared
 function M.update_selection(config)
   local prev_winnr = vim.fn.win_getid(vim.fn.winnr('#'))
-  if prev_winnr ~= state.chat.winnr and vim.fn.win_gettype(prev_winnr) == '' then
+  local prev_bufnr = vim.api.nvim_win_get_buf(prev_winnr)
+  if
+    prev_winnr ~= state.chat.winnr
+    and prev_bufnr ~= state.chat.bufnr
+    and vim.fn.win_gettype(prev_winnr) == ''
+  then
     state.source = {
-      bufnr = vim.api.nvim_win_get_buf(prev_winnr),
+      bufnr = prev_bufnr,
       winnr = prev_winnr,
     }
   end

@@ -371,7 +371,7 @@ end
 
 ---@return boolean
 function Chat:active()
-  return vim.api.nvim_get_current_win() == self.winnr
+  return self:visible() and vim.api.nvim_get_current_win() == self.winnr
 end
 
 ---@return number, number, number
@@ -442,16 +442,17 @@ end
 ---@param config CopilotChat.config.shared
 function Chat:open(config)
   self:validate()
-  self.config = config
 
   local window = config.window or {}
   local layout = window.layout
   local width = window.width > 1 and window.width or math.floor(vim.o.columns * window.width)
   local height = window.height > 1 and window.height or math.floor(vim.o.lines * window.height)
 
-  if self.config.window.layout ~= layout then
+  if self.config and self.config.window and self.config.window.layout ~= layout then
     self:close()
   end
+
+  self.config = config
 
   if self:visible() then
     return
