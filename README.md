@@ -474,7 +474,6 @@ Below are all available configuration options with their default values:
   },
 
   show_help = true, -- Shows help message as virtual lines when waiting for user input
-  show_folds = true, -- Shows folds for sections in chat
   highlight_selection = true, -- Highlight selection
   highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
   references_display = 'virtual', -- 'virtual', 'write', Display references in chat as virtual text or write to buffer
@@ -629,6 +628,9 @@ vim.api.nvim_create_autocmd('BufEnter', {
     pattern = 'copilot-*',
     callback = function()
         -- Set buffer-local options
+        vim.opt_local.relativenumber = false
+        vim.opt_local.number = false
+        vim.opt_local.conceallevel = 0
     end
 })
 ```
