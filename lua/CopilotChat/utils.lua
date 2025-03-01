@@ -184,7 +184,7 @@ function M.filename_same(file1, file2)
   if not file1 or not file2 then
     return false
   end
-  return vim.fs.abspath(vim.fs.normalize(file1)) == vim.fs.abspath(vim.fs.normalize(file2))
+  return vim.fn.fnamemodify(file1, ':p') == vim.fn.fnamemodify(file2, ':p')
 end
 
 --- Get the filetype of a file
