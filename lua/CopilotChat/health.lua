@@ -97,6 +97,15 @@ function M.check()
     )
   end
 
+  local select_source = debug.getinfo(vim.ui.select).source
+  if select_source:match('vim/ui%.lua$') then
+    warn(
+      'vim.ui.select: using default implementation, which may not provide the best user experience. See `:h CopilotChat-integration-with-pickers`.'
+    )
+  else
+    ok('vim.ui.select: overridden by `' .. select_source .. '`')
+  end
+
   if lualib_installed('tiktoken_core') then
     ok('tiktoken_core: installed')
   else
@@ -109,7 +118,7 @@ function M.check()
     ok('treesitter[markdown]: installed')
   else
     warn(
-      'treesitter[markdown]: missing, optional for better chat highlighting. Install "nvim-treesitter/nvim-treesitter" plugin and run ":TSInstall markdown".'
+      'treesitter[markdown]: missing, optional for better chat highlighting. Install `nvim-treesitter/nvim-treesitter` plugin and run `:TSInstall markdown`.'
     )
   end
 
@@ -117,7 +126,7 @@ function M.check()
     ok('treesitter[diff]: installed')
   else
     warn(
-      'treesitter[diff]: missing, optional for better diff highlighting. Install "nvim-treesitter/nvim-treesitter" plugin and run ":TSInstall diff".'
+      'treesitter[diff]: missing, optional for better diff highlighting. Install `nvim-treesitter/nvim-treesitter` plugin and run `:TSInstall diff`.'
     )
   end
 end
