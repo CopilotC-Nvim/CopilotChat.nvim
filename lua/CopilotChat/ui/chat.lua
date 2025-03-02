@@ -431,6 +431,7 @@ end
 
 function Chat:clear()
   self:validate()
+  self.config = {}
   self.references = {}
   self.token_count = nil
   self.token_max_count = nil
