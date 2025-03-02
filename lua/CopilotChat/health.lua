@@ -40,9 +40,6 @@ local function treesitter_parser_available(ft)
 end
 
 function M.check()
-  start('CopilotChat.nvim')
-  info('If you are facing any issues, also see :CopilotChatDebugInfo for more information.')
-
   start('CopilotChat.nvim [core]')
 
   local vim_version = vim.trim(vim.api.nvim_command_output('version'))
@@ -50,6 +47,13 @@ function M.check()
     ok('nvim: ' .. vim_version)
   else
     error('nvim: unsupported, please upgrade to 0.10.0 or later. See "https://neovim.io/".')
+  end
+
+  local setup_called = require('CopilotChat').config ~= nil
+  if setup_called then
+    ok('setup: called')
+  else
+    error('setup: not called, required for plugin to work. See `:h CopilotChat-installation`.')
   end
 
   start('CopilotChat.nvim [commands]')
