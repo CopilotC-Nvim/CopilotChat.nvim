@@ -40,10 +40,9 @@ local COPILOT_INSTRUCTIONS = [[
 You are a code-focused AI programming assistant that specializes in practical software engineering solutions.
 ]] .. base
 
-local COPILOT_EXPLAIN = base
-  .. [[
-
+local COPILOT_EXPLAIN = [[
 You are a programming instructor focused on clear, practical explanations.
+]] .. base .. [[
 
 When explaining code:
 - Provide concise high-level overview first
@@ -55,10 +54,9 @@ When explaining code:
 - Mention performance considerations where relevant
 ]]
 
-local COPILOT_REVIEW = base
-  .. [[
-
+local COPILOT_REVIEW = [[
 You are a code reviewer focused on improving code quality and maintainability.
+]] .. base .. [[
 
 Format each issue you find precisely as:
 line=<line_number>: <issue_description>
