@@ -166,7 +166,7 @@ Default mappings in the chat interface:
 | `<C-l>` | `<C-l>` | Reset and clear the chat window                    |
 | `<C-s>` | `<CR>`  | Submit the current prompt                          |
 | -       | `gr`    | Toggle sticky prompt for line under cursor         |
-| `<C-y>` | `<C-y>` | Accept nearest diff (best with `COPILOT_GENERATE`) |
+| `<C-y>` | `<C-y>` | Accept nearest diff                                |
 | -       | `gj`    | Jump to section of nearest diff                    |
 | -       | `gqa`   | Add all answers from chat to quickfix list         |
 | -       | `gqd`   | Add all diffs from chat to quickfix list           |
@@ -235,10 +235,9 @@ System prompts define the AI model's behavior. Reference them with `/PROMPT_NAME
 
 | Prompt                 | Description                                |
 | ---------------------- | ------------------------------------------ |
-| `COPILOT_INSTRUCTIONS` | Base GitHub Copilot instructions           |
+| `COPILOT_INSTRUCTIONS` | Base instructions                          |
 | `COPILOT_EXPLAIN`      | Adds coding tutor behavior                 |
 | `COPILOT_REVIEW`       | Adds code review behavior with diagnostics |
-| `COPILOT_GENERATE`     | Adds code generation behavior and rules    |
 
 Define your own system prompts in the configuration (similar to `prompts`):
 
@@ -541,19 +540,19 @@ Below are all available configuration options with their default values:
       prompt = '> /COPILOT_REVIEW\n\nReview the selected code.',
     },
     Fix = {
-      prompt = '> /COPILOT_GENERATE\n\nThere is a problem in this code. Rewrite the code to show it with the bug fixed.',
+      prompt = 'There is a problem in this code. Identify the issues and rewrite the code with fixes. Explain what was wrong and how your changes address the problems.',
     },
     Optimize = {
-      prompt = '> /COPILOT_GENERATE\n\nOptimize the selected code to improve performance and readability.',
+      prompt = 'Optimize the selected code to improve performance and readability. Explain your optimization strategy and the benefits of your changes.',
     },
     Docs = {
-      prompt = '> /COPILOT_GENERATE\n\nPlease add documentation comments to the selected code.',
+      prompt = 'Please add documentation comments to the selected code.',
     },
     Tests = {
-      prompt = '> /COPILOT_GENERATE\n\nPlease generate tests for my code.',
+      prompt = 'Please generate tests for my code.',
     },
     Commit = {
-      prompt = '> #git:staged\n\nWrite commit message for the change with commitizen convention. Make sure the title has maximum 50 characters and message is wrapped at 72 characters. Wrap the whole message in code block with language gitcommit.',
+      prompt = '> #git:staged\n\nWrite commit message for the change with commitizen convention. Keep the title under 50 characters and wrap message at 72 characters. Format as a gitcommit code block.',
     },
   },
 
