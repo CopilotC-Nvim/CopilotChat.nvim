@@ -431,7 +431,6 @@ end
 
 function Chat:clear()
   self:validate()
-  self.config = {}
   self.references = {}
   self.token_count = nil
   self.token_max_count = nil
@@ -523,7 +522,7 @@ function Chat:close(bufnr)
     utils.return_to_normal_mode()
   end
 
-  if self.config.window.layout == 'replace' then
+  if self.config.window and self.config.window.layout == 'replace' then
     if bufnr then
       self:restore(self.winnr, bufnr)
     end
