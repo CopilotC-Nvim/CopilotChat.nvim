@@ -14,7 +14,6 @@
 ---@class CopilotChat.Client.agent : CopilotChat.Provider.agent
 ---@field provider string
 
-local async = require('plenary.async')
 local log = require('plenary.log')
 local tiktoken = require('CopilotChat.tiktoken')
 local notify = require('CopilotChat.notify')
