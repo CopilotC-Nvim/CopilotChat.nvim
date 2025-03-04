@@ -545,7 +545,7 @@ function M.glob_to_regex(glob)
   pattern = pattern
     :gsub('%*%*/%*', '.*') -- **/* -> .*
     :gsub('%*%*', '.*') -- ** -> .*
-    :gsub('%*', '[^/]*') -- * -> [^/]*
+    :gsub('([^%.])%*', '%1[^/]*') -- * -> [^/]* (when not preceded by .)
     :gsub('%?', '.') -- ? -> .
 
   return pattern .. '$'
