@@ -409,7 +409,8 @@ return {
       async.run(function()
         local embeddings = {}
         if section and not section.answer then
-          embeddings = copilot.resolve_embeddings(section.content, chat.config)
+          local _, selected_model = pcall(copilot.resolve_model, section.content, chat.config)
+          embeddings = copilot.resolve_embeddings(section.content, selected_model, chat.config)
         end
 
         for _, embedding in ipairs(embeddings) do

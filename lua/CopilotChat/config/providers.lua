@@ -41,6 +41,7 @@ local utils = require('CopilotChat.utils')
 ---@field get_agents nil|fun(headers:table):table<CopilotChat.Provider.agent>
 ---@field get_models nil|fun(headers:table):table<CopilotChat.Provider.model>
 ---@field embed nil|string|fun(inputs:table<string>, headers:table):table<CopilotChat.Provider.embed>
+---@field search nil|string|fun(query:string, repository:string, headers:table):table<CopilotChat.Provider.output>
 ---@field prepare_input nil|fun(inputs:table<CopilotChat.Provider.input>, opts:CopilotChat.Provider.options):table
 ---@field prepare_output nil|fun(output:table, opts:CopilotChat.Provider.options):CopilotChat.Provider.output
 ---@field get_url nil|fun(opts:CopilotChat.Provider.options):string
@@ -117,11 +118,41 @@ local function get_github_token()
   error('Failed to find GitHub token')
 end
 
+local cached_gh_apps_token = nil
+
+--- Get the github apps token (gho_ token)
+---@return string
+local function get_gh_apps_token()
+  if cached_gh_apps_token then
+    return cached_gh_apps_token
+  end
+
+  async.util.scheduler()
+
+  local config_path = utils.config_path()
+  if not config_path then
+    error('Failed to find config path for GitHub token')
+  end
+
+  local file_path = config_path .. '/gh/hosts.yml'
+  if vim.fn.filereadable(file_path) == 1 then
+    local content = table.concat(vim.fn.readfile(file_path), '\n')
+    local token = content:match('oauth_token:%s*([%w_]+)')
+    if token then
+      cached_gh_apps_token = token
+      return token
+    end
+  end
+
+  error('Failed to find GitHub token')
+end
+
 ---@type table<string, CopilotChat.Provider>
 local M = {}
 
 M.copilot = {
   embed = 'copilot_embeddings',
+  search = 'copilot_search',
 
   get_headers = function()
     local response, err = utils.curl_get('https://api.github.com/copilot_internal/v2/token', {
@@ -287,6 +318,7 @@ M.copilot = {
 
 M.github_models = {
   embed = 'copilot_embeddings',
+  search = 'copilot_search',
 
   get_headers = function()
     return {
@@ -362,6 +394,82 @@ M.copilot_embeddings = {
     end
 
     return response.body.data
+  end,
+}
+
+M.copilot_search = {
+  get_headers = M.copilot.get_headers,
+
+  get_token = function()
+    return get_gh_apps_token(), nil
+  end,
+
+  search = function(query, repository, headers)
+    utils.curl_post(
+      'https://api.github.com/repos/' .. repository .. '/copilot_internal/embeddings_index',
+      {
+        headers = headers,
+      }
+    )
+
+    local response, err = utils.curl_get(
+      'https://api.github.com/repos/' .. repository .. '/copilot_internal/embeddings_index',
+      {
+        headers = headers,
+      }
+    )
+
+    if err then
+      error(err)
+    end
+
+    if response.status ~= 200 then
+      error('Failed to check search: ' .. tostring(response.status))
+    end
+
+    local body = vim.json.decode(response.body)
+
+    if
+      body.can_index ~= 'ok'
+      or not body.bm25_search_ok
+      or not body.lexical_search_ok
+      or not body.semantic_code_search_ok
+      or not body.semantic_doc_search_ok
+      or not body.semantic_indexing_enabled
+    then
+      error('Failed to search: ' .. vim.inspect(body))
+    end
+
+    local body = vim.json.encode({
+      query = query,
+      scopingQuery = '(repo:' .. repository .. ')',
+      similarity = 0.766,
+      limit = 100,
+    })
+
+    local response, err = utils.curl_post('https://api.individual.githubcopilot.com/search/code', {
+      headers = headers,
+      body = utils.temp_file(body),
+    })
+
+    if err then
+      error(err)
+    end
+
+    if response.status ~= 200 then
+      error('Failed to search: ' .. tostring(response.body))
+    end
+
+    local out = {}
+    for _, result in ipairs(vim.json.decode(response.body)) do
+      table.insert(out, {
+        filename = result.path,
+        filetype = result.languageName:lower(),
+        score = result.score,
+        content = result.contents,
+      })
+    end
+    return out
   end,
 }
 
