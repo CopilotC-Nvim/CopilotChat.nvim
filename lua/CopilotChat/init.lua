@@ -6,7 +6,7 @@ local utils = require('CopilotChat.utils')
 
 local M = {}
 local PLUGIN_NAME = 'CopilotChat'
-local WORD = '([^%s]+)'
+local WORD = '([^%s:]+)(:.+)?'
 
 --- @class CopilotChat.source
 --- @field bufnr number
