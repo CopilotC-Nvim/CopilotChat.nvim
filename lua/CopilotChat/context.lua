@@ -458,6 +458,7 @@ end
 ---@param bufnr number
 ---@return CopilotChat.context.embed?
 function M.buffer(bufnr)
+  notify.publish(notify.STATUS, 'Reading buffer ' .. bufnr)
   utils.schedule_main()
 
   if not utils.buf_valid(bufnr) then
@@ -593,6 +594,7 @@ end
 ---@param register string
 ---@return CopilotChat.context.embed?
 function M.register(register)
+  notify.publish(notify.STATUS, 'Reading register ' .. register)
   utils.schedule_main()
 
   local lines = vim.fn.getreg(register)
@@ -610,6 +612,7 @@ end
 --- Get the content of the quickfix list
 ---@return table<CopilotChat.context.embed>
 function M.quickfix()
+  notify.publish(notify.STATUS, 'Reading quickfix list')
   utils.schedule_main()
 
   local items = vim.fn.getqflist()
@@ -645,6 +648,32 @@ function M.quickfix()
     end
   end
   return out
+end
+
+--- Get the output of a system shell command
+---@param command string The command to execute
+---@return CopilotChat.context.embed?
+function M.system(command)
+  notify.publish(notify.STATUS, 'Executing command: ' .. command)
+  utils.schedule_main()
+
+  local shell, shell_flag
+  if vim.fn.has('win32') == 1 then
+    shell, shell_flag = 'cmd.exe', '/c'
+  else
+    shell, shell_flag = 'sh', '-c'
+  end
+
+  local out = utils.system({ shell, shell_flag, command })
+  if not out or out.stdout == '' then
+    return nil
+  end
+
+  return {
+    content = out.stdout,
+    filename = 'command_output_' .. command:gsub('[^%w]', '_'):sub(1, 20),
+    filetype = 'text',
+  }
 end
 
 --- Filter embeddings based on the query

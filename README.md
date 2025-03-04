@@ -180,7 +180,6 @@ The mappings can be customized by setting the `mappings` table in your configura
 
 - `normal`: Key for normal mode
 - `insert`: Key for insert mode
-- `detail`: Description of what the mapping does
 
 For example, to change the submit prompt mapping or show_diff full diff option:
 
@@ -323,6 +322,7 @@ Contexts provide additional information to the chat. Add context using `#context
 | `url`       | ✓ (url)       | Content from URL                    |
 | `register`  | ✓ (name)      | Content of vim register             |
 | `quickfix`  | -             | Quickfix list file contents         |
+| `system`    | ✓ (command)   | Output of shell command             |
 
 Examples:
 
@@ -333,6 +333,7 @@ Examples:
 > #filenames
 > #git:staged
 > #url:https://example.com
+> #system:`ls -la | grep lua`
 ```
 
 Define your own contexts in the configuration with input handling and resolution:
@@ -575,7 +576,6 @@ Below are all available configuration options with their default values:
       insert = '<C-s>',
     },
     toggle_sticky = {
-      detail = 'Makes line under cursor sticky or deletes sticky line.',
       normal = 'gr',
     },
     accept_diff = {
