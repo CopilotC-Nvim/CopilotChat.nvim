@@ -480,6 +480,7 @@ end, 1)
 
 --- Get the info for a key.
 ---@param name string
+---@param key table
 ---@param surround string|nil
 ---@return string
 function M.key_to_info(name, key, surround)
@@ -502,13 +503,7 @@ function M.key_to_info(name, key, surround)
     return out
   end
 
-  out = out .. ' to ' .. name:gsub('_', ' ')
-
-  if key.detail and key.detail ~= '' then
-    out = out .. '. ' .. key.detail
-  end
-
-  return out
+  return out .. ' to ' .. name:gsub('_', ' ')
 end
 
 --- Check if a value is empty

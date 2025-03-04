@@ -7,6 +7,7 @@ local utils = require('CopilotChat.utils')
 local M = {}
 local PLUGIN_NAME = 'CopilotChat'
 local WORD = '([^%s]+)'
+local WORD_INPUT = '([^%s:]+:`[^`]+`)'
 
 --- @class CopilotChat.source
 --- @field bufnr number
@@ -260,6 +261,10 @@ function M.resolve_embeddings(prompt, config)
     local split = vim.split(prompt_context, ':')
     local context_name = table.remove(split, 1)
     local context_input = vim.trim(table.concat(split, ':'))
+    if vim.startswith(context_input, '`') and vim.endswith(context_input, '`') then
+      context_input = context_input:sub(2, -2)
+    end
+
     if M.config.contexts[context_name] then
       table.insert(contexts, {
         name = context_name,
@@ -272,11 +277,12 @@ function M.resolve_embeddings(prompt, config)
     return false
   end
 
+  prompt = prompt:gsub('#' .. WORD_INPUT, function(match)
+    return parse_context(match) and '' or '#' .. match
+  end)
+
   prompt = prompt:gsub('#' .. WORD, function(match)
-    if parse_context(match) then
-      return ''
-    end
-    return '#' .. match
+    return parse_context(match) and '' or '#' .. match
   end)
 
   if config.context then
@@ -392,7 +398,11 @@ function M.trigger_complete(with_context)
             return
           end
 
-          local value_str = tostring(value)
+          local value_str = vim.trim(tostring(value))
+          if value_str:find('%s') then
+            value_str = '`' .. value_str .. '`'
+          end
+
           vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { value_str })
           vim.api.nvim_win_set_cursor(0, { row, col + #value_str })
         end, state.source or {})

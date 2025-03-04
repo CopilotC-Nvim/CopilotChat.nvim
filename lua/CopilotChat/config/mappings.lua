@@ -98,7 +98,6 @@ end
 ---@class CopilotChat.config.mapping
 ---@field normal string?
 ---@field insert string?
----@field detail string?
 ---@field callback fun(overlay: CopilotChat.ui.Overlay, diff: CopilotChat.ui.Diff, chat: CopilotChat.ui.Chat, source: CopilotChat.source)
 
 ---@class CopilotChat.config.mapping.yank_diff : CopilotChat.config.mapping
@@ -159,7 +158,6 @@ return {
   },
 
   toggle_sticky = {
-    detail = 'Makes line under cursor sticky or deletes sticky line.',
     normal = 'gr',
     callback = function(overlay, diff, chat)
       local section = chat:get_closest_section()
