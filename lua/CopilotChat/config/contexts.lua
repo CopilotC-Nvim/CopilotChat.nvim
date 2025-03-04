@@ -172,4 +172,18 @@ return {
       return context.quickfix()
     end,
   },
+
+  system = {
+    description = 'Includes output of provided system shell command in chat context. Supports input.',
+    input = function(callback)
+      vim.ui.input({
+        prompt = 'Enter command> ',
+      }, callback)
+    end,
+    resolve = function(input)
+      return {
+        context.system(input),
+      }
+    end,
+  },
 }
