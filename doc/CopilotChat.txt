@@ -209,7 +209,6 @@ configuration. Each mapping can have:
 
 - `normal`: Key for normal mode
 - `insert`: Key for insert mode
-- `detail`: Description of what the mapping does
 
 For example, to change the submit prompt mapping or show_diff full diff option:
 
@@ -364,6 +363,7 @@ Contexts provide additional information to the chat. Add context using
   url         ✓ (url)         Content from URL
   register    ✓ (name)        Content of vim register
   quickfix    -               Quickfix list file contents
+  system      ✓ (command)     Output of shell command
 Examples:
 
 >markdown
@@ -373,6 +373,7 @@ Examples:
     > #filenames
     > #git:staged
     > #url:https://example.com
+    > #system:`ls -la | grep lua`
 <
 
 Define your own contexts in the configuration with input handling and
@@ -627,7 +628,6 @@ Below are all available configuration options with their default values:
           insert = '<C-s>',
         },
         toggle_sticky = {
-          detail = 'Makes line under cursor sticky or deletes sticky line.',
           normal = 'gr',
         },
         accept_diff = {
@@ -814,7 +814,7 @@ See CONTRIBUTING.md </CONTRIBUTING.md> for detailed guidelines.
 Thanks goes to these wonderful people (emoji key
 <https://allcontributors.org/docs/en/emoji-key>):
 
-gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻neutrinoA4💻 📖Jack Muratore💻Adriel Velazquez💻 📖Tomas Slusny💻 📖Nisal📖Tobias Gårdhus📖Petr Dlouhý📖Dylan Madisetti💻Aaron Weisberg💻 📖Jose Tlacuilo💻 📖Kevin Traver💻 📖dTry💻Arata Furukawa💻Ling💻Ivan Frolov💻Folke Lemaitre💻 📖GitMurf💻Dmitrii Lipin💻jinzhongjia📖guill💻Sjon-Paul Brown💻Renzo Mondragón💻 📖fjchen7💻Radosław Woźniak💻JakubPecenka💻thomastthai📖Tomáš Janoušek💻Toddneal Stallworth📖Sergey Alexandrov💻Léopold Mebazaa💻JunKi Jin💻abdennourzahaf📖Josiah💻Tony Fischer💻 📖Kohei Wada💻Sebastian Yaghoubi📖johncming💻Rokas Brazdžionis💻Sola📖 💻This project follows the all-contributors
+gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻neutrinoA4💻 📖Jack Muratore💻Adriel Velazquez💻 📖Tomas Slusny💻 📖Nisal📖Tobias Gårdhus📖Petr Dlouhý📖Dylan Madisetti💻Aaron Weisberg💻 📖Jose Tlacuilo💻 📖Kevin Traver💻 📖dTry💻Arata Furukawa💻Ling💻Ivan Frolov💻Folke Lemaitre💻 📖GitMurf💻Dmitrii Lipin💻jinzhongjia📖guill💻Sjon-Paul Brown💻Renzo Mondragón💻 📖fjchen7💻Radosław Woźniak💻JakubPecenka💻thomastthai📖Tomáš Janoušek💻Toddneal Stallworth📖Sergey Alexandrov💻Léopold Mebazaa💻JunKi Jin💻abdennourzahaf📖Josiah💻Tony Fischer💻 📖Kohei Wada💻Sebastian Yaghoubi📖johncming💻Rokas Brazdžionis💻Sola📖 💻Mani Chandra💻This project follows the all-contributors
 <https://github.com/all-contributors/all-contributors> specification.
 Contributions of any kind are welcome!
 
