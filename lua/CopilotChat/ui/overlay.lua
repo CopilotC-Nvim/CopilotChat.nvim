@@ -5,14 +5,24 @@ local class = utils.class
 ---@field name string
 ---@field help string
 ---@field help_ns number
+---@field hl_ns number
 ---@field on_buf_create fun(bufnr: number)
 ---@field bufnr number?
+---@field cursor integer[]?
+---@field on_hide? fun(bufnr: number)
 local Overlay = class(function(self, name, help, on_buf_create)
   self.name = name
   self.help = help
   self.help_ns = vim.api.nvim_create_namespace('copilot-chat-help')
   self.on_buf_create = on_buf_create
   self.bufnr = nil
+  self.cursor = nil
+  self.on_hide = nil
+
+  self.hl_ns = vim.api.nvim_create_namespace('copilot-chat-highlights')
+  vim.api.nvim_set_hl(self.hl_ns, '@diff.plus', { bg = utils.blend_color('DiffAdd', 20) })
+  vim.api.nvim_set_hl(self.hl_ns, '@diff.minus', { bg = utils.blend_color('DiffDelete', 20) })
+  vim.api.nvim_set_hl(self.hl_ns, '@diff.delta', { bg = utils.blend_color('DiffChange', 20) })
 end)
 
 ---@return number
@@ -44,38 +54,61 @@ end
 ---@param winnr number
 ---@param filetype? string
 ---@param syntax string?
-function Overlay:show(text, winnr, filetype, syntax)
+---@param on_show? fun(bufnr: number)
+---@param on_hide? fun(bufnr: number)
+function Overlay:show(text, winnr, filetype, syntax, on_show, on_hide)
   if not text or vim.trim(text) == '' then
     return
   end
 
   self:validate()
+  vim.api.nvim_win_set_hl_ns(winnr, self.hl_ns)
   text = text .. '\n'
 
+  self.cursor = vim.api.nvim_win_get_cursor(winnr)
   vim.api.nvim_win_set_buf(winnr, self.bufnr)
   vim.bo[self.bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, vim.split(text, '\n'))
   vim.bo[self.bufnr].modifiable = false
   self:show_help(self.help, -1)
-  vim.api.nvim_win_set_cursor(winnr, { vim.api.nvim_buf_line_count(self.bufnr), 0 })
+  vim.api.nvim_win_set_cursor(winnr, { 1, 0 })
 
-  filetype = filetype or 'text'
+  filetype = filetype or 'markdown'
   syntax = syntax or filetype
 
   -- Dual mode with treesitter (for diffs for example)
-  local ok, parser = pcall(vim.treesitter.get_parser, self.bufnr, syntax)
-  if ok and parser then
-    vim.treesitter.start(self.bufnr, syntax)
-    vim.bo[self.bufnr].syntax = filetype
+  if filetype == syntax then
+    vim.bo[self.bufnr].filetype = filetype
   else
-    vim.bo[self.bufnr].syntax = syntax
+    local ok, parser = pcall(vim.treesitter.get_parser, self.bufnr, syntax)
+    if ok and parser then
+      vim.treesitter.start(self.bufnr, syntax)
+      vim.bo[self.bufnr].syntax = filetype
+    else
+      vim.bo[self.bufnr].syntax = syntax
+    end
   end
+
+  if on_show then
+    on_show(self.bufnr)
+  end
+
+  self.on_hide = on_hide
 end
 
 ---@param winnr number
 ---@param bufnr number?
 function Overlay:restore(winnr, bufnr)
+  if self.on_hide then
+    self.on_hide(self.bufnr)
+  end
+
   vim.api.nvim_win_set_buf(winnr, bufnr or 0)
+  vim.api.nvim_win_set_hl_ns(winnr, 0)
+
+  if self.cursor then
+    vim.api.nvim_win_set_cursor(winnr, self.cursor)
+  end
 end
 
 function Overlay:delete()

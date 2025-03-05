@@ -54,6 +54,13 @@ end
 ---@field blocks table<CopilotChat.ui.Chat.Section.Block>
 ---@field content string?
 
+---@class CopilotChat.ui.Chat.overlayopts
+---@field text string
+---@field filetype string?
+---@field syntax string?
+---@field on_show fun(bufnr: number)
+---@field on_hide fun(bufnr: number)
+
 ---@class CopilotChat.ui.Chat : CopilotChat.ui.Overlay
 ---@field question_header string
 ---@field answer_header string
@@ -62,6 +69,7 @@ end
 ---@field winnr number?
 ---@field spinner CopilotChat.ui.Spinner
 ---@field sections table<CopilotChat.ui.Chat.Section>
+---@field overlay CopilotChat.ui.Overlay
 ---@field config CopilotChat.config.shared
 ---@field references table
 ---@field token_count number?
@@ -78,6 +86,20 @@ local Chat = class(function(self, question_header, answer_header, separator, hel
   self.winnr = nil
   self.spinner = nil
   self.sections = {}
+
+  -- Create overlay
+  self.overlay = Overlay('copilot-overlay', 'q to close', function(bufnr)
+    vim.keymap.set('n', 'q', function()
+      self.overlay:restore(self.winnr, self.bufnr)
+    end)
+
+    vim.api.nvim_create_autocmd({ 'BufHidden', 'BufDelete' }, {
+      buffer = bufnr,
+      callback = function()
+        self.overlay:restore(self.winnr, self.bufnr)
+      end,
+    })
+  end)
 
   -- Variables
   self.config = {}
@@ -584,6 +606,15 @@ function Chat:finish()
   if self.config.auto_insert_mode and self:active() then
     vim.cmd('startinsert')
   end
+end
+
+---@param opts CopilotChat.ui.Chat.overlayopts
+function Chat:show_overlay(opts)
+  if not self:visible() then
+    return
+  end
+
+  self.overlay:show(opts.text, self.winnr, opts.filetype, opts.syntax, opts.on_show, opts.on_hide)
 end
 
 return Chat
