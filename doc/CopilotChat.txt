@@ -504,6 +504,7 @@ Below are all available configuration options with their default values:
       temperature = 0.1, -- GPT result temperature
       headless = false, -- Do not write to chat buffer and use history(useful for using callback for custom processing)
       callback = nil, -- Callback to use when ask response is received
+      remember_as_sticky = true, -- Remember model/agent/context as sticky prompts when asking questions
     
       -- default window options
       window = {
