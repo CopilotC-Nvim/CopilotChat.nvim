@@ -4,10 +4,14 @@ local context = require('CopilotChat.context')
 local client = require('CopilotChat.client')
 local utils = require('CopilotChat.utils')
 
-local M = {}
 local PLUGIN_NAME = 'CopilotChat'
 local WORD = '([^%s]+)'
 local WORD_INPUT = '([^%s:]+:`[^`]+`)'
+
+---@class CopilotChat
+---@field config CopilotChat.config
+---@field chat CopilotChat.ui.Chat
+local M = {}
 
 --- @class CopilotChat.source
 --- @field bufnr number
@@ -104,7 +108,7 @@ local function update_highlights()
     vim.api.nvim_buf_clear_namespace(buf, selection_ns, 0, -1)
   end
 
-  if M.chat.config.highlight_selection and M.chat:active() then
+  if M.chat.config.highlight_selection and M.chat:focused() then
     local selection = M.get_selection()
     if
       not selection
@@ -141,6 +145,7 @@ local function update_highlights()
   end)
 end
 
+--- Finish writing to chat buffer.
 ---@param start_of_chat boolean?
 local function finish(start_of_chat)
   if not start_of_chat then
@@ -172,6 +177,7 @@ local function finish(start_of_chat)
   M.chat:finish()
 end
 
+--- Show an error in the chat window.
 ---@param err string|table|nil
 ---@param append_newline boolean?
 local function show_error(err, append_newline)
@@ -774,7 +780,7 @@ function M.ask(prompt, config)
       finish()
     end
 
-    if not M.chat:active() then
+    if not M.chat:focused() then
       M.open(config)
     end
 
@@ -972,7 +978,20 @@ function M.load(name, history_path)
 
   client:reset()
   M.chat:clear()
-  M.chat:load_history(history)
+
+  for i, message in ipairs(history) do
+    if message.role == 'user' then
+      if i > 1 then
+        M.chat:append('\n\n')
+      end
+      M.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
+      M.chat:append(message.content)
+    elseif message.role == 'assistant' then
+      M.chat:append('\n\n' .. M.config.answer_header .. M.config.separator .. '\n\n')
+      M.chat:append(message.content)
+    end
+  end
+
   log.info('Loaded history from ' .. history_path)
 
   if #history > 0 then

@@ -1,4 +1,8 @@
----@class CopilotChat.ui.Diff.Diff
+local async = require('plenary.async')
+local copilot = require('CopilotChat')
+local utils = require('CopilotChat.utils')
+
+---@class CopilotChat.config.mappings.diff
 ---@field change string
 ---@field reference string
 ---@field filename string
@@ -7,12 +11,9 @@
 ---@field end_line number
 ---@field bufnr number?
 
-local async = require('plenary.async')
-local copilot = require('CopilotChat')
-local utils = require('CopilotChat.utils')
-
+--- Get diff data from a block
 ---@param block CopilotChat.ui.Chat.Section.Block?
----@return CopilotChat.ui.Diff.Diff?
+---@return CopilotChat.config.mappings.diff?
 local function get_diff(block)
   -- If no block found, return nil
   if not block then
@@ -71,9 +72,9 @@ local function get_diff(block)
 end
 
 --- Prepare a buffer for applying a diff
----@param diff CopilotChat.ui.Diff.Diff?
+---@param diff CopilotChat.config.mappings.diff?
 ---@param source CopilotChat.source?
----@return CopilotChat.ui.Diff.Diff?
+---@return CopilotChat.config.mappings.diff?
 local function prepare_diff_buffer(diff, source)
   if not diff then
     return diff
@@ -396,7 +397,7 @@ return {
         }))
       end
 
-      copilot.chat:show_overlay(opts)
+      copilot.chat:overlay(opts)
     end,
   },
 
@@ -442,7 +443,7 @@ return {
           table.insert(lines, '')
         end
 
-        copilot.chat:show_overlay({
+        copilot.chat:overlay({
           text = vim.trim(table.concat(lines, '\n')) .. '\n',
         })
       end)
@@ -491,7 +492,7 @@ return {
         end
 
         utils.schedule_main()
-        copilot.chat:show_overlay({
+        copilot.chat:overlay({
           text = vim.trim(table.concat(lines, '\n')) .. '\n',
         })
       end)
@@ -527,7 +528,7 @@ return {
         end
       end
 
-      copilot.chat:show_overlay({
+      copilot.chat:overlay({
         text = chat_help,
       })
     end,

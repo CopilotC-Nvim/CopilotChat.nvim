@@ -1,8 +1,3 @@
----@class CopilotChat.config.prompt : CopilotChat.config.shared
----@field prompt string?
----@field description string?
----@field mapping string?
-
 local base = string.format(
   [[
 When asked for your name, you must respond with "GitHub Copilot".
@@ -14,6 +9,7 @@ Keep your answers short and impersonal.
 The user works in an IDE called Neovim which has a concept for editors with open files, integrated unit test support, an output pane that shows the output of running the code as well as an integrated terminal.
 The user is working on a %s machine. Please respond with system specific commands if applicable.
 You will receive code snippets that include line number prefixes - use these to maintain correct position references but remove them when generating output.
+If you don't have sufficient context to answer accurately, ask for specific additional information rather than making assumptions.
 
 When presenting code changes:
 
@@ -80,6 +76,11 @@ End with: "**`To clear buffer highlights, please ask a different question.`**"
 
 If no issues found, confirm the code is well-written and explain why.
 ]]
+
+---@class CopilotChat.config.prompt : CopilotChat.config.shared
+---@field prompt string?
+---@field description string?
+---@field mapping string?
 
 ---@type table<string, CopilotChat.config.prompt>
 return {
