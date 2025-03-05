@@ -364,7 +364,7 @@ Define your own contexts in the configuration with input handling and resolution
 
 ## Selections
 
-Selections determine the source content for chat interactions. Configure them globally or per-prompt.
+Selections determine the source content for chat interactions. Can be configured only globally.
 
 Available selections are located in `local select = require("CopilotChat.select")`:
 
