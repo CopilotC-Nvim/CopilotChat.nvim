@@ -626,8 +626,7 @@ Below are all available configuration options with their default values:
 Types of copilot buffers:
 
 - `copilot-chat` - Main chat buffer
-- `copilot-diff` - Diff overlay buffer
-- `copilot-overlay` - Every other overlay buffer (e.g. help, info)
+- `copilot-overlay` - Overlay buffers (e.g. help, info, diff)
 
 You can set local options for plugin buffers like this:
 
