@@ -1,3 +1,12 @@
+---@class CopilotChat.ui.Diff.Diff
+---@field change string
+---@field reference string
+---@field filename string
+---@field filetype string
+---@field start_line number
+---@field end_line number
+---@field bufnr number?
+
 local async = require('plenary.async')
 local copilot = require('CopilotChat')
 local utils = require('CopilotChat.utils')
@@ -103,7 +112,7 @@ end
 ---@class CopilotChat.config.mapping
 ---@field normal string?
 ---@field insert string?
----@field callback fun(overlay: CopilotChat.ui.Overlay, diff: CopilotChat.ui.Diff, chat: CopilotChat.ui.Chat, source: CopilotChat.source)
+---@field callback fun(source: CopilotChat.source)
 
 ---@class CopilotChat.config.mapping.yank_diff : CopilotChat.config.mapping
 ---@field register string?
@@ -128,7 +137,7 @@ end
 return {
   complete = {
     insert = '<Tab>',
-    callback = function(overlay, diff, chat)
+    callback = function()
       copilot.trigger_complete(true)
     end,
   },
@@ -136,7 +145,7 @@ return {
   close = {
     normal = 'q',
     insert = '<C-c>',
-    callback = function(overlay, diff, chat)
+    callback = function()
       copilot.close()
     end,
   },
@@ -144,7 +153,7 @@ return {
   reset = {
     normal = '<C-l>',
     insert = '<C-l>',
-    callback = function(overlay, diff, chat)
+    callback = function()
       copilot.reset()
     end,
   },
@@ -152,8 +161,8 @@ return {
   submit_prompt = {
     normal = '<CR>',
     insert = '<C-s>',
-    callback = function(overlay, diff, chat)
-      local section = chat:get_closest_section()
+    callback = function()
+      local section = copilot.chat:get_closest_section()
       if not section or section.answer then
         return
       end
@@ -164,8 +173,8 @@ return {
 
   toggle_sticky = {
     normal = 'gr',
-    callback = function(overlay, diff, chat)
-      local section = chat:get_closest_section()
+    callback = function()
+      local section = copilot.chat:get_closest_section()
       if not section or section.answer then
         return
       end
@@ -177,7 +186,7 @@ return {
 
       local cursor = vim.api.nvim_win_get_cursor(0)
       local cur_line = cursor[1]
-      vim.api.nvim_buf_set_lines(chat.bufnr, cur_line - 1, cur_line, false, {})
+      vim.api.nvim_buf_set_lines(copilot.chat.bufnr, cur_line - 1, cur_line, false, {})
 
       if vim.startswith(current_line, '> ') then
         return
@@ -204,7 +213,13 @@ return {
 
       insert_line = section.start_line + insert_line - 1
       local to_insert = first_one and { '> ' .. current_line, '' } or { '> ' .. current_line }
-      vim.api.nvim_buf_set_lines(chat.bufnr, insert_line - 1, insert_line - 1, false, to_insert)
+      vim.api.nvim_buf_set_lines(
+        copilot.chat.bufnr,
+        insert_line - 1,
+        insert_line - 1,
+        false,
+        to_insert
+      )
       vim.api.nvim_win_set_cursor(0, cursor)
     end,
   },
@@ -212,8 +227,8 @@ return {
   accept_diff = {
     normal = '<C-y>',
     insert = '<C-y>',
-    callback = function(overlay, diff, chat, source)
-      local diff_data = get_diff(chat:get_closest_block())
+    callback = function(source)
+      local diff_data = get_diff(copilot.chat:get_closest_block())
       diff_data = prepare_diff_buffer(diff_data, source)
       if diff_data then
         local lines = vim.split(diff_data.change, '\n', { trimempty = false })
@@ -235,8 +250,8 @@ return {
 
   jump_to_diff = {
     normal = 'gj',
-    callback = function(overlay, diff, chat, source)
-      local diff_data = get_diff(chat:get_closest_block())
+    callback = function(source)
+      local diff_data = get_diff(copilot.chat:get_closest_block())
       diff_data = prepare_diff_buffer(diff_data, source)
       if diff_data then
         copilot.set_selection(diff_data.bufnr, diff_data.start_line, diff_data.end_line)
@@ -246,28 +261,18 @@ return {
 
   quickfix_answers = {
     normal = 'gqa',
-    callback = function(overlay, diff, chat)
+    callback = function()
       local items = {}
-      for i, section in ipairs(chat.sections) do
+      for i, section in ipairs(copilot.chat.sections) do
         if section.answer then
-          local prev_section = chat.sections[i - 1]
+          local prev_section = copilot.chat.sections[i - 1]
           local text = ''
           if prev_section then
-            text = vim.trim(
-              table.concat(
-                vim.api.nvim_buf_get_lines(
-                  chat.bufnr,
-                  prev_section.start_line - 1,
-                  prev_section.end_line,
-                  false
-                ),
-                ' '
-              )
-            )
+            text = prev_section.content
           end
 
           table.insert(items, {
-            bufnr = chat.bufnr,
+            bufnr = copilot.chat.bufnr,
             lnum = section.start_line,
             end_lnum = section.end_line,
             text = text,
@@ -282,11 +287,11 @@ return {
 
   quickfix_diffs = {
     normal = 'gqd',
-    callback = function(overlay, diff, chat)
+    callback = function()
       local selection = copilot.get_selection()
       local items = {}
 
-      for _, section in ipairs(chat.sections) do
+      for _, section in ipairs(copilot.chat.sections) do
         for _, block in ipairs(section.blocks) do
           local header = block.header
 
@@ -302,7 +307,7 @@ return {
           end
 
           table.insert(items, {
-            bufnr = chat.bufnr,
+            bufnr = copilot.chat.bufnr,
             lnum = block.start_line,
             end_lnum = block.end_line,
             text = text,
@@ -318,8 +323,8 @@ return {
   yank_diff = {
     normal = 'gy',
     register = '"', -- Default register to use for yanking
-    callback = function(overlay, diff, chat)
-      local block = chat:get_closest_block()
+    callback = function()
+      local block = copilot.chat:get_closest_block()
       if not block then
         return
       end
@@ -331,20 +336,74 @@ return {
   show_diff = {
     normal = 'gd',
     full_diff = false, -- Show full diff instead of unified diff when showing diff window
-    callback = function(overlay, diff, chat)
-      local content = get_diff(chat:get_closest_block())
-      if not content then
+    callback = function()
+      local diff = get_diff(copilot.chat:get_closest_block())
+      if not diff then
         return
       end
 
-      diff:show(content, chat.winnr, copilot.config.mappings.show_diff.full_diff)
+      local opts = {
+        filetype = diff.filetype,
+        syntax = 'diff',
+      }
+
+      if copilot.config.mappings.show_diff.full_diff then
+        -- Create modified version by applying the change
+        local modified = {}
+        if utils.buf_valid(diff.bufnr) then
+          modified = vim.api.nvim_buf_get_lines(diff.bufnr, 0, -1, false)
+        end
+        local change_lines = vim.split(diff.change, '\n')
+
+        -- Replace the lines in the modified content
+        if #modified > 0 then
+          local start_idx = diff.start_line - 1
+          local end_idx = diff.end_line - 1
+          for _ = start_idx, end_idx do
+            table.remove(modified, start_idx)
+          end
+          for i, line in ipairs(change_lines) do
+            table.insert(modified, start_idx + i - 1, line)
+          end
+        else
+          modified = change_lines
+        end
+
+        opts.text = table.concat(modified, '\n')
+
+        opts.on_show = function()
+          vim.cmd('diffthis')
+          vim.api.nvim_set_current_win(vim.fn.bufwinid(diff.bufnr))
+          vim.api.nvim_win_set_cursor(0, { diff.start_line, 0 })
+          vim.cmd('diffthis')
+          vim.api.nvim_set_current_win(copilot.chat.winnr)
+          vim.api.nvim_win_set_cursor(copilot.chat.winnr, { diff.start_line, 0 })
+        end
+
+        opts.on_hide = function()
+          vim.cmd('diffoff')
+        end
+      else
+        opts.text = tostring(vim.diff(diff.reference, diff.change, {
+          result_type = 'unified',
+          ignore_blank_lines = true,
+          ignore_whitespace = true,
+          ignore_whitespace_change = true,
+          ignore_whitespace_change_at_eol = true,
+          ignore_cr_at_eol = true,
+          algorithm = 'myers',
+          ctxlen = #diff.reference,
+        }))
+      end
+
+      copilot.chat:show_overlay(opts)
     end,
   },
 
   show_info = {
     normal = 'gi',
-    callback = function(overlay, diff, chat)
-      local section = chat:get_closest_section()
+    callback = function()
+      local section = copilot.chat:get_closest_section()
       if not section or section.answer then
         return
       end
@@ -383,15 +442,17 @@ return {
           table.insert(lines, '')
         end
 
-        overlay:show(vim.trim(table.concat(lines, '\n')) .. '\n', chat.winnr, 'markdown')
+        copilot.chat:show_overlay({
+          text = vim.trim(table.concat(lines, '\n')) .. '\n',
+        })
       end)
     end,
   },
 
   show_context = {
     normal = 'gc',
-    callback = function(overlay, diff, chat)
-      local section = chat:get_closest_section()
+    callback = function()
+      local section = copilot.chat:get_closest_section()
       if not section or section.answer then
         return
       end
@@ -430,14 +491,16 @@ return {
         end
 
         utils.schedule_main()
-        overlay:show(vim.trim(table.concat(lines, '\n')) .. '\n', chat.winnr, 'markdown')
+        copilot.chat:show_overlay({
+          text = vim.trim(table.concat(lines, '\n')) .. '\n',
+        })
       end)
     end,
   },
 
   show_help = {
     normal = 'gh',
-    callback = function(overlay, diff, chat)
+    callback = function()
       local chat_help = '**`Special tokens`**\n'
       chat_help = chat_help .. '`@<agent>` to select an agent\n'
       chat_help = chat_help .. '`#<context>` to select a context\n'
@@ -463,7 +526,10 @@ return {
           end
         end
       end
-      overlay:show(chat_help, chat.winnr, 'markdown')
+
+      copilot.chat:show_overlay({
+        text = chat_help,
+      })
     end,
   },
 }

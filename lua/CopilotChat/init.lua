@@ -18,9 +18,6 @@ local WORD_INPUT = '([^%s:]+:`[^`]+`)'
 --- @field last_prompt string?
 --- @field last_response string?
 --- @field highlights_loaded boolean
---- @field chat CopilotChat.ui.Chat?
---- @field diff CopilotChat.ui.Diff?
---- @field overlay CopilotChat.ui.Overlay?
 local state = {
   -- Current state tracking
   source = nil,
@@ -29,11 +26,6 @@ local state = {
   last_prompt = nil,
   last_response = nil,
   highlights_loaded = false,
-
-  -- Overlays
-  chat = nil,
-  diff = nil,
-  overlay = nil,
 }
 
 --- Insert sticky values from config into prompt
@@ -112,7 +104,7 @@ local function update_highlights()
     vim.api.nvim_buf_clear_namespace(buf, selection_ns, 0, -1)
   end
 
-  if state.chat.config.highlight_selection and state.chat:active() then
+  if M.chat.config.highlight_selection and M.chat:active() then
     local selection = M.get_selection()
     if
       not selection
@@ -152,10 +144,10 @@ end
 ---@param start_of_chat boolean?
 local function finish(start_of_chat)
   if not start_of_chat then
-    state.chat:append('\n\n')
+    M.chat:append('\n\n')
   end
 
-  state.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
+  M.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
 
   -- Insert sticky values from config into prompt
   if start_of_chat then
@@ -168,16 +160,16 @@ local function finish(start_of_chat)
     local lines = vim.split(state.last_prompt, '\n')
     for _, line in ipairs(lines) do
       if vim.startswith(line, '> ') then
-        state.chat:append(line .. '\n')
+        M.chat:append(line .. '\n')
         has_sticky = true
       end
     end
     if has_sticky then
-      state.chat:append('\n')
+      M.chat:append('\n')
     end
   end
 
-  state.chat:finish()
+  M.chat:finish()
 end
 
 ---@param err string|table|nil
@@ -198,10 +190,10 @@ local function show_error(err, append_newline)
   end
 
   if append_newline then
-    state.chat:append('\n')
+    M.chat:append('\n')
   end
 
-  state.chat:append(M.config.error_header .. '\n```error\n' .. err .. '\n```')
+  M.chat:append(M.config.error_header .. '\n```error\n' .. err .. '\n```')
   finish()
 end
 
@@ -217,7 +209,7 @@ local function map_key(name, bufnr, fn)
 
   if not fn then
     fn = function()
-      key.callback(state.overlay, state.diff, state.chat, state.source)
+      key.callback(state.source)
     end
   end
 
@@ -253,8 +245,8 @@ local function update_source()
   local prev_winnr = vim.fn.win_getid(vim.fn.winnr('#'))
   local prev_bufnr = vim.api.nvim_win_get_buf(prev_winnr)
   if
-    prev_winnr ~= state.chat.winnr
-    and prev_bufnr ~= state.chat.bufnr
+    prev_winnr ~= M.chat.winnr
+    and prev_bufnr ~= M.chat.bufnr
     and vim.fn.win_gettype(prev_winnr) == ''
   then
     state.source = {
@@ -270,7 +262,7 @@ end
 ---@return CopilotChat.config.prompt, string
 function M.resolve_prompt(prompt, config)
   if not prompt then
-    local section = state.chat:get_prompt()
+    local section = M.chat:get_prompt()
     if section then
       prompt = section.content
     end
@@ -630,29 +622,29 @@ function M.open(config)
   config = vim.tbl_deep_extend('force', M.config, config or {})
   utils.return_to_normal_mode()
 
-  state.chat:open(config)
+  M.chat:open(config)
 
-  local section = state.chat:get_prompt()
+  local section = M.chat:get_prompt()
   if section then
     local prompt = insert_sticky(section.content, config)
     if prompt then
-      state.chat:set_prompt(prompt)
+      M.chat:set_prompt(prompt)
     end
   end
 
-  state.chat:follow()
-  state.chat:focus()
+  M.chat:follow()
+  M.chat:focus()
 end
 
 --- Close the chat window.
 function M.close()
-  state.chat:close(state.source and state.source.bufnr or nil)
+  M.chat:close(state.source and state.source.bufnr or nil)
 end
 
 --- Toggle the chat window.
 ---@param config CopilotChat.config.shared?
 function M.toggle(config)
-  if state.chat:visible() then
+  if M.chat:visible() then
     M.close()
   else
     M.open(config)
@@ -782,13 +774,13 @@ function M.ask(prompt, config)
       finish()
     end
 
-    if not state.chat:active() then
+    if not M.chat:active() then
       M.open(config)
     end
 
     state.last_prompt = prompt
-    state.chat:set_prompt(prompt)
-    state.chat:append('\n\n' .. M.config.answer_header .. M.config.separator .. '\n\n')
+    M.chat:set_prompt(prompt)
+    M.chat:append('\n\n' .. M.config.answer_header .. M.config.separator .. '\n\n')
   else
     update_source()
   end
@@ -837,7 +829,7 @@ function M.ask(prompt, config)
         temperature = config.temperature,
         on_progress = vim.schedule_wrap(function(token)
           if not config.headless then
-            state.chat:append(token)
+            M.chat:append(token)
           end
           has_output = true
         end),
@@ -859,16 +851,16 @@ function M.ask(prompt, config)
 
     if not config.headless then
       state.last_response = response
-      state.chat.references = references
-      state.chat.token_count = token_count
-      state.chat.token_max_count = token_max_count
+      M.chat.references = references
+      M.chat.token_count = token_count
+      M.chat.token_max_count = token_max_count
     end
 
     if not config.headless then
       if not utils.empty(references) and config.references_display == 'write' then
-        state.chat:append('\n\n**`References`**:')
+        M.chat:append('\n\n**`References`**:')
         for _, ref in ipairs(references) do
-          state.chat:append(string.format('\n[%s](%s)', ref.name, ref.url))
+          M.chat:append(string.format('\n[%s](%s)', ref.name, ref.url))
         end
       end
 
@@ -895,7 +887,7 @@ function M.stop(reset)
 
   if reset then
     client:reset()
-    state.chat:clear()
+    M.chat:clear()
     state.last_prompt = nil
     state.last_response = nil
 
@@ -979,15 +971,15 @@ function M.load(name, history_path)
   })
 
   client:reset()
-  state.chat:clear()
-  state.chat:load_history(history)
+  M.chat:clear()
+  M.chat:load_history(history)
   log.info('Loaded history from ' .. history_path)
 
   if #history > 0 then
     local last = history[#history]
     if last and last.role == 'user' then
-      state.chat:append('\n\n')
-      state.chat:finish()
+      M.chat:append('\n\n')
+      M.chat:finish()
       return
     end
   end
@@ -1047,30 +1039,11 @@ function M.setup(config)
 
   state.highlights_loaded = false
 
-  local overlay_help = utils.key_to_info('close', M.config.mappings.close)
-  if state.overlay then
-    state.overlay:delete()
+  if M.chat then
+    M.chat:close(state.source and state.source.bufnr or nil)
+    M.chat:delete()
   end
-  state.overlay = require('CopilotChat.ui.overlay')('copilot-overlay', overlay_help, function(bufnr)
-    map_key('close', bufnr, function()
-      state.overlay:restore(state.chat.winnr, state.chat.bufnr)
-    end)
-  end)
-
-  if state.diff then
-    state.diff:delete()
-  end
-  state.diff = require('CopilotChat.ui.diff')(overlay_help, function(bufnr)
-    map_key('close', bufnr, function()
-      state.diff:restore(state.chat.winnr, state.chat.bufnr)
-    end)
-  end)
-
-  if state.chat then
-    state.chat:close(state.source and state.source.bufnr or nil)
-    state.chat:delete()
-  end
-  state.chat = require('CopilotChat.ui.chat')(
+  M.chat = require('CopilotChat.ui.chat')(
     M.config.question_header,
     M.config.answer_header,
     M.config.separator,
