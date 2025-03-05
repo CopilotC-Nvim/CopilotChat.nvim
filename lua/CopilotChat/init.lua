@@ -53,15 +53,19 @@ local function insert_sticky(prompt, config, override_sticky)
 
   lines = vim.split(vim.trim(table.concat(lines, '\n')), '\n')
 
-  if config.model and config.model ~= M.config.model then
+  if config.remember_as_sticky and config.model and config.model ~= M.config.model then
     stickies:set('$' .. config.model, true)
   end
 
-  if config.agent and config.agent ~= M.config.agent then
+  if config.remember_as_sticky and config.agent and config.agent ~= M.config.agent then
     stickies:set('@' .. config.agent, true)
   end
 
-  if config.context and not vim.deep_equal(config.context, M.config.context) then
+  if
+    config.remember_as_sticky
+    and config.context
+    and not vim.deep_equal(config.context, M.config.context)
+  then
     if type(config.context) == 'table' then
       ---@diagnostic disable-next-line: param-type-mismatch
       for _, context in ipairs(config.context) do
