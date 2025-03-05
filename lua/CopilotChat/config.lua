@@ -22,6 +22,7 @@ local select = require('CopilotChat.select')
 ---@field temperature number?
 ---@field headless boolean?
 ---@field callback fun(response: string, source: CopilotChat.source)?
+---@field remember_as_sticky boolean?
 ---@field window CopilotChat.config.window?
 ---@field show_help boolean?
 ---@field show_folds boolean?
@@ -65,6 +66,7 @@ return {
   temperature = 0.1, -- GPT result temperature
   headless = false, -- Do not write to chat buffer and use history(useful for using callback for custom processing)
   callback = nil, -- Callback to use when ask response is received
+  remember_as_sticky = true, -- Remember model/agent/context as sticky prompts when asking questions
 
   -- default window options
   window = {

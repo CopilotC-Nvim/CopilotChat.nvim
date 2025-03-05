@@ -173,7 +173,7 @@ return {
   },
 
   toggle_sticky = {
-    normal = 'gr',
+    normal = 'grr',
     callback = function()
       local section = copilot.chat:get_closest_section()
       if not section or section.answer then
@@ -222,6 +222,38 @@ return {
         to_insert
       )
       vim.api.nvim_win_set_cursor(0, cursor)
+    end,
+  },
+
+  clear_stickies = {
+    normal = 'grx',
+    callback = function()
+      local section = copilot.chat:get_closest_section()
+      if not section or section.answer then
+        return
+      end
+
+      local lines = vim.split(section.content, '\n')
+      local new_lines = {}
+      local changed = false
+
+      for _, line in ipairs(lines) do
+        if not vim.startswith(vim.trim(line), '> ') then
+          table.insert(new_lines, line)
+        else
+          changed = true
+        end
+      end
+
+      if changed then
+        vim.api.nvim_buf_set_lines(
+          copilot.chat.bufnr,
+          section.start_line,
+          section.end_line - 1,
+          false,
+          new_lines
+        )
+      end
     end,
   },
 
