@@ -2,11 +2,9 @@ local async = require('plenary.async')
 local copilot = require('CopilotChat')
 local utils = require('CopilotChat.utils')
 
----@param chat CopilotChat.ui.Chat
+---@param block CopilotChat.ui.Chat.Section.Block?
 ---@return CopilotChat.ui.Diff.Diff?
-local function get_diff(chat)
-  local block = chat:get_closest_block()
-
+local function get_diff(block)
   -- If no block found, return nil
   if not block then
     return nil
@@ -63,15 +61,43 @@ local function get_diff(chat)
   }
 end
 
+--- Prepare a buffer for applying a diff
 ---@param diff CopilotChat.ui.Diff.Diff?
-local function apply_diff(diff)
-  if not diff or not diff.bufnr then
-    return
+---@param source CopilotChat.source?
+---@return CopilotChat.ui.Diff.Diff?
+local function prepare_diff_buffer(diff, source)
+  if not diff then
+    return diff
   end
 
-  local lines = vim.split(diff.change, '\n', { trimempty = false })
-  vim.api.nvim_buf_set_lines(diff.bufnr, diff.start_line - 1, diff.end_line, false, lines)
-  copilot.set_selection(diff.bufnr, diff.start_line, diff.start_line + #lines - 1)
+  local diff_bufnr = diff.bufnr
+
+  -- If buffer is not found, try to load it
+  if not diff_bufnr then
+    -- Try to find matching buffer first
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+      if utils.filename_same(vim.api.nvim_buf_get_name(buf), diff.filename) then
+        diff_bufnr = buf
+        break
+      end
+    end
+
+    -- If still not found, create a new buffer
+    if not diff_bufnr then
+      diff_bufnr = vim.fn.bufadd(diff.filename)
+      vim.fn.bufload(diff_bufnr)
+    end
+
+    diff.bufnr = diff_bufnr
+  end
+
+  -- If source exists, update it to point to the diff buffer
+  if source and source.winnr and vim.api.nvim_win_is_valid(source.winnr) then
+    source.bufnr = diff_bufnr
+    vim.api.nvim_win_set_buf(source.winnr, diff_bufnr)
+  end
+
+  return diff
 end
 
 ---@class CopilotChat.config.mapping
@@ -187,33 +213,34 @@ return {
     normal = '<C-y>',
     insert = '<C-y>',
     callback = function(overlay, diff, chat, source)
-      apply_diff(get_diff(chat))
+      local diff_data = get_diff(chat:get_closest_block())
+      diff_data = prepare_diff_buffer(diff_data, source)
+      if diff_data then
+        local lines = vim.split(diff_data.change, '\n', { trimempty = false })
+        vim.api.nvim_buf_set_lines(
+          diff_data.bufnr,
+          diff_data.start_line - 1,
+          diff_data.end_line,
+          false,
+          lines
+        )
+        copilot.set_selection(
+          diff_data.bufnr,
+          diff_data.start_line,
+          diff_data.start_line + #lines - 1
+        )
+      end
     end,
   },
 
   jump_to_diff = {
     normal = 'gj',
     callback = function(overlay, diff, chat, source)
-      if not source or not source.winnr or not vim.api.nvim_win_is_valid(source.winnr) then
-        return
+      local diff_data = get_diff(chat:get_closest_block())
+      diff_data = prepare_diff_buffer(diff_data, source)
+      if diff_data then
+        copilot.set_selection(diff_data.bufnr, diff_data.start_line, diff_data.end_line)
       end
-
-      local diff = get_diff(chat)
-      if not diff then
-        return
-      end
-
-      local diff_bufnr = diff.bufnr
-
-      -- If buffer is not found, try to load it
-      if not diff_bufnr then
-        diff_bufnr = vim.fn.bufadd(diff.filename)
-        vim.fn.bufload(diff_bufnr)
-      end
-
-      source.bufnr = diff_bufnr
-      vim.api.nvim_win_set_buf(source.winnr, diff_bufnr)
-      copilot.set_selection(diff_bufnr, diff.start_line, diff.end_line)
     end,
   },
 
@@ -305,7 +332,7 @@ return {
     normal = 'gd',
     full_diff = false, -- Show full diff instead of unified diff when showing diff window
     callback = function(overlay, diff, chat)
-      local content = get_diff(chat)
+      local content = get_diff(chat:get_closest_block())
       if not content then
         return
       end
