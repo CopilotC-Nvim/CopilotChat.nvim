@@ -674,7 +674,6 @@ chat.stop()     -- Stop current output
 
 -- Ask a question with optional config
 chat.ask("Explain this code.", {
-  selection = require("CopilotChat.select").buffer,
   context = { 'buffers', 'files' },
   callback = function(response)
     print("Response:", response)
