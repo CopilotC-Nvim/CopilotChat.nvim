@@ -1,7 +1,6 @@
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local class = utils.class
-
 local spinner_frames = {
   '⠋',
   '⠙',
@@ -16,17 +15,17 @@ local spinner_frames = {
 }
 
 ---@class CopilotChat.ui.Spinner : Class
----@field ns number
 ---@field bufnr number
----@field timer table
----@field index number
 ---@field status string?
+---@field private index number
+---@field private timer table
+---@field private ns number
 local Spinner = class(function(self, bufnr)
-  self.ns = vim.api.nvim_create_namespace('copilot-chat-spinner')
   self.bufnr = bufnr
-  self.timer = nil
-  self.index = 1
   self.status = nil
+  self.index = 1
+  self.timer = nil
+  self.ns = vim.api.nvim_create_namespace('copilot-chat-spinner')
 
   notify.listen(notify.STATUS, function(status)
     self.status = tostring(status)

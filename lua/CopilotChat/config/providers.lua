@@ -1,50 +1,5 @@
 local utils = require('CopilotChat.utils')
 
----@class CopilotChat.Provider.model
----@field id string
----@field name string
----@field tokenizer string?
----@field max_input_tokens number?
----@field max_output_tokens number?
-
----@class CopilotChat.Provider.agent
----@field id string
----@field name string
----@field description string?
-
----@class CopilotChat.Provider.embed
----@field index number
----@field embedding table<number>
-
----@class CopilotChat.Provider.options
----@field model CopilotChat.Provider.model
----@field agent CopilotChat.Provider.agent?
----@field temperature number?
-
----@class CopilotChat.Provider.input
----@field role string
----@field content string
-
----@class CopilotChat.Provider.reference
----@field name string
----@field url string
-
----@class CopilotChat.Provider.output
----@field content string
----@field finish_reason string?
----@field total_tokens number?
----@field references table<CopilotChat.Provider.reference>?
-
----@class CopilotChat.Provider
----@field disabled nil|boolean
----@field get_headers nil|fun():table<string, string>,number?
----@field get_agents nil|fun(headers:table):table<CopilotChat.Provider.agent>
----@field get_models nil|fun(headers:table):table<CopilotChat.Provider.model>
----@field embed nil|string|fun(inputs:table<string>, headers:table):table<CopilotChat.Provider.embed>
----@field prepare_input nil|fun(inputs:table<CopilotChat.Provider.input>, opts:CopilotChat.Provider.options):table
----@field prepare_output nil|fun(output:table, opts:CopilotChat.Provider.options):CopilotChat.Provider.output
----@field get_url nil|fun(opts:CopilotChat.Provider.options):string
-
 local EDITOR_VERSION = 'Neovim/'
   .. vim.version().major
   .. '.'
@@ -116,6 +71,51 @@ local function get_github_token()
 
   error('Failed to find GitHub token')
 end
+
+---@class CopilotChat.Provider.model
+---@field id string
+---@field name string
+---@field tokenizer string?
+---@field max_input_tokens number?
+---@field max_output_tokens number?
+
+---@class CopilotChat.Provider.agent
+---@field id string
+---@field name string
+---@field description string?
+
+---@class CopilotChat.Provider.embed
+---@field index number
+---@field embedding table<number>
+
+---@class CopilotChat.Provider.options
+---@field model CopilotChat.Provider.model
+---@field agent CopilotChat.Provider.agent?
+---@field temperature number?
+
+---@class CopilotChat.Provider.input
+---@field role string
+---@field content string
+
+---@class CopilotChat.Provider.reference
+---@field name string
+---@field url string
+
+---@class CopilotChat.Provider.output
+---@field content string
+---@field finish_reason string?
+---@field total_tokens number?
+---@field references table<CopilotChat.Provider.reference>?
+
+---@class CopilotChat.Provider
+---@field disabled nil|boolean
+---@field get_headers nil|fun():table<string, string>,number?
+---@field get_agents nil|fun(headers:table):table<CopilotChat.Provider.agent>
+---@field get_models nil|fun(headers:table):table<CopilotChat.Provider.model>
+---@field embed nil|string|fun(inputs:table<string>, headers:table):table<CopilotChat.Provider.embed>
+---@field prepare_input nil|fun(inputs:table<CopilotChat.Provider.input>, opts:CopilotChat.Provider.options):table
+---@field prepare_output nil|fun(output:table, opts:CopilotChat.Provider.options):CopilotChat.Provider.output
+---@field get_url nil|fun(opts:CopilotChat.Provider.options):string
 
 ---@type table<string, CopilotChat.Provider>
 local M = {}
