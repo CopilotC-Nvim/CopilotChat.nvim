@@ -165,7 +165,8 @@ Default mappings in the chat interface:
 | `<C-c>` | `q`     | Close the chat window                      |
 | `<C-l>` | `<C-l>` | Reset and clear the chat window            |
 | `<C-s>` | `<CR>`  | Submit the current prompt                  |
-| -       | `gr`    | Toggle sticky prompt for line under cursor |
+| -       | `grr`   | Toggle sticky prompt for line under cursor |
+| -       | `grx`   | Clear all sticky prompts in prompt         |
 | `<C-y>` | `<C-y>` | Accept nearest diff                        |
 | -       | `gj`    | Jump to section of nearest diff            |
 | -       | `gqa`   | Add all answers from chat to quickfix list |
@@ -581,7 +582,10 @@ Below are all available configuration options with their default values:
       insert = '<C-s>',
     },
     toggle_sticky = {
-      normal = 'gr',
+      normal = 'grr',
+    },
+    clear_stickies = {
+      normal = 'grx',
     },
     accept_diff = {
       normal = '<C-y>',
