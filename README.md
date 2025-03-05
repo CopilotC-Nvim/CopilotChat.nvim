@@ -391,7 +391,7 @@ Providers are modules that implement integration with different AI providers.
 
 ### Built-in Providers
 
-- `copilot` - Default GitHub Copilot provider used for chat and embeddings
+- `copilot` - Default GitHub Copilot provider used for chat
 - `github_models` - Provider for GitHub Marketplace models
 - `copilot_embeddings` - Provider for Copilot embeddings, not standalone
 
@@ -408,7 +408,7 @@ Custom providers can implement these methods:
   embed?: string|function,
 
   -- Optional: Get extra request headers with optional expiration time
-  get_headers(?): table<string,string>, number?,
+  get_headers?(): table<string,string>, number?,
 
   -- Optional: Get API endpoint URL
   get_url?(opts: CopilotChat.Provider.options): string,
@@ -495,7 +495,7 @@ Below are all available configuration options with their default values:
   separator = '───', -- Separator to use in chat
 
   -- default selection
-  -- see config/select.lua for implementation
+  -- see select.lua for implementation
   selection = function(source)
     return select.visual(source) or select.buffer(source)
   end,
