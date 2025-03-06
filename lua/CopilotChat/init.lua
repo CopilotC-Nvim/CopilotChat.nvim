@@ -464,8 +464,8 @@ function M.set_selection(bufnr, start_line, end_line, clear)
 end
 
 --- Trigger the completion for the chat window.
----@param with_context boolean?
-function M.trigger_complete(with_context)
+---@param without_context boolean?
+function M.trigger_complete(without_context)
   local info = M.complete_info()
   local bufnr = vim.api.nvim_get_current_buf()
   local line = vim.api.nvim_get_current_line()
@@ -481,7 +481,7 @@ function M.trigger_complete(with_context)
     return
   end
 
-  if with_context and vim.startswith(prefix, '#') and vim.endswith(prefix, ':') then
+  if not without_context and vim.startswith(prefix, '#') and vim.endswith(prefix, ':') then
     local found_context = M.config.contexts[prefix:sub(2, -2)]
     if found_context and found_context.input then
       async.run(function()
@@ -1110,7 +1110,9 @@ function M.setup(config)
             local char = line:sub(col, col)
 
             if vim.tbl_contains(M.complete_info().triggers, char) then
-              utils.debounce('complete', M.trigger_complete, 100)
+              utils.debounce('complete', function()
+                M.trigger_complete(true)
+              end, 100)
             end
           end,
         })

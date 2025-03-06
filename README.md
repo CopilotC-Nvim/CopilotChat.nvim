@@ -656,64 +656,102 @@ Types of copilot highlights:
 
 # API Reference
 
+## Core Chat Functions
+
 ```lua
 local chat = require("CopilotChat")
 
+-- Basic Chat Functions
+chat.ask(prompt, config)      -- Ask a question with optional config
+chat.response()               -- Get the last response text
+chat.resolve_prompt()         -- Resolve prompt references
+chat.resolve_context()        -- Resolve context embeddings
+chat.resolve_agent()          -- Resolve agent from prompt
+chat.resolve_model()          -- Resolve model from prompt
+
 -- Window Management
+chat.open(config)             -- Open chat window with optional config
+chat.close()                  -- Close chat window
+chat.toggle(config)           -- Toggle chat window visibility with optional config
+chat.reset()                  -- Reset the chat
+chat.stop()                   -- Stop current output
 
--- Open chat window with optional config
-chat.open({
-  window = {
-    layout = 'float',
-    title = 'Custom Chat',
-  },
-})
+-- Selection Management
+chat.get_selection()                                   -- Get the current selection
+chat.set_selection(bufnr, start_line, end_line, clear) -- Set or clear selection
 
-chat.close()    -- Close chat window
-chat.toggle()   -- Toggle chat window
-chat.reset()    -- Reset chat window
-chat.stop()     -- Stop current output
+-- Prompt & Context Management
+chat.select_prompt(config)    -- Open prompt selector with optional config
+chat.select_model()           -- Open model selector
+chat.select_agent()           -- Open agent selector
+chat.prompts()                -- Get all available prompts
 
--- Chat Interaction
-
--- Ask a question with optional config
-chat.ask("Explain this code.", {
-  context = { 'buffers', 'files' },
-  callback = function(response)
-    print("Response:", response)
-  end,
-})
-
-chat.select_model() -- Open model selector
-chat.select_agent() -- Open agent selector
-
--- Open prompt selector with optional config
-chat.select_prompt({
-    callback = function(response)
-        print("Response:", response)
-    end,
-})
+-- Completion
+chat.trigger_complete()       -- Trigger completion in chat window
+chat.complete_info()          -- Get completion info for custom providers
+chat.complete_items(callback) -- Get completion items asynchronously
 
 -- History Management
-chat.save("my_chat", "my_history_path") -- Save chat history with optional history path
-chat.load("my_chat", "my_history_path") -- Load chat history with optional history path
+chat.save(name, history_path) -- Save chat history
+chat.load(name, history_path) -- Load chat history
 
--- Utilities
-chat.response()  -- Get last response
-chat.log_level("debug")  -- Set log level
+-- Configuration
+chat.setup(config)            -- Update configuration
+chat.log_level(level)         -- Set log level (debug, info, etc.)
+```
 
--- Update config
-chat.setup({
-    model = 'gpt-4',
-    window = {
-        layout = 'float'
-    }
+## Chat Window UI API
+
+You can also access the chat window UI methods through the `chat.chat` object:
+
+```lua
+local chat = require("CopilotChat")
+
+-- Chat UI State
+chat.chat:visible()             -- Check if chat window is visible
+chat.chat:focused()             -- Check if chat window is focused
+
+-- Content Management
+chat.chat:get_prompt()          -- Get current prompt from chat window
+chat.chat:set_prompt(prompt)    -- Set prompt in chat window
+chat.chat:append(text)          -- Append text to chat window
+chat.chat:clear()               -- Clear chat window content
+chat.chat:finish()              -- Finish writing to chat window
+
+-- Navigation
+chat.chat:follow()              -- Move cursor to end of chat content
+chat.chat:focus()               -- Focus the chat window
+
+-- Advanced Features
+chat.chat:get_closest_section() -- Get section closest to cursor
+chat.chat:get_closest_block()   -- Get code block closest to cursor
+chat.chat:overlay(opts)         -- Show overlay with specified options
+```
+
+## Example Usage
+
+```lua
+-- Open chat, ask a question and handle response
+require("CopilotChat").open()
+require("CopilotChat").ask("Explain this code", {
+  callback = function(response)
+    vim.notify("Got response: " .. response:sub(1, 50) .. "...")
+  end,
+  context = "#buffer"
+})
+
+-- Save and load chat history
+require("CopilotChat").save("my_debugging_session")
+require("CopilotChat").load("my_debugging_session")
+
+-- Use custom context and model
+require("CopilotChat").ask("How can I optimize this?", {
+  model = "gpt-4o",
+  context = {"#buffer", "#git:staged"}
 })
 ```
 
-# Examples
-
-For examples, see the [examples wiki page](https://github.com/CopilotC-Nvim/CopilotChat.nvim/wiki/Examples-and-Tips).
+For more examples, see the [examples wiki page](https://github.com/CopilotC-Nvim/CopilotChat.nvim/wiki/Examples-and-Tips).
 
 # Development
 
