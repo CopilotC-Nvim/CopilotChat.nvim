@@ -23,6 +23,7 @@ local select = require('CopilotChat.select')
 ---@field headless boolean?
 ---@field callback fun(response: string, source: CopilotChat.source)?
 ---@field remember_as_sticky boolean?
+---@field selection false|nil|fun(source: CopilotChat.source):CopilotChat.select.selection?
 ---@field window CopilotChat.config.window?
 ---@field show_help boolean?
 ---@field show_folds boolean?
@@ -47,7 +48,6 @@ local select = require('CopilotChat.select')
 ---@field answer_header string?
 ---@field error_header string?
 ---@field separator string?
----@field selection false|nil|fun(source: CopilotChat.source):CopilotChat.select.selection?
 ---@field providers table<string, CopilotChat.Provider>?
 ---@field contexts table<string, CopilotChat.config.context>?
 ---@field prompts table<string, CopilotChat.config.prompt|string>?
@@ -67,6 +67,11 @@ return {
   headless = false, -- Do not write to chat buffer and use history(useful for using callback for custom processing)
   callback = nil, -- Callback to use when ask response is received
   remember_as_sticky = true, -- Remember model/agent/context as sticky prompts when asking questions
+
+  -- default selection
+  selection = function(source)
+    return select.visual(source) or select.buffer(source)
+  end,
 
   -- default window options
   window = {
@@ -109,11 +114,6 @@ return {
   answer_header = '## Copilot ', -- Header to use for AI answers
   error_header = '## Error ', -- Header to use for errors
   separator = '───', -- Separator to use in chat
-
-  -- default selection
-  selection = function(source)
-    return select.visual(source) or select.buffer(source)
-  end,
 
   -- default providers
   providers = require('CopilotChat.config.providers'),

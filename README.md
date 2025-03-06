@@ -364,7 +364,7 @@ Define your own contexts in the configuration with input handling and resolution
 
 ## Selections
 
-Selections determine the source content for chat interactions. Can be configured only globally.
+Selections determine the source content for chat interactions.
 
 Available selections are located in `local select = require("CopilotChat.select")`:
 
@@ -455,6 +455,12 @@ Below are all available configuration options with their default values:
   callback = nil, -- Callback to use when ask response is received
   remember_as_sticky = true, -- Remember model/agent/context as sticky prompts when asking questions
 
+  -- default selection
+  -- see select.lua for implementation
+  selection = function(source)
+    return select.visual(source) or select.buffer(source)
+  end,
+
   -- default window options
   window = {
     layout = 'vertical', -- 'vertical', 'horizontal', 'float', 'replace'
@@ -495,12 +501,6 @@ Below are all available configuration options with their default values:
   answer_header = '# Copilot ', -- Header to use for AI answers
   error_header = '# Error ', -- Header to use for errors
   separator = '───', -- Separator to use in chat
-
-  -- default selection
-  -- see select.lua for implementation
-  selection = function(source)
-    return select.visual(source) or select.buffer(source)
-  end,
 
   -- default providers
   -- see config/providers.lua for implementation
