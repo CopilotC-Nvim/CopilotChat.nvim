@@ -417,7 +417,8 @@ end
 --- Get the selection from the source buffer.
 ---@return CopilotChat.select.selection?
 function M.get_selection()
-  local selection = M.chat.config.selection or M.config.selection
+  local config = vim.tbl_deep_extend('force', M.config, M.chat.config)
+  local selection = config.selection
   local bufnr = state.source and state.source.bufnr
   local winnr = state.source and state.source.winnr
 
