@@ -139,7 +139,7 @@ return {
   complete = {
     insert = '<Tab>',
     callback = function()
-      copilot.trigger_complete(true)
+      copilot.trigger_complete()
     end,
   },
 
