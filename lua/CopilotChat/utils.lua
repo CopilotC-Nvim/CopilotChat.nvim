@@ -322,6 +322,7 @@ end
 --- Send curl get request
 ---@param url string The url
 ---@param opts table? The options
+---@async
 M.curl_get = async.wrap(function(url, opts, callback)
   local args = {
     on_error = function(err)
@@ -359,6 +360,7 @@ end, 3)
 --- Send curl post request
 ---@param url string The url
 ---@param opts table? The options
+---@async
 M.curl_post = async.wrap(function(url, opts, callback)
   local args = {
     callback = callback,
@@ -411,6 +413,7 @@ end, 3)
 --- Scan a directory
 ---@param path string The directory path
 ---@param opts table The options
+---@async
 M.scan_dir = async.wrap(function(path, opts, callback)
   scandir.scan_dir_async(
     path,
@@ -428,6 +431,7 @@ end, 3)
 --- Get last modified time of a file
 ---@param path string The file path
 ---@return number?
+---@async
 M.file_mtime = function(path)
   local err, stat = async.uv.fs_stat(path)
   if err or not stat then
@@ -438,6 +442,7 @@ end
 
 --- Read a file
 ---@param path string The file path
+---@async
 M.read_file = function(path)
   local err, fd = async.uv.fs_open(path, 'r', 438)
   if err or not fd then
@@ -460,12 +465,14 @@ end
 
 --- Call a system command
 ---@param cmd table The command
+---@async
 M.system = async.wrap(function(cmd, callback)
   vim.system(cmd, { text = true }, callback)
 end, 2)
 
 --- Schedule a function only when needed (not on main thread)
 ---@param callback function The callback
+---@async
 M.schedule_main = async.wrap(function(callback)
   if vim.in_fast_event() then
     -- In a fast event, need to schedule

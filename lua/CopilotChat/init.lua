@@ -134,7 +134,10 @@ local function update_highlights()
     return
   end
 
-  M.complete_items(function(items)
+  async.run(function()
+    local items = M.complete_items()
+    utils.schedule_main()
+
     for _, item in ipairs(items) do
       local pattern = vim.fn.escape(item.word, '.-$^*[]')
       if vim.startswith(item.word, '#') then
@@ -310,6 +313,7 @@ end
 ---@param prompt string?
 ---@param config CopilotChat.config.shared?
 ---@return table<CopilotChat.context.embed>, string
+---@async
 function M.resolve_context(prompt, config)
   config, prompt = M.resolve_prompt(prompt, config)
 
@@ -372,6 +376,7 @@ end
 ---@param prompt string?
 ---@param config CopilotChat.config.shared?
 ---@return string, string
+---@async
 function M.resolve_agent(prompt, config)
   config, prompt = M.resolve_prompt(prompt, config)
 
@@ -395,6 +400,7 @@ end
 ---@param prompt string?
 ---@param config CopilotChat.config.shared?
 ---@return string, string
+---@async
 function M.resolve_model(prompt, config)
   config, prompt = M.resolve_prompt(prompt, config)
 
@@ -504,7 +510,10 @@ function M.trigger_complete(without_context)
     return
   end
 
-  M.complete_items(function(items)
+  async.run(function()
+    local items = M.complete_items()
+    utils.schedule_main()
+
     if vim.fn.mode() ~= 'i' then
       return
     end
@@ -528,84 +537,82 @@ function M.complete_info()
 end
 
 --- Get the completion items for the chat window, for use with custom completion providers
----@param callback function(table)
-function M.complete_items(callback)
-  async.run(function()
-    local models = client:list_models()
-    local agents = client:list_agents()
-    local prompts_to_use = M.prompts()
-    local items = {}
+---@return table
+---@async
+function M.complete_items()
+  local models = client:list_models()
+  local agents = client:list_agents()
+  local prompts_to_use = M.prompts()
+  local items = {}
 
-    for name, prompt in pairs(prompts_to_use) do
-      local kind = ''
-      local info = ''
-      if prompt.prompt then
-        kind = 'user'
-        info = prompt.prompt
-      elseif prompt.system_prompt then
-        kind = 'system'
-        info = prompt.system_prompt
-      end
-
-      items[#items + 1] = {
-        word = '/' .. name,
-        abbr = name,
-        kind = kind,
-        info = info,
-        menu = prompt.description or '',
-        icase = 1,
-        dup = 0,
-        empty = 0,
-      }
+  for name, prompt in pairs(prompts_to_use) do
+    local kind = ''
+    local info = ''
+    if prompt.prompt then
+      kind = 'user'
+      info = prompt.prompt
+    elseif prompt.system_prompt then
+      kind = 'system'
+      info = prompt.system_prompt
     end
 
-    for _, model in ipairs(models) do
-      items[#items + 1] = {
-        word = '$' .. model.id,
-        abbr = model.id,
-        kind = model.provider,
-        menu = model.name,
-        icase = 1,
-        dup = 0,
-        empty = 0,
-      }
+    items[#items + 1] = {
+      word = '/' .. name,
+      abbr = name,
+      kind = kind,
+      info = info,
+      menu = prompt.description or '',
+      icase = 1,
+      dup = 0,
+      empty = 0,
+    }
+  end
+
+  for _, model in ipairs(models) do
+    items[#items + 1] = {
+      word = '$' .. model.id,
+      abbr = model.id,
+      kind = model.provider,
+      menu = model.name,
+      icase = 1,
+      dup = 0,
+      empty = 0,
+    }
+  end
+
+  for _, agent in pairs(agents) do
+    items[#items + 1] = {
+      word = '@' .. agent.id,
+      abbr = agent.id,
+      kind = agent.provider,
+      info = agent.description,
+      menu = agent.name,
+      icase = 1,
+      dup = 0,
+      empty = 0,
+    }
+  end
+
+  for name, value in pairs(M.config.contexts) do
+    items[#items + 1] = {
+      word = '#' .. name,
+      abbr = name,
+      kind = 'context',
+      menu = value.description or '',
+      icase = 1,
+      dup = 0,
+      empty = 0,
+    }
+  end
+
+  table.sort(items, function(a, b)
+    if a.kind == b.kind then
+      return a.word < b.word
     end
-
-    for _, agent in pairs(agents) do
-      items[#items + 1] = {
-        word = '@' .. agent.id,
-        abbr = agent.id,
-        kind = agent.provider,
-        info = agent.description,
-        menu = agent.name,
-        icase = 1,
-        dup = 0,
-        empty = 0,
-      }
-    end
-
-    for name, value in pairs(M.config.contexts) do
-      items[#items + 1] = {
-        word = '#' .. name,
-        abbr = name,
-        kind = 'context',
-        menu = value.description or '',
-        icase = 1,
-        dup = 0,
-        empty = 0,
-      }
-    end
-
-    table.sort(items, function(a, b)
-      if a.kind == b.kind then
-        return a.word < b.word
-      end
-      return a.kind < b.kind
-    end)
-
-    utils.schedule_main()
-    callback(items)
+    return a.kind < b.kind
   end)
+
+  return items
 end
 
 --- Get the prompts to use.
