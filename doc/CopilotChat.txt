@@ -723,9 +723,9 @@ CORE CHAT FUNCTIONS                          *CopilotChat-core-chat-functions*
     chat.ask(prompt, config)      -- Ask a question with optional config
     chat.response()               -- Get the last response text
     chat.resolve_prompt()         -- Resolve prompt references
-    chat.resolve_context()        -- Resolve context embeddings
-    chat.resolve_agent()          -- Resolve agent from prompt
-    chat.resolve_model()          -- Resolve model from prompt
+    chat.resolve_context()        -- Resolve context embeddings (WARN: async, requires plenary.async.run)
+    chat.resolve_agent()          -- Resolve agent from prompt (WARN: async, requires plenary.async.run)
+    chat.resolve_model()          -- Resolve model from prompt (WARN: async, requires plenary.async.run)
     
     -- Window Management
     chat.open(config)             -- Open chat window with optional config
@@ -747,7 +747,7 @@ CORE CHAT FUNCTIONS                          *CopilotChat-core-chat-functions*
     -- Completion
     chat.trigger_complete()       -- Trigger completion in chat window
     chat.complete_info()          -- Get completion info for custom providers
-    chat.complete_items(callback) -- Get completion items asynchronously
+    chat.complete_items()         -- Get completion items (WARN: async, requires plenary.async.run)
     
     -- History Management
     chat.save(name, history_path) -- Save chat history
