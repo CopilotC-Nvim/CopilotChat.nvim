@@ -419,9 +419,15 @@ function Client:ask(prompt, opts)
 
   notify.publish(notify.STATUS, 'Generating request')
 
-  local references = {}
+  local references = utils.ordered_map()
+  if selection and selection.content then
+    references:set(selection.filename, {
+      name = utils.filename(selection.filename),
+      url = selection.filename,
+    })
+  end
   for _, embed in ipairs(embeddings) do
-    table.insert(references, {
+    references:set(embed.filename, {
       name = utils.filename(embed.filename),
       url = embed.filename,
     })
@@ -530,7 +536,7 @@ function Client:ask(prompt, opts)
 
     if out.references then
       for _, reference in ipairs(out.references) do
-        table.insert(references, reference)
+        references:set(reference.name, reference)
       end
     end
 
@@ -675,7 +681,10 @@ function Client:ask(prompt, opts)
     log.debug('History size increased to: ', #history)
   end
 
-  return full_response, references, last_message and last_message.total_tokens or 0, max_tokens
+  return full_response,
+    references:values(),
+    last_message and last_message.total_tokens or 0,
+    max_tokens
 end
 
 --- List available models
