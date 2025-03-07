@@ -907,6 +907,7 @@ function M.stop(reset)
   if reset then
     client:reset()
     M.chat:clear()
+    vim.diagnostic.reset(vim.api.nvim_create_namespace('copilot-chat-diagnostics'))
     state.last_prompt = nil
     state.last_response = nil
 
