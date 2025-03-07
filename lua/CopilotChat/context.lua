@@ -12,6 +12,7 @@
 ---@field filename string
 ---@field filetype string
 ---@field outline string?
+---@field diagnostics table<CopilotChat.Diagnostic>?
 ---@field symbols table<string, CopilotChat.context.symbol>?
 ---@field embedding table<number>?
 ---@field score number?
@@ -477,6 +478,7 @@ function M.buffer(bufnr)
   )
 
   out.score = 0.1
+  out.diagnostics = utils.diagnostics(bufnr)
   return out
 end
 

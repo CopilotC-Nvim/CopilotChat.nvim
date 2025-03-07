@@ -101,6 +101,26 @@ local function generate_content_block(content, outline, threshold, start_line)
   return content
 end
 
+--- Generate diagnostics message
+---@param diagnostics table<CopilotChat.Diagnostic>
+---@return string
+local function generate_diagnostics(diagnostics)
+  local out = {}
+  for _, diagnostic in ipairs(diagnostics) do
+    table.insert(
+      out,
+      string.format(
+        '%s line=%d-%d: %s',
+        diagnostic.severity,
+        diagnostic.start_line,
+        diagnostic.end_line,
+        diagnostic.content
+      )
+    )
+  end
+  return table.concat(out, '\n')
+end
+
 --- Generate messages for the given selection
 --- @param selection CopilotChat.select.selection
 --- @return table<CopilotChat.Provider.input>
@@ -132,24 +152,10 @@ local function generate_selection_messages(selection)
     )
 
   if selection.diagnostics then
-    local diagnostics = {}
-    for _, diagnostic in ipairs(selection.diagnostics) do
-      table.insert(
-        diagnostics,
-        string.format(
-          '%s line=%d-%d: %s',
-          diagnostic.severity,
-          diagnostic.start_line,
-          diagnostic.end_line,
-          diagnostic.content
-        )
-      )
-    end
-
     out = out
       .. string.format(
         "\nDiagnostics in user's active selection:\n%s",
-        table.concat(diagnostics, '\n')
+        generate_diagnostics(selection.diagnostics)
       )
   end
 
@@ -167,14 +173,25 @@ end
 --- @return table<CopilotChat.Provider.input>
 local function generate_embeddings_messages(embeddings)
   return vim.tbl_map(function(embedding)
+    local out = string.format(
+      '# FILE:%s CONTEXT\n```%s\n%s\n```',
+      embedding.filename:upper(),
+      embedding.filetype or 'text',
+      generate_content_block(embedding.content, embedding.outline, BIG_FILE_THRESHOLD)
+    )
+
+    if embedding.diagnostics then
+      out = out
+        .. string.format(
+          '\nFILE:%s DIAGNOSTICS:\n%s',
+          embedding.filename:upper(),
+          generate_diagnostics(embedding.diagnostics)
+        )
+    end
+
     return {
       context = string.format(CONTEXT_FORMAT, embedding.filename, embedding.filename),
-      content = string.format(
-        '# FILE:%s CONTEXT\n```%s\n%s\n```',
-        embedding.filename:upper(),
-        embedding.filetype or 'text',
-        generate_content_block(embedding.content, embedding.outline, BIG_FILE_THRESHOLD)
-      ),
+      content = out,
       role = 'user',
     }
   end, embeddings)

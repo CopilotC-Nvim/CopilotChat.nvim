@@ -536,4 +536,40 @@ function M.glob_to_regex(glob)
   return pattern .. '$'
 end
 
+---@class CopilotChat.Diagnostic
+---@field content string
+---@field start_line number
+---@field end_line number
+---@field severity string
+
+--- Get diagnostics in a given range
+--- @param bufnr number
+--- @param start_line number?
+--- @param end_line number?
+--- @return table<CopilotChat.Diagnostic>|nil
+function M.diagnostics(bufnr, start_line, end_line)
+  local diagnostics = vim.diagnostic.get(bufnr)
+  local range_diagnostics = {}
+  local severity = {
+    [1] = 'ERROR',
+    [2] = 'WARNING',
+    [3] = 'INFORMATION',
+    [4] = 'HINT',
+  }
+
+  for _, diagnostic in ipairs(diagnostics) do
+    local lnum = diagnostic.lnum + 1
+    if (not start_line or lnum >= start_line) and (not end_line or lnum <= end_line) then
+      table.insert(range_diagnostics, {
+        severity = severity[diagnostic.severity],
+        content = diagnostic.message,
+        start_line = lnum,
+        end_line = diagnostic.end_lnum and diagnostic.end_lnum + 1 or lnum,
+      })
+    end
+  end
+
+  return #range_diagnostics > 0 and range_diagnostics or nil
+end
+
 return M
