@@ -1,9 +1,3 @@
----@class CopilotChat.select.selection.diagnostic
----@field content string
----@field start_line number
----@field end_line number
----@field severity string
-
 ---@class CopilotChat.select.selection
 ---@field content string
 ---@field start_line number
@@ -11,40 +5,10 @@
 ---@field filename string
 ---@field filetype string
 ---@field bufnr number
----@field diagnostics table<CopilotChat.select.selection.diagnostic>?
+---@field diagnostics table<CopilotChat.Diagnostic>?
 
 local utils = require('CopilotChat.utils')
 local M = {}
-
---- Get diagnostics in a given range
---- @param bufnr number
---- @param start_line number
---- @param end_line number
---- @return table<CopilotChat.select.selection.diagnostic>|nil
-local function get_diagnostics_in_range(bufnr, start_line, end_line)
-  local diagnostics = vim.diagnostic.get(bufnr)
-  local range_diagnostics = {}
-  local severity = {
-    [1] = 'ERROR',
-    [2] = 'WARNING',
-    [3] = 'INFORMATION',
-    [4] = 'HINT',
-  }
-
-  for _, diagnostic in ipairs(diagnostics) do
-    local lnum = diagnostic.lnum + 1
-    if lnum >= start_line and lnum <= end_line then
-      table.insert(range_diagnostics, {
-        severity = severity[diagnostic.severity],
-        content = diagnostic.message,
-        start_line = lnum,
-        end_line = diagnostic.end_lnum and diagnostic.end_lnum + 1 or lnum,
-      })
-    end
-  end
-
-  return #range_diagnostics > 0 and range_diagnostics or nil
-end
 
 --- Select and process current visual selection
 --- @param source CopilotChat.source
@@ -76,7 +40,7 @@ function M.visual(source)
     start_line = start_line,
     end_line = finish_line,
     bufnr = bufnr,
-    diagnostics = get_diagnostics_in_range(bufnr, start_line, finish_line),
+    diagnostics = utils.diagnostics(bufnr, start_line, finish_line),
   }
 end
 
@@ -99,7 +63,7 @@ function M.buffer(source)
     bufnr = bufnr,
   }
 
-  out.diagnostics = get_diagnostics_in_range(bufnr, out.start_line, out.end_line)
+  out.diagnostics = utils.diagnostics(bufnr, out.start_line, out.end_line)
   return out
 end
 
@@ -124,7 +88,7 @@ function M.line(source)
     bufnr = bufnr,
   }
 
-  out.diagnostics = get_diagnostics_in_range(bufnr, out.start_line, out.end_line)
+  out.diagnostics = utils.diagnostics(bufnr, out.start_line, out.end_line)
   return out
 end
 
@@ -158,7 +122,7 @@ function M.unnamed(source)
     start_line = start_line,
     end_line = finish_line,
     bufnr = bufnr,
-    diagnostics = get_diagnostics_in_range(bufnr, start_line, finish_line),
+    diagnostics = utils.diagnostics(bufnr, start_line, finish_line),
   }
 end
 
