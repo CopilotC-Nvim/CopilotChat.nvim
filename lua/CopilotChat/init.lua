@@ -837,9 +837,11 @@ function M.ask(prompt, config)
       return
     end
 
+    pcall(client.summarize_memory, client, selected_model)
     local ask_ok, response, references, token_count, token_max_count =
       pcall(client.ask, client, prompt, {
-        headless = config.headless,
+        load_history = not config.headless,
+        store_history = not config.headless,
         selection = selection,
         embeddings = filtered_embeddings,
         system_prompt = system_prompt,
@@ -993,6 +995,7 @@ function M.load(name, history_path)
   client:reset()
   M.chat:clear()
 
+  client.history = history
   for i, message in ipairs(history) do
     if message.role == 'user' then
       if i > 1 then
