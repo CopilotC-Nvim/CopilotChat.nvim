@@ -2,7 +2,9 @@ local async = require('plenary.async')
 local curl = require('plenary.curl')
 local scandir = require('plenary.scandir')
 
-local DEFAULT_REQUEST_ARGS = {
+local M = {}
+M.timers = {}
+M.curl_args = {
   timeout = 30000,
   raw = {
     '--retry',
@@ -18,10 +20,6 @@ local DEFAULT_REQUEST_ARGS = {
     '--no-buffer',
   },
 }
-
-local M = {}
-M.timers = {}
-M.curl_args = {}
 
 ---@class Class
 ---@field new fun(...):table
@@ -226,31 +224,6 @@ function M.filepath(filename)
   return vim.fn.fnamemodify(filename, ':p:.')
 end
 
---- Generate a UUID
----@return string
-function M.uuid()
-  local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
-  return (
-    string.gsub(template, '[xy]', function(c)
-      local v = (c == 'x') and math.random(0, 0xf) or math.random(8, 0xb)
-      return string.format('%x', v)
-    end)
-  )
-end
-
---- Generate machine id
----@return string
-function M.machine_id()
-  local length = 65
-  local hex_chars = '0123456789abcdef'
-  local hex = ''
-  for _ = 1, length do
-    local index = math.random(1, #hex_chars)
-    hex = hex .. hex_chars:sub(index, index)
-  end
-  return hex
-end
-
 --- Generate a quick hash
 ---@param str string The string to hash
 ---@return string
@@ -293,18 +266,10 @@ function M.win_cwd(winnr)
   return dir
 end
 
---- Store curl global arguments
----@param args table The arguments
----@return table
-M.curl_store_args = function(args)
-  M.curl_args = vim.tbl_deep_extend('force', M.curl_args, args)
-  return M.curl_args
-end
-
 --- Decode json
 ---@param body string The json string
 ---@return table, string?
-M.json_decode = function(body)
+function M.json_decode(body)
   local ok, data = pcall(vim.json.decode, body, {
     luanil = {
       object = true,
@@ -319,6 +284,14 @@ M.json_decode = function(body)
   return {}, data
 end
 
+--- Store curl global arguments
+---@param args table The arguments
+---@return table
+function M.curl_store_args(args)
+  M.curl_args = vim.tbl_deep_extend('force', M.curl_args, args)
+  return M.curl_args
+end
+
 --- Send curl get request
 ---@param url string The url
 ---@param opts table? The options
@@ -330,7 +303,6 @@ M.curl_get = async.wrap(function(url, opts, callback)
     end,
   }
 
-  args = vim.tbl_deep_extend('force', DEFAULT_REQUEST_ARGS, args)
   args = vim.tbl_deep_extend('force', M.curl_args, args)
   args = vim.tbl_deep_extend('force', args, opts or {})
 
@@ -369,7 +341,6 @@ M.curl_post = async.wrap(function(url, opts, callback)
     end,
   }
 
-  args = vim.tbl_deep_extend('force', DEFAULT_REQUEST_ARGS, args)
   args = vim.tbl_deep_extend('force', M.curl_args, args)
   args = vim.tbl_deep_extend('force', args, opts or {})
 
@@ -432,7 +403,7 @@ end, 3)
 ---@param path string The file path
 ---@return number?
 ---@async
-M.file_mtime = function(path)
+function M.file_mtime(path)
   local err, stat = async.uv.fs_stat(path)
   if err or not stat then
     return nil
@@ -443,7 +414,7 @@ end
 --- Read a file
 ---@param path string The file path
 ---@async
-M.read_file = function(path)
+function M.read_file(path)
   local err, fd = async.uv.fs_open(path, 'r', 438)
   if err or not fd then
     return nil
