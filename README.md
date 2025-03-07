@@ -532,6 +532,8 @@ Below are all available configuration options with their default values:
     },
     quickfix = {
     },
+    system = {
+    }
   },
 
   -- default prompts
