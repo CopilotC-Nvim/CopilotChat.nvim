@@ -542,11 +542,11 @@ Below are all available configuration options with their default values:
   prompts = {
     Explain = {
       prompt = 'Write an explanation for the selected code as paragraphs of text.',
-      sticky = '/COPILOT_EXPLAIN',
+      system_prompt = 'COPILOT_EXPLAIN',
     },
     Review = {
       prompt = 'Review the selected code.',
-      sticky = '/COPILOT_REVIEW',
+      system_prompt = 'COPILOT_REVIEW',
     },
     Fix = {
       prompt = 'There is a problem in this code. Identify the issues and rewrite the code with fixes. Explain what was wrong and how your changes address the problems.',
@@ -562,7 +562,7 @@ Below are all available configuration options with their default values:
     },
     Commit = {
       prompt = 'Write commit message for the change with commitizen convention. Keep the title under 50 characters and wrap message at 72 characters. Format as a gitcommit code block.',
-      sticky = '#git:staged',
+      context = 'git:staged',
     },
   },
 

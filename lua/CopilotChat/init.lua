@@ -63,6 +63,15 @@ local function insert_sticky(prompt, config, override_sticky)
 
   if
     config.remember_as_sticky
+    and config.system_prompt
+    and config.system_prompt ~= M.config.system_prompt
+    and M.config.prompts[config.system_prompt]
+  then
+    stickies:set('/' .. config.system_prompt, true)
+  end
+
+  if
+    config.remember_as_sticky
     and config.context
     and not vim.deep_equal(config.context, M.config.context)
   then
@@ -626,6 +635,10 @@ function M.prompts()
       val = {
         prompt = prompt,
       }
+    end
+
+    if val.system_prompt and M.config.prompts[val.system_prompt] then
+      val.system_prompt = M.config.prompts[val.system_prompt].system_prompt
     end
 
     prompts_to_use[name] = val
