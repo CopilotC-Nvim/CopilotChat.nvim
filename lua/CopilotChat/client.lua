@@ -696,18 +696,15 @@ function Client:ask(prompt, opts)
   log.debug('Last message: ', last_message)
 
   if opts.store_history then
-    table.insert(history, {
+    table.insert(self.history, {
       content = prompt,
       role = 'user',
     })
 
-    table.insert(history, {
+    table.insert(self.history, {
       content = full_response,
       role = 'assistant',
     })
-
-    self.history = history
-    log.debug('History size increased to: ', #history)
   end
 
   return full_response,
