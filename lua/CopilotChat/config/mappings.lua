@@ -1,5 +1,6 @@
 local async = require('plenary.async')
 local copilot = require('CopilotChat')
+local client = require('CopilotChat.client')
 local utils = require('CopilotChat.utils')
 
 ---@class CopilotChat.config.mappings.diff
@@ -469,6 +470,16 @@ return {
           table.insert(lines, '**System Prompt**')
           table.insert(lines, '```')
           for _, line in ipairs(vim.split(vim.trim(system_prompt), '\n')) do
+            table.insert(lines, line)
+          end
+          table.insert(lines, '```')
+          table.insert(lines, '')
+        end
+
+        if client.memory then
+          table.insert(lines, '**Memory**')
+          table.insert(lines, '```')
+          for _, line in ipairs(vim.split(vim.trim(client.memory.content), '\n')) do
             table.insert(lines, line)
           end
           table.insert(lines, '```')
