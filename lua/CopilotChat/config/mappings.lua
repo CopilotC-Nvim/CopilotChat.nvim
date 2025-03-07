@@ -552,11 +552,9 @@ return {
         return a < b
       end)
       for _, name in ipairs(chat_keys) do
-        if name ~= 'close' then
-          local info = utils.key_to_info(name, copilot.config.mappings[name], '`')
-          if info ~= '' then
-            chat_help = chat_help .. info .. '\n'
-          end
+        local info = utils.key_to_info(name, copilot.config.mappings[name], '`')
+        if info ~= '' then
+          chat_help = chat_help .. info .. '\n'
         end
       end
 
