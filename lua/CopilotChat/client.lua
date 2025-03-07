@@ -1,18 +1,23 @@
 ---@class CopilotChat.Client.ask
----@field headless boolean
+---@field load_history boolean
+---@field store_history boolean
 ---@field selection CopilotChat.select.selection?
 ---@field embeddings table<CopilotChat.context.embed>?
 ---@field system_prompt string
 ---@field model string
----@field agent string
+---@field agent string?
 ---@field temperature number
----@field on_progress fun(response: string):nil
+---@field on_progress? fun(response: string):nil
 
 ---@class CopilotChat.Client.model : CopilotChat.Provider.model
 ---@field provider string
 
 ---@class CopilotChat.Client.agent : CopilotChat.Provider.agent
 ---@field provider string
+
+---@class CopilotChat.Client.memory
+---@field content string
+---@field last_summarized_index number
 
 local log = require('plenary.log')
 local tiktoken = require('CopilotChat.tiktoken')
@@ -177,16 +182,29 @@ end
 
 --- Generate ask request
 --- @param history table<CopilotChat.Provider.input>
+--- @param memory CopilotChat.Client.memory?
 --- @param prompt string
 --- @param system_prompt string
 --- @param generated_messages table<CopilotChat.Provider.input>
-local function generate_ask_request(history, prompt, system_prompt, generated_messages)
+local function generate_ask_request(history, memory, prompt, system_prompt, generated_messages)
   local messages = {}
   local contexts = {}
 
-  if system_prompt ~= '' then
+  local combined_system = system_prompt
+  if memory and memory.content and memory.content ~= '' then
+    if combined_system ~= '' then
+      combined_system = combined_system
+        .. '\n\n'
+        .. 'Context from previous conversation:\n'
+        .. memory.content
+    else
+      combined_system = 'Context from previous conversation:\n' .. memory.content
+    end
+  end
+
+  if combined_system ~= '' then
     table.insert(messages, {
-      content = system_prompt,
+      content = combined_system,
       role = 'system',
     })
   end
@@ -247,6 +265,7 @@ end
 ---@field agents table<string, CopilotChat.Client.agent>?
 ---@field current_job string?
 ---@field headers table<string, string>?
+---@field memory CopilotChat.Client.memory?
 local Client = class(function(self)
   self.history = {}
   self.providers = {}
@@ -255,6 +274,7 @@ local Client = class(function(self)
   self.agents = nil
   self.current_job = nil
   self.headers = nil
+  self.memory = nil
 end)
 
 --- Authenticate with GitHub and get the required headers
@@ -357,7 +377,6 @@ function Client:ask(prompt, opts)
     opts.agent = nil
   end
 
-  local history = opts.headless and {} or self.history
   local embeddings = opts.embeddings or {}
   local selection = opts.selection or {}
   local system_prompt = vim.trim(opts.system_prompt)
@@ -369,7 +388,6 @@ function Client:ask(prompt, opts)
   self.current_job = job_id
 
   log.trace('System prompt: ', system_prompt)
-  log.trace('History: ', #history)
   log.trace('Selection: ', selection.content)
   log.debug('Prompt: ', prompt)
   log.debug('Embeddings: ', #embeddings)
@@ -419,6 +437,14 @@ function Client:ask(prompt, opts)
 
   notify.publish(notify.STATUS, 'Generating request')
 
+  local history = {}
+  if opts.load_history then
+    history = self.history
+    if self.memory and self.memory.last_summarized_index then
+      history = vim.list_slice(history, self.memory.last_summarized_index + 1)
+    end
+  end
+
   local references = utils.ordered_map()
   if selection and selection.content then
     references:set(selection.filename, {
@@ -438,17 +464,18 @@ function Client:ask(prompt, opts)
   local embeddings_messages = generate_embeddings_messages(embeddings)
 
   if max_tokens then
-    -- Count tokens from embeddings
-    local generated_tokens = 0
+    -- Count tokens from selection messages
+    local selection_tokens = 0
     for _, message in ipairs(selection_messages) do
-      generated_tokens = generated_tokens + tiktoken.count(message.content)
+      selection_tokens = selection_tokens + tiktoken.count(message.content)
       table.insert(generated_messages, message)
     end
 
     -- Count required tokens that we cannot reduce
     local prompt_tokens = tiktoken.count(prompt)
     local system_tokens = tiktoken.count(system_prompt)
-    local required_tokens = prompt_tokens + system_tokens + generated_tokens
+    local memory_tokens = self.memory and tiktoken.count(self.memory.content) or 0
+    local required_tokens = prompt_tokens + system_tokens + selection_tokens + memory_tokens
 
     -- Reserve space for first embedding
     local reserved_tokens = #embeddings_messages > 0
@@ -542,7 +569,9 @@ function Client:ask(prompt, opts)
 
     if out.content then
       full_response = full_response .. out.content
-      on_progress(out.content)
+      if on_progress then
+        on_progress(out.content)
+      end
     end
 
     if out.finish_reason then
@@ -596,7 +625,7 @@ function Client:ask(prompt, opts)
 
   local headers = self:authenticate(provider_name)
   local request = provider.prepare_input(
-    generate_ask_request(history, prompt, system_prompt, generated_messages),
+    generate_ask_request(history, self.memory, prompt, system_prompt, generated_messages),
     options
   )
   local is_stream = request.stream
@@ -666,7 +695,7 @@ function Client:ask(prompt, opts)
   log.trace('Full response: ', full_response)
   log.debug('Last message: ', last_message)
 
-  if not opts.headless then
+  if opts.store_history then
     table.insert(history, {
       content = prompt,
       role = 'user',
@@ -836,6 +865,72 @@ function Client:load_providers(providers)
   self.providers = providers
   for provider_name, _ in pairs(providers) do
     self.provider_cache[provider_name] = {}
+  end
+end
+
+--- Summarize conversation memory to extract critical information
+---@param model string The model to use for summarization
+function Client:summarize_memory(model)
+  -- Exit early if there's not enough history
+  if #self.history < 4 then
+    return
+  end
+
+  -- Get the model config to check token limits
+  local models = self:fetch_models()
+  local model_config = models[model]
+  if not model_config or not model_config.max_input_tokens then
+    log.warn('Cannot determine token limit for model: ' .. model)
+    return
+  end
+
+  local max_tokens = model_config.max_input_tokens
+  local tokenizer = model_config.tokenizer or 'o200k_base'
+  tiktoken.load(tokenizer)
+
+  -- Calculate current token usage
+  local token_count = 0
+  for _, msg in ipairs(self.history) do
+    token_count = token_count + tiktoken.count(msg.content)
+  end
+
+  -- Check if we need to summarize based on token count threshold
+  local threshold = math.floor(max_tokens * 0.6)
+  local last_index = self.memory and self.memory.last_summarized_index or 0
+  local new_messages = #self.history - last_index
+
+  -- Only summarize if either token count is high or we have enough new messages
+  if token_count < threshold and new_messages < 4 then
+    return
+  end
+
+  local system_prompt =
+    [[Summarize the following conversation to extract the most critical information 
+for effective context in subsequent conversations. Focus on:
+1. Technical details: languages, frameworks, libraries, and specific technologies discussed
+2. Context: user's project structure, goals, constraints, and preferences
+3. Implementation details: patterns, approaches, or solutions that were discussed
+4. Important decisions or conclusions reached
+
+If the conversation includes previous memory summaries, integrate that information carefully.
+Be concise but comprehensive, prioritizing technical accuracy over conversational elements.
+Format your response as a structured summary, not as a narrative.]]
+
+  notify.publish(notify.STATUS, string.format('Summarizing memory (%d messages)', #self.history))
+
+  local response = self:ask('Summarize chat history', {
+    load_history = true,
+    store_history = false,
+    model = model,
+    temperature = 0,
+    system_prompt = system_prompt,
+  })
+
+  if response then
+    self.memory = {
+      content = vim.trim(response),
+      last_summarized_index = #self.history,
+    }
   end
 end
 
