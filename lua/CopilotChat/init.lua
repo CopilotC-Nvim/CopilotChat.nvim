@@ -1190,7 +1190,12 @@ function M.setup(config)
   end
 
   vim.api.nvim_create_user_command('CopilotChat', function(args)
-    M.ask(args.args)
+    local input = args.args
+    if input and vim.trim(input) ~= '' then
+      M.ask(input)
+    else
+      M.open()
+    end
   end, {
     nargs = '*',
     force = true,
