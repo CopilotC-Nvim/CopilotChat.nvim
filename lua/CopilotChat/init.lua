@@ -749,6 +749,7 @@ function M.select_prompt(config)
     :map(function(name)
       return {
         name = name,
+        description = prompts[name].description,
         prompt = prompts[name].prompt,
       }
     end)
@@ -760,7 +761,7 @@ function M.select_prompt(config)
   vim.ui.select(choices, {
     prompt = 'Select prompt action> ',
     format_item = function(item)
-      return string.format('%s: %s', item.name, item.prompt:gsub('\n', ' '))
+      return string.format('%s: %s', item.name, item.description or item.prompt:gsub('\n', ' '))
     end,
   }, function(choice)
     if choice then
