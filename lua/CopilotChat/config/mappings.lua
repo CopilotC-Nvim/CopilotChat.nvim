@@ -176,8 +176,13 @@ return {
   toggle_sticky = {
     normal = 'grr',
     callback = function()
-      local section = copilot.chat:get_closest_section()
-      if not section or section.answer then
+      local section = copilot.chat:get_prompt()
+      if not section then
+        return
+      end
+
+      local cursor = vim.api.nvim_win_get_cursor(copilot.chat.winnr)
+      if cursor[1] < section.start_line or cursor[1] > section.end_line then
         return
       end
 
@@ -186,7 +191,6 @@ return {
         return
       end
 
-      local cursor = vim.api.nvim_win_get_cursor(0)
       local cur_line = cursor[1]
       vim.api.nvim_buf_set_lines(copilot.chat.bufnr, cur_line - 1, cur_line, false, {})
 
@@ -194,43 +198,16 @@ return {
         return
       end
 
-      local lines = vim.split(section.content, '\n')
-      local insert_line = 1
-      local first_one = true
-
-      for i = insert_line, #lines do
-        local line = lines[i]
-        if line and vim.trim(line) ~= '' then
-          if vim.startswith(line, '> ') then
-            first_one = false
-          else
-            break
-          end
-        elseif i >= 2 then
-          break
-        end
-
-        insert_line = insert_line + 1
-      end
-
-      insert_line = section.start_line + insert_line - 1
-      local to_insert = first_one and { '> ' .. current_line, '' } or { '> ' .. current_line }
-      vim.api.nvim_buf_set_lines(
-        copilot.chat.bufnr,
-        insert_line - 1,
-        insert_line - 1,
-        false,
-        to_insert
-      )
-      vim.api.nvim_win_set_cursor(0, cursor)
+      copilot.chat:add_sticky(current_line)
+      vim.api.nvim_win_set_cursor(copilot.chat.winnr, cursor)
     end,
   },
 
   clear_stickies = {
     normal = 'grx',
     callback = function()
-      local section = copilot.chat:get_closest_section()
-      if not section or section.answer then
+      local section = copilot.chat:get_prompt()
+      if not section then
         return
       end
 
@@ -247,13 +224,7 @@ return {
       end
 
       if changed then
-        vim.api.nvim_buf_set_lines(
-          copilot.chat.bufnr,
-          section.start_line,
-          section.end_line - 1,
-          false,
-          new_lines
-        )
+        copilot.chat:set_prompt(vim.trim(table.concat(new_lines, '\n')))
       end
     end,
   },
