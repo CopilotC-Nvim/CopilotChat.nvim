@@ -850,7 +850,6 @@ function M.ask(prompt, config)
       return
     end
 
-    pcall(client.summarize_memory, client, selected_model)
     local ask_ok, response, references, token_count, token_max_count =
       pcall(client.ask, client, prompt, {
         load_history = not config.headless,

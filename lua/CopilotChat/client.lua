@@ -161,6 +161,7 @@ local function generate_selection_messages(selection)
 
   return {
     {
+      name = filename,
       context = string.format(CONTEXT_FORMAT, filename, filename),
       content = out,
       role = 'user',
@@ -190,6 +191,7 @@ local function generate_embeddings_messages(embeddings)
     end
 
     return {
+      name = embedding.filename,
       context = string.format(CONTEXT_FORMAT, embedding.filename, embedding.filename),
       content = out,
       role = 'user',
@@ -402,7 +404,6 @@ function Client:ask(prompt, opts)
   local temperature = opts.temperature
   local on_progress = opts.on_progress
   local job_id = utils.uuid()
-  self.current_job = job_id
 
   log.trace('System prompt: ', system_prompt)
   log.trace('Selection: ', selection.content)
@@ -467,23 +468,20 @@ function Client:ask(prompt, opts)
       url = selection.filename,
     })
   end
-  for _, embed in ipairs(embeddings) do
-    references:set(embed.filename, {
-      name = utils.filename(embed.filename),
-      url = embed.filename,
-    })
-  end
 
   local generated_messages = {}
   local selection_messages = generate_selection_messages(selection)
   local embeddings_messages = generate_embeddings_messages(embeddings)
+
+  for _, message in ipairs(selection_messages) do
+    table.insert(generated_messages, message)
+  end
 
   if max_tokens then
     -- Count tokens from selection messages
     local selection_tokens = 0
     for _, message in ipairs(selection_messages) do
       selection_tokens = selection_tokens + tiktoken.count(message.content)
-      table.insert(generated_messages, message)
     end
 
     -- Count required tokens that we cannot reduce
@@ -504,31 +502,52 @@ function Client:ask(prompt, opts)
       history_tokens = history_tokens + tiktoken.count(msg.content)
     end
 
-    -- If we're over history limit, truncate history from the beginning
-    while history_tokens > history_limit and #history > 0 do
-      local removed = table.remove(history, 1)
-      history_tokens = history_tokens - tiktoken.count(removed.content)
+    -- If we're over history limit, trigger summarization
+    if history_tokens > history_limit then
+      if opts.store_history and #history >= 4 then
+        self:summarize_memory(model)
+
+        -- Recalculate history and tokens
+        history =
+          vim.list_slice(self.history, self.memory and (self.memory.last_summarized_index + 1) or 1)
+        history_tokens = 0
+        for _, msg in ipairs(history) do
+          history_tokens = history_tokens + tiktoken.count(msg.content)
+        end
+        required_tokens = required_tokens - memory_tokens
+        memory_tokens = self.memory and tiktoken.count(self.memory.content) or 0
+        required_tokens = required_tokens + memory_tokens
+      else
+        while history_tokens > history_limit and #history > 0 do
+          local entry = table.remove(history, 1)
+          history_tokens = history_tokens - tiktoken.count(entry.content)
+        end
+      end
     end
 
-    -- Now add as many files as possible with remaining token budget (back to front)
+    -- Now add as many files as possible with remaining token budget
     local remaining_tokens = max_tokens - required_tokens - history_tokens
-    for i = #embeddings_messages, 1, -1 do
-      local message = embeddings_messages[i]
+    for _, message in ipairs(embeddings_messages) do
       local tokens = tiktoken.count(message.content)
       if remaining_tokens - tokens >= 0 then
         remaining_tokens = remaining_tokens - tokens
         table.insert(generated_messages, message)
+        references:set(message.name, {
+          name = utils.filename(message.name),
+          url = message.name,
+        })
       else
         break
       end
     end
   else
     -- Add all embedding messages as we cant limit them
-    for _, message in ipairs(selection_messages) do
-      table.insert(generated_messages, message)
-    end
     for _, message in ipairs(embeddings_messages) do
       table.insert(generated_messages, message)
+      references:set(message.name, {
+        name = utils.filename(message.name),
+        url = message.name,
+      })
     end
   end
 
@@ -637,6 +656,7 @@ function Client:ask(prompt, opts)
   end
 
   notify.publish(notify.STATUS, 'Thinking')
+  self.current_job = job_id
 
   local headers = self:authenticate(provider_name)
   local request = provider.prepare_input(
@@ -883,39 +903,6 @@ end
 --- Summarize conversation memory to extract critical information
 ---@param model string The model to use for summarization
 function Client:summarize_memory(model)
-  -- Exit early if there's not enough history
-  if #self.history < 4 then
-    return
-  end
-
-  -- Get the model config to check token limits
-  local models = self:fetch_models()
-  local model_config = models[model]
-  if not model_config or not model_config.max_input_tokens then
-    log.warn('Cannot determine token limit for model: ' .. model)
-    return
-  end
-
-  local max_tokens = model_config.max_input_tokens
-  local tokenizer = model_config.tokenizer or 'o200k_base'
-  tiktoken.load(tokenizer)
-
-  -- Calculate current token usage
-  local token_count = 0
-  for _, msg in ipairs(self.history) do
-    token_count = token_count + tiktoken.count(msg.content)
-  end
-
-  -- Check if we need to summarize based on token count threshold
-  local threshold = math.floor(max_tokens * 0.6)
-  local last_index = self.memory and self.memory.last_summarized_index or 0
-  local new_messages = #self.history - last_index
-
-  -- Only summarize if either token count is high or we have enough new messages
-  if token_count < threshold and new_messages < 4 then
-    return
-  end
-
   local system_prompt =
     [[Summarize the following conversation to extract the most critical information 
 for effective context in subsequent conversations. Focus on:
