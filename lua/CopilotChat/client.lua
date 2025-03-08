@@ -456,10 +456,8 @@ function Client:ask(prompt, opts)
 
   local history = {}
   if opts.load_history then
-    history = self.history
-    if self.memory and self.memory.last_summarized_index then
-      history = vim.list_slice(history, self.memory.last_summarized_index + 1)
-    end
+    history =
+      vim.list_slice(self.history, self.memory and (self.memory.last_summarized_index + 1) or 1)
   end
 
   local references = utils.ordered_map()
