@@ -476,16 +476,6 @@ return {
           table.insert(lines, '')
         end
 
-        if client.memory then
-          table.insert(lines, '**Memory**')
-          table.insert(lines, '```')
-          for _, line in ipairs(vim.split(vim.trim(client.memory.content), '\n')) do
-            table.insert(lines, line)
-          end
-          table.insert(lines, '```')
-          table.insert(lines, '')
-        end
-
         copilot.chat:overlay({
           text = vim.trim(table.concat(lines, '\n')) .. '\n',
         })
@@ -502,6 +492,16 @@ return {
       end
 
       local lines = {}
+
+      if client.memory then
+        table.insert(lines, '**Memory**')
+        table.insert(lines, '```markdown')
+        for _, line in ipairs(vim.split(client.memory.content, '\n')) do
+          table.insert(lines, line)
+        end
+        table.insert(lines, '```')
+        table.insert(lines, '')
+      end
 
       local selection = copilot.get_selection()
       if selection then
