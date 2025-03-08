@@ -880,6 +880,7 @@ end
 function Client:reset()
   local stopped = self:stop()
   self.history = {}
+  self.memory = nil
   return stopped
 end
 
