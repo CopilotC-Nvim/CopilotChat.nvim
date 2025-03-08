@@ -717,6 +717,7 @@ chat.chat:focused()             -- Check if chat window is focused
 -- Content Management
 chat.chat:get_prompt()          -- Get current prompt from chat window
 chat.chat:set_prompt(prompt)    -- Set prompt in chat window
+chat.chat:add_sticky(sticky)    -- Add sticky prompt to chat window
 chat.chat:append(text)          -- Append text to chat window
 chat.chat:clear()               -- Clear chat window content
 chat.chat:finish()              -- Finish writing to chat window

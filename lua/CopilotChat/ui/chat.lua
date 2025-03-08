@@ -214,6 +214,55 @@ function Chat:set_prompt(prompt)
   vim.bo[self.bufnr].modifiable = modifiable
 end
 
+--- Add a sticky line to the prompt in the chat window.
+---@param sticky string
+function Chat:add_sticky(sticky)
+  if not self:visible() then
+    return
+  end
+
+  local prompt = self:get_prompt()
+  if not prompt then
+    return
+  end
+
+  local lines = vim.split(prompt.content, '\n')
+  local insert_line = 1
+  local first_one = true
+  local found = false
+
+  for i = insert_line, #lines do
+    local line = lines[i]
+    if line and vim.trim(line) ~= '' then
+      if vim.startswith(line, '> ') then
+        if line:sub(3) == sticky then
+          found = true
+          break
+        end
+
+        first_one = false
+      else
+        break
+      end
+    elseif i >= 2 then
+      break
+    end
+
+    insert_line = insert_line + 1
+  end
+
+  if found then
+    return
+  end
+
+  insert_line = prompt.start_line + insert_line - 1
+  local to_insert = first_one and { '> ' .. sticky, '' } or { '> ' .. sticky }
+  local modifiable = vim.bo[self.bufnr].modifiable
+  vim.bo[self.bufnr].modifiable = true
+  vim.api.nvim_buf_set_lines(self.bufnr, insert_line - 1, insert_line - 1, false, to_insert)
+  vim.bo[self.bufnr].modifiable = modifiable
+end
+
 ---@class CopilotChat.ui.Chat.show_overlay
 ---@field text string
 ---@field filetype string?
