@@ -462,19 +462,16 @@ function Client:ask(prompt, opts)
   end
 
   local references = utils.ordered_map()
-  if selection and selection.content then
-    references:set(selection.filename, {
-      name = utils.filename(selection.filename),
-      url = selection.filename,
-    })
-  end
-
   local generated_messages = {}
   local selection_messages = generate_selection_messages(selection)
   local embeddings_messages = generate_embeddings_messages(embeddings)
 
   for _, message in ipairs(selection_messages) do
     table.insert(generated_messages, message)
+    references:set(message.name, {
+      name = utils.filename(message.name),
+      url = message.name,
+    })
   end
 
   if max_tokens then
