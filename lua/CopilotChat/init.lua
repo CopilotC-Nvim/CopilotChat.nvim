@@ -1104,8 +1104,7 @@ function M.setup(config)
       vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
         buffer = bufnr,
         callback = function(ev)
-          local is_enter = ev.event == 'BufEnter'
-          if is_enter then
+          if ev.event == 'BufEnter' then
             update_source()
           end
 

@@ -115,16 +115,23 @@ end
 ---@param bufnr number?
 ---@protected
 function Overlay:restore(winnr, bufnr)
+  bufnr = bufnr or 0
+
   if self.on_hide then
     self.on_hide(self.bufnr)
   end
 
-  vim.api.nvim_win_set_buf(winnr, bufnr or 0)
+  vim.api.nvim_win_set_buf(winnr, bufnr)
   vim.api.nvim_win_set_hl_ns(winnr, 0)
 
   if self.cursor then
     vim.api.nvim_win_set_cursor(winnr, self.cursor)
   end
+
+  -- Manually trigger BufEnter event as nvim_win_set_buf does not trigger it
+  vim.schedule(function()
+    vim.cmd(string.format('doautocmd <nomodeline> BufEnter %s', bufnr))
+  end)
 end
 
 --- Show help message in the overlay
