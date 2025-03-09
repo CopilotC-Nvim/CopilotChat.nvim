@@ -310,6 +310,7 @@ function Chat:open(config)
     if width ~= 0 then
       cmd = width .. cmd
     end
+    cmd = 'botright ' .. cmd
     vim.cmd(cmd)
     self.winnr = vim.api.nvim_get_current_win()
     vim.api.nvim_set_current_win(orig)
@@ -319,6 +320,7 @@ function Chat:open(config)
     if height ~= 0 then
       cmd = height .. cmd
     end
+    cmd = 'botright ' .. cmd
     vim.cmd(cmd)
     self.winnr = vim.api.nvim_get_current_win()
     vim.api.nvim_set_current_win(orig)
