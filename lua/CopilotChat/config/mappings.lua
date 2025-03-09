@@ -377,16 +377,19 @@ return {
         opts.text = table.concat(modified, '\n')
 
         opts.on_show = function()
-          vim.cmd('diffthis')
-          vim.api.nvim_set_current_win(vim.fn.bufwinid(diff.bufnr))
-          vim.api.nvim_win_set_cursor(0, { diff.start_line, 0 })
-          vim.cmd('diffthis')
-          vim.api.nvim_set_current_win(copilot.chat.winnr)
-          vim.api.nvim_win_set_cursor(copilot.chat.winnr, { diff.start_line, 0 })
+          vim.api.nvim_win_call(vim.fn.bufwinid(diff.bufnr), function()
+            vim.cmd('diffthis')
+          end)
+
+          vim.api.nvim_win_call(copilot.chat.winnr, function()
+            vim.cmd('diffthis')
+          end)
         end
 
         opts.on_hide = function()
-          vim.cmd('diffoff')
+          vim.api.nvim_win_call(copilot.chat.winnr, function()
+            vim.cmd('diffoff')
+          end)
         end
       else
         opts.text = tostring(vim.diff(diff.reference, diff.change, {
