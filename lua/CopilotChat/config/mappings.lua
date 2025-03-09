@@ -410,7 +410,7 @@ return {
 
   show_info = {
     normal = 'gi',
-    callback = function()
+    callback = function(source)
       local section = copilot.chat:get_closest_section()
       if not section or section.answer then
         return
@@ -429,6 +429,12 @@ return {
         table.insert(lines, '**History**: `' .. copilot.config.history_path .. '`')
         table.insert(lines, '**Temp Files**: `' .. vim.fn.fnamemodify(os.tmpname(), ':h') .. '`')
         table.insert(lines, '')
+
+        if source and utils.buf_valid(source.bufnr) then
+          local source_name = vim.api.nvim_buf_get_name(source.bufnr)
+          table.insert(lines, '**Source**: `' .. source_name .. '`')
+          table.insert(lines, '')
+        end
 
         if selected_model then
           table.insert(lines, '**Model**: `' .. selected_model .. '`')
