@@ -262,18 +262,23 @@ local function map_key(name, bufnr, fn)
   end
 end
 
---- Updates the source buffer based on previous window.
+--- Updates the source buffer based on previous or current window.
 local function update_source()
-  local prev_winnr = vim.fn.win_getid(vim.fn.winnr('#'))
-  local prev_bufnr = vim.api.nvim_win_get_buf(prev_winnr)
+  -- Determine which window to use as the source (previous if in chat, current otherwise)
+  local use_prev_window = M.chat:focused()
+  local source_winnr = use_prev_window and vim.fn.win_getid(vim.fn.winnr('#'))
+    or vim.api.nvim_get_current_win()
+  local source_bufnr = vim.api.nvim_win_get_buf(source_winnr)
+
+  -- Check if the window is valid to use as a source
   if
-    prev_winnr ~= M.chat.winnr
-    and prev_bufnr ~= M.chat.bufnr
-    and vim.fn.win_gettype(prev_winnr) == ''
+    source_winnr ~= M.chat.winnr
+    and source_bufnr ~= M.chat.bufnr
+    and vim.fn.win_gettype(source_winnr) == ''
   then
     state.source = {
-      bufnr = prev_bufnr,
-      winnr = prev_winnr,
+      bufnr = source_bufnr,
+      winnr = source_winnr,
     }
   end
 end
