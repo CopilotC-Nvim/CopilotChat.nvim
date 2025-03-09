@@ -57,8 +57,6 @@ return {
     input = function(callback, source)
       local cwd = utils.win_cwd(source.winnr)
       local files = utils.scan_dir(cwd, {
-        add_dirs = false,
-        respect_gitignore = true,
         max_files = 1000,
       })
 
@@ -83,7 +81,7 @@ return {
     end,
     resolve = function(input, source)
       return context.files(source.winnr, true, {
-        search_pattern = input and utils.glob_to_regex(input),
+        glob = input,
       })
     end,
   },
@@ -97,7 +95,7 @@ return {
     end,
     resolve = function(input, source)
       return context.files(source.winnr, false, {
-        search_pattern = input and utils.glob_to_regex(input),
+        glob = input,
       })
     end,
   },

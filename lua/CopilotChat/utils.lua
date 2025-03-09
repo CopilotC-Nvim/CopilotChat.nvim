@@ -394,17 +394,73 @@ M.curl_post = async.wrap(function(url, opts, callback)
   curl.post(url, args)
 end, 3)
 
+---@class CopilotChat.utils.scan_dir_opts
+---@field max_count number? The maximum number of files to scan
+---@field max_depth number? The maximum depth to scan
+---@field glob? string The glob pattern to match files
+---@field hidden? boolean Whether to include hidden files
+---@field no_ignore? boolean Whether to respect or ignore .gitignore
+
 --- Scan a directory
 ---@param path string The directory path
----@param opts table The options
+---@param opts CopilotChat.utils.scan_dir_opts The options
 ---@async
 M.scan_dir = async.wrap(function(path, opts, callback)
+  -- Use ripgrep if available
+  if vim.fn.executable('rg') == 1 then
+    local cmd = { 'rg' }
+
+    if opts.glob then
+      table.insert(cmd, '-g')
+      table.insert(cmd, opts.glob)
+    end
+
+    if opts.max_count then
+      table.insert(cmd, '-m')
+      table.insert(cmd, tostring(opts.max_count))
+    end
+
+    if opts.max_depth then
+      table.insert(cmd, '-d')
+      table.insert(cmd, tostring(opts.max_depth))
+    end
+
+    if opts.no_ignore then
+      table.insert(cmd, '--no-ignore')
+    end
+
+    if opts.hidden then
+      table.insert(cmd, '--hidden')
+    end
+
+    table.insert(cmd, '--files')
+    table.insert(cmd, path)
+
+    vim.system(cmd, { text = true }, function(result)
+      local files = {}
+      if result and result.code == 0 and result.stdout ~= '' then
+        files = vim.tbl_filter(function(file)
+          return file ~= ''
+        end, vim.split(result.stdout, '\n'))
+      end
+
+      callback(files)
+    end)
+
+    return
+  end
+
+  -- Fall back to scandir if rg is not available or fails
   scandir.scan_dir_async(
     path,
     vim.tbl_deep_extend('force', opts, {
+      depth = opts.max_depth,
+      add_dirs = false,
+      search_pattern = M.glob_to_pattern(opts.glob),
+      respect_gitignore = not opts.no_ignore,
       on_exit = function(files)
-        if opts.max_files then
-          files = vim.list_slice(files, 1, opts.max_files)
+        if opts.max_count then
+          files = vim.list_slice(files, 1, opts.max_count)
         end
         callback(files)
       end,
@@ -517,24 +573,135 @@ function M.empty(v)
 end
 
 --- Convert glob pattern to regex pattern
----@param glob string The glob pattern
----@return string?
-function M.glob_to_regex(glob)
-  if not glob or glob == '' then
-    return nil
+--- https://github.com/davidm/lua-glob-pattern/blob/master/lua/globtopattern.lua
+---@param g string The glob pattern
+---@return string
+function M.glob_to_pattern(g)
+  local p = '^' -- pattern being built
+  local i = 0 -- index in g
+  local c -- char at index i in g.
+
+  -- unescape glob char
+  local function unescape()
+    if c == '\\' then
+      i = i + 1
+      c = g:sub(i, i)
+      if c == '' then
+        p = '[^]'
+        return false
+      end
+    end
+    return true
   end
 
-  -- Escape regex special chars except * and ?
-  local pattern = glob:gsub('[%^%$%(%)%%%.%[%]%+%-]', '%%%1')
+  -- escape pattern char
+  local function escape(c)
+    return c:match('^%w$') and c or '%' .. c
+  end
 
-  -- Convert glob to regex pattern
-  pattern = pattern
-    :gsub('%*%*/%*', '.*') -- **/* -> .*
-    :gsub('%*%*', '.*') -- ** -> .*
-    :gsub('([^%.])%*', '%1[^/]*') -- * -> [^/]* (when not preceded by .)
-    :gsub('%?', '.') -- ? -> .
+  -- Convert tokens at end of charset.
+  local function charset_end()
+    while 1 do
+      if c == '' then
+        p = '[^]'
+        return false
+      elseif c == ']' then
+        p = p .. ']'
+        break
+      else
+        if not unescape() then
+          break
+        end
+        local c1 = c
+        i = i + 1
+        c = g:sub(i, i)
+        if c == '' then
+          p = '[^]'
+          return false
+        elseif c == '-' then
+          i = i + 1
+          c = g:sub(i, i)
+          if c == '' then
+            p = '[^]'
+            return false
+          elseif c == ']' then
+            p = p .. escape(c1) .. '%-]'
+            break
+          else
+            if not unescape() then
+              break
+            end
+            p = p .. escape(c1) .. '-' .. escape(c)
+          end
+        elseif c == ']' then
+          p = p .. escape(c1) .. ']'
+          break
+        else
+          p = p .. escape(c1)
+          i = i - 1 -- put back
+        end
+      end
+      i = i + 1
+      c = g:sub(i, i)
+    end
+    return true
+  end
 
-  return pattern .. '$'
+  -- Convert tokens in charset.
+  local function charset()
+    i = i + 1
+    c = g:sub(i, i)
+    if c == '' or c == ']' then
+      p = '[^]'
+      return false
+    elseif c == '^' or c == '!' then
+      i = i + 1
+      c = g:sub(i, i)
+      if c == ']' then
+        -- ignored
+      else
+        p = p .. '[^'
+        if not charset_end() then
+          return false
+        end
+      end
+    else
+      p = p .. '['
+      if not charset_end() then
+        return false
+      end
+    end
+    return true
+  end
+
+  -- Convert tokens.
+  while 1 do
+    i = i + 1
+    c = g:sub(i, i)
+    if c == '' then
+      p = p .. '$'
+      break
+    elseif c == '?' then
+      p = p .. '.'
+    elseif c == '*' then
+      p = p .. '.*'
+    elseif c == '[' then
+      if not charset() then
+        break
+      end
+    elseif c == '\\' then
+      i = i + 1
+      c = g:sub(i, i)
+      if c == '' then
+        p = p .. '\\$'
+        break
+      end
+      p = p .. escape(c)
+    else
+      p = p .. escape(c)
+    end
+  end
+  return p
 end
 
 ---@class CopilotChat.Diagnostic

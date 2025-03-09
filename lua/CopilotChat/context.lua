@@ -72,6 +72,7 @@ local MIN_SYMBOL_SIMILARITY = 0.3
 local MIN_SEMANTIC_SIMILARITY = 0.4
 local MULTI_FILE_THRESHOLD = 5
 local MAX_FILES = 2500
+local MAX_DEPTH = 50
 
 --- Compute the cosine similarity between two vectors
 ---@param a table<number>
@@ -372,7 +373,7 @@ end
 --- Get list of all files in workspace
 ---@param winnr number?
 ---@param with_content boolean?
----@param search_options table?
+---@param search_options CopilotChat.utils.scan_dir_opts?
 ---@return table<CopilotChat.context.embed>
 function M.files(winnr, with_content, search_options)
   local cwd = utils.win_cwd(winnr)
@@ -382,9 +383,8 @@ function M.files(winnr, with_content, search_options)
   local files = utils.scan_dir(
     cwd,
     vim.tbl_extend('force', {
-      add_dirs = false,
-      respect_gitignore = true,
-      max_files = MAX_FILES,
+      max_count = MAX_FILES,
+      max_depth = MAX_DEPTH,
     }, search_options)
   )
 
