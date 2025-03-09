@@ -415,11 +415,6 @@ M.scan_dir = async.wrap(function(path, opts, callback)
       table.insert(cmd, opts.glob)
     end
 
-    if opts.max_count then
-      table.insert(cmd, '-m')
-      table.insert(cmd, tostring(opts.max_count))
-    end
-
     if opts.max_depth then
       table.insert(cmd, '-d')
       table.insert(cmd, tostring(opts.max_depth))
@@ -442,6 +437,10 @@ M.scan_dir = async.wrap(function(path, opts, callback)
         files = vim.tbl_filter(function(file)
           return file ~= ''
         end, vim.split(result.stdout, '\n'))
+
+        if opts.max_count then
+          files = vim.list_slice(files, 1, opts.max_count)
+        end
       end
 
       callback(files)
