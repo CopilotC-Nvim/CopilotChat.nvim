@@ -133,16 +133,7 @@ function Chat:get_closest_section()
     end
   end
 
-  if not closest_section then
-    return nil
-  end
-
-  return {
-    answer = closest_section.answer,
-    start_line = closest_section.start_line,
-    end_line = closest_section.end_line,
-    content = closest_section.content,
-  }
+  return closest_section
 end
 
 --- Get the closest code block to the cursor.
@@ -167,16 +158,7 @@ function Chat:get_closest_block()
     end
   end
 
-  if not closest_block then
-    return nil
-  end
-
-  return {
-    header = closest_block.header,
-    start_line = closest_block.start_line,
-    end_line = closest_block.end_line,
-    content = closest_block.content,
-  }
+  return closest_block
 end
 
 --- Get the prompt in the chat window.
