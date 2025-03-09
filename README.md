@@ -326,7 +326,7 @@ Examples:
 ```markdown
 > #buffer
 > #buffer:2
-> #files:*.lua
+> #files:\*.lua
 > #filenames
 > #git:staged
 > #url:https://example.com
