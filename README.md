@@ -46,13 +46,8 @@ CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat capabilities
   - Manual: Download from [lua-tiktoken releases](https://github.com/gptlang/lua-tiktoken/releases) and save as `tiktoken_core.so` in your Lua path
 
 - [git](https://git-scm.com/) - For git diff context features
-
-  - Arch Linux: Install from official repositories
-  - Other systems: Use system package manager or official installer
-
+- [ripgrep](https://github.com/BurntSushi/ripgrep) - For improved search performance
 - [lynx](https://lynx.invisible-island.net/) - For improved URL context features
-  - Arch Linux: Install from official repositories
-  - Other systems: Use system package manager or official installer
 
 ## Integration with pickers
 
@@ -331,7 +326,7 @@ Examples:
 ```markdown
 > #buffer
 > #buffer:2
-> #files:.lua
+> #files:\*.lua
 > #filenames
 > #git:staged
 > #url:https://example.com

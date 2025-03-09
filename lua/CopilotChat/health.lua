@@ -72,6 +72,15 @@ function M.check()
     ok('git: ' .. git_version)
   end
 
+  local rg_version = run_command('rg', '--version')
+  if rg_version == false then
+    warn(
+      'rg: missing, optional for improved search performance. See "https://github.com/BurntSushi/ripgrep".'
+    )
+  else
+    ok('rg: ' .. rg_version)
+  end
+
   local lynx_version = run_command('lynx', '-version')
   if lynx_version == false then
     warn(
