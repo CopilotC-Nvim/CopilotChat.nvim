@@ -631,7 +631,7 @@ function Chat:render()
       })
     end
   else
-    self:clear_help()
+    self:show_help()
   end
 
   self.sections = sections

@@ -135,21 +135,17 @@ function Overlay:restore(winnr, bufnr)
 end
 
 --- Show help message in the overlay
----@param msg string
----@param offset number
+---@param msg string?
+---@param offset number?
 ---@protected
 function Overlay:show_help(msg, offset)
-  if not msg then
-    return
-  end
-
-  msg = vim.trim(msg)
-  if msg == '' then
+  if not msg or msg == '' then
+    vim.api.nvim_buf_del_extmark(self.bufnr, self.help_ns, 1)
     return
   end
 
   self:validate()
-  local line = vim.api.nvim_buf_line_count(self.bufnr) + offset
+  local line = vim.api.nvim_buf_line_count(self.bufnr) + (offset or 0)
   vim.api.nvim_buf_set_extmark(self.bufnr, self.help_ns, math.max(0, line - 1), 0, {
     id = 1,
     hl_mode = 'combine',
@@ -158,12 +154,6 @@ function Overlay:show_help(msg, offset)
       return { { t, 'CopilotChatHelp' } }
     end, vim.split(msg, '\n')),
   })
-end
-
---- Clear help message from the overlay
----@protected
-function Overlay:clear_help()
-  vim.api.nvim_buf_del_extmark(self.bufnr, self.help_ns, 1)
 end
 
 return Overlay
