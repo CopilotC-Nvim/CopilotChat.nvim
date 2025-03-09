@@ -320,7 +320,12 @@ function M.resolve_prompt(prompt, config)
     return inner_config, inner_prompt
   end
 
-  return resolve(config or M.config, prompt or '')
+  config = vim.tbl_deep_extend('force', M.config, config or {})
+  config, prompt = resolve(config, prompt or '')
+  if prompts_to_use[config.system_prompt] then
+    config.system_prompt = prompts_to_use[config.system_prompt].system_prompt
+  end
+  return config, prompt
 end
 
 --- Resolve the context embeddings from the prompt.

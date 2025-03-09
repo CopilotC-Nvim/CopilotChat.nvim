@@ -1,4 +1,3 @@
-local prompts = require('CopilotChat.config.prompts')
 local select = require('CopilotChat.select')
 
 ---@class CopilotChat.config.window
@@ -56,7 +55,7 @@ return {
 
   -- Shared config starts here (can be passed to functions at runtime and configured via setup function)
 
-  system_prompt = prompts.COPILOT_INSTRUCTIONS.system_prompt, -- System prompt to use (can be specified manually in prompt via /).
+  system_prompt = 'COPILOT_INSTRUCTIONS', -- System prompt to use (can be specified manually in prompt via /).
 
   model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   agent = 'none', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
@@ -122,7 +121,7 @@ return {
   contexts = require('CopilotChat.config.contexts'),
 
   -- default prompts
-  prompts = prompts,
+  prompts = require('CopilotChat.config.prompts'),
 
   -- default mappings
   mappings = require('CopilotChat.config.mappings'),
