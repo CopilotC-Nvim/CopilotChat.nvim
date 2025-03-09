@@ -4,6 +4,13 @@ local scandir = require('plenary.scandir')
 
 local M = {}
 M.timers = {}
+
+M.scan_args = {
+  max_count = 2500,
+  max_depth = 50,
+  no_ignore = false,
+}
+
 M.curl_args = {
   timeout = 30000,
   raw = {
@@ -403,9 +410,11 @@ end, 3)
 
 --- Scan a directory
 ---@param path string The directory path
----@param opts CopilotChat.utils.scan_dir_opts The options
+---@param opts CopilotChat.utils.scan_dir_opts? The options
 ---@async
 M.scan_dir = async.wrap(function(path, opts, callback)
+  opts = vim.tbl_deep_extend('force', M.scan_args, opts or {})
+
   -- Use ripgrep if available
   if vim.fn.executable('rg') == 1 then
     local cmd = { 'rg' }
@@ -438,7 +447,7 @@ M.scan_dir = async.wrap(function(path, opts, callback)
           return file ~= ''
         end, vim.split(result.stdout, '\n'))
 
-        if opts.max_count then
+        if opts.max_count and opts.max_count > 0 then
           files = vim.list_slice(files, 1, opts.max_count)
         end
       end
@@ -458,7 +467,7 @@ M.scan_dir = async.wrap(function(path, opts, callback)
       search_pattern = M.glob_to_pattern(opts.glob),
       respect_gitignore = not opts.no_ignore,
       on_exit = function(files)
-        if opts.max_count then
+        if opts.max_count and opts.max_count > 0 then
           files = vim.list_slice(files, 1, opts.max_count)
         end
         callback(files)
