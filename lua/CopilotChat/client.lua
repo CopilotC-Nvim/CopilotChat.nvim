@@ -619,7 +619,8 @@ function Client:ask(prompt, opts)
   local function parse_stream_line(line, job)
     line = vim.trim(line)
 
-    if vim.startswith(line, 'event:') then
+    -- Ignore SSE event names and comments
+    if vim.startswith(line, 'event:') or vim.startswith(line, ':') then
       return
     end
 
