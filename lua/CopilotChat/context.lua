@@ -380,13 +380,7 @@ function M.files(winnr, with_content, search_options)
 
   notify.publish(notify.STATUS, 'Scanning files')
 
-  local files = utils.scan_dir(
-    cwd,
-    vim.tbl_extend('force', {
-      max_count = MAX_FILES,
-      max_depth = MAX_DEPTH,
-    }, search_options)
-  )
+  local files = utils.scan_dir(cwd, search_options)
 
   notify.publish(notify.STATUS, 'Reading files')
 

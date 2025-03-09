@@ -56,7 +56,9 @@ return {
     description = 'Includes content of provided file in chat context. Supports input.',
     input = function(callback, source)
       local cwd = utils.win_cwd(source.winnr)
-      local files = utils.scan_dir(cwd, {})
+      local files = utils.scan_dir(cwd, {
+        max_count = 0,
+      })
 
       utils.schedule_main()
       vim.ui.select(files, {
