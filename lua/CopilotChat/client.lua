@@ -502,7 +502,7 @@ function Client:ask(prompt, opts)
     -- If we're over history limit, trigger summarization
     if history_tokens > history_limit then
       if opts.store_history and #history >= 4 then
-        self:summarize_memory(model)
+        self:summarize_history(model)
 
         -- Recalculate history and tokens
         history =
@@ -898,24 +898,26 @@ function Client:load_providers(providers)
   end
 end
 
---- Summarize conversation memory to extract critical information
+--- Summarize conversation history to extract critical information
 ---@param model string The model to use for summarization
-function Client:summarize_memory(model)
-  local system_prompt =
-    [[Summarize the following conversation to extract the most critical information 
-for effective context in subsequent conversations. Focus on:
+function Client:summarize_history(model)
+  local system_prompt = [[You are an expert programming assistant tasked with memory management.
+Your job is to create concise yet comprehensive summaries of technical conversations.
+Focus on extracting and preserving:
 1. Technical details: languages, frameworks, libraries, and specific technologies discussed
 2. Context: user's project structure, goals, constraints, and preferences
 3. Implementation details: patterns, approaches, or solutions that were discussed
 4. Important decisions or conclusions reached
+5. Unresolved questions or issues that need further attention
 
 If the conversation includes previous memory summaries, integrate that information carefully.
-Be concise but comprehensive, prioritizing technical accuracy over conversational elements.
-Format your response as a structured summary, not as a narrative.]]
+Prioritize technical accuracy over conversational elements.
+Format your response as a structured summary with clear sections using markdown.
+Ensure all critical code samples, commands, and configuration snippets are preserved.]]
 
   notify.publish(notify.STATUS, string.format('Summarizing memory (%d messages)', #self.history))
 
-  local response = self:ask('Summarize chat history', {
+  local response = self:ask('Create a technical summary of our conversation for future context', {
     load_history = true,
     store_history = false,
     model = model,
