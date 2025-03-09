@@ -870,15 +870,14 @@ function M.ask(prompt, config)
 
     utils.schedule_main()
 
-    if not ask_ok then
+    if not ask_ok or utils.empty(response) then
+      if utils.empty(response) then
+        response = 'Failed to get response: empty response'
+      end
       log.error(response)
       if not config.headless then
         show_error(response, has_output)
       end
-      return
-    end
-
-    if not response then
       return
     end
 
@@ -887,9 +886,7 @@ function M.ask(prompt, config)
       M.chat.references = references
       M.chat.token_count = token_count
       M.chat.token_max_count = token_max_count
-    end
 
-    if not config.headless then
       if not utils.empty(references) and config.references_display == 'write' then
         M.chat:append('\n\n**`References`**:')
         for _, ref in ipairs(references) do
@@ -899,6 +896,7 @@ function M.ask(prompt, config)
 
       finish()
     end
+
     if config.callback then
       config.callback(response, state.source)
     end
