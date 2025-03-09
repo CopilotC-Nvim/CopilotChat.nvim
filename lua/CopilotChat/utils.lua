@@ -134,8 +134,9 @@ function M.return_to_normal_mode()
   local mode = vim.fn.mode():lower()
   if mode:find('v') then
     vim.cmd([[execute "normal! \<Esc>"]])
+  elseif mode ~= 'n' then
+    vim.cmd('stopinsert')
   end
-  vim.cmd('stopinsert')
 end
 
 --- Mark a function as deprecated
