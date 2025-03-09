@@ -191,7 +191,7 @@ Default mappings in the chat interface:
 
   Insert   Normal   Action
   -------- -------- --------------------------------------------
-  <Tab>    <Tab>    Trigger/accept completion menu for tokens
+  <Tab>    -        Trigger/accept completion menu for tokens
   <C-c>    q        Close the chat window
   <C-l>    <C-l>    Reset and clear the chat window
   <C-s>    <CR>     Submit the current prompt
