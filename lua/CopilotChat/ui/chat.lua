@@ -113,8 +113,9 @@ function Chat:focused()
 end
 
 --- Get the closest section to the cursor.
+---@param type? "answer"|"question" If specified, only considers sections of the given type
 ---@return CopilotChat.ui.Chat.Section?
-function Chat:get_closest_section()
+function Chat:get_closest_section(type)
   if not self:visible() then
     return nil
   end
@@ -126,7 +127,15 @@ function Chat:get_closest_section()
   local max_line_below_cursor = -1
 
   for _, section in ipairs(self.sections) do
-    if section.start_line <= cursor_line and section.start_line > max_line_below_cursor then
+    local matches_type = not type
+      or (type == 'answer' and section.answer)
+      or (type == 'question' and not section.answer)
+
+    if
+      matches_type
+      and section.start_line <= cursor_line
+      and section.start_line > max_line_below_cursor
+    then
       max_line_below_cursor = section.start_line
       closest_section = section
     end
