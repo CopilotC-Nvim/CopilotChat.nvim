@@ -164,7 +164,7 @@ return {
     normal = '<CR>',
     insert = '<C-s>',
     callback = function()
-      local section = copilot.chat:get_closest_section()
+      local section = copilot.chat:get_closest_section('question')
       if not section or section.answer then
         return
       end
@@ -233,34 +233,29 @@ return {
     normal = '<C-y>',
     insert = '<C-y>',
     callback = function(source)
-      local diff_data = get_diff(copilot.chat:get_closest_block())
-      diff_data = prepare_diff_buffer(diff_data, source)
-      if diff_data then
-        local lines = vim.split(diff_data.change, '\n', { trimempty = false })
-        vim.api.nvim_buf_set_lines(
-          diff_data.bufnr,
-          diff_data.start_line - 1,
-          diff_data.end_line,
-          false,
-          lines
-        )
-        copilot.set_selection(
-          diff_data.bufnr,
-          diff_data.start_line,
-          diff_data.start_line + #lines - 1
-        )
+      local diff = get_diff(copilot.chat:get_closest_block())
+      diff = prepare_diff_buffer(diff, source)
+      if not diff then
+        return
       end
+
+      local lines = vim.split(diff.change, '\n', { trimempty = false })
+      vim.api.nvim_buf_set_lines(diff.bufnr, diff.start_line - 1, diff.end_line, false, lines)
+
+      copilot.set_selection(diff.bufnr, diff.start_line, diff.start_line + #lines - 1)
     end,
   },
 
   jump_to_diff = {
     normal = 'gj',
     callback = function(source)
-      local diff_data = get_diff(copilot.chat:get_closest_block())
-      diff_data = prepare_diff_buffer(diff_data, source)
-      if diff_data then
-        copilot.set_selection(diff_data.bufnr, diff_data.start_line, diff_data.end_line)
+      local diff = get_diff(copilot.chat:get_closest_block())
+      diff = prepare_diff_buffer(diff, source)
+      if not diff then
+        return
       end
+
+      copilot.set_selection(diff.bufnr, diff.start_line, diff.end_line)
     end,
   },
 
@@ -341,8 +336,9 @@ return {
   show_diff = {
     normal = 'gd',
     full_diff = false, -- Show full diff instead of unified diff when showing diff window
-    callback = function()
+    callback = function(source)
       local diff = get_diff(copilot.chat:get_closest_block())
+      diff = prepare_diff_buffer(diff, source)
       if not diff then
         return
       end
@@ -353,28 +349,47 @@ return {
       }
 
       if copilot.config.mappings.show_diff.full_diff then
-        -- Create modified version by applying the change
-        local modified = {}
-        if utils.buf_valid(diff.bufnr) then
-          modified = vim.api.nvim_buf_get_lines(diff.bufnr, 0, -1, false)
-        end
-        local change_lines = vim.split(diff.change, '\n')
+        local modified = utils.buf_valid(diff.bufnr)
+            and vim.api.nvim_buf_get_lines(diff.bufnr, 0, -1, false)
+          or {}
 
-        -- Replace the lines in the modified content
+        -- Apply all diffs from same file
         if #modified > 0 then
-          local start_idx = diff.start_line - 1
-          local end_idx = diff.end_line - 1
-          for _ = start_idx, end_idx do
-            table.remove(modified, start_idx)
-          end
-          for i, line in ipairs(change_lines) do
-            table.insert(modified, start_idx + i - 1, line)
-          end
-        else
-          modified = change_lines
-        end
+          -- Find all diffs from the same file in this section
+          local section = copilot.chat:get_closest_section('answer')
+          local same_file_diffs = {}
+          if section then
+            for _, block in ipairs(section.blocks) do
+              local block_diff = get_diff(block)
+              if block_diff and block_diff.bufnr == diff.bufnr then
+                table.insert(same_file_diffs, block_diff)
+              end
+            end
 
-        opts.text = table.concat(modified, '\n')
+            -- Sort diffs bottom to top to preserve line numbering
+            table.sort(same_file_diffs, function(a, b)
+              return a.start_line > b.start_line
+            end)
+          end
+
+          print('Applying %d diffs from %s', #same_file_diffs, diff.filename)
+
+          for _, file_diff in ipairs(same_file_diffs) do
+            local start_idx = file_diff.start_line
+            local end_idx = file_diff.end_line
+            for _ = start_idx, end_idx do
+              table.remove(modified, start_idx)
+            end
+            local change_lines = vim.split(file_diff.change, '\n')
+            for i, line in ipairs(change_lines) do
+              table.insert(modified, start_idx + i, line)
+            end
+          end
+
+          opts.text = table.concat(modified, '\n')
+        else
+          opts.text = diff.change
+        end
 
         opts.on_show = function()
           vim.api.nvim_win_call(vim.fn.bufwinid(diff.bufnr), function()
@@ -411,7 +426,7 @@ return {
   show_info = {
     normal = 'gi',
     callback = function(source)
-      local section = copilot.chat:get_closest_section()
+      local section = copilot.chat:get_closest_section('question')
       if not section or section.answer then
         return
       end
@@ -466,7 +481,7 @@ return {
   show_context = {
     normal = 'gc',
     callback = function()
-      local section = copilot.chat:get_closest_section()
+      local section = copilot.chat:get_closest_section('question')
       if not section or section.answer then
         return
       end
