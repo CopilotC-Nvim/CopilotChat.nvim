@@ -34,8 +34,8 @@ CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat capabilities
 - [curl](https://curl.se/) - Version 8.0.0+ recommended for best compatibility
 - [Copilot chat in the IDE](https://github.com/settings/copilot) enabled in GitHub settings
 
-> [!NOTE]  
-> For Neovim < 0.11.0, add `noinsert` and `popup` to your `completeopt` for proper chat completion behavior.
+> [!WARNING]
+> For Neovim < 0.11.0, add `noinsert` and `popup` to your `completeopt` otherwise autocompletion will not work.
 
 ## Optional Dependencies
 

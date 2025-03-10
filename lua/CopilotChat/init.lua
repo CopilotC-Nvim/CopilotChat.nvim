@@ -1118,6 +1118,15 @@ function M.setup(config)
         vim.api.nvim_create_autocmd('TextChangedI', {
           buffer = bufnr,
           callback = function()
+            local completeopt = vim.opt.completeopt:get()
+            if
+              not vim.tbl_contains(completeopt, 'noinsert')
+              or not vim.tbl_contains(completeopt, 'popup')
+            then
+              -- Don't trigger completion if completeopt is not set to noinsert,popup
+              return
+            end
+
             local line = vim.api.nvim_get_current_line()
             local cursor = vim.api.nvim_win_get_cursor(0)
             local col = cursor[2]
