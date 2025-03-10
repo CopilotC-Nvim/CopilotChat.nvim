@@ -372,8 +372,6 @@ return {
             end)
           end
 
-          print('Applying %d diffs from %s', #same_file_diffs, diff.filename)
-
           for _, file_diff in ipairs(same_file_diffs) do
             local start_idx = file_diff.start_line
             local end_idx = file_diff.end_line
