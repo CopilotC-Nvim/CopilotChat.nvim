@@ -469,6 +469,26 @@ return {
           table.insert(lines, '')
         end
 
+        if client.memory then
+          table.insert(lines, '**Memory**')
+          table.insert(lines, '```markdown')
+          for _, line in ipairs(vim.split(client.memory.content, '\n')) do
+            table.insert(lines, line)
+          end
+          table.insert(lines, '```')
+          table.insert(lines, '')
+        end
+
+        if not utils.empty(client.history) then
+          table.insert(lines, ('**History** (#%s, truncated)'):format(#client.history))
+          table.insert(lines, '')
+
+          for _, message in ipairs(client.history) do
+            table.insert(lines, '**' .. message.role .. '**')
+            table.insert(lines, '`' .. vim.split(message.content, '\n')[1] .. '`')
+          end
+        end
+
         copilot.chat:overlay({
           text = vim.trim(table.concat(lines, '\n')) .. '\n',
         })
@@ -485,16 +505,6 @@ return {
       end
 
       local lines = {}
-
-      if client.memory then
-        table.insert(lines, '**Memory**')
-        table.insert(lines, '```markdown')
-        for _, line in ipairs(vim.split(client.memory.content, '\n')) do
-          table.insert(lines, line)
-        end
-        table.insert(lines, '```')
-        table.insert(lines, '')
-      end
 
       local selection = copilot.get_selection()
       if selection then
