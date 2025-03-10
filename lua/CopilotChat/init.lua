@@ -1060,6 +1060,7 @@ end
 ---@param config CopilotChat.config?
 function M.setup(config)
   M.config = vim.tbl_deep_extend('force', require('CopilotChat.config'), config or {})
+  state.highlights_loaded = false
 
   -- Save proxy and insecure settings
   utils.curl_store_args({
@@ -1076,24 +1077,6 @@ function M.setup(config)
   else
     M.log_level(M.config.log_level)
   end
-
-  vim.api.nvim_set_hl(0, 'CopilotChatStatus', { link = 'DiagnosticHint', default = true })
-  vim.api.nvim_set_hl(0, 'CopilotChatHelp', { link = 'DiagnosticInfo', default = true })
-  vim.api.nvim_set_hl(0, 'CopilotChatKeyword', { link = 'Keyword', default = true })
-  vim.api.nvim_set_hl(0, 'CopilotChatInput', { link = 'Special', default = true })
-  vim.api.nvim_set_hl(0, 'CopilotChatSelection', { link = 'Visual', default = true })
-  vim.api.nvim_set_hl(
-    0,
-    'CopilotChatHeader',
-    { link = '@markup.heading.2.markdown', default = true }
-  )
-  vim.api.nvim_set_hl(
-    0,
-    'CopilotChatSeparator',
-    { link = '@punctuation.special.markdown', default = true }
-  )
-
-  state.highlights_loaded = false
 
   if M.chat then
     M.chat:close(state.source and state.source.bufnr or nil)
@@ -1194,73 +1177,6 @@ function M.setup(config)
       end
     end
   end
-
-  vim.api.nvim_create_user_command('CopilotChat', function(args)
-    local input = args.args
-    if input and vim.trim(input) ~= '' then
-      M.ask(input)
-    else
-      M.open()
-    end
-  end, {
-    nargs = '*',
-    force = true,
-    range = true,
-  })
-
-  vim.api.nvim_create_user_command('CopilotChatPrompts', function()
-    M.select_prompt()
-  end, { force = true, range = true })
-  vim.api.nvim_create_user_command('CopilotChatModels', function()
-    M.select_model()
-  end, { force = true })
-  vim.api.nvim_create_user_command('CopilotChatAgents', function()
-    M.select_agent()
-  end, { force = true })
-  vim.api.nvim_create_user_command('CopilotChatOpen', function()
-    M.open()
-  end, { force = true })
-  vim.api.nvim_create_user_command('CopilotChatClose', function()
-    M.close()
-  end, { force = true })
-  vim.api.nvim_create_user_command('CopilotChatToggle', function()
-    M.toggle()
-  end, { force = true })
-  vim.api.nvim_create_user_command('CopilotChatStop', function()
-    M.stop()
-  end, { force = true })
-  vim.api.nvim_create_user_command('CopilotChatReset', function()
-    M.reset()
-  end, { force = true })
-
-  local function complete_load()
-    local options = vim.tbl_map(function(file)
-      return vim.fn.fnamemodify(file, ':t:r')
-    end, vim.fn.glob(M.config.history_path .. '/*', true, true))
-
-    if not vim.tbl_contains(options, 'default') then
-      table.insert(options, 1, 'default')
-    end
-
-    return options
-  end
-  vim.api.nvim_create_user_command('CopilotChatSave', function(args)
-    M.save(args.args)
-  end, { nargs = '*', force = true, complete = complete_load })
-  vim.api.nvim_create_user_command('CopilotChatLoad', function(args)
-    M.load(args.args)
-  end, { nargs = '*', force = true, complete = complete_load })
-
-  -- Store the current directory to window when directory changes
-  -- I dont think there is a better way to do this that functions
-  -- with "rooter" plugins, LSP and stuff as vim.fn.getcwd() when
-  -- i pass window number inside doesnt work
-  vim.api.nvim_create_autocmd({ 'VimEnter', 'WinEnter', 'DirChanged' }, {
-    group = vim.api.nvim_create_augroup('CopilotChat', {}),
-    callback = function()
-      vim.w.cchat_cwd = vim.fn.getcwd()
-    end,
-  })
 end
 
 return M

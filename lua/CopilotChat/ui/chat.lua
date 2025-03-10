@@ -69,7 +69,6 @@ end
 ---@field private chat_overlay CopilotChat.ui.Overlay
 local Chat = class(function(self, question_header, answer_header, separator, help, on_buf_create)
   Overlay.init(self, 'copilot-chat', help, on_buf_create)
-  vim.treesitter.language.register('markdown', self.name)
 
   self.winnr = nil
   self.sections = {}
