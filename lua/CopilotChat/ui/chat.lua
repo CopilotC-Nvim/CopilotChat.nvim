@@ -14,8 +14,8 @@ function CopilotChatFoldExpr(lnum, separator)
 end
 
 local HEADER_PATTERNS = {
-  '%[file:.+%]%((.+)%) line:(%d+)-(%d+)',
-  '%[file:(.+)%] line:(%d+)-(%d+)',
+  '%[file:.+%]%((.+)%) line:(%d+)-?(%d*)',
+  '%[file:(.+)%] line:(%d+)-?(%d*)',
 }
 
 ---@param header? string
