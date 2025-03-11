@@ -71,8 +71,6 @@ local OFF_SIDE_RULE_LANGUAGES = {
 local MIN_SYMBOL_SIMILARITY = 0.3
 local MIN_SEMANTIC_SIMILARITY = 0.4
 local MULTI_FILE_THRESHOLD = 5
-local MAX_FILES = 2500
-local MAX_DEPTH = 50
 
 --- Compute the cosine similarity between two vectors
 ---@param a table<number>
@@ -154,19 +152,24 @@ local function trigram_similarity(set1, set2)
   return intersection / union
 end
 
+--- Rank data by symbols and filenames
+---@param query string
+---@param data table<CopilotChat.context.embed>
+---@param min_similarity number
+---@return table<CopilotChat.context.embed>
 local function data_ranked_by_symbols(query, data, min_similarity)
   -- Get query trigrams including compound versions
   local query_trigrams = {}
 
   -- Add trigrams for each word
-  for term in query:lower():gmatch('%w+') do
+  for term in query:gmatch('%w+') do
     for trigram in pairs(get_trigrams(term)) do
       query_trigrams[trigram] = true
     end
   end
 
   -- Add trigrams for compound query
-  local compound_query = query:lower():gsub('[^%w]', '')
+  local compound_query = query:gsub('[^%w]', '')
   for trigram in pairs(get_trigrams(compound_query)) do
     query_trigrams[trigram] = true
   end
