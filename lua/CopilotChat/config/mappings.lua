@@ -384,6 +384,10 @@ return {
             end
           end
 
+          modified = vim.tbl_filter(function(line)
+            return line ~= nil
+          end, modified)
+
           opts.text = table.concat(modified, '\n')
         else
           opts.text = diff.change
