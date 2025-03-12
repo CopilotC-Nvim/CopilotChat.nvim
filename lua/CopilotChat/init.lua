@@ -880,10 +880,7 @@ function M.ask(prompt, config)
 
     utils.schedule_main()
 
-    if not ask_ok or utils.empty(response) then
-      if utils.empty(response) then
-        response = 'Failed to get response: empty response'
-      end
+    if not ask_ok then
       log.error(response)
       if not config.headless then
         show_error(response, has_output)
@@ -913,7 +910,6 @@ function M.ask(prompt, config)
   end)
 
   if not ok then
-    utils.schedule_main()
     log.error(err)
     if not config.headless then
       show_error(err)
