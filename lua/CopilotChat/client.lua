@@ -366,19 +366,26 @@ function Client:fetch_models()
     local provider = self.providers[provider_name]
     if not provider.disabled and provider.get_models then
       notify.publish(notify.STATUS, 'Fetching models from ' .. provider_name)
-      local headers = self:authenticate(provider_name)
-      local ok, provider_models = pcall(provider.get_models, headers)
-      if ok then
-        for _, model in ipairs(provider_models) do
-          model.provider = provider_name
-          if models[model.id] then
-            model.id = model.id .. ':' .. provider_name
-          end
-          models[model.id] = model
-        end
-      else
-        log.warn('Failed to fetch models from ' .. provider_name .. ': ' .. provider_models)
+      local ok, headers = pcall(self.authenticate, self, provider_name)
+      if not ok then
+        log.warn('Failed to authenticate with ' .. provider_name .. ': ' .. headers)
+        goto continue
       end
+      local ok, provider_models = pcall(provider.get_models, headers)
+      if not ok then
+        log.warn('Failed to fetch models from ' .. provider_name .. ': ' .. provider_models)
+        goto continue
+      end
+
+      for _, model in ipairs(provider_models) do
+        model.provider = provider_name
+        if models[model.id] then
+          model.id = model.id .. ':' .. provider_name
+        end
+        models[model.id] = model
+      end
+
+      ::continue::
     end
   end
 
@@ -401,19 +408,26 @@ function Client:fetch_agents()
     local provider = self.providers[provider_name]
     if not provider.disabled and provider.get_agents then
       notify.publish(notify.STATUS, 'Fetching agents from ' .. provider_name)
-      local headers = self:authenticate(provider_name)
-      local ok, provider_agents = pcall(provider.get_agents, headers)
-      if ok then
-        for _, agent in ipairs(provider_agents) do
-          agent.provider = provider_name
-          if agents[agent.id] then
-            agent.id = agent.id .. ':' .. provider_name
-          end
-          agents[agent.id] = agent
-        end
-      else
-        log.warn('Failed to fetch agents from ' .. provider_name .. ': ' .. provider_agents)
+      local ok, headers = pcall(self.authenticate, self, provider_name)
+      if not ok then
+        log.warn('Failed to authenticate with ' .. provider_name .. ': ' .. headers)
+        goto continue
       end
+      local ok, provider_agents = pcall(provider.get_agents, headers)
+      if not ok then
+        log.warn('Failed to fetch agents from ' .. provider_name .. ': ' .. provider_agents)
+        goto continue
+      end
+
+      for _, agent in ipairs(provider_agents) do
+        agent.provider = provider_name
+        if agents[agent.id] then
+          agent.id = agent.id .. ':' .. provider_name
+        end
+        agents[agent.id] = agent
+      end
+
+      ::continue::
     end
   end
 
