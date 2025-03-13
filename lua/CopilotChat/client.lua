@@ -217,24 +217,25 @@ local function generate_ask_request(
 )
   local messages = {}
   local context_references = {}
-
   local combined_system = system_prompt
 
+  -- Include context help
   if contexts and not vim.tbl_isempty(contexts) then
     local help_text = [[
-    If you don't have sufficient context to answer accurately, ask for user to provide more context using any of these context providers:
+  If you don't have sufficient context to answer accurately, ask for user to provide more context using any of these context providers:
 
-    > #<command>:<input>
+  > #<command>:<input>
 
-    For example:
-    > #file:path/to/file.js
-    > #buffers:visible
-    > #git:staged
+  For example:
+  > #file:path/to/file.js                (loads a specific file)
+  > #file:`path/to file with spaces.js`  (loads a file with spaces in name)
+  > #buffers:visible                     (loads all visible buffers)
+  > #git:staged                          (loads git staged changes)
 
-    Note: For inputs with spaces, use backticks: #file:`path/to file with spaces.js`
+  Do not make assumptions about code or files - always request context when needed rather than guessing.
+  Always use the > format on a new line when requesting more context instead of asking in prose.
 
-    Available context providers:
-    ]]
+  Available context providers:]]
 
     local context_names = vim.tbl_keys(contexts)
     table.sort(context_names)

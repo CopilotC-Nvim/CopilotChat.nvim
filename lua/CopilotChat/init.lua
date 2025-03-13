@@ -186,8 +186,12 @@ local function finish(start_of_chat)
     end
   end
   local has_sticky = false
+  local in_code_block = false
   for _, line in ipairs(lines) do
-    if vim.startswith(line, '> ') then
+    if line:match('^```') then
+      in_code_block = not in_code_block
+    end
+    if vim.startswith(line, '> ') and not in_code_block then
       M.chat:append(line .. '\n')
       has_sticky = true
     end
