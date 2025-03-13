@@ -21,7 +21,7 @@ CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat capabilities
 - 🤖 GitHub Copilot Chat integration with official model and agent support (GPT-4o, Claude 3.7 Sonnet, Gemini 2.0 Flash, and more)
 - 💻 Rich workspace context powered by smart embeddings system
 - 🔒 Explicit context sharing - only sends what you specifically request, either as context or selection
-- 🔌 Modular provider architecture supporting both official and custom LLM backends (Ollama, LM Studio, and more)
+- 🔌 Modular provider architecture supporting both official and custom LLM backends (Ollama, LM Studio, Mistral.ai and more)
 - 📝 Interactive chat UI with completion, diffs and quickfix integration
 - 🎯 Powerful prompt system with composable templates and sticky prompts
 - 🔄 Extensible context providers for granular workspace understanding (buffers, files, git diffs, URLs, and more)
@@ -321,6 +321,10 @@ Contexts provide additional information to the chat. Add context using `#context
 | `quickfix`  | -             | Quickfix list file contents         |
 | `system`    | ✓ (command)   | Output of shell command             |
 
+> [!TIP]
+> The AI is aware of these context providers and may request additional context
+> if needed by asking you to input a specific context command like `#file:path/to/file.js`.
+
 Examples:
 
 ```markdown
@@ -426,7 +430,7 @@ Custom providers can implement these methods:
 
 ### External Providers
 
-For external providers (Ollama, LM Studio), see the [external providers wiki page](https://github.com/CopilotC-Nvim/CopilotChat.nvim/wiki/External-Providers).
+For external providers (Ollama, LM Studio, Mistral.ai), see the [external providers discussion page](https://github.com/CopilotC-Nvim/CopilotChat.nvim/discussions/categories/external-providers).
 
 # Configuration
 
