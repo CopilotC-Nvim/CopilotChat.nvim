@@ -2,6 +2,7 @@ local async = require('plenary.async')
 local log = require('plenary.log')
 local context = require('CopilotChat.context')
 local client = require('CopilotChat.client')
+local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 
 local PLUGIN_NAME = 'CopilotChat'
@@ -389,6 +390,12 @@ function M.resolve_context(prompt, config)
   local embeddings = utils.ordered_map()
   for _, context_data in ipairs(contexts) do
     local context_value = M.config.contexts[context_data.name]
+    notify.publish(
+      notify.STATUS,
+      'Resolving context: '
+        .. context_data.name
+        .. (context_data.input and ' with input: ' .. context_data.input or '')
+    )
     for _, embedding in
       ipairs(context_value.resolve(context_data.input, state.source or {}, prompt))
     do
