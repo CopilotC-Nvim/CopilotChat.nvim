@@ -268,7 +268,7 @@ end
 ---@param filename string
 ---@param ft string
 ---@return CopilotChat.context.embed
-local function build_outline(content, filename, ft)
+function M.get_outline(content, filename, ft)
   ---@type CopilotChat.context.embed
   local output = {
     filename = filename,
@@ -344,10 +344,15 @@ end
 
 --- Get data for a file
 ---@param filename string
----@param filetype string
+---@param filetype string?
 ---@return CopilotChat.context.embed?
-local function get_file(filename, filetype)
-  notify.publish(notify.STATUS, 'Reading file ' .. filename)
+function M.get_file(filename, filetype)
+  if not filetype then
+    filetype = utils.filetype(filename)
+  end
+  if not filetype then
+    return nil
+  end
 
   local modified = utils.file_mtime(filename)
   if not modified then
@@ -361,7 +366,7 @@ local function get_file(filename, filetype)
 
   local content = utils.read_file(filename)
   if content then
-    local outline = build_outline(content, filename, filetype)
+    local outline = M.get_outline(content, filename, filetype)
     file_cache[filename] = {
       outline = outline,
       modified = modified,
@@ -373,92 +378,10 @@ local function get_file(filename, filetype)
   return nil
 end
 
---- Get list of all files in workspace
----@param winnr number?
----@param with_content boolean?
----@param search_options CopilotChat.utils.scan_dir_opts?
----@return table<CopilotChat.context.embed>
-function M.files(winnr, with_content, search_options)
-  local cwd = utils.win_cwd(winnr)
-
-  notify.publish(notify.STATUS, 'Scanning files')
-
-  local files = utils.scan_dir(cwd, search_options)
-
-  notify.publish(notify.STATUS, 'Reading files')
-
-  local out = {}
-
-  -- Create file list in chunks
-  local chunk_size = 100
-  for i = 1, #files, chunk_size do
-    local chunk = {}
-    for j = i, math.min(i + chunk_size - 1, #files) do
-      table.insert(chunk, files[j])
-    end
-
-    local chunk_number = math.floor(i / chunk_size)
-    local chunk_name = chunk_number == 0 and 'file_map' or 'file_map' .. tostring(chunk_number)
-
-    table.insert(out, {
-      content = table.concat(chunk, '\n'),
-      filename = chunk_name,
-      filetype = 'text',
-      score = 0.1,
-    })
-  end
-
-  -- Read file contents
-  if with_content then
-    utils.schedule_main()
-
-    files = vim.tbl_filter(
-      function(file)
-        return file.ft ~= nil
-      end,
-      vim.tbl_map(function(file)
-        return {
-          name = utils.filepath(file),
-          ft = utils.filetype(file),
-        }
-      end, files)
-    )
-
-    for _, file in ipairs(files) do
-      local file_data = get_file(file.name, file.ft)
-      if file_data then
-        table.insert(out, file_data)
-      end
-    end
-  end
-
-  return out
-end
-
---- Get the content of a file
----@param filename? string
----@return CopilotChat.context.embed?
-function M.file(filename)
-  if not filename or filename == '' then
-    return nil
-  end
-
-  utils.schedule_main()
-  local ft = utils.filetype(filename)
-  if not ft then
-    return nil
-  end
-
-  return get_file(utils.filepath(filename), ft)
-end
-
---- Get the content of a buffer
+--- Get data for a buffer
 ---@param bufnr number
 ---@return CopilotChat.context.embed?
-function M.buffer(bufnr)
-  notify.publish(notify.STATUS, 'Reading buffer ' .. bufnr)
-  utils.schedule_main()
-
+function M.get_buffer(bufnr)
   if not utils.buf_valid(bufnr) then
     return nil
   end
@@ -468,7 +391,7 @@ function M.buffer(bufnr)
     return nil
   end
 
-  local out = build_outline(
+  local out = M.get_outline(
     table.concat(content, '\n'),
     utils.filepath(vim.api.nvim_buf_get_name(bufnr)),
     vim.bo[bufnr].filetype
@@ -479,34 +402,16 @@ function M.buffer(bufnr)
   return out
 end
 
---- Get content of all buffers
----@param buf_type string
----@return table<CopilotChat.context.embed>
-function M.buffers(buf_type)
-  utils.schedule_main()
-
-  return vim.tbl_map(
-    M.buffer,
-    vim.tbl_filter(function(b)
-      return utils.buf_valid(b)
-        and vim.fn.buflisted(b) == 1
-        and (buf_type == 'listed' or #vim.fn.win_findbuf(b) > 0)
-    end, vim.api.nvim_list_bufs())
-  )
-end
-
 --- Get the content of an URL
 ---@param url string
 ---@return CopilotChat.context.embed?
-function M.url(url)
+function M.get_url(url)
   if not url or url == '' then
     return nil
   end
 
   local content = url_cache[url]
   if not content then
-    notify.publish(notify.STATUS, 'Fetching ' .. url)
-
     local ok, out = async.util.apcall(utils.system, { 'lynx', '-dump', url })
     if ok and out and out.code == 0 then
       -- Use lynx to fetch content
@@ -551,126 +456,6 @@ function M.url(url)
   return {
     content = content,
     filename = url,
-    filetype = 'text',
-  }
-end
-
---- Get current git diff
----@param type string
----@param winnr number
----@return CopilotChat.context.embed?
-function M.gitdiff(type, winnr)
-  notify.publish(notify.STATUS, 'Fetching git diff')
-
-  local cwd = utils.win_cwd(winnr)
-  local cmd = {
-    'git',
-    '-C',
-    cwd,
-    'diff',
-    '--no-color',
-    '--no-ext-diff',
-  }
-
-  if type == 'staged' then
-    table.insert(cmd, '--staged')
-  elseif type == 'unstaged' then
-    table.insert(cmd, '--')
-  else
-    table.insert(cmd, type)
-  end
-
-  local out = utils.system(cmd)
-
-  return {
-    content = out.stdout,
-    filename = 'git_diff_' .. type,
-    filetype = 'diff',
-  }
-end
-
---- Return contents of specified register
----@param register string
----@return CopilotChat.context.embed?
-function M.register(register)
-  notify.publish(notify.STATUS, 'Reading register ' .. register)
-  utils.schedule_main()
-
-  local lines = vim.fn.getreg(register)
-  if not lines or lines == '' then
-    return nil
-  end
-
-  return {
-    content = lines,
-    filename = 'vim_register_' .. register,
-    filetype = '',
-  }
-end
-
---- Get the content of the quickfix list
----@return table<CopilotChat.context.embed>
-function M.quickfix()
-  notify.publish(notify.STATUS, 'Reading quickfix list')
-  utils.schedule_main()
-
-  local items = vim.fn.getqflist()
-  if not items or #items == 0 then
-    return {}
-  end
-
-  local unique_files = {}
-  for _, item in ipairs(items) do
-    local filename = item.filename or vim.api.nvim_buf_get_name(item.bufnr)
-    if filename then
-      unique_files[filename] = true
-    end
-  end
-
-  local files = vim.tbl_filter(
-    function(file)
-      return file.ft ~= nil
-    end,
-    vim.tbl_map(function(file)
-      return {
-        name = utils.filepath(file),
-        ft = utils.filetype(file),
-      }
-    end, vim.tbl_keys(unique_files))
-  )
-
-  local out = {}
-  for _, file in ipairs(files) do
-    local file_data = get_file(file.name, file.ft)
-    if file_data then
-      table.insert(out, file_data)
-    end
-  end
-  return out
-end
-
---- Get the output of a system shell command
----@param command string The command to execute
----@return CopilotChat.context.embed?
-function M.system(command)
-  notify.publish(notify.STATUS, 'Executing command: ' .. command)
-  utils.schedule_main()
-
-  local shell, shell_flag
-  if vim.fn.has('win32') == 1 then
-    shell, shell_flag = 'cmd.exe', '/c'
-  else
-    shell, shell_flag = 'sh', '-c'
-  end
-
-  local out = utils.system({ shell, shell_flag, command })
-  if not out or out.stdout == '' then
-    return nil
-  end
-
-  return {
-    content = out.stdout,
-    filename = 'command_output_' .. command:gsub('[^%w]', '_'):sub(1, 20),
     filetype = 'text',
   }
 end

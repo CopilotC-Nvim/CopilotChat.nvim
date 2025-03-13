@@ -199,6 +199,10 @@ end
 function M.filetype(filename)
   local ft = vim.filetype.match({ filename = filename })
 
+  if not ft and vim.endswith(filename, '.sh') then
+    return 'sh'
+  end
+
   -- weird TypeScript bug for vim.filetype.match
   -- see: https://github.com/neovim/neovim/issues/27265
   if not ft then

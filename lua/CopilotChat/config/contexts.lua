@@ -33,8 +33,10 @@ return {
     end,
     resolve = function(input, source)
       input = input and tonumber(input) or source.bufnr
+
+      utils.schedule_main()
       return {
-        context.buffer(input),
+        context.get_buffer(input),
       }
     end,
   },
@@ -48,7 +50,16 @@ return {
     end,
     resolve = function(input)
       input = input or 'listed'
-      return context.buffers(input)
+
+      utils.schedule_main()
+      return vim.tbl_map(
+        context.get_buffer,
+        vim.tbl_filter(function(b)
+          return utils.buf_valid(b)
+            and vim.fn.buflisted(b) == 1
+            and (input == 'listed' or #vim.fn.win_findbuf(b) > 0)
+        end, vim.api.nvim_list_bufs())
+      )
     end,
   },
 
@@ -66,8 +77,13 @@ return {
       }, callback)
     end,
     resolve = function(input)
+      if not input or input == '' then
+        return {}
+      end
+
+      utils.schedule_main()
       return {
-        context.file(input),
+        context.get_file(utils.filepath(input)),
       }
     end,
   },
@@ -80,9 +96,33 @@ return {
       }, callback)
     end,
     resolve = function(input, source)
-      return context.files(source.winnr, true, {
+      local out = {}
+      local cwd = utils.win_cwd(source.winnr)
+      local files = utils.scan_dir(cwd, {
         glob = input,
       })
+
+      utils.schedule_main()
+      files = vim.tbl_filter(
+        function(file)
+          return file.ft ~= nil
+        end,
+        vim.tbl_map(function(file)
+          return {
+            name = utils.filepath(file),
+            ft = utils.filetype(file),
+          }
+        end, files)
+      )
+
+      for _, file in ipairs(files) do
+        local file_data = context.get_file(file.name, file.ft)
+        if file_data then
+          table.insert(out, file_data)
+        end
+      end
+
+      return out
     end,
   },
 
@@ -94,9 +134,31 @@ return {
       }, callback)
     end,
     resolve = function(input, source)
-      return context.files(source.winnr, false, {
+      local out = {}
+      local cwd = utils.win_cwd(source.winnr)
+      local files = utils.scan_dir(cwd, {
         glob = input,
       })
+
+      local chunk_size = 100
+      for i = 1, #files, chunk_size do
+        local chunk = {}
+        for j = i, math.min(i + chunk_size - 1, #files) do
+          table.insert(chunk, files[j])
+        end
+
+        local chunk_number = math.floor(i / chunk_size)
+        local chunk_name = chunk_number == 0 and 'file_map' or 'file_map' .. tostring(chunk_number)
+
+        table.insert(out, {
+          content = table.concat(chunk, '\n'),
+          filename = chunk_name,
+          filetype = 'text',
+          score = 0.1,
+        })
+      end
+
+      return out
     end,
   },
 
@@ -109,8 +171,32 @@ return {
     end,
     resolve = function(input, source)
       input = input or 'unstaged'
+      local cwd = utils.win_cwd(source.winnr)
+      local cmd = {
+        'git',
+        '-C',
+        cwd,
+        'diff',
+        '--no-color',
+        '--no-ext-diff',
+      }
+
+      if input == 'staged' then
+        table.insert(cmd, '--staged')
+      elseif input == 'unstaged' then
+        table.insert(cmd, '--')
+      else
+        table.insert(cmd, input)
+      end
+
+      local out = utils.system(cmd)
+
       return {
-        context.gitdiff(input, source.winnr),
+        {
+          content = out.stdout,
+          filename = 'git_diff_' .. input,
+          filetype = 'diff',
+        },
       }
     end,
   },
@@ -125,7 +211,7 @@ return {
     end,
     resolve = function(input)
       return {
-        context.url(input),
+        context.get_url(input),
       }
     end,
   },
@@ -158,8 +244,19 @@ return {
     end,
     resolve = function(input)
       input = input or '+'
+
+      utils.schedule_main()
+      local lines = vim.fn.getreg(input)
+      if not lines or lines == '' then
+        return {}
+      end
+
       return {
-        context.register(input),
+        {
+          content = lines,
+          filename = 'vim_register_' .. input,
+          filetype = '',
+        },
       }
     end,
   },
@@ -167,7 +264,41 @@ return {
   quickfix = {
     description = 'Includes quickfix list file contents in chat context.',
     resolve = function()
-      return context.quickfix()
+      utils.schedule_main()
+
+      local items = vim.fn.getqflist()
+      if not items or #items == 0 then
+        return {}
+      end
+
+      local unique_files = {}
+      for _, item in ipairs(items) do
+        local filename = item.filename or vim.api.nvim_buf_get_name(item.bufnr)
+        if filename then
+          unique_files[filename] = true
+        end
+      end
+
+      local files = vim.tbl_filter(
+        function(file)
+          return file.ft ~= nil
+        end,
+        vim.tbl_map(function(file)
+          return {
+            name = utils.filepath(file),
+            ft = utils.filetype(file),
+          }
+        end, vim.tbl_keys(unique_files))
+      )
+
+      local out = {}
+      for _, file in ipairs(files) do
+        local file_data = context.get_file(file.name, file.ft)
+        if file_data then
+          table.insert(out, file_data)
+        end
+      end
+      return out
     end,
   },
 
@@ -179,8 +310,30 @@ return {
       }, callback)
     end,
     resolve = function(input)
+      if not input or input == '' then
+        return {}
+      end
+
+      utils.schedule_main()
+
+      local shell, shell_flag
+      if vim.fn.has('win32') == 1 then
+        shell, shell_flag = 'cmd.exe', '/c'
+      else
+        shell, shell_flag = 'sh', '-c'
+      end
+
+      local out = utils.system({ shell, shell_flag, input })
+      if not out or out.stdout == '' then
+        return {}
+      end
+
       return {
-        context.system(input),
+        {
+          content = out.stdout,
+          filename = 'command_output_' .. input:gsub('[^%w]', '_'):sub(1, 20),
+          filetype = 'text',
+        },
       }
     end,
   },
