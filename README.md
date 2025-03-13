@@ -362,6 +362,10 @@ Define your own contexts in the configuration with input handling and resolution
 }
 ```
 
+### External Contexts
+
+For external contexts, see the [contexts discussion page](https://github.com/CopilotC-Nvim/CopilotChat.nvim/discussions/categories/contexts).
+
 ## Selections
 
 Selections determine the source content for chat interactions.
@@ -430,7 +434,7 @@ Custom providers can implement these methods:
 
 ### External Providers
 
-For external providers (Ollama, LM Studio, Mistral.ai), see the [external providers discussion page](https://github.com/CopilotC-Nvim/CopilotChat.nvim/discussions/categories/external-providers).
+For external providers (Ollama, LM Studio, Mistral.ai), see the [providers discussion page](https://github.com/CopilotC-Nvim/CopilotChat.nvim/discussions/categories/providers).
 
 # Configuration
 
