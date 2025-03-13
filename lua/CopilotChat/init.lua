@@ -175,19 +175,25 @@ local function finish(start_of_chat)
     state.last_prompt = insert_sticky(state.last_prompt, M.config, true)
   end
 
-  -- Reinsert sticky prompts from last prompt
+  -- Reinsert sticky prompts from last prompt and last response
+  local lines = {}
   if state.last_prompt then
-    local has_sticky = false
-    local lines = vim.split(state.last_prompt, '\n')
-    for _, line in ipairs(lines) do
-      if vim.startswith(line, '> ') then
-        M.chat:append(line .. '\n')
-        has_sticky = true
-      end
+    lines = vim.split(state.last_prompt, '\n')
+  end
+  if state.last_response then
+    for _, line in ipairs(vim.split(state.last_response, '\n')) do
+      table.insert(lines, line)
     end
-    if has_sticky then
-      M.chat:append('\n')
+  end
+  local has_sticky = false
+  for _, line in ipairs(lines) do
+    if vim.startswith(line, '> ') then
+      M.chat:append(line .. '\n')
+      has_sticky = true
     end
+  end
+  if has_sticky then
+    M.chat:append('\n')
   end
 
   M.chat:finish()
@@ -831,6 +837,14 @@ function M.ask(prompt, config)
   config, prompt = M.resolve_prompt(prompt, config)
   local system_prompt = config.system_prompt or ''
 
+  -- Resolve context name and description
+  local contexts = {}
+  for name, context in pairs(M.config.contexts) do
+    if context.description then
+      contexts[name] = context.description
+    end
+  end
+
   -- Remove sticky prefix
   prompt = vim.trim(table.concat(
     vim.tbl_map(function(l)
@@ -864,6 +878,7 @@ function M.ask(prompt, config)
       pcall(client.ask, client, prompt, {
         load_history = not config.headless,
         store_history = not config.headless,
+        contexts = contexts,
         selection = selection,
         embeddings = filtered_embeddings,
         system_prompt = system_prompt,
