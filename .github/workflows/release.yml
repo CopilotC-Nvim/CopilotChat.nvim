@@ -17,5 +17,4 @@ jobs:
         id: release
         with:
           release-type: simple
-          package-name: CopilotChat.nvim
           token: ${{ secrets.GITHUB_TOKEN }}
