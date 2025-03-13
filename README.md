@@ -322,7 +322,7 @@ Contexts provide additional information to the chat. Add context using `#context
 | `system`    | ✓ (command)   | Output of shell command             |
 
 > [!TIP]
-> The AI is aware of these context providers and may request additional context 
+> The AI is aware of these context providers and may request additional context
 > if needed by asking you to input a specific context command like `#file:path/to/file.js`.
 
 Examples:
