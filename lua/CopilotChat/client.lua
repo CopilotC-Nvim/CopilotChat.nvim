@@ -1,6 +1,7 @@
 ---@class CopilotChat.Client.ask
 ---@field load_history boolean
 ---@field store_history boolean
+---@field contexts table<string, string>?
 ---@field selection CopilotChat.select.selection?
 ---@field embeddings table<CopilotChat.context.embed>?
 ---@field system_prompt string
@@ -202,14 +203,49 @@ end
 --- Generate ask request
 --- @param history table<CopilotChat.Provider.input>
 --- @param memory CopilotChat.Client.memory?
+--- @param contexts table<string, string>?
 --- @param prompt string
 --- @param system_prompt string
 --- @param generated_messages table<CopilotChat.Provider.input>
-local function generate_ask_request(history, memory, prompt, system_prompt, generated_messages)
+local function generate_ask_request(
+  history,
+  memory,
+  contexts,
+  prompt,
+  system_prompt,
+  generated_messages
+)
   local messages = {}
-  local contexts = {}
+  local context_references = {}
 
   local combined_system = system_prompt
+
+  if contexts and not vim.tbl_isempty(contexts) then
+    local help_text = [[
+    If you don't have sufficient context to answer accurately, ask for user to provide more context using any of these context providers:
+
+    > #<command>:<input>
+
+    For example:
+    > #file:path/to/file.js
+    > #buffers:visible
+    > #git:staged
+
+    Note: For inputs with spaces, use backticks: #file:`path/to file with spaces.js`
+
+    Available context providers:
+    ]]
+
+    local context_names = vim.tbl_keys(contexts)
+    table.sort(context_names)
+    for _, name in ipairs(context_names) do
+      local description = contexts[name]
+      help_text = help_text .. '\n' .. string.format('- #%s: %s', name, description)
+    end
+
+    combined_system = combined_system .. '\n' .. help_text
+  end
+
   if memory and memory.content and memory.content ~= '' then
     if combined_system ~= '' then
       combined_system = combined_system
@@ -235,7 +271,7 @@ local function generate_ask_request(history, memory, prompt, system_prompt, gene
     })
 
     if message.context then
-      contexts[message.context] = true
+      context_references[message.context] = true
     end
   end
 
@@ -243,8 +279,8 @@ local function generate_ask_request(history, memory, prompt, system_prompt, gene
     table.insert(messages, message)
   end
 
-  if not vim.tbl_isempty(contexts) then
-    prompt = table.concat(vim.tbl_keys(contexts), '\n') .. '\n' .. prompt
+  if not vim.tbl_isempty(context_references) then
+    prompt = table.concat(vim.tbl_keys(context_references), '\n') .. '\n' .. prompt
   end
 
   table.insert(messages, {
@@ -396,6 +432,7 @@ function Client:ask(prompt, opts)
     opts.agent = nil
   end
 
+  local contexts = opts.contexts
   local embeddings = opts.embeddings or {}
   local selection = opts.selection or {}
   local system_prompt = vim.trim(opts.system_prompt)
@@ -658,7 +695,7 @@ function Client:ask(prompt, opts)
 
   local headers = self:authenticate(provider_name)
   local request = provider.prepare_input(
-    generate_ask_request(history, self.memory, prompt, system_prompt, generated_messages),
+    generate_ask_request(history, self.memory, contexts, prompt, system_prompt, generated_messages),
     options
   )
   local is_stream = request.stream
