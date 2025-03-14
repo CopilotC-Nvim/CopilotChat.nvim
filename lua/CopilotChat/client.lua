@@ -216,8 +216,8 @@ local function generate_ask_request(
   generated_messages
 )
   local messages = {}
-  local context_references = {}
-  local combined_system = system_prompt
+
+  system_prompt = vim.trim(system_prompt)
 
   -- Include context help
   if contexts and not vim.tbl_isempty(contexts) then
@@ -244,27 +244,32 @@ local function generate_ask_request(
       help_text = help_text .. '\n' .. string.format('- #%s: %s', name, description)
     end
 
-    combined_system = combined_system .. '\n' .. help_text
+    system_prompt = system_prompt .. '\n' .. help_text
   end
 
+  -- Include memory
   if memory and memory.content and memory.content ~= '' then
-    if combined_system ~= '' then
-      combined_system = combined_system
+    if system_prompt ~= '' then
+      system_prompt = system_prompt
         .. '\n\n'
         .. 'Context from previous conversation:\n'
         .. memory.content
     else
-      combined_system = 'Context from previous conversation:\n' .. memory.content
+      system_prompt = 'Context from previous conversation:\n' .. memory.content
     end
   end
 
-  if combined_system ~= '' then
+  -- Include system prompt
+  if not utils.empty(system_prompt) then
     table.insert(messages, {
-      content = combined_system,
+      content = system_prompt,
       role = 'system',
     })
   end
 
+  local context_references = {}
+
+  -- Include embeddings and history
   for _, message in ipairs(generated_messages) do
     table.insert(messages, {
       content = message.content,
@@ -275,20 +280,26 @@ local function generate_ask_request(
       context_references[message.context] = true
     end
   end
-
   for _, message in ipairs(history) do
     table.insert(messages, message)
   end
 
+  -- Include context references
+  prompt = vim.trim(prompt)
   if not vim.tbl_isempty(context_references) then
     prompt = table.concat(vim.tbl_keys(context_references), '\n') .. '\n' .. prompt
   end
 
-  table.insert(messages, {
-    content = prompt,
-    role = 'user',
-  })
+  -- Include user prompt
+  if not utils.empty(prompt) then
+    table.insert(messages, {
+      content = prompt,
+      role = 'user',
+    })
+  end
 
+  log.debug('System prompt:\n', system_prompt)
+  log.debug('Prompt:\n', prompt)
   return messages
 end
 
@@ -389,7 +400,7 @@ function Client:fetch_models()
     end
   end
 
-  log.debug('Fetched models: ', vim.inspect(models))
+  log.debug('Fetched models:', vim.inspect(models))
   self.models = models
   return self.models
 end
@@ -441,7 +452,6 @@ end
 ---@return string?, table?, number?, number?
 function Client:ask(prompt, opts)
   opts = opts or {}
-  prompt = vim.trim(prompt)
 
   if opts.agent == 'none' or opts.agent == 'copilot' then
     opts.agent = nil
@@ -450,20 +460,15 @@ function Client:ask(prompt, opts)
   local contexts = opts.contexts
   local embeddings = opts.embeddings or {}
   local selection = opts.selection or {}
-  local system_prompt = vim.trim(opts.system_prompt)
+  local system_prompt = opts.system_prompt
   local model = opts.model
   local agent = opts.agent
   local temperature = opts.temperature
   local on_progress = opts.on_progress
   local job_id = utils.uuid()
 
-  log.trace('System prompt: ', system_prompt)
-  log.trace('Selection: ', selection.content)
-  log.debug('Prompt: ', prompt)
-  log.debug('Embeddings: ', #embeddings)
-  log.debug('Model: ', model)
-  log.debug('Agent: ', agent)
-  log.debug('Temperature: ', temperature)
+  log.debug('Model:', model)
+  log.debug('Agent:', agent)
 
   local models = self:fetch_models()
   local model_config = models[model]
@@ -498,8 +503,7 @@ function Client:ask(prompt, opts)
 
   local max_tokens = model_config.max_input_tokens
   local tokenizer = model_config.tokenizer or 'o200k_base'
-  log.debug('Max tokens: ', max_tokens)
-  log.debug('Tokenizer: ', tokenizer)
+  log.debug('Tokenizer:', tokenizer)
 
   if max_tokens and tokenizer then
     tiktoken.load(tokenizer)
@@ -600,7 +604,7 @@ function Client:ask(prompt, opts)
     end
   end
 
-  log.debug('Generated messages: ', #generated_messages)
+  log.debug('References:', #generated_messages)
 
   local last_message = nil
   local errored = false
@@ -626,7 +630,7 @@ function Client:ask(prompt, opts)
       return
     end
 
-    log.debug('Response line: ', line)
+    log.debug('Response line:', line)
     notify.publish(notify.STATUS, '')
 
     local content, err = utils.json_decode(line)
@@ -676,9 +680,7 @@ function Client:ask(prompt, opts)
       return
     end
 
-    line = line:gsub('^data:', '')
-    line = vim.trim(line)
-
+    line = line:gsub('^data:%s*', '')
     if line == '[DONE]' then
       finish_stream(nil, job)
       return
@@ -732,9 +734,9 @@ function Client:ask(prompt, opts)
 
   self.current_job = nil
 
-  log.debug('Response status: ', response.status)
-  log.debug('Response body: ', response.body)
-  log.debug('Response headers: ', response.headers)
+  log.debug('Response status:', response.status)
+  log.debug('Response body:\n', response.body)
+  log.debug('Response headers:\n', response.headers)
 
   if err then
     local error_msg = 'Failed to get response: ' .. err
@@ -777,8 +779,8 @@ function Client:ask(prompt, opts)
     return
   end
 
-  log.trace('Full response: ', full_response)
-  log.debug('Last message: ', last_message)
+  log.trace('Response content:\n', full_response)
+  log.debug('Response message:\n', vim.inspect(last_message))
 
   if opts.store_history then
     table.insert(self.history, {

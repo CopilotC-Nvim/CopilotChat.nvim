@@ -38,8 +38,7 @@ local state = {
 ---@param prompt string
 ---@param config CopilotChat.config.shared
 local function insert_sticky(prompt, config, override_sticky)
-  prompt = vim.trim(prompt or '')
-  local lines = vim.split(prompt, '\n')
+  local lines = vim.split(prompt or '', '\n')
   local stickies = utils.ordered_map()
 
   local sticky_indices = {}
@@ -840,7 +839,7 @@ end
 ---@param prompt string?
 ---@param config CopilotChat.config.shared?
 function M.ask(prompt, config)
-  prompt = vim.trim(prompt or '')
+  prompt = prompt or ''
   if prompt == '' then
     return
   end
@@ -848,6 +847,7 @@ function M.ask(prompt, config)
   vim.diagnostic.reset(vim.api.nvim_create_namespace('copilot-chat-diagnostics'))
   config = vim.tbl_deep_extend('force', M.config, config or {})
   prompt = insert_sticky(prompt, config)
+  prompt = vim.trim(prompt)
 
   if not config.headless then
     if config.clear_chat_on_new_prompt then
@@ -880,12 +880,12 @@ function M.ask(prompt, config)
   end
 
   -- Remove sticky prefix
-  prompt = vim.trim(table.concat(
+  prompt = table.concat(
     vim.tbl_map(function(l)
       return l:gsub('^>%s+', '')
     end, vim.split(prompt, '\n')),
     '\n'
-  ))
+  )
 
   -- Retrieve the selection
   local selection = M.get_selection()
@@ -1002,10 +1002,8 @@ end
 ---@param name string?
 ---@param history_path string?
 function M.save(name, history_path)
-  if not name or vim.trim(name) == '' then
+  if not name or name == '' then
     name = 'default'
-  else
-    name = vim.trim(name)
   end
 
   history_path = history_path or M.config.history_path
@@ -1032,10 +1030,8 @@ end
 ---@param name string?
 ---@param history_path string?
 function M.load(name, history_path)
-  if not name or vim.trim(name) == '' then
+  if not name or name == '' then
     name = 'default'
-  else
-    name = vim.trim(name)
   end
 
   history_path = history_path or M.config.history_path
