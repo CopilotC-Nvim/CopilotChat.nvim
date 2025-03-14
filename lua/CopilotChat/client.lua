@@ -224,13 +224,13 @@ local function generate_ask_request(
     local help_text = [[
   If you don't have sufficient context to answer accurately, ask for user to provide more context using any of these context providers:
 
-  > #<command>:<input>
+  > #<command>:`<input>`
 
   For example:
-  > #file:path/to/file.js                (loads a specific file)
-  > #file:`path/to file with spaces.js`  (loads a file with spaces in name)
-  > #buffers:visible                     (loads all visible buffers)
-  > #git:staged                          (loads git staged changes)
+  > #file:`path/to/file.js`         (loads a specific file)
+  > #buffers:`visible`              (loads all visible buffers)
+  > #git:`staged`                   (loads git staged changes)
+  > #system:`uname -a`              (loads system information)
 
   Do not make assumptions about code or files - always request context when needed rather than guessing.
   Always use the > format on a new line when requesting more context instead of asking in prose.
