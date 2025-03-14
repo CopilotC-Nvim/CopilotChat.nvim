@@ -91,8 +91,7 @@ local function generate_content_block(content, outline, threshold, start_line)
     local total_lines = #lines
     local max_length = #tostring(total_lines)
     for i, line in ipairs(lines) do
-      local formatted_line_number =
-        string.format('%' .. max_length .. 'd', i - 1 + (start_line or 1))
+      local formatted_line_number = string.format('%' .. max_length .. 'd', i - 1 + (start_line or 1))
       lines[i] = formatted_line_number .. ': ' .. line
     end
 
@@ -141,13 +140,7 @@ local function generate_selection_messages(selection)
   local out = string.format('# FILE:%s CONTEXT\n', filename:upper())
   out = out .. "User's active selection:\n"
   if selection.start_line and selection.end_line then
-    out = out
-      .. string.format(
-        'Excerpt from %s, lines %s to %s:\n',
-        filename,
-        selection.start_line,
-        selection.end_line
-      )
+    out = out .. string.format('Excerpt from %s, lines %s to %s:\n', filename, selection.start_line, selection.end_line)
   end
   out = out
     .. string.format(
@@ -158,10 +151,7 @@ local function generate_selection_messages(selection)
 
   if selection.diagnostics then
     out = out
-      .. string.format(
-        "\nDiagnostics in user's active selection:\n%s",
-        generate_diagnostics(selection.diagnostics)
-      )
+      .. string.format("\nDiagnostics in user's active selection:\n%s", generate_diagnostics(selection.diagnostics))
   end
 
   return {
@@ -215,22 +205,14 @@ end
 --- @param prompt string
 --- @param system_prompt string
 --- @param generated_messages table<CopilotChat.Provider.input>
-local function generate_ask_request(
-  history,
-  memory,
-  contexts,
-  prompt,
-  system_prompt,
-  generated_messages
-)
+local function generate_ask_request(history, memory, contexts, prompt, system_prompt, generated_messages)
   local messages = {}
 
   system_prompt = vim.trim(system_prompt)
 
   -- Include context help
   if contexts and not vim.tbl_isempty(contexts) then
-    local help_text =
-      [[When you need additional context, you must request it using context providers in this format:
+    local help_text = [[When you need additional context, you must request it using context providers in this format:
 
 > #<command>:`<input>`
 
@@ -319,17 +301,11 @@ end
 --- @return table<string>
 local function generate_embedding_request(inputs, threshold)
   return vim.tbl_map(function(embedding)
-    local content =
-      generate_content_block(embedding.outline or embedding.content, nil, threshold, -1)
+    local content = generate_content_block(embedding.outline or embedding.content, nil, threshold, -1)
     if embedding.filetype == 'raw' then
       return content
     else
-      return string.format(
-        'File: `%s`\n```%s\n%s\n```',
-        embedding.filename,
-        embedding.filetype,
-        content
-      )
+      return string.format('File: `%s`\n```%s\n%s\n```', embedding.filename, embedding.filetype, content)
     end
   end, inputs)
 end
@@ -362,9 +338,7 @@ function Client:authenticate(provider_name)
   local headers = self.provider_cache[provider_name].headers
   local expires_at = self.provider_cache[provider_name].expires_at
 
-  if
-    provider.get_headers and (not headers or (expires_at and expires_at <= math.floor(os.time())))
-  then
+  if provider.get_headers and (not headers or (expires_at and expires_at <= math.floor(os.time()))) then
     headers, expires_at = provider.get_headers()
     self.provider_cache[provider_name].headers = headers
     self.provider_cache[provider_name].expires_at = expires_at
@@ -515,8 +489,7 @@ function Client:ask(prompt, opts)
 
   local history = {}
   if opts.load_history then
-    history =
-      vim.list_slice(self.history, self.memory and (self.memory.last_summarized_index + 1) or 1)
+    history = vim.list_slice(self.history, self.memory and (self.memory.last_summarized_index + 1) or 1)
   end
 
   local references = utils.ordered_map()
@@ -546,9 +519,7 @@ function Client:ask(prompt, opts)
     local required_tokens = prompt_tokens + system_tokens + selection_tokens + memory_tokens
 
     -- Reserve space for first embedding
-    local reserved_tokens = #embeddings_messages > 0
-        and tiktoken.count(embeddings_messages[1].content)
-      or 0
+    local reserved_tokens = #embeddings_messages > 0 and tiktoken.count(embeddings_messages[1].content) or 0
 
     -- Calculate how many tokens we can use for history
     local history_limit = max_tokens - required_tokens - reserved_tokens
@@ -563,8 +534,7 @@ function Client:ask(prompt, opts)
         self:summarize_history(opts.model)
 
         -- Recalculate history and tokens
-        history =
-          vim.list_slice(self.history, self.memory and (self.memory.last_summarized_index + 1) or 1)
+        history = vim.list_slice(self.history, self.memory and (self.memory.last_summarized_index + 1) or 1)
         history_tokens = 0
         for _, msg in ipairs(history) do
           history_tokens = history_tokens + tiktoken.count(msg.content)
@@ -714,14 +684,7 @@ function Client:ask(prompt, opts)
 
   local headers = self:authenticate(provider_name)
   local request = provider.prepare_input(
-    generate_ask_request(
-      history,
-      self.memory,
-      opts.contexts,
-      prompt,
-      opts.system_prompt,
-      generated_messages
-    ),
+    generate_ask_request(history, self.memory, opts.contexts, prompt, opts.system_prompt, generated_messages),
     options
   )
   local is_stream = request.stream
@@ -804,10 +767,7 @@ function Client:ask(prompt, opts)
     })
   end
 
-  return response_text,
-    references:values(),
-    last_message and last_message.total_tokens or 0,
-    max_tokens
+  return response_text, references:values(), last_message and last_message.total_tokens or 0, max_tokens
 end
 
 --- List available models
@@ -887,8 +847,7 @@ function Client:embed(inputs, model)
     local success = false
     local attempts = 0
     while not success and attempts < 5 do -- Limit total attempts to 5
-      local ok, data =
-        pcall(embed, generate_embedding_request(batch, threshold), self:authenticate(provider_name))
+      local ok, data = pcall(embed, generate_embedding_request(batch, threshold), self:authenticate(provider_name))
 
       if not ok then
         log.debug('Failed to get embeddings: ', data)

@@ -50,8 +50,7 @@ local function get_diff(block)
 
     -- If we found a valid buffer, get the reference content
     if bufnr and utils.buf_valid(bufnr) then
-      reference =
-        table.concat(vim.api.nvim_buf_get_lines(bufnr, start_line - 1, end_line, false), '\n')
+      reference = table.concat(vim.api.nvim_buf_get_lines(bufnr, start_line - 1, end_line, false), '\n')
       filetype = vim.bo[bufnr].filetype
     end
   end
@@ -349,9 +348,7 @@ return {
       }
 
       if copilot.config.mappings.show_diff.full_diff then
-        local modified = utils.buf_valid(diff.bufnr)
-            and vim.api.nvim_buf_get_lines(diff.bufnr, 0, -1, false)
-          or {}
+        local modified = utils.buf_valid(diff.bufnr) and vim.api.nvim_buf_get_lines(diff.bufnr, 0, -1, false) or {}
 
         -- Apply all diffs from same file
         if #modified > 0 then

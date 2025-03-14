@@ -391,11 +391,8 @@ function M.get_buffer(bufnr)
     return nil
   end
 
-  local out = M.get_outline(
-    table.concat(content, '\n'),
-    utils.filepath(vim.api.nvim_buf_get_name(bufnr)),
-    vim.bo[bufnr].filetype
-  )
+  local out =
+    M.get_outline(table.concat(content, '\n'), utils.filepath(vim.api.nvim_buf_get_name(bufnr)), vim.bo[bufnr].filetype)
 
   out.score = 0.1
   out.diagnostics = utils.diagnostics(bufnr)
@@ -426,18 +423,12 @@ function M.get_url(url)
       content = vim.trim(response
         .body
         -- Remove script, style tags and their contents first
-        :gsub(
-          '<script.-</script>',
-          ''
-        )
+        :gsub('<script.-</script>', '')
         :gsub('<style.-</style>', '')
         -- Remove XML/CDATA in one go
         :gsub('<!?%[?[%w%s]*%]?>', '')
         -- Remove all HTML tags (both opening and closing) in one go
-        :gsub(
-          '<%/?%w+[^>]*>',
-          ' '
-        )
+        :gsub('<%/?%w+[^>]*>', ' ')
         -- Handle common HTML entities
         :gsub('&(%w+);', {
           nbsp = ' ',

@@ -74,18 +74,14 @@ function M.check()
 
   local rg_version = run_command('rg', '--version')
   if rg_version == false then
-    warn(
-      'rg: missing, optional for improved search performance. See "https://github.com/BurntSushi/ripgrep".'
-    )
+    warn('rg: missing, optional for improved search performance. See "https://github.com/BurntSushi/ripgrep".')
   else
     ok('rg: ' .. rg_version)
   end
 
   local lynx_version = run_command('lynx', '-version')
   if lynx_version == false then
-    warn(
-      'lynx: missing, optional for improved fetching of url contents. See "https://lynx.invisible-island.net/".'
-    )
+    warn('lynx: missing, optional for improved fetching of url contents. See "https://lynx.invisible-island.net/".')
   else
     ok('lynx: ' .. lynx_version)
   end
@@ -95,9 +91,7 @@ function M.check()
   if lualib_installed('plenary') then
     ok('plenary: installed')
   else
-    error(
-      'plenary: missing, required for http requests and async jobs. Install "nvim-lua/plenary.nvim" plugin.'
-    )
+    error('plenary: missing, required for http requests and async jobs. Install "nvim-lua/plenary.nvim" plugin.')
   end
 
   local has_copilot = lualib_installed('copilot')
@@ -122,9 +116,7 @@ function M.check()
   if lualib_installed('tiktoken_core') then
     ok('tiktoken_core: installed')
   else
-    warn(
-      'tiktoken_core: missing, optional for accurate token counting. See README for installation instructions.'
-    )
+    warn('tiktoken_core: missing, optional for accurate token counting. See README for installation instructions.')
   end
 
   if treesitter_parser_available('markdown') then

@@ -4,10 +4,7 @@ end
 
 local min_version = '0.10.0'
 if vim.fn.has('nvim-' .. min_version) ~= 1 then
-  vim.notify_once(
-    ('CopilotChat.nvim requires Neovim >= %s'):format(min_version),
-    vim.log.levels.ERROR
-  )
+  vim.notify_once(('CopilotChat.nvim requires Neovim >= %s'):format(min_version), vim.log.levels.ERROR)
   return
 end
 
@@ -20,11 +17,7 @@ vim.api.nvim_set_hl(0, 'CopilotChatKeyword', { link = 'Keyword', default = true 
 vim.api.nvim_set_hl(0, 'CopilotChatInput', { link = 'Special', default = true })
 vim.api.nvim_set_hl(0, 'CopilotChatSelection', { link = 'Visual', default = true })
 vim.api.nvim_set_hl(0, 'CopilotChatHeader', { link = '@markup.heading.2.markdown', default = true })
-vim.api.nvim_set_hl(
-  0,
-  'CopilotChatSeparator',
-  { link = '@punctuation.special.markdown', default = true }
-)
+vim.api.nvim_set_hl(0, 'CopilotChatSeparator', { link = '@punctuation.special.markdown', default = true })
 
 -- Setup commands
 vim.api.nvim_create_user_command('CopilotChat', function(args)
