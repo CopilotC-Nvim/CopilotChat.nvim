@@ -221,42 +221,41 @@ local function generate_ask_request(
 
   -- Include context help
   if contexts and not vim.tbl_isempty(contexts) then
-    local help_text = [[
-  If you don't have sufficient context to answer accurately, ask for user to provide more context using any of these context providers:
+    local help_text =
+      [[When you need additional context, you must request it using context providers in this format:
 
-  > #<command>:`<input>`
+> #<command>:`<input>`
 
-  For example:
-  > #file:`path/to/file.js`         (loads a specific file)
-  > #buffers:`visible`              (loads all visible buffers)
-  > #git:`staged`                   (loads git staged changes)
-  > #system:`uname -a`              (loads system information)
+For example:
+> #file:`path/to/file.js`         (loads a specific file)
+> #buffers:`visible`              (loads all visible buffers)
+> #git:`staged`                   (loads git staged changes)
+> #system:`uname -a`             (loads system information)
 
-  Do not make assumptions about code or files - always request context when needed rather than guessing.
-  Always use the > format on a new line when requesting more context instead of asking in prose.
+Do not make assumptions about code or files - always request context when needed rather than guessing.
+Always use the > format on a new line when requesting more context instead of asking in prose.
 
-  Available context providers and their usage:]]
-
+Available context providers and their usage:
+]]
     local context_names = vim.tbl_keys(contexts)
     table.sort(context_names)
     for _, name in ipairs(context_names) do
       local description = contexts[name]
-      help_text = help_text .. '\n' .. string.format('- #%s: %s', name, description)
+      help_text = help_text .. '\n' .. string.format(' - #%s: %s', name, description)
     end
 
-    system_prompt = system_prompt .. '\n' .. help_text
+    if system_prompt ~= '' then
+      system_prompt = system_prompt .. '\n\n'
+    end
+    system_prompt = system_prompt .. help_text
   end
 
   -- Include memory
   if memory and memory.content and memory.content ~= '' then
     if system_prompt ~= '' then
-      system_prompt = system_prompt
-        .. '\n\n'
-        .. 'Context from previous conversation:\n'
-        .. memory.content
-    else
-      system_prompt = 'Context from previous conversation:\n' .. memory.content
+      system_prompt = system_prompt .. '\n\n'
     end
+    system_prompt = system_prompt .. 'Context from previous conversation:\n' .. memory.content
   end
 
   -- Include system prompt
@@ -287,7 +286,10 @@ local function generate_ask_request(
   -- Include context references
   prompt = vim.trim(prompt)
   if not vim.tbl_isempty(context_references) then
-    prompt = table.concat(vim.tbl_keys(context_references), '\n') .. '\n' .. prompt
+    if prompt ~= '' then
+      prompt = '\n\n' .. prompt
+    end
+    prompt = table.concat(vim.tbl_keys(context_references), '\n') .. prompt
   end
 
   -- Include user prompt
