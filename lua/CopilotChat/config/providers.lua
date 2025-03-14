@@ -176,7 +176,7 @@ M.copilot = {
     local models = vim
       .iter(response.body.data)
       :filter(function(model)
-        return model.model_picker_enabled and model.capabilities.type == 'chat'
+        return model.capabilities.type == 'chat'
       end)
       :map(function(model)
         return {
@@ -186,9 +186,23 @@ M.copilot = {
           max_input_tokens = model.capabilities.limits.max_prompt_tokens,
           max_output_tokens = model.capabilities.limits.max_output_tokens,
           policy = not model['policy'] or model['policy']['state'] == 'enabled',
+          version = model.version,
         }
       end)
       :totable()
+
+    local version_map = {}
+    for _, model in ipairs(models) do
+      if not version_map[model.version] or #model.id < #version_map[model.version] then
+        version_map[model.version] = model.id
+      end
+    end
+
+    models = vim.tbl_map(function(id)
+      return vim.tbl_filter(function(model)
+        return model.id == id
+      end, models)[1]
+    end, vim.tbl_values(version_map))
 
     for _, model in ipairs(models) do
       if not model.policy then
