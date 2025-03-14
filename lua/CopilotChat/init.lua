@@ -197,8 +197,7 @@ end
 
 --- Show an error in the chat window.
 ---@param err string|table|nil
----@param append_newline boolean?
-local function show_error(err, append_newline)
+local function show_error(err)
   err = err or 'Unknown error'
 
   if type(err) == 'string' then
@@ -213,11 +212,7 @@ local function show_error(err, append_newline)
     err = utils.make_string(err)
   end
 
-  if append_newline then
-    M.chat:append('\n')
-  end
-
-  M.chat:append(M.config.error_header .. '\n```error\n' .. err .. '\n```')
+  M.chat:append('\n' .. M.config.error_header .. '\n```error\n' .. err .. '\n```')
   finish()
 end
 
@@ -876,7 +871,6 @@ function M.ask(prompt, config)
     local selected_model, prompt = M.resolve_model(prompt, config)
     local embeddings, prompt = M.resolve_context(prompt, config)
 
-    local has_output = false
     local query_ok, filtered_embeddings =
       pcall(context.filter_embeddings, prompt, selected_model, config.headless, embeddings)
 
@@ -884,14 +878,14 @@ function M.ask(prompt, config)
       utils.schedule_main()
       log.error(filtered_embeddings)
       if not config.headless then
-        show_error(filtered_embeddings, has_output)
+        show_error(filtered_embeddings)
       end
       return
     end
 
     local ask_ok, response, references, token_count, token_max_count = pcall(client.ask, client, prompt, {
       load_history = not config.headless,
-      store_history = not config.headless,
+      summarize_history = not config.headless,
       contexts = contexts,
       selection = selection,
       embeddings = filtered_embeddings,
@@ -900,10 +894,16 @@ function M.ask(prompt, config)
       agent = selected_agent,
       temperature = config.temperature,
       on_progress = vim.schedule_wrap(function(token)
-        if not config.headless then
+        local to_print = not config.headless and token
+        if to_print and config.stream then
+          local out = config.stream(token, state.source)
+          if out ~= nil then
+            to_print = out
+          end
+        end
+        if to_print and to_print ~= '' then
           M.chat:append(token)
         end
-        has_output = true
       end),
     })
 
@@ -912,9 +912,28 @@ function M.ask(prompt, config)
     if not ask_ok then
       log.error(response)
       if not config.headless then
-        show_error(response, has_output)
+        show_error(response)
       end
       return
+    end
+
+    -- Call the callback function and store to history
+    local to_store = not config.headless and response
+    if to_store and config.callback then
+      local out = config.callback(response, state.source)
+      if out ~= nil then
+        to_store = out
+      end
+    end
+    if to_store and to_store ~= '' then
+      table.insert(client.history, {
+        content = prompt,
+        role = 'user',
+      })
+      table.insert(client.history, {
+        content = to_store,
+        role = 'assistant',
+      })
     end
 
     if not config.headless then
@@ -931,10 +950,6 @@ function M.ask(prompt, config)
       end
 
       finish()
-    end
-
-    if config.callback then
-      config.callback(response, state.source)
     end
   end)
 
