@@ -66,8 +66,7 @@ return {
   file = {
     description = 'Includes content of provided file in chat context. Supports input.',
     input = function(callback, source)
-      local cwd = utils.win_cwd(source.winnr)
-      local files = utils.scan_dir(cwd, {
+      local files = utils.scan_dir(source.cwd(), {
         max_count = 0,
       })
 
@@ -97,8 +96,7 @@ return {
     end,
     resolve = function(input, source)
       local out = {}
-      local cwd = utils.win_cwd(source.winnr)
-      local files = utils.scan_dir(cwd, {
+      local files = utils.scan_dir(source.cwd(), {
         glob = input,
       })
 
@@ -135,8 +133,7 @@ return {
     end,
     resolve = function(input, source)
       local out = {}
-      local cwd = utils.win_cwd(source.winnr)
-      local files = utils.scan_dir(cwd, {
+      local files = utils.scan_dir(source.cwd(), {
         glob = input,
       })
 
@@ -171,11 +168,10 @@ return {
     end,
     resolve = function(input, source)
       input = input or 'unstaged'
-      local cwd = utils.win_cwd(source.winnr)
       local cmd = {
         'git',
         '-C',
-        cwd,
+        source.cwd(),
         'diff',
         '--no-color',
         '--no-ext-diff',
