@@ -1160,11 +1160,8 @@ function M.setup(config)
           buffer = bufnr,
           callback = function()
             local completeopt = vim.opt.completeopt:get()
-            if
-              not vim.tbl_contains(completeopt, 'noinsert')
-              or not vim.tbl_contains(completeopt, 'popup')
-            then
-              -- Don't trigger completion if completeopt is not set to noinsert,popup
+            if not vim.tbl_contains(completeopt, 'noinsert') then
+              -- Don't trigger completion if completeopt is not set to noinsert
               return
             end
 
@@ -1181,19 +1178,11 @@ function M.setup(config)
           end,
         })
 
-        -- Add popup and noinsert completeopt if not present
+        -- Add noinsert completeopt if not present
         if vim.fn.has('nvim-0.11.0') == 1 then
           local completeopt = vim.opt.completeopt:get()
-          local updated = false
           if not vim.tbl_contains(completeopt, 'noinsert') then
-            updated = true
             table.insert(completeopt, 'noinsert')
-          end
-          if not vim.tbl_contains(completeopt, 'popup') then
-            updated = true
-            table.insert(completeopt, 'popup')
-          end
-          if updated then
             vim.bo[bufnr].completeopt = table.concat(completeopt, ',')
           end
         end
