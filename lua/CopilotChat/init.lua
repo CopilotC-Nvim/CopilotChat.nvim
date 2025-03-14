@@ -383,12 +383,17 @@ function M.resolve_context(prompt, config)
         .. context_data.name
         .. (context_data.input and ' with input: ' .. context_data.input or '')
     )
-    for _, embedding in
-      ipairs(context_value.resolve(context_data.input, state.source or {}, prompt))
-    do
-      if embedding then
-        embeddings:set(embedding.filename, embedding)
+
+    local ok, resolved_embeddings =
+      pcall(context_value.resolve, context_data.input, state.source or {}, prompt)
+    if ok then
+      for _, embedding in resolved_embeddings do
+        if embedding then
+          embeddings:set(embedding.filename, embedding)
+        end
       end
+    else
+      log.error('Failed to resolve context: ' .. context_data.name)
     end
   end
 
