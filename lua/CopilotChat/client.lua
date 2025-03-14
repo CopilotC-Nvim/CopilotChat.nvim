@@ -29,7 +29,7 @@ local class = utils.class
 --- Constants
 local CONTEXT_FORMAT = '[#file:%s](#file:%s-context)'
 local LINE_CHARACTERS = 100
-local BIG_FILE_THRESHOLD = 2000 * LINE_CHARACTERS
+local BIG_FILE_THRESHOLD = 1000 * LINE_CHARACTERS
 local BIG_EMBED_THRESHOLD = 200 * LINE_CHARACTERS
 local TRUNCATED = '... (truncated)'
 
