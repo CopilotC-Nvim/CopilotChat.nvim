@@ -324,14 +324,25 @@ return {
       end
 
       local out = utils.system({ shell, shell_flag, input })
-      if not out or out.stdout == '' then
+      if not out then
         return {}
+      end
+
+      local out_type = 'command_output'
+      local out_text = out.stdout
+      if out.code ~= 0 then
+        out_type = 'command_error'
+        if out.stderr and out.stderr ~= '' then
+          out_text = out.stderr
+        elseif not out_text or out_text == '' then
+          out_text = 'Command failed with exit code ' .. out.code
+        end
       end
 
       return {
         {
-          content = out.stdout,
-          filename = 'command_output_' .. input:gsub('[^%w]', '_'):sub(1, 20),
+          content = out_text,
+          filename = out_type .. '_' .. input:gsub('[^%w]', '_'):sub(1, 20),
           filetype = 'text',
         },
       }
