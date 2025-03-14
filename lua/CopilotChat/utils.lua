@@ -527,6 +527,10 @@ end, 1)
 ---@param surround string|nil
 ---@return string
 function M.key_to_info(name, key, surround)
+  if not key then
+    return ''
+  end
+
   if not surround then
     surround = ''
   end

@@ -276,30 +276,10 @@ end
 
 --- Updates the source buffer based on previous or current window.
 local function update_source()
-  -- Determine which window to use as the source (previous if in chat, current otherwise)
   local use_prev_window = M.chat:focused()
-  local source_winnr = use_prev_window and vim.fn.win_getid(vim.fn.winnr('#'))
-    or vim.api.nvim_get_current_win()
-  local source_bufnr = vim.api.nvim_win_get_buf(source_winnr)
-
-  -- Check if the window is valid to use as a source
-  if
-    source_winnr ~= M.chat.winnr
-    and source_bufnr ~= M.chat.bufnr
-    and vim.fn.win_gettype(source_winnr) == ''
-  then
-    state.source = {
-      bufnr = source_bufnr,
-      winnr = source_winnr,
-      cwd = function()
-        local dir = vim.w[source_winnr].cchat_cwd
-        if not dir or dir == '' then
-          return '.'
-        end
-        return dir
-      end,
-    }
-  end
+  M.set_source(
+    use_prev_window and vim.fn.win_getid(vim.fn.winnr('#')) or vim.api.nvim_get_current_win()
+  )
 end
 
 --- Resolve the final prompt and config from prompt template.
@@ -462,6 +442,41 @@ function M.resolve_model(prompt, config)
   end)
 
   return selected_model, prompt
+end
+
+--- Get the current source buffer and window.
+function M.get_source()
+  return state.source
+end
+
+--- Sets the source to the given window.
+---@param source_winnr number
+---@return boolean if the source was set
+function M.set_source(source_winnr)
+  local source_bufnr = vim.api.nvim_win_get_buf(source_winnr)
+
+  -- Check if the window is valid to use as a source
+  if
+    source_winnr ~= M.chat.winnr
+    and source_bufnr ~= M.chat.bufnr
+    and vim.fn.win_gettype(source_winnr) == ''
+  then
+    state.source = {
+      bufnr = source_bufnr,
+      winnr = source_winnr,
+      cwd = function()
+        local dir = vim.w[source_winnr].cchat_cwd
+        if not dir or dir == '' then
+          return '.'
+        end
+        return dir
+      end,
+    }
+
+    return true
+  end
+
+  return false
 end
 
 --- Get the selection from the source buffer.
