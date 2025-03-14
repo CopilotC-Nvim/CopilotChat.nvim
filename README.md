@@ -232,6 +232,7 @@ System prompts define the AI model's behavior. Reference them with `/PROMPT_NAME
 
 | Prompt                 | Description                                |
 | ---------------------- | ------------------------------------------ |
+| `COPILOT_BASE`         | All prompts should be built on top of this |
 | `COPILOT_INSTRUCTIONS` | Base instructions                          |
 | `COPILOT_EXPLAIN`      | Adds coding tutor behavior                 |
 | `COPILOT_REVIEW`       | Adds code review behavior with diagnostics |
@@ -243,6 +244,9 @@ Define your own system prompts in the configuration (similar to `prompts`):
   prompts = {
     Yarrr = {
       system_prompt = 'You are fascinated by pirates, so please respond in pirate speak.',
+    },
+    NiceInstructions = {
+      system_prompt = 'You are a nice coding tutor, so please respond in a friendly and helpful manner.' .. require('CopilotChat.config.prompts').COPILOT_BASE.system_prompt,
     }
   }
 }

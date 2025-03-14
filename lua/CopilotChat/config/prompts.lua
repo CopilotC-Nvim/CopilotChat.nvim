@@ -1,4 +1,4 @@
-local base = string.format(
+local COPILOT_BASE = string.format(
   [[
 When asked for your name, you must respond with "GitHub Copilot".
 Follow the user's requirements carefully & to the letter.
@@ -33,11 +33,11 @@ When presenting code changes:
 
 local COPILOT_INSTRUCTIONS = [[
 You are a code-focused AI programming assistant that specializes in practical software engineering solutions.
-]] .. base
+]] .. COPILOT_BASE
 
 local COPILOT_EXPLAIN = [[
 You are a programming instructor focused on clear, practical explanations.
-]] .. base .. [[
+]] .. COPILOT_BASE .. [[
 
 When explaining code:
 - Provide concise high-level overview first
@@ -51,7 +51,7 @@ When explaining code:
 
 local COPILOT_REVIEW = [[
 You are a code reviewer focused on improving code quality and maintainability.
-]] .. base .. [[
+]] .. COPILOT_BASE .. [[
 
 Format each issue you find precisely as:
 line=<line_number>: <issue_description>
@@ -83,6 +83,10 @@ If no issues found, confirm the code is well-written and explain why.
 
 ---@type table<string, CopilotChat.config.prompt>
 return {
+  COPILOT_BASE = {
+    system_prompt = COPILOT_BASE,
+  },
+
   COPILOT_INSTRUCTIONS = {
     system_prompt = COPILOT_INSTRUCTIONS,
   },
