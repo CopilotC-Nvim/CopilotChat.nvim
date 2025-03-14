@@ -55,9 +55,10 @@ capabilities directly into your editor. It provides:
 - Copilot chat in the IDE <https://github.com/settings/copilot> enabled in GitHub settings
 
 
-  [!WARNING] For Neovim < 0.11.0, add `noinsert` to your `completeopt` otherwise
-  chat autocompletion will not work. For best autocompletion experience, also add
-  `popup` to your `completeopt` (even on Neovim 0.11.0+).
+  [!WARNING] For Neovim < 0.11.0, add `noinsert` or `noselect` to your
+  `completeopt` otherwise chat autocompletion will not work. For best
+  autocompletion experience, also add `popup` to your `completeopt` (even on
+  Neovim 0.11.0+).
 
 OPTIONAL DEPENDENCIES                      *CopilotChat-optional-dependencies*
 
