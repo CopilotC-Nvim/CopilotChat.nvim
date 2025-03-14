@@ -369,7 +369,7 @@ function M.resolve_context(prompt, config)
 
     local ok, resolved_embeddings = pcall(context_value.resolve, context_data.input, state.source or {}, prompt)
     if ok then
-      for _, embedding in resolved_embeddings do
+      for _, embedding in ipairs(resolved_embeddings) do
         if embedding then
           embeddings:set(embedding.filename, embedding)
         end
