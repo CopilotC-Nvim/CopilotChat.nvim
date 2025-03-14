@@ -303,7 +303,7 @@ return {
   },
 
   system = {
-    description = 'Includes output of provided system shell command in chat context. Supports input.',
+    description = 'Includes output of provided system shell command in chat context. Use only when necessary. Supports input.',
     input = function(callback)
       vim.ui.input({
         prompt = 'Enter command> ',
