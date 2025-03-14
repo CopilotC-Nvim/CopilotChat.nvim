@@ -33,7 +33,7 @@ end)
 ---@param on_show? fun(bufnr: number)
 ---@param on_hide? fun(bufnr: number)
 function Overlay:show(text, winnr, filetype, syntax, on_show, on_hide)
-  if not text or vim.trim(text) == '' then
+  if not text or text == '' then
     return
   end
 

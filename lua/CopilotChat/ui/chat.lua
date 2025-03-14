@@ -223,7 +223,7 @@ function Chat:add_sticky(sticky)
 
   for i = insert_line, #lines do
     local line = lines[i]
-    if line and vim.trim(line) ~= '' then
+    if line and line ~= '' then
       if vim.startswith(line, '> ') then
         if line:sub(3) == sticky then
           found = true
