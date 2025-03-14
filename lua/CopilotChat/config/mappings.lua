@@ -123,19 +123,19 @@ end
 ---@field full_diff boolean?
 
 ---@class CopilotChat.config.mappings
----@field complete CopilotChat.config.mapping?
----@field close CopilotChat.config.mapping?
----@field reset CopilotChat.config.mapping?
----@field submit_prompt CopilotChat.config.mapping?
----@field toggle_sticky CopilotChat.config.mapping?
----@field accept_diff CopilotChat.config.mapping?
----@field jump_to_diff CopilotChat.config.mapping?
----@field quickfix_diffs CopilotChat.config.mapping?
----@field yank_diff CopilotChat.config.mapping.yank_diff?
----@field show_diff CopilotChat.config.mapping.show_diff?
----@field show_info CopilotChat.config.mapping?
----@field show_context CopilotChat.config.mapping?
----@field show_help CopilotChat.config.mapping?
+---@field complete CopilotChat.config.mapping|false|nil
+---@field close CopilotChat.config.mapping|false|nil
+---@field reset CopilotChat.config.mapping|false|nil
+---@field submit_prompt CopilotChat.config.mapping|false|nil
+---@field toggle_sticky CopilotChat.config.mapping|false|nil
+---@field accept_diff CopilotChat.config.mapping|false|nil
+---@field jump_to_diff CopilotChat.config.mapping|false|nil
+---@field quickfix_diffs CopilotChat.config.mapping|false|nil
+---@field yank_diff CopilotChat.config.mapping.yank_diff|false|nil
+---@field show_diff CopilotChat.config.mapping.show_diff|false|nil
+---@field show_info CopilotChat.config.mapping|false|nil
+---@field show_context CopilotChat.config.mapping|false|nil
+---@field show_help CopilotChat.config.mapping|false|nil
 return {
   complete = {
     insert = '<Tab>',
@@ -564,9 +564,9 @@ return {
       local chat_keys = vim.tbl_keys(copilot.config.mappings)
       table.sort(chat_keys, function(a, b)
         a = copilot.config.mappings[a]
-        a = a.normal or a.insert
+        a = a and (a.normal or a.insert) or ''
         b = copilot.config.mappings[b]
-        b = b.normal or b.insert
+        b = b and (b.normal or b.insert) or ''
         return a < b
       end)
       for _, name in ipairs(chat_keys) do
