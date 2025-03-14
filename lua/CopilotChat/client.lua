@@ -123,9 +123,13 @@ local function generate_diagnostics(diagnostics)
 end
 
 --- Generate messages for the given selection
---- @param selection CopilotChat.select.selection
+--- @param selection CopilotChat.select.selection?
 --- @return table<CopilotChat.Provider.input>
 local function generate_selection_messages(selection)
+  if not selection then
+    return {}
+  end
+
   local filename = selection.filename or 'unknown'
   local filetype = selection.filetype or 'text'
   local content = selection.content
@@ -171,9 +175,13 @@ local function generate_selection_messages(selection)
 end
 
 --- Generate messages for the given embeddings
---- @param embeddings table<CopilotChat.context.embed>
+--- @param embeddings table<CopilotChat.context.embed>?
 --- @return table<CopilotChat.Provider.input>
 local function generate_embeddings_messages(embeddings)
+  if not embeddings then
+    return {}
+  end
+
   return vim.tbl_map(function(embedding)
     local out = string.format(
       '# FILE:%s CONTEXT\n```%s\n%s\n```',
@@ -459,34 +467,26 @@ function Client:ask(prompt, opts)
     opts.agent = nil
   end
 
-  local contexts = opts.contexts
-  local embeddings = opts.embeddings or {}
-  local selection = opts.selection or {}
-  local system_prompt = opts.system_prompt
-  local model = opts.model
-  local agent = opts.agent
-  local temperature = opts.temperature
-  local on_progress = opts.on_progress
   local job_id = utils.uuid()
 
-  log.debug('Model:', model)
-  log.debug('Agent:', agent)
+  log.debug('Model:', opts.model)
+  log.debug('Agent:', opts.agent)
 
   local models = self:fetch_models()
-  local model_config = models[model]
+  local model_config = models[opts.model]
   if not model_config then
-    error('Model not found: ' .. model)
+    error('Model not found: ' .. opts.model)
   end
 
   local agents = self:fetch_agents()
-  local agent_config = agent and agents[agent]
-  if agent and not agent_config then
-    error('Agent not found: ' .. agent)
+  local agent_config = opts.agent and agents[opts.agent]
+  if opts.agent and not agent_config then
+    error('Agent not found: ' .. opts.agent)
   end
 
   local provider_name = model_config.provider
   if not provider_name then
-    error('Provider not found for model: ' .. model)
+    error('Provider not found for model: ' .. opts.model)
   end
   local provider = self.providers[provider_name]
   if not provider then
@@ -500,7 +500,7 @@ function Client:ask(prompt, opts)
     agent = agent_config and vim.tbl_extend('force', agent_config, {
       id = opts.agent and opts.agent:gsub(':' .. provider_name .. '$', ''),
     }),
-    temperature = temperature,
+    temperature = opts.temperature,
   }
 
   local max_tokens = model_config.max_input_tokens
@@ -521,8 +521,8 @@ function Client:ask(prompt, opts)
 
   local references = utils.ordered_map()
   local generated_messages = {}
-  local selection_messages = generate_selection_messages(selection)
-  local embeddings_messages = generate_embeddings_messages(embeddings)
+  local selection_messages = generate_selection_messages(opts.selection)
+  local embeddings_messages = generate_embeddings_messages(opts.embeddings)
 
   for _, message in ipairs(selection_messages) do
     table.insert(generated_messages, message)
@@ -541,7 +541,7 @@ function Client:ask(prompt, opts)
 
     -- Count required tokens that we cannot reduce
     local prompt_tokens = tiktoken.count(prompt)
-    local system_tokens = tiktoken.count(system_prompt)
+    local system_tokens = tiktoken.count(opts.system_prompt)
     local memory_tokens = self.memory and tiktoken.count(self.memory.content) or 0
     local required_tokens = prompt_tokens + system_tokens + selection_tokens + memory_tokens
 
@@ -560,7 +560,7 @@ function Client:ask(prompt, opts)
     -- If we're over history limit, trigger summarization
     if history_tokens > history_limit then
       if opts.store_history and #history >= 4 then
-        self:summarize_history(model)
+        self:summarize_history(opts.model)
 
         -- Recalculate history and tokens
         history =
@@ -611,12 +611,12 @@ function Client:ask(prompt, opts)
   local last_message = nil
   local errored = false
   local finished = false
-  local full_response = ''
+  local response_buffer = utils.string_buffer()
 
   local function finish_stream(err, job)
     if err then
       errored = true
-      full_response = err
+      response_buffer:set(err)
     end
 
     log.debug('Finishing stream', err)
@@ -657,9 +657,9 @@ function Client:ask(prompt, opts)
     end
 
     if out.content then
-      full_response = full_response .. out.content
-      if on_progress then
-        on_progress(out.content)
+      response_buffer:add(out.content)
+      if opts.on_progress then
+        opts.on_progress(out.content)
       end
     end
 
@@ -714,7 +714,14 @@ function Client:ask(prompt, opts)
 
   local headers = self:authenticate(provider_name)
   local request = provider.prepare_input(
-    generate_ask_request(history, self.memory, contexts, prompt, system_prompt, generated_messages),
+    generate_ask_request(
+      history,
+      self.memory,
+      opts.contexts,
+      prompt,
+      opts.system_prompt,
+      generated_messages
+    ),
     options
   )
   local is_stream = request.stream
@@ -761,13 +768,17 @@ function Client:ask(prompt, opts)
     return
   end
 
+  local response_text = response_buffer:tostring()
+  log.trace('Response text:\n', response_text)
+  log.debug('Response message:\n', vim.inspect(last_message))
+
   if errored then
-    error(full_response)
+    error(response_text)
     return
   end
 
   if is_stream then
-    if utils.empty(full_response) then
+    if utils.empty(response_text) then
       for _, line in ipairs(vim.split(response.body, '\n')) do
         parse_stream_line(line)
       end
@@ -776,13 +787,10 @@ function Client:ask(prompt, opts)
     parse_line(response.body)
   end
 
-  if utils.empty(full_response) then
+  if utils.empty(response_text) then
     error('Failed to get response: empty response')
     return
   end
-
-  log.trace('Response content:\n', full_response)
-  log.debug('Response message:\n', vim.inspect(last_message))
 
   if opts.store_history then
     table.insert(self.history, {
@@ -791,12 +799,12 @@ function Client:ask(prompt, opts)
     })
 
     table.insert(self.history, {
-      content = full_response,
+      content = response_text,
       role = 'assistant',
     })
   end
 
-  return full_response,
+  return response_text,
     references:values(),
     last_message and last_message.total_tokens or 0,
     max_tokens

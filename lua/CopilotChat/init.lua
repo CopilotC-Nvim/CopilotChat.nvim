@@ -863,6 +863,7 @@ function M.ask(prompt, config)
     state.last_prompt = prompt
     M.chat:set_prompt(prompt)
     M.chat:append('\n\n' .. M.config.answer_header .. M.config.separator .. '\n\n')
+    M.chat:follow()
   else
     update_source()
   end
