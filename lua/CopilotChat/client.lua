@@ -235,7 +235,7 @@ local function generate_ask_request(
   Do not make assumptions about code or files - always request context when needed rather than guessing.
   Always use the > format on a new line when requesting more context instead of asking in prose.
 
-  Available context providers:]]
+  Available context providers and their usage:]]
 
     local context_names = vim.tbl_keys(contexts)
     table.sort(context_names)
