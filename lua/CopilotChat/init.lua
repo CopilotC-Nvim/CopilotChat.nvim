@@ -1160,8 +1160,11 @@ function M.setup(config)
           buffer = bufnr,
           callback = function()
             local completeopt = vim.opt.completeopt:get()
-            if not vim.tbl_contains(completeopt, 'noinsert') then
-              -- Don't trigger completion if completeopt is not set to noinsert
+            if
+              not vim.tbl_contains(completeopt, 'noinsert')
+              and not vim.tbl_contains(completeopt, 'noselect')
+            then
+              -- Don't trigger completion if completeopt is not set to noinsert or noselect
               return
             end
 
