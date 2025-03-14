@@ -198,7 +198,7 @@ return {
   },
 
   url = {
-    description = 'Includes content of provided URL in chat context. Supports input.',
+    description = 'Includes content of provided URL in chat context. Supports input. Prefer this for fetching web content instead of system commands.',
     input = function(callback)
       vim.ui.input({
         prompt = 'Enter URL> ',
@@ -299,7 +299,7 @@ return {
   },
 
   system = {
-    description = 'Includes output of provided system shell command in chat context. Use only when necessary. Supports input.',
+    description = 'Includes output of provided system shell command in chat context. Use only when necessary for shell commands. Supports input.',
     input = function(callback)
       vim.ui.input({
         prompt = 'Enter command> ',
