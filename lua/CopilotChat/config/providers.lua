@@ -1,11 +1,6 @@
 local utils = require('CopilotChat.utils')
 
-local EDITOR_VERSION = 'Neovim/'
-  .. vim.version().major
-  .. '.'
-  .. vim.version().minor
-  .. '.'
-  .. vim.version().patch
+local EDITOR_VERSION = 'Neovim/' .. vim.version().major .. '.' .. vim.version().minor .. '.' .. vim.version().patch
 
 local cached_github_token = nil
 
@@ -271,16 +266,11 @@ M.copilot = {
       message = output
     end
 
-    local content = message.message and message.message.content
-      or message.delta and message.delta.content
+    local content = message.message and message.message.content or message.delta and message.delta.content
 
-    local usage = message.usage and message.usage.total_tokens
-      or output.usage and output.usage.total_tokens
+    local usage = message.usage and message.usage.total_tokens or output.usage and output.usage.total_tokens
 
-    local finish_reason = message.finish_reason
-      or message.done_reason
-      or output.finish_reason
-      or output.done_reason
+    local finish_reason = message.finish_reason or message.done_reason or output.finish_reason or output.done_reason
 
     return {
       content = content,
@@ -311,21 +301,20 @@ M.github_models = {
   end,
 
   get_models = function(headers)
-    local response, err =
-      utils.curl_post('https://api.catalog.azureml.ms/asset-gallery/v1.0/models', {
-        headers = headers,
-        json_request = true,
-        json_response = true,
-        body = {
-          filters = {
-            { field = 'freePlayground', values = { 'true' }, operator = 'eq' },
-            { field = 'labels', values = { 'latest' }, operator = 'eq' },
-          },
-          order = {
-            { field = 'displayName', direction = 'asc' },
-          },
+    local response, err = utils.curl_post('https://api.catalog.azureml.ms/asset-gallery/v1.0/models', {
+      headers = headers,
+      json_request = true,
+      json_response = true,
+      body = {
+        filters = {
+          { field = 'freePlayground', values = { 'true' }, operator = 'eq' },
+          { field = 'labels', values = { 'latest' }, operator = 'eq' },
         },
-      })
+        order = {
+          { field = 'displayName', direction = 'asc' },
+        },
+      },
+    })
 
     if err then
       error(err)

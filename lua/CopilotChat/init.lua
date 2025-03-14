@@ -71,11 +71,7 @@ local function insert_sticky(prompt, config, override_sticky)
     stickies:set('/' .. config.system_prompt, true)
   end
 
-  if
-    config.remember_as_sticky
-    and config.context
-    and not vim.deep_equal(config.context, M.config.context)
-  then
+  if config.remember_as_sticky and config.context and not vim.deep_equal(config.context, M.config.context) then
     if type(config.context) == 'table' then
       ---@diagnostic disable-next-line: param-type-mismatch
       for _, context in ipairs(config.context) do
@@ -124,12 +120,7 @@ local function update_highlights()
 
   if M.chat.config.highlight_selection and M.chat:focused() then
     local selection = M.get_selection()
-    if
-      not selection
-      or not utils.buf_valid(selection.bufnr)
-      or not selection.start_line
-      or not selection.end_line
-    then
+    if not selection or not utils.buf_valid(selection.bufnr) or not selection.start_line or not selection.end_line then
       return
     end
 
@@ -260,11 +251,7 @@ local function map_key(name, bufnr, fn)
       if vim.fn.pumvisible() == 1 then
         local used_key = key.insert == M.config.mappings.complete.insert and '<C-y>' or key.insert
         if used_key then
-          vim.api.nvim_feedkeys(
-            vim.api.nvim_replace_termcodes(used_key, true, false, true),
-            'n',
-            false
-          )
+          vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(used_key, true, false, true), 'n', false)
         end
       else
         fn()
@@ -276,9 +263,7 @@ end
 --- Updates the source buffer based on previous or current window.
 local function update_source()
   local use_prev_window = M.chat:focused()
-  M.set_source(
-    use_prev_window and vim.fn.win_getid(vim.fn.winnr('#')) or vim.api.nvim_get_current_win()
-  )
+  M.set_source(use_prev_window and vim.fn.win_getid(vim.fn.winnr('#')) or vim.api.nvim_get_current_win())
 end
 
 --- Resolve the final prompt and config from prompt template.
@@ -379,13 +364,10 @@ function M.resolve_context(prompt, config)
     local context_value = M.config.contexts[context_data.name]
     notify.publish(
       notify.STATUS,
-      'Resolving context: '
-        .. context_data.name
-        .. (context_data.input and ' with input: ' .. context_data.input or '')
+      'Resolving context: ' .. context_data.name .. (context_data.input and ' with input: ' .. context_data.input or '')
     )
 
-    local ok, resolved_embeddings =
-      pcall(context_value.resolve, context_data.input, state.source or {}, prompt)
+    local ok, resolved_embeddings = pcall(context_value.resolve, context_data.input, state.source or {}, prompt)
     if ok then
       for _, embedding in resolved_embeddings do
         if embedding then
@@ -460,11 +442,7 @@ function M.set_source(source_winnr)
   local source_bufnr = vim.api.nvim_win_get_buf(source_winnr)
 
   -- Check if the window is valid to use as a source
-  if
-    source_winnr ~= M.chat.winnr
-    and source_bufnr ~= M.chat.bufnr
-    and vim.fn.win_gettype(source_winnr) == ''
-  then
+  if source_winnr ~= M.chat.winnr and source_bufnr ~= M.chat.bufnr and vim.fn.win_gettype(source_winnr) == '' then
     state.source = {
       bufnr = source_bufnr,
       winnr = source_winnr,
@@ -832,10 +810,7 @@ function M.select_prompt(config)
     end,
   }, function(choice)
     if choice then
-      M.ask(
-        prompts[choice.name].prompt,
-        vim.tbl_extend('force', prompts[choice.name], config or {})
-      )
+      M.ask(prompts[choice.name].prompt, vim.tbl_extend('force', prompts[choice.name], config or {}))
     end
   end)
 end
@@ -914,24 +889,23 @@ function M.ask(prompt, config)
       return
     end
 
-    local ask_ok, response, references, token_count, token_max_count =
-      pcall(client.ask, client, prompt, {
-        load_history = not config.headless,
-        store_history = not config.headless,
-        contexts = contexts,
-        selection = selection,
-        embeddings = filtered_embeddings,
-        system_prompt = system_prompt,
-        model = selected_model,
-        agent = selected_agent,
-        temperature = config.temperature,
-        on_progress = vim.schedule_wrap(function(token)
-          if not config.headless then
-            M.chat:append(token)
-          end
-          has_output = true
-        end),
-      })
+    local ask_ok, response, references, token_count, token_max_count = pcall(client.ask, client, prompt, {
+      load_history = not config.headless,
+      store_history = not config.headless,
+      contexts = contexts,
+      selection = selection,
+      embeddings = filtered_embeddings,
+      system_prompt = system_prompt,
+      model = selected_model,
+      agent = selected_agent,
+      temperature = config.temperature,
+      on_progress = vim.schedule_wrap(function(token)
+        if not config.headless then
+          M.chat:append(token)
+        end
+        has_output = true
+      end),
+    })
 
     utils.schedule_main()
 
@@ -1166,10 +1140,7 @@ function M.setup(config)
           buffer = bufnr,
           callback = function()
             local completeopt = vim.opt.completeopt:get()
-            if
-              not vim.tbl_contains(completeopt, 'noinsert')
-              and not vim.tbl_contains(completeopt, 'noselect')
-            then
+            if not vim.tbl_contains(completeopt, 'noinsert') and not vim.tbl_contains(completeopt, 'noselect') then
               -- Don't trigger completion if completeopt is not set to noinsert or noselect
               return
             end

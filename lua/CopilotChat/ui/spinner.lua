@@ -52,20 +52,14 @@ function Spinner:start()
         frame = self.status .. ' ' .. frame
       end
 
-      vim.api.nvim_buf_set_extmark(
-        self.bufnr,
-        self.ns,
-        math.max(0, vim.api.nvim_buf_line_count(self.bufnr) - 1),
-        0,
-        {
-          id = 1,
-          hl_mode = 'combine',
-          priority = 100,
-          virt_text = {
-            { frame, 'CopilotChatStatus' },
-          },
-        }
-      )
+      vim.api.nvim_buf_set_extmark(self.bufnr, self.ns, math.max(0, vim.api.nvim_buf_line_count(self.bufnr) - 1), 0, {
+        id = 1,
+        hl_mode = 'combine',
+        priority = 100,
+        virt_text = {
+          { frame, 'CopilotChatStatus' },
+        },
+      })
 
       self.index = self.index % #spinner_frames + 1
     end)

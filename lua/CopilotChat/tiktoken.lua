@@ -12,9 +12,7 @@ end
 local function load_tiktoken_data(tokenizer)
   utils.schedule_main()
 
-  local tiktoken_url = 'https://openaipublic.blob.core.windows.net/encodings/'
-    .. tokenizer
-    .. '.tiktoken'
+  local tiktoken_url = 'https://openaipublic.blob.core.windows.net/encodings/' .. tokenizer .. '.tiktoken'
 
   local cache_dir = vim.fn.stdpath('cache')
   vim.fn.mkdir(tostring(cache_dir), 'p')
