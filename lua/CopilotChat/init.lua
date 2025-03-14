@@ -17,6 +17,7 @@ local M = {}
 --- @class CopilotChat.source
 --- @field bufnr number
 --- @field winnr number
+--- @field cwd fun():string
 
 --- @class CopilotChat.state
 --- @field source CopilotChat.source?
@@ -290,6 +291,13 @@ local function update_source()
     state.source = {
       bufnr = source_bufnr,
       winnr = source_winnr,
+      cwd = function()
+        local dir = vim.w[source_winnr].cchat_cwd
+        if not dir or dir == '' then
+          return '.'
+        end
+        return dir
+      end,
     }
   end
 end

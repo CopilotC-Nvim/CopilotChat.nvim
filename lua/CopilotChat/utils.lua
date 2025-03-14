@@ -274,22 +274,6 @@ function M.make_string(...)
   return table.concat(t, ' ')
 end
 
---- Get current working directory for target window
----@param winnr number? The buffer number
----@return string
-function M.win_cwd(winnr)
-  if not winnr then
-    return '.'
-  end
-
-  local dir = vim.w[winnr].cchat_cwd
-  if not dir or dir == '' then
-    return '.'
-  end
-
-  return dir
-end
-
 --- Decode json
 ---@param body string The json string
 ---@return table, string?
