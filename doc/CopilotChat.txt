@@ -56,7 +56,8 @@ capabilities directly into your editor. It provides:
 
 
   [!WARNING] For Neovim < 0.11.0, add `noinsert` to your `completeopt` otherwise
-  chat autocompletion will not work.
+  chat autocompletion will not work. For best autocompletion experience, also add
+  `popup` to your `completeopt` (even on Neovim 0.11.0+).
 
 OPTIONAL DEPENDENCIES                      *CopilotChat-optional-dependencies*
 
