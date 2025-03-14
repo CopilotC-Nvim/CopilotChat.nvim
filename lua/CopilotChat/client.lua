@@ -1,6 +1,6 @@
 ---@class CopilotChat.Client.ask
 ---@field load_history boolean
----@field store_history boolean
+---@field summarize_history boolean
 ---@field contexts table<string, string>?
 ---@field selection CopilotChat.select.selection?
 ---@field embeddings table<CopilotChat.context.embed>?
@@ -530,7 +530,7 @@ function Client:ask(prompt, opts)
 
     -- If we're over history limit, trigger summarization
     if history_tokens > history_limit then
-      if opts.store_history and #history >= 4 then
+      if opts.summarize_history and #history >= 4 then
         self:summarize_history(opts.model)
 
         -- Recalculate history and tokens
@@ -755,18 +755,6 @@ function Client:ask(prompt, opts)
     return
   end
 
-  if opts.store_history then
-    table.insert(self.history, {
-      content = prompt,
-      role = 'user',
-    })
-
-    table.insert(self.history, {
-      content = response_text,
-      role = 'assistant',
-    })
-  end
-
   return response_text, references:values(), last_message and last_message.total_tokens or 0, max_tokens
 end
 
@@ -943,7 +931,7 @@ Ensure all critical code samples, commands, and configuration snippets are prese
 
   local response = self:ask('Create a technical summary of our conversation for future context', {
     load_history = true,
-    store_history = false,
+    summarize_history = false,
     model = model,
     temperature = 0,
     system_prompt = system_prompt,
