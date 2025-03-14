@@ -102,6 +102,39 @@ function M.ordered_map()
   }
 end
 
+---@class StringBuffer
+---@field add fun(self:StringBuffer, s:string)
+---@field set fun(self:StringBuffer, s:string)
+---@field tostring fun(self:StringBuffer):string
+
+--- Create a string buffer for efficient string concatenation
+---@return StringBuffer
+function M.string_buffer()
+  return {
+    _buf = { '' },
+
+    add = function(self, s)
+      table.insert(self._buf, s)
+      -- Keep track of lengths to know when to merge
+      for i = #self._buf - 1, 1, -1 do
+        if #self._buf[i] > #self._buf[i + 1] then
+          break
+        end
+        self._buf[i] = self._buf[i] .. table.remove(self._buf)
+      end
+    end,
+
+    set = function(self, s)
+      self._buf = { s }
+    end,
+
+    -- Get final string
+    tostring = function(self)
+      return table.concat(self._buf)
+    end,
+  }
+end
+
 --- Writes text to a temporary file and returns path
 ---@param text string The text to write
 ---@return string?
