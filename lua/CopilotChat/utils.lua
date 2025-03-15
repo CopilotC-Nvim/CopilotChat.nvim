@@ -9,6 +9,92 @@ M.scan_args = {
   max_count = 2500,
   max_depth = 50,
   no_ignore = false,
+
+  -- Common binary file extensions to exclude
+  binary_extensions = {
+    -- Images
+    'png',
+    'jpg',
+    'jpeg',
+    'gif',
+    'bmp',
+    'tiff',
+    'webp',
+    'ico',
+    'svg',
+    'heic',
+    'heif',
+    'raw',
+    'psd',
+    'ai',
+    'eps',
+    -- Audio/Video
+    'mp3',
+    'wav',
+    'ogg',
+    'mp4',
+    'avi',
+    'mov',
+    'wmv',
+    'flv',
+    'mkv',
+    'webm',
+    'm4a',
+    'm4v',
+    'aac',
+    'flac',
+    'mid',
+    'midi',
+    -- Archives
+    'zip',
+    'tar',
+    'gz',
+    'rar',
+    '7z',
+    'bz2',
+    'xz',
+    'iso',
+    'dmg',
+    'pkg',
+    'deb',
+    'rpm',
+    -- Documents
+    'pdf',
+    'doc',
+    'docx',
+    'ppt',
+    'pptx',
+    'xls',
+    'xlsx',
+    'odp',
+    'odt',
+    'ods',
+    -- Executables
+    'exe',
+    'dll',
+    'so',
+    'dylib',
+    'app',
+    'msi',
+    'apk',
+    'class',
+    'jar',
+    -- Other binaries
+    'bin',
+    'dat',
+    'db',
+    'sqlite',
+    'o',
+    'obj',
+    'pyc',
+    'pyo',
+    'pyd',
+    'wasm',
+    'ttf',
+    'otf',
+    'woff',
+    'woff2',
+  },
 }
 
 M.curl_args = {
@@ -428,6 +514,7 @@ end, 3)
 ---@field glob? string The glob pattern to match files
 ---@field hidden? boolean Whether to include hidden files
 ---@field no_ignore? boolean Whether to respect or ignore .gitignore
+---@field binary_extensions string[]? The list of binary file extensions to exclude
 
 --- Scan a directory
 ---@param path string The directory path
@@ -435,6 +522,20 @@ end, 3)
 ---@async
 M.scan_dir = async.wrap(function(path, opts, callback)
   opts = vim.tbl_deep_extend('force', M.scan_args, opts or {})
+
+  local function filter_files(files)
+    if opts.binary_extensions and #opts.binary_extensions > 0 then
+      files = vim.tbl_filter(function(file)
+        local ext = file:lower():match('%.([^%.]+)$')
+        return not vim.tbl_contains(opts.binary_extensions, ext)
+      end, files)
+    end
+    if opts.max_count and opts.max_count > 0 then
+      files = vim.list_slice(files, 1, opts.max_count)
+    end
+
+    return files
+  end
 
   -- Use ripgrep if available
   if vim.fn.executable('rg') == 1 then
@@ -467,10 +568,7 @@ M.scan_dir = async.wrap(function(path, opts, callback)
         files = vim.tbl_filter(function(file)
           return file ~= ''
         end, vim.split(result.stdout, '\n'))
-
-        if opts.max_count and opts.max_count > 0 then
-          files = vim.list_slice(files, 1, opts.max_count)
-        end
+        files = filter_files(files)
       end
 
       callback(files)
@@ -488,10 +586,7 @@ M.scan_dir = async.wrap(function(path, opts, callback)
       search_pattern = M.glob_to_pattern(opts.glob),
       respect_gitignore = not opts.no_ignore,
       on_exit = function(files)
-        if opts.max_count and opts.max_count > 0 then
-          files = vim.list_slice(files, 1, opts.max_count)
-        end
-        callback(files)
+        callback(filter_files(files))
       end,
     })
   )
