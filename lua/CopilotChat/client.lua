@@ -1,6 +1,6 @@
 ---@class CopilotChat.Client.ask
 ---@field load_history boolean
----@field summarize_history boolean
+---@field headless boolean
 ---@field contexts table<string, string>?
 ---@field selection CopilotChat.select.selection?
 ---@field embeddings table<CopilotChat.context.embed>?
@@ -485,7 +485,9 @@ function Client:ask(prompt, opts)
     tiktoken.load(tokenizer)
   end
 
-  notify.publish(notify.STATUS, 'Generating request')
+  if not opts.headless then
+    notify.publish(notify.STATUS, 'Generating request')
+  end
 
   local history = {}
   if opts.load_history then
@@ -530,7 +532,7 @@ function Client:ask(prompt, opts)
 
     -- If we're over history limit, trigger summarization
     if history_tokens > history_limit then
-      if opts.summarize_history and #history >= 4 then
+      if not opts.headless and #history >= 4 then
         self:summarize_history(opts.model)
 
         -- Recalculate history and tokens
@@ -603,7 +605,9 @@ function Client:ask(prompt, opts)
     end
 
     log.debug('Response line:', line)
-    notify.publish(notify.STATUS, '')
+    if not opts.headless then
+      notify.publish(notify.STATUS, '')
+    end
 
     local content, err = utils.json_decode(line)
 
@@ -666,7 +670,7 @@ function Client:ask(prompt, opts)
       return
     end
 
-    if self.current_job ~= job_id then
+    if not opts.headless and self.current_job ~= job_id then
       finish_stream(nil, job)
       return
     end
@@ -679,8 +683,10 @@ function Client:ask(prompt, opts)
     parse_stream_line(line, job)
   end
 
-  notify.publish(notify.STATUS, 'Thinking')
-  self.current_job = job_id
+  if not opts.headless then
+    notify.publish(notify.STATUS, 'Thinking')
+    self.current_job = job_id
+  end
 
   local headers = self:authenticate(provider_name)
   local request = provider.prepare_input(
@@ -931,7 +937,7 @@ Ensure all critical code samples, commands, and configuration snippets are prese
 
   local response = self:ask('Create a technical summary of our conversation for future context', {
     load_history = true,
-    summarize_history = false,
+    headless = true,
     model = model,
     temperature = 0,
     system_prompt = system_prompt,
