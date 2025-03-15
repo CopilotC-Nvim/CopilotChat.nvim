@@ -352,8 +352,13 @@ function M.get_file(filename, filetype)
   end
 
   local cached = file_cache[filename]
-  if cached and cached.modified >= modified then
-    return cached
+  if cached and cached._modified >= modified then
+    return {
+      content = cached.content,
+      _modified = cached._modified,
+      filename = filename,
+      filetype = filetype,
+    }
   end
 
   local content = utils.read_file(filename)
@@ -365,7 +370,7 @@ function M.get_file(filename, filetype)
     content = content,
     filename = filename,
     filetype = filetype,
-    modified = modified,
+    _modified = modified,
   }
 
   file_cache[filename] = out
@@ -460,26 +465,29 @@ function M.filter_embeddings(prompt, model, headless, embeddings)
 
   notify.publish(notify.STATUS, 'Preparing embedding outline')
 
-  for _, item in ipairs(embeddings) do
-    if not item.outline then
-      local cache_key = item.filename .. utils.quick_hash(item.content)
-      local outline = outline_cache[cache_key]
-      if not outline then
-        local outline_text, symbols = get_outline(item.content, item.filetype)
-        if outline_text then
-          outline = {
-            outline = outline_text,
-            symbols = symbols,
-          }
+  for _, input in ipairs(embeddings) do
+    -- Precalculate hash and attributes for caching
+    local hash = input.filename .. utils.quick_hash(input.content)
+    input._hash = hash
+    input.filename = input.filename or 'unknown'
+    input.filetype = input.filetype or 'text'
 
-          outline_cache[cache_key] = outline
-        end
-      end
+    local outline = outline_cache[hash]
+    if not outline then
+      local outline_text, symbols = get_outline(input.content, input.filetype)
+      if outline_text then
+        outline = {
+          outline = outline_text,
+          symbols = symbols,
+        }
 
-      if outline then
-        item.outline = outline.outline
-        item.symbols = outline.symbols
+        outline_cache[hash] = outline
       end
+    end
+
+    if outline then
+      input.outline = outline.outline
+      input.symbols = outline.symbols
     end
   end
 
@@ -513,15 +521,13 @@ function M.filter_embeddings(prompt, model, headless, embeddings)
   local to_process = {}
   local results = {}
   for _, input in ipairs(embeddings) do
-    input.filename = input.filename or 'unknown'
-    input.filetype = input.filetype or 'text'
-    if input.content then
-      local cache_key = input.filename .. utils.quick_hash(input.content)
-      if embedding_cache[cache_key] then
-        table.insert(results, embedding_cache[cache_key])
-      else
-        table.insert(to_process, input)
-      end
+    local hash = input._hash
+    local embed = embedding_cache[hash]
+    if embed then
+      input.embedding = embed
+      table.insert(results, input)
+    else
+      table.insert(to_process, input)
     end
   end
   table.insert(to_process, {
@@ -533,8 +539,7 @@ function M.filter_embeddings(prompt, model, headless, embeddings)
   -- Embed the data and process the results
   for _, input in ipairs(client:embed(to_process, model)) do
     if input.filetype ~= 'raw' then
-      local cache_key = input.filename .. utils.quick_hash(input.content)
-      embedding_cache[cache_key] = input
+      embedding_cache[input._hash] = input.embedding
     end
     table.insert(results, input)
   end
