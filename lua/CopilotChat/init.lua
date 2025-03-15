@@ -885,7 +885,7 @@ function M.ask(prompt, config)
 
     local ask_ok, response, references, token_count, token_max_count = pcall(client.ask, client, prompt, {
       load_history = not config.headless,
-      summarize_history = not config.headless,
+      headless = config.headless,
       contexts = contexts,
       selection = selection,
       embeddings = filtered_embeddings,
