@@ -285,7 +285,7 @@ end
 ---@param str string The string to hash
 ---@return string
 function M.quick_hash(str)
-  return #str .. str:sub(1, 32) .. str:sub(-32)
+  return #str .. str:sub(1, 64) .. str:sub(-64)
 end
 
 --- Make a string from arguments

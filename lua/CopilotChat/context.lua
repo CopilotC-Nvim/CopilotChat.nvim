@@ -25,6 +25,7 @@ local utils = require('CopilotChat.utils')
 local file_cache = {}
 local url_cache = {}
 local embedding_cache = {}
+local outline_cache = {}
 
 local M = {}
 
@@ -265,16 +266,12 @@ end
 
 --- Build an outline and symbols from a string
 ---@param content string
----@param filename string
 ---@param ft string
----@return CopilotChat.context.embed
-function M.get_outline(content, filename, ft)
-  ---@type CopilotChat.context.embed
-  local output = {
-    filename = filename,
-    filetype = ft,
-    content = content,
-  }
+---@return string?, table<string, CopilotChat.context.symbol>?
+local function get_outline(content, ft)
+  if not ft or ft == '' or ft == 'text' or ft == 'raw' then
+    return nil
+  end
 
   local lang = vim.treesitter.language.get_lang(ft)
   local ok, parser = false, nil
@@ -285,7 +282,7 @@ function M.get_outline(content, filename, ft)
     ft = string.gsub(ft, 'react', '')
     ok, parser = pcall(vim.treesitter.get_string_parser, content, ft)
     if not ok or not parser then
-      return output
+      return nil
     end
   end
 
@@ -334,12 +331,10 @@ function M.get_outline(content, filename, ft)
 
   parse_node(root)
 
-  if #outline_lines > 0 then
-    output.outline = table.concat(outline_lines, '\n')
-    output.symbols = symbols
+  if #outline_lines == 0 then
+    return nil
   end
-
-  return output
+  return table.concat(outline_lines, '\n'), symbols
 end
 
 --- Get data for a file
@@ -361,21 +356,23 @@ function M.get_file(filename, filetype)
 
   local cached = file_cache[filename]
   if cached and cached.modified >= modified then
-    return cached.outline
+    return cached
   end
 
   local content = utils.read_file(filename)
-  if content then
-    local outline = M.get_outline(content, filename, filetype)
-    file_cache[filename] = {
-      outline = outline,
-      modified = modified,
-    }
-
-    return outline
+  if not content or content == '' then
+    return nil
   end
 
-  return nil
+  local out = {
+    content = content,
+    filename = filename,
+    filetype = filetype,
+    modified = modified,
+  }
+
+  file_cache[filename] = out
+  return out
 end
 
 --- Get data for a buffer
@@ -391,12 +388,13 @@ function M.get_buffer(bufnr)
     return nil
   end
 
-  local out =
-    M.get_outline(table.concat(content, '\n'), utils.filepath(vim.api.nvim_buf_get_name(bufnr)), vim.bo[bufnr].filetype)
-
-  out.score = 0.1
-  out.diagnostics = utils.diagnostics(bufnr)
-  return out
+  return {
+    content = table.concat(content, '\n'),
+    filename = utils.filepath(vim.api.nvim_buf_get_name(bufnr)),
+    filetype = vim.bo[bufnr].filetype,
+    score = 0.1,
+    diagnostics = utils.diagnostics(bufnr),
+  }
 end
 
 --- Get the content of an URL
@@ -461,6 +459,31 @@ function M.filter_embeddings(prompt, model, headless, embeddings)
   -- If we dont need to embed anything, just return directly
   if #embeddings < MULTI_FILE_THRESHOLD then
     return embeddings
+  end
+
+  notify.publish(notify.STATUS, 'Preparing embedding outline')
+
+  for _, item in ipairs(embeddings) do
+    if not item.outline then
+      local cache_key = item.filename .. utils.quick_hash(item.content)
+      local outline = outline_cache[cache_key]
+      if not outline then
+        local outline_text, symbols = get_outline(item.content, item.filetype)
+        if outline_text then
+          outline = {
+            outline = outline_text,
+            symbols = symbols,
+          }
+
+          outline_cache[cache_key] = outline
+        end
+      end
+
+      if outline then
+        item.outline = outline.outline
+        item.symbols = outline.symbols
+      end
+    end
   end
 
   notify.publish(notify.STATUS, 'Ranking embeddings')
