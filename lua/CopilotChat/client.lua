@@ -212,18 +212,21 @@ local function generate_ask_request(history, memory, contexts, prompt, system_pr
 
   -- Include context help
   if contexts and not vim.tbl_isempty(contexts) then
-    local help_text = [[When you need additional context, you must request it using context providers in this format:
+    local help_text = [[When you need additional context, request it using this format:
 
 > #<command>:`<input>`
 
-For example:
-> #file:`path/to/file.js`         (loads a specific file)
-> #buffers:`visible`              (loads all visible buffers)
-> #git:`staged`                   (loads git staged changes)
+Examples:
+> #file:`path/to/file.js`        (loads specific file)
+> #buffers:`visible`             (loads all visible buffers)
+> #git:`staged`                  (loads git staged changes)
 > #system:`uname -a`             (loads system information)
 
-Do not make assumptions about code or files - always request context when needed rather than guessing.
-Always use the > format on a new line when requesting more context instead of asking in prose.
+Guidelines:
+- Always request context when needed rather than guessing about files or code
+- Use the > format on a new line when requesting context
+- Output context commands directly - never ask if the user wants to provide information
+- Assume the user will provide requested context in their next response
 
 Available context providers and their usage:]]
 
