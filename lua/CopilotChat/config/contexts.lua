@@ -196,7 +196,7 @@ return {
   },
 
   url = {
-    description = 'Includes content of provided URL in chat context. Supports input. Prefer this for fetching web content instead of system commands.',
+    description = 'Includes content of provided URL in chat context. Supports input.',
     input = function(callback)
       vim.ui.input({
         prompt = 'Enter URL> ',
@@ -298,7 +298,13 @@ return {
   },
 
   system = {
-    description = 'Includes output of provided system shell command in chat context. Use only when necessary for shell commands. Supports input.',
+    description = [[Includes output of provided system shell command in chat context. Supports input.
+
+Important:
+- Only use system commands as last resort, they are run every time the context is requested.
+- For example instead of curl use the url context, instead of finding and grepping try to check if there is any context that can query the data you need instead.
+- If you absolutely need to run a system command, try to use read-only commands and avoid commands that modify the system state.
+]],
     input = function(callback)
       vim.ui.input({
         prompt = 'Enter command> ',
