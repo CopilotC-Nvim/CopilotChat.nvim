@@ -370,7 +370,7 @@ function M.resolve_context(prompt, config)
         end
       end
     else
-      log.error('Failed to resolve context: ' .. context_data.name)
+      log.error('Failed to resolve context: ' .. context_data.name, resolved_embeddings)
     end
   end
 
