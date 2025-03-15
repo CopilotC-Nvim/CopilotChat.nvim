@@ -286,7 +286,7 @@ local function get_outline(content, ft)
     end
   end
 
-  local root = parser:parse()[1]:root()
+  local root = utils.ts_parse(parser)
   local lines = vim.split(content, '\n')
   local symbols = {}
   local outline_lines = {}
@@ -342,9 +342,6 @@ end
 ---@param filetype string?
 ---@return CopilotChat.context.embed?
 function M.get_file(filename, filetype)
-  if not filetype then
-    filetype = utils.filetype(filename)
-  end
   if not filetype then
     return nil
   end
