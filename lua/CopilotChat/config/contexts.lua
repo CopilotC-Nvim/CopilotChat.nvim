@@ -80,7 +80,7 @@ return {
 
       utils.schedule_main()
       return {
-        context.get_file(utils.filepath(input)),
+        context.get_file(utils.filepath(input), utils.filetype(input)),
       }
     end,
   },
@@ -93,7 +93,6 @@ return {
       }, callback)
     end,
     resolve = function(input, source)
-      local out = {}
       local files = utils.scan_dir(source.cwd(), {
         glob = input,
       })
@@ -111,14 +110,15 @@ return {
         end, files)
       )
 
-      for _, file in ipairs(files) do
-        local file_data = context.get_file(file.name, file.ft)
-        if file_data then
-          table.insert(out, file_data)
-        end
-      end
-
-      return out
+      return vim
+        .iter(files)
+        :map(function(file)
+          return context.get_file(file.name, file.ft)
+        end)
+        :filter(function(file_data)
+          return file_data ~= nil
+        end)
+        :totable()
     end,
   },
 
@@ -285,14 +285,15 @@ return {
         end, vim.tbl_keys(unique_files))
       )
 
-      local out = {}
-      for _, file in ipairs(files) do
-        local file_data = context.get_file(file.name, file.ft)
-        if file_data then
-          table.insert(out, file_data)
-        end
-      end
-      return out
+      return vim
+        .iter(files)
+        :map(function(file)
+          return context.get_file(file.name, file.ft)
+        end)
+        :filter(function(file_data)
+          return file_data ~= nil
+        end)
+        :totable()
     end,
   },
 
