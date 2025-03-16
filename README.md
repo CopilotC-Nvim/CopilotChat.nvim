@@ -755,7 +755,7 @@ require("CopilotChat").ask("Explain this code", {
     vim.notify("Got response: " .. response:sub(1, 50) .. "...")
     return response
   end,
-  context = "#buffer"
+  context = "buffer"
 })
 
 -- Save and load chat history
@@ -765,7 +765,7 @@ require("CopilotChat").load("my_debugging_session")
 -- Use custom context and model
 require("CopilotChat").ask("How can I optimize this?", {
   model = "gpt-4o",
-  context = {"#buffer", "#git:staged"}
+  context = {"buffer", "git:staged"}
 })
 ```
 
