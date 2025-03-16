@@ -580,7 +580,7 @@ Below are all available configuration options with their default values:
         },
         copilot_embeddings = {
         },
-      }
+      },
     
       -- default contexts
       -- see config/contexts.lua for implementation
