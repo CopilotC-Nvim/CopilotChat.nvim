@@ -69,8 +69,6 @@ local OFF_SIDE_RULE_LANGUAGES = {
   'fsharp',
 }
 
-local MIN_SYMBOL_SIMILARITY = 0.3
-local MIN_SEMANTIC_SIMILARITY = 0.4
 local MULTI_FILE_THRESHOLD = 5
 
 --- Compute the cosine similarity between two vectors
@@ -98,9 +96,8 @@ end
 --- Rank data by relatedness to the query
 ---@param query CopilotChat.context.embed
 ---@param data table<CopilotChat.context.embed>
----@param min_similarity number
 ---@return table<CopilotChat.context.embed>
-local function data_ranked_by_relatedness(query, data, min_similarity)
+local function data_ranked_by_relatedness(query, data)
   for _, item in ipairs(data) do
     local score = spatial_distance_cosine(item.embedding, query.embedding)
     item.score = score or item.score or 0
@@ -193,9 +190,8 @@ end
 --- Rank data by symbols and filenames
 ---@param query string
 ---@param data table<CopilotChat.context.embed>
----@param min_similarity number
 ---@return table<CopilotChat.context.embed>
-local function data_ranked_by_symbols(query, data, min_similarity)
+local function data_ranked_by_symbols(query, data)
   -- Get query trigrams including compound versions
   local query_trigrams = {}
 
@@ -575,7 +571,7 @@ function M.filter_embeddings(prompt, model, headless, embeddings)
   end
 
   -- Rank embeddings by symbols
-  embeddings = data_ranked_by_symbols(query, embeddings, MIN_SYMBOL_SIMILARITY)
+  embeddings = data_ranked_by_symbols(query, embeddings)
   log.debug('Ranked data:', #embeddings)
   for i, item in ipairs(embeddings) do
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
@@ -611,7 +607,7 @@ function M.filter_embeddings(prompt, model, headless, embeddings)
   -- Rate embeddings by relatedness to the query
   local embedded_query = table.remove(results, #results)
   log.debug('Embedded query:', embedded_query.content)
-  results = data_ranked_by_relatedness(embedded_query, results, MIN_SEMANTIC_SIMILARITY)
+  results = data_ranked_by_relatedness(embedded_query, results)
   log.debug('Ranked embeddings:', #results)
   for i, item in ipairs(results) do
     log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
