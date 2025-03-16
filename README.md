@@ -668,7 +668,7 @@ Types of copilot highlights:
 
 # API Reference
 
-## Core Chat Functions
+## Core
 
 ```lua
 local chat = require("CopilotChat")
@@ -687,6 +687,10 @@ chat.close()                  -- Close chat window
 chat.toggle(config)           -- Toggle chat window visibility with optional config
 chat.reset()                  -- Reset the chat
 chat.stop()                   -- Stop current output
+
+-- Source Management
+chat.get_source()             -- Get the current source buffer and window
+chat.set_source(winnr)        -- Set the source window
 
 -- Selection Management
 chat.get_selection()                                   -- Get the current selection
@@ -712,33 +716,33 @@ chat.setup(config)            -- Update configuration
 chat.log_level(level)         -- Set log level (debug, info, etc.)
 ```
 
-## Chat Window UI API
+## Chat Window
 
 You can also access the chat window UI methods through the `chat.chat` object:
 
 ```lua
-local chat = require("CopilotChat")
+local window = require("CopilotChat").chat
 
 -- Chat UI State
-chat.chat:visible()             -- Check if chat window is visible
-chat.chat:focused()             -- Check if chat window is focused
+window:visible()             -- Check if chat window is visible
+window:focused()             -- Check if chat window is focused
 
 -- Content Management
-chat.chat:get_prompt()          -- Get current prompt from chat window
-chat.chat:set_prompt(prompt)    -- Set prompt in chat window
-chat.chat:add_sticky(sticky)    -- Add sticky prompt to chat window
-chat.chat:append(text)          -- Append text to chat window
-chat.chat:clear()               -- Clear chat window content
-chat.chat:finish()              -- Finish writing to chat window
+window:get_prompt()          -- Get current prompt from chat window
+window:set_prompt(prompt)    -- Set prompt in chat window
+window:add_sticky(sticky)    -- Add sticky prompt to chat window
+window:append(text)          -- Append text to chat window
+window:clear()               -- Clear chat window content
+window:finish()              -- Finish writing to chat window
 
 -- Navigation
-chat.chat:follow()              -- Move cursor to end of chat content
-chat.chat:focus()               -- Focus the chat window
+window:follow()              -- Move cursor to end of chat content
+window:focus()               -- Focus the chat window
 
 -- Advanced Features
-chat.chat:get_closest_section() -- Get section closest to cursor
-chat.chat:get_closest_block()   -- Get code block closest to cursor
-chat.chat:overlay(opts)         -- Show overlay with specified options
+window:get_closest_section() -- Get section closest to cursor
+window:get_closest_block()   -- Get code block closest to cursor
+window:overlay(opts)         -- Show overlay with specified options
 ```
 
 ## Example Usage
