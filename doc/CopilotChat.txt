@@ -821,7 +821,7 @@ EXAMPLE USAGE                                      *CopilotChat-example-usage*
         vim.notify("Got response: " .. response:sub(1, 50) .. "...")
         return response
       end,
-      context = "#buffer"
+      context = "buffer"
     })
     
     -- Save and load chat history
@@ -831,7 +831,7 @@ EXAMPLE USAGE                                      *CopilotChat-example-usage*
     -- Use custom context and model
     require("CopilotChat").ask("How can I optimize this?", {
       model = "gpt-4o",
-      context = {"#buffer", "#git:staged"}
+      context = {"buffer", "git:staged"}
     })
 <
 
