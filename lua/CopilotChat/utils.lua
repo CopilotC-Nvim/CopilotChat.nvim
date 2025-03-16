@@ -670,22 +670,39 @@ end, 1)
 M.ts_parse = async.wrap(function(parser, callback)
   ---@diagnostic disable-next-line: invisible
   if not parser._async_parse then
-    local trees = parser:parse(false)
-    if not trees or #trees == 0 then
-      callback(nil)
-      return
+    local fn = function()
+      local trees = parser:parse(false)
+      if not trees or #trees == 0 then
+        callback(nil)
+        return
+      end
+      callback(trees[1]:root())
     end
-    callback(trees[1]:root())
+
+    if vim.in_fast_event() then
+      vim.schedule(fn)
+    else
+      fn()
+    end
+
     return
   end
 
-  parser:parse(false, function(err, trees)
-    if err or not trees or #trees == 0 then
-      callback(nil)
-      return
-    end
-    callback(trees[1]:root())
-  end)
+  local fn = function()
+    parser:parse(false, function(err, trees)
+      if err or not trees or #trees == 0 then
+        callback(nil)
+        return
+      end
+      callback(trees[1]:root())
+    end)
+  end
+
+  if vim.in_fast_event() then
+    vim.schedule(fn)
+  else
+    fn()
+  end
 end, 2)
 
 --- Get the info for a key.
