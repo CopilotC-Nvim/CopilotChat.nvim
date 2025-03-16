@@ -816,11 +816,14 @@ end
 ---@return table<CopilotChat.context.embed>
 function Client:embed(inputs, model)
   if not inputs or #inputs == 0 then
-    return {}
+    return inputs
   end
 
   local models = self:fetch_models()
-  local provider_name, embed = resolve_provider_function('embed', model, models, self.providers)
+  local ok, provider_name, embed = pcall(resolve_provider_function, 'embed', model, models, self.providers)
+  if not ok then
+    return inputs
+  end
 
   notify.publish(notify.STATUS, 'Generating embeddings for ' .. #inputs .. ' inputs')
 
