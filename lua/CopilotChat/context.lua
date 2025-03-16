@@ -110,11 +110,48 @@ local function data_ranked_by_relatedness(query, data, min_similarity)
     return a.score > b.score
   end)
 
-  -- Return top items meeting threshold
+  -- Apply dynamic filtering for embedding-based ranking
   local filtered = {}
-  for i, result in ipairs(data) do
-    if (result.score >= min_similarity) or (i <= MULTI_FILE_THRESHOLD) then
-      table.insert(filtered, result)
+
+  if #data > 0 then
+    -- Calculate statistics for score distribution
+    local sum = 0
+    local max_score = data[1].score
+
+    for _, item in ipairs(data) do
+      sum = sum + item.score
+    end
+
+    local mean = sum / #data
+
+    -- Calculate standard deviation
+    local sum_squared_diff = 0
+    for _, item in ipairs(data) do
+      sum_squared_diff = sum_squared_diff + ((item.score - mean) * (item.score - mean))
+    end
+    local std_dev = math.sqrt(sum_squared_diff / #data)
+
+    -- Calculate z-scores and use them to determine significance
+    -- Include items with z-score > -0.5 (meaning within 0.5 std dev below mean)
+    -- This is a statistical approach to find "significantly" related items
+    for _, result in ipairs(data) do
+      local z_score = (result.score - mean) / std_dev
+      if z_score > -0.5 then
+        table.insert(filtered, result)
+      end
+    end
+
+    -- If we didn't get enough results or the distribution is very tight,
+    -- use a percentage of max score as fallback
+    if #filtered < MULTI_FILE_THRESHOLD then
+      filtered = {}
+      local adaptive_threshold = max_score * 0.6 -- 60% of max score
+
+      for i, result in ipairs(data) do
+        if i <= MULTI_FILE_THRESHOLD or result.score >= adaptive_threshold then
+          table.insert(filtered, result)
+        end
+      end
     end
   end
 
@@ -218,11 +255,38 @@ local function data_ranked_by_symbols(query, data, min_similarity)
     return a.score > b.score
   end)
 
-  -- Filter results while preserving top scores
+  -- Use elbow method to find natural cutoff point for symbol-based ranking
   local filtered_results = {}
-  for i, result in ipairs(data) do
-    if (result.score >= min_similarity) or (i <= MULTI_FILE_THRESHOLD) then
-      table.insert(filtered_results, result)
+
+  if #data > 0 then
+    -- Always include at least the top result
+    table.insert(filtered_results, data[1])
+
+    -- Find the point of maximum drop-off (the "elbow")
+    local max_drop = 0
+    local cutoff_index = math.min(MULTI_FILE_THRESHOLD, #data)
+
+    for i = 2, math.min(20, #data) do
+      local drop = data[i - 1].score - data[i].score
+      if drop > max_drop then
+        max_drop = drop
+        cutoff_index = i
+      end
+    end
+
+    -- Include everything up to the cutoff point
+    for i = 2, cutoff_index do
+      table.insert(filtered_results, data[i])
+    end
+
+    -- Also include any remaining items that have scores close to the cutoff
+    local cutoff_score = data[cutoff_index].score
+    local threshold = cutoff_score * 0.8 -- Within 80% of the cutoff score
+
+    for i = cutoff_index + 1, #data do
+      if data[i].score >= threshold then
+        table.insert(filtered_results, data[i])
+      end
     end
   end
 
