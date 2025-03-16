@@ -361,6 +361,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/84711804?v=4",
       "profile": "https://github.com/ThisIsMani",
       "contributions": ["code"]
+    },
+    {
+      "login": "nischalbasuti",
+      "name": "Nischal Basuti",
+      "avatar_url": "https://avatars.githubusercontent.com/u/14853910?v=4",
+      "profile": "https://nischalbasuti.github.io/",
+      "contributions": ["doc"]
     }
   ],
   "contributorsPerLine": 7,
