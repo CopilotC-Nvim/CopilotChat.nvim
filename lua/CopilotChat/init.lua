@@ -918,6 +918,11 @@ function M.ask(prompt, config)
       return
     end
 
+    -- If there was no error and no response, it means job was cancelled
+    if response == nil then
+      return
+    end
+
     -- Call the callback function and store to history
     local to_store = not config.headless and response
     if to_store and config.callback then
