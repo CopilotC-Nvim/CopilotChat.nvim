@@ -94,6 +94,22 @@ M.scan_args = {
     'otf',
     'woff',
     'woff2',
+    -- Debug files
+    'pdb',
+    'dSYM',
+    -- Models and data formats
+    'h5',
+    'pb',
+    'onnx',
+    'pt',
+    'safetensors',
+    'hdf5',
+    'parquet',
+    'glb',
+    'gltf',
+    -- Swap/temp files
+    'swp',
+    'swo',
   },
 }
 
