@@ -2,7 +2,7 @@ local select = require('CopilotChat.select')
 
 ---@alias CopilotChat.config.Layout 'vertical'|'horizontal'|'float'|'replace'
 
----@class CopilotChat.config.window
+---@class CopilotChat.config.Window
 ---@field layout? CopilotChat.config.Layout|fun():CopilotChat.config.Layout
 ---@field relative 'editor'|'win'|'cursor'|'mouse'?
 ---@field border 'none'|'single'|'double'|'rounded'|'solid'|'shadow'?
@@ -14,32 +14,29 @@ local select = require('CopilotChat.select')
 ---@field footer string?
 ---@field zindex number?
 
----@class CopilotChat.config.shared
+---@class CopilotChat.config.Shared
 ---@field system_prompt string?
 ---@field model string?
 ---@field agent string?
----@field context string|table<string>|nil
 ---@field sticky string|table<string>|nil
 ---@field temperature number?
 ---@field headless boolean?
 ---@field stream nil|fun(chunk: string, source: CopilotChat.source):string
 ---@field callback nil|fun(response: string, source: CopilotChat.source):string
 ---@field remember_as_sticky boolean?
----@field include_contexts_in_prompt boolean?
 ---@field selection false|nil|fun(source: CopilotChat.source):CopilotChat.select.selection?
 ---@field window CopilotChat.config.window?
 ---@field show_help boolean?
 ---@field show_folds boolean?
 ---@field highlight_selection boolean?
 ---@field highlight_headers boolean?
----@field references_display 'virtual'|'write'?
 ---@field auto_follow_cursor boolean?
 ---@field auto_insert_mode boolean?
 ---@field insert_at_end boolean?
 ---@field clear_chat_on_new_prompt boolean?
 
 --- CopilotChat default configuration
----@class CopilotChat.config : CopilotChat.config.shared
+---@class CopilotChat.config.Config : CopilotChat.config.Shared
 ---@field debug boolean?
 ---@field log_level 'trace'|'debug'|'info'|'warn'|'error'|'fatal'?
 ---@field proxy string?
@@ -51,9 +48,9 @@ local select = require('CopilotChat.select')
 ---@field answer_header string?
 ---@field error_header string?
 ---@field separator string?
----@field providers table<string, CopilotChat.Provider>?
----@field contexts table<string, CopilotChat.config.context>?
----@field prompts table<string, CopilotChat.config.prompt|string>?
+---@field providers table<string, CopilotChat.config.providers.Provider>?
+---@field tools table<string, CopilotChat.config.tools.Tool>?
+---@field prompts table<string, CopilotChat.config.prompts.Prompt|string>?
 ---@field mappings CopilotChat.config.mappings?
 return {
 
@@ -63,7 +60,6 @@ return {
 
   model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   agent = 'none', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
-  context = nil, -- Default context or array of contexts to use (can be specified manually in prompt via #).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat.
 
   temperature = 0.1, -- GPT result temperature
@@ -71,8 +67,6 @@ return {
   stream = nil, -- Function called when receiving stream updates (returned string is appended to the chat buffer)
   callback = nil, -- Function called when full response is received (retuned string is stored to history)
   remember_as_sticky = true, -- Remember model/agent/context as sticky prompts when asking questions
-
-  include_contexts_in_prompt = true, -- Include contexts in prompt
 
   -- default selection
   selection = select.visual,
@@ -96,7 +90,6 @@ return {
   show_folds = true, -- Shows folds for sections in chat
   highlight_selection = true, -- Highlight selection
   highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
-  references_display = 'virtual', -- 'virtual', 'write', Display references in chat as virtual text or write to buffer
   auto_follow_cursor = true, -- Auto-follow cursor in chat
   auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
   insert_at_end = false, -- Move cursor to end of buffer when inserting text
@@ -122,8 +115,8 @@ return {
   -- default providers
   providers = require('CopilotChat.config.providers'),
 
-  -- default contexts
-  contexts = require('CopilotChat.config.contexts'),
+  -- default tools
+  tools = require('CopilotChat.config.tools'),
 
   -- default prompts
   prompts = require('CopilotChat.config.prompts'),

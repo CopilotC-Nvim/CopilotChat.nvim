@@ -1,4 +1,19 @@
----@class CopilotChat.context.symbol
+---@class CopilotChat.tools.Content
+---@field type 'text' | 'resource' | 'error'
+---@field data string
+
+---@class CopilotChat.tools.TextContent : CopilotChat.tools.Content
+---@field type 'text'
+
+---@class CopilotChat.tools.ResourceContent : CopilotChat.tools.Content
+---@field type 'resource'
+---@field uri string
+---@field mimetype string
+
+---@class CopilotChat.tools.ErrorContent : CopilotChat.tools.Content
+---@field type 'error'
+
+---@class CopilotChat.tools.Symbol
 ---@field name string?
 ---@field signature string
 ---@field type string
@@ -6,16 +21,6 @@
 ---@field start_col number
 ---@field end_row number
 ---@field end_col number
-
----@class CopilotChat.context.embed
----@field content string
----@field filename string
----@field filetype string
----@field outline string?
----@field diagnostics table<CopilotChat.Diagnostic>?
----@field symbols table<string, CopilotChat.context.symbol>?
----@field embedding table<number>?
----@field score number?
 
 local async = require('plenary.async')
 local log = require('plenary.log')
@@ -69,6 +74,8 @@ local OFF_SIDE_RULE_LANGUAGES = {
   'fsharp',
 }
 
+local INPUT_SEPARATOR = ';;'
+
 local MULTI_FILE_THRESHOLD = 5
 
 --- Compute the cosine similarity between two vectors
@@ -94,9 +101,9 @@ local function spatial_distance_cosine(a, b)
 end
 
 --- Rank data by relatedness to the query
----@param query CopilotChat.context.embed
----@param data table<CopilotChat.context.embed>
----@return table<CopilotChat.context.embed>
+---@param query CopilotChat.client.EmbeddedResource
+---@param data table<CopilotChat.client.EmbeddedResource>
+---@return table<CopilotChat.client.EmbeddedResource>
 local function data_ranked_by_relatedness(query, data)
   for _, item in ipairs(data) do
     local score = spatial_distance_cosine(item.embedding, query.embedding)
@@ -189,8 +196,8 @@ end
 
 --- Rank data by symbols and filenames
 ---@param query string
----@param data table<CopilotChat.context.embed>
----@return table<CopilotChat.context.embed>
+---@param data table<CopilotChat.client.Resource>
+---@return table<CopilotChat.client.Resource>
 local function data_ranked_by_symbols(query, data)
   -- Get query trigrams including compound versions
   local query_trigrams = {}
@@ -211,7 +218,7 @@ local function data_ranked_by_symbols(query, data)
   local max_score = 0
 
   for _, entry in ipairs(data) do
-    local basename = utils.filename(entry.filename):gsub('%..*$', '')
+    local basename = utils.filename(entry.name):gsub('%..*$', '')
 
     -- Get trigrams for basename and compound version
     local file_trigrams = get_trigrams(basename)
@@ -327,9 +334,9 @@ end
 --- Build an outline and symbols from a string
 ---@param content string
 ---@param ft string
----@return string?, table<string, CopilotChat.context.symbol>?
+---@return string?, table<string, CopilotChat.tools.Symbol>?
 local function get_outline(content, ft)
-  if not ft or ft == '' or ft == 'text' or ft == 'raw' then
+  if not ft or ft == '' then
     return nil
   end
 
@@ -397,10 +404,162 @@ local function get_outline(content, ft)
   return table.concat(outline_lines, '\n'), symbols
 end
 
+local function sorted_propnames(schema)
+  local prop_names = vim.tbl_keys(schema.properties)
+  local required_set = {}
+  if schema.required then
+    for _, name in ipairs(schema.required) do
+      required_set[name] = true
+    end
+  end
+
+  -- Sort properties with priority: required without default > required with default > optional
+  table.sort(prop_names, function(a, b)
+    local a_required = required_set[a] or false
+    local b_required = required_set[b] or false
+    local a_has_default = schema.properties[a].default ~= nil
+    local b_has_default = schema.properties[b].default ~= nil
+
+    -- First priority: required properties without default
+    if a_required and not a_has_default and (not b_required or b_has_default) then
+      return true
+    end
+    if b_required and not b_has_default and (not a_required or a_has_default) then
+      return false
+    end
+
+    -- Second priority: required properties with default
+    if a_required and not b_required then
+      return true
+    end
+    if b_required and not a_required then
+      return false
+    end
+
+    -- Finally sort alphabetically
+    return a < b
+  end)
+
+  return prop_names
+end
+
+local function filter_schema(tbl)
+  if type(tbl) ~= 'table' then
+    return tbl
+  end
+
+  local result = {}
+  for k, v in pairs(tbl) do
+    if type(v) ~= 'function' and k ~= 'examples' then
+      result[k] = type(v) == 'table' and filter_schema(v) or v
+    end
+  end
+  return result
+end
+
+--- Prepare the schema for use
+---@param tools table<string, CopilotChat.config.tools.Tool>
+---@return table<CopilotChat.client.Tool>
+function M.parse_tools(tools)
+  local tool_names = vim.tbl_keys(tools)
+  table.sort(tool_names)
+  return vim.tbl_map(function(name)
+    local tool = tools[name]
+    local schema = tool.schema
+
+    if schema then
+      schema = filter_schema(schema)
+    end
+
+    return {
+      name = name,
+      description = tool.description,
+      schema = schema,
+    }
+  end, tool_names)
+end
+
+--- Parse context input string into a table based on the schema
+---@param input string|table|nil
+---@param schema table?
+---@return table
+function M.parse_input(input, schema)
+  if not input or input == '' or not schema or not schema.properties then
+    return {}
+  end
+
+  if type(input) == 'table' then
+    return input
+  end
+
+  local parts = vim.split(input, INPUT_SEPARATOR)
+  local result = {}
+  local prop_names = sorted_propnames(schema)
+
+  -- Map input parts to schema properties in sorted order
+  local i = 1
+  for _, prop_name in ipairs(prop_names) do
+    local prop_schema = schema.properties[prop_name]
+    local value = parts[i] ~= '' and parts[i] or nil
+    if value == nil and prop_schema.default ~= nil then
+      value = prop_schema.default
+    end
+
+    result[prop_name] = value
+    i = i + 1
+    if i > #parts then
+      break
+    end
+  end
+
+  return result
+end
+
+--- Get input from the user based on the schema
+---@param schema table?
+---@param source CopilotChat.source
+---@return string?
+function M.enter_input(schema, source)
+  if not schema or not schema.properties then
+    return nil
+  end
+
+  local prop_names = sorted_propnames(schema)
+  local out = {}
+
+  for _, prop_name in ipairs(prop_names) do
+    local cfg = schema.properties[prop_name]
+    if not schema.required or vim.tbl_contains(schema.required, prop_name) then
+      if cfg.enum then
+        local choices = type(cfg.enum) == 'table' and cfg.enum or cfg.enum(source)
+        local choice = utils.select(choices, {
+          prompt = string.format('Select %s> ', prop_name),
+        })
+
+        table.insert(out, choice or '')
+      elseif cfg.type == 'boolean' then
+        table.insert(out, utils.select({ 'true', 'false' }, {
+          prompt = string.format('Select %s> ', prop_name),
+        }) or '')
+      else
+        table.insert(out, utils.input({
+          prompt = string.format('Enter %s> ', prop_name),
+        }) or '')
+      end
+    end
+  end
+
+  local out = vim.trim(table.concat(out, INPUT_SEPARATOR))
+  if out:match('%s+') then
+    out = string.format('`%s`', out)
+  end
+  return out
+end
+
 --- Get data for a file
 ---@param filename string
 ---@param filetype string?
----@return CopilotChat.context.embed?
+---@return CopilotChat.tools.ResourceContent?
 function M.get_file(filename, filetype)
   if not filetype then
     return nil
@@ -411,35 +570,30 @@ function M.get_file(filename, filetype)
     return nil
   end
 
-  local cached = file_cache[filename]
-  if cached and cached._modified >= modified then
-    return {
-      content = cached.content,
-      _modified = cached._modified,
-      filename = filename,
-      filetype = filetype,
+  local data = file_cache[filename]
+  if not data or data._modified < modified then
+    local content = utils.read_file(filename)
+    if not content or content == '' then
+      return nil
+    end
+    data = {
+      content = content,
+      _modified = modified,
     }
+    file_cache[filename] = data
   end
 
-  local content = utils.read_file(filename)
-  if not content or content == '' then
-    return nil
-  end
-
-  local out = {
-    content = content,
-    filename = filename,
-    filetype = filetype,
-    _modified = modified,
+  return {
+    type = 'resource',
+    uri = 'file://' .. filename,
+    data = data.content,
+    mimetype = utils.filetype_to_mimetype(filetype),
   }
-
-  file_cache[filename] = out
-  return out
 end
 
 --- Get data for a buffer
 ---@param bufnr number
----@return CopilotChat.context.embed?
+---@return CopilotChat.tools.ResourceContent?
 function M.get_buffer(bufnr)
   if not utils.buf_valid(bufnr) then
     return nil
@@ -451,22 +605,22 @@ function M.get_buffer(bufnr)
   end
 
   return {
-    content = table.concat(content, '\n'),
-    filename = utils.filepath(vim.api.nvim_buf_get_name(bufnr)),
-    filetype = vim.bo[bufnr].filetype,
-    score = 0.1,
-    diagnostics = utils.diagnostics(bufnr),
+    type = 'resource',
+    uri = 'file://' .. utils.filepath(vim.api.nvim_buf_get_name(bufnr)),
+    data = table.concat(content, '\n'),
+    mimetype = utils.filetype_to_mimetype(vim.bo[bufnr].filetype),
   }
 end
 
 --- Get the content of an URL
 ---@param url string
----@return CopilotChat.context.embed?
+---@return CopilotChat.tools.ResourceContent?
 function M.get_url(url)
   if not url or url == '' then
     return nil
   end
 
+  local ft = utils.filetype(url)
   local content = url_cache[url]
   if not content then
     local ok, out = async.util.apcall(utils.system, { 'lynx', '-dump', url })
@@ -505,36 +659,43 @@ function M.get_url(url)
   end
 
   return {
-    content = content,
-    filename = url,
-    filetype = 'text',
+    type = 'resource',
+    uri = url,
+    data = content,
+    mimetype = utils.filetype_to_mimetype(ft),
   }
 end
 
---- Filter embeddings based on the query
+--- Process resources based on the query
 ---@param prompt string
 ---@param model string
 ---@param headless boolean
----@param embeddings table<CopilotChat.context.embed>
----@return table<CopilotChat.context.embed>
-function M.filter_embeddings(prompt, model, headless, embeddings)
+---@param resources table<CopilotChat.tools.ResourceContent>
+---@return table<CopilotChat.client.Resource>
+function M.process_resources(prompt, model, headless, resources)
+  local client_resources = vim.tbl_map(function(resource)
+    return {
+      name = utils.uri_to_filename(resource.uri),
+      type = utils.mimetype_to_filetype(resource.mimetype),
+      data = resource.data,
+    }
+  end, resources)
+
   -- If we dont need to embed anything, just return directly
-  if #embeddings < MULTI_FILE_THRESHOLD then
-    return embeddings
+  if #client_resources < MULTI_FILE_THRESHOLD then
+    return client_resources
   end
 
   notify.publish(notify.STATUS, 'Preparing embedding outline')
 
-  for _, input in ipairs(embeddings) do
-    -- Precalculate hash and attributes for caching
-    local hash = input.filename .. utils.quick_hash(input.content)
+  -- Get the outlines for each resource
+  for _, input in ipairs(client_resources) do
+    local hash = input.name .. utils.quick_hash(input.data)
     input._hash = hash
-    input.filename = input.filename or 'unknown'
-    input.filetype = input.filetype or 'text'
 
     local outline = outline_cache[hash]
     if not outline then
-      local outline_text, symbols = get_outline(input.content, input.filetype)
+      local outline_text, symbols = get_outline(input.data, input.type)
       if outline_text then
         outline = {
           outline = outline_text,
@@ -571,16 +732,16 @@ function M.filter_embeddings(prompt, model, headless, embeddings)
   end
 
   -- Rank embeddings by symbols
-  embeddings = data_ranked_by_symbols(query, embeddings)
-  log.debug('Ranked data:', #embeddings)
-  for i, item in ipairs(embeddings) do
-    log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
+  client_resources = data_ranked_by_symbols(query, client_resources)
+  log.debug('Ranked data:', #client_resources)
+  for i, item in ipairs(client_resources) do
+    log.debug(string.format('%s: %s - %s', i, item.score, item.name))
   end
 
   -- Prepare embeddings for processing
   local to_process = {}
   local results = {}
-  for _, input in ipairs(embeddings) do
+  for _, input in ipairs(client_resources) do
     local hash = input._hash
     local embed = embedding_cache[hash]
     if embed then
@@ -591,9 +752,8 @@ function M.filter_embeddings(prompt, model, headless, embeddings)
     end
   end
   table.insert(to_process, {
-    content = query,
-    filename = 'query',
-    filetype = 'raw',
+    type = 'text',
+    data = query,
   })
 
   -- Embed the data and process the results

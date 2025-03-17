@@ -1,7 +1,7 @@
 local utils = require('CopilotChat.utils')
 local class = utils.class
 
----@class CopilotChat.ui.Overlay : Class
+---@class CopilotChat.ui.overlay.Overlay : Class
 ---@field bufnr number?
 ---@field protected name string
 ---@field protected help string
