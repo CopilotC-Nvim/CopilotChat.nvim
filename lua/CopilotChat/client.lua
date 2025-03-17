@@ -710,11 +710,13 @@ function Client:ask(prompt, opts)
 
   local response, err = utils.curl_post(provider.get_url(options), args)
 
-  if self.current_job ~= job_id then
-    return
-  end
+  if not opts.headless then
+    if self.current_job ~= job_id then
+      return
+    end
 
-  self.current_job = nil
+    self.current_job = nil
+  end
 
   log.debug('Response status:', response.status)
   log.debug('Response body:\n', response.body)
