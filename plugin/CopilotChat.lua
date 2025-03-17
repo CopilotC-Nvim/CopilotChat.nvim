@@ -12,8 +12,8 @@ end
 vim.api.nvim_set_hl(0, 'CopilotChatStatus', { link = 'DiagnosticHint', default = true })
 vim.api.nvim_set_hl(0, 'CopilotChatHelp', { link = 'DiagnosticInfo', default = true })
 vim.api.nvim_set_hl(0, 'CopilotChatKeyword', { link = 'Keyword', default = true })
-vim.api.nvim_set_hl(0, 'CopilotChatInput', { link = 'Special', default = true })
 vim.api.nvim_set_hl(0, 'CopilotChatSelection', { link = 'Visual', default = true })
+vim.api.nvim_set_hl(0, 'CopilotChatAnnotation', { link = '@punctuation.special.markdown', default = true })
 vim.api.nvim_set_hl(0, 'CopilotChatHeader', { link = '@markup.heading.2.markdown', default = true })
 vim.api.nvim_set_hl(0, 'CopilotChatSeparator', { link = '@punctuation.special.markdown', default = true })
 

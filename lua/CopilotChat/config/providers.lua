@@ -67,52 +67,30 @@ local function get_github_token()
   error('Failed to find GitHub token')
 end
 
----@class CopilotChat.Provider.model
----@field id string
----@field name string
----@field tokenizer string?
----@field max_input_tokens number?
----@field max_output_tokens number?
-
----@class CopilotChat.Provider.agent
----@field id string
----@field name string
----@field description string?
-
----@class CopilotChat.Provider.embed
----@field index number
----@field embedding table<number>
-
----@class CopilotChat.Provider.options
----@field model CopilotChat.Provider.model
----@field agent CopilotChat.Provider.agent?
+---@class CopilotChat.config.providers.Options
+---@field model CopilotChat.client.Model
+---@field agent CopilotChat.client.Agent?
 ---@field temperature number?
+---@field tools table<CopilotChat.client.Tool>?
 
----@class CopilotChat.Provider.input
----@field role string
----@field content string
-
----@class CopilotChat.Provider.reference
----@field name string
----@field url string
-
----@class CopilotChat.Provider.output
+---@class CopilotChat.config.providers.Output
 ---@field content string
 ---@field finish_reason string?
 ---@field total_tokens number?
----@field references table<CopilotChat.Provider.reference>?
+---@field tool_calls table<CopilotChat.client.ToolCall>
+---@field references table<CopilotChat.client.Reference>
 
----@class CopilotChat.Provider
+---@class CopilotChat.config.providers.Provider
 ---@field disabled nil|boolean
 ---@field get_headers nil|fun():table<string, string>,number?
----@field get_agents nil|fun(headers:table):table<CopilotChat.Provider.agent>
----@field get_models nil|fun(headers:table):table<CopilotChat.Provider.model>
----@field embed nil|string|fun(inputs:table<string>, headers:table):table<CopilotChat.Provider.embed>
----@field prepare_input nil|fun(inputs:table<CopilotChat.Provider.input>, opts:CopilotChat.Provider.options):table
----@field prepare_output nil|fun(output:table, opts:CopilotChat.Provider.options):CopilotChat.Provider.output
----@field get_url nil|fun(opts:CopilotChat.Provider.options):string
+---@field get_agents nil|fun(headers:table):table<CopilotChat.client.Agent>
+---@field get_models nil|fun(headers:table):table<CopilotChat.client.Model>
+---@field embed nil|string|fun(inputs:table<string>, headers:table):table<CopilotChat.client.Embed>
+---@field prepare_input nil|fun(inputs:table<CopilotChat.client.Message>, opts:CopilotChat.config.providers.Options):table
+---@field prepare_output nil|fun(output:table, opts:CopilotChat.config.providers.Options):CopilotChat.config.providers.Output
+---@field get_url nil|fun(opts:CopilotChat.config.providers.Options):string
 
----@type table<string, CopilotChat.Provider>
+---@type table<string, CopilotChat.config.providers.Provider>
 local M = {}
 
 M.copilot = {
@@ -171,7 +149,7 @@ M.copilot = {
     local models = vim
       .iter(response.body.data)
       :filter(function(model)
-        return model.capabilities.type == 'chat' and not vim.endswith(model.id, 'paygo')
+        return model.capabilities.type == 'chat' and model.model_picker_enabled
       end)
       :map(function(model)
         return {
@@ -180,6 +158,8 @@ M.copilot = {
           tokenizer = model.capabilities.tokenizer,
           max_input_tokens = model.capabilities.limits.max_prompt_tokens,
           max_output_tokens = model.capabilities.limits.max_output_tokens,
+          streaming = model.capabilities.supports.streaming,
+          tool_calls = model.capabilities.supports.tool_calls,
           policy = not model['policy'] or model['policy']['state'] == 'enabled',
           version = model.version,
         }
@@ -224,12 +204,25 @@ M.copilot = {
     local out = {
       messages = inputs,
       model = opts.model.id,
+      stream = opts.model.streaming == nil and true or opts.model.streaming,
     }
+
+    if opts.tools and opts.model.tool_calls then
+      out.tools = vim.tbl_map(function(tool)
+        return {
+          type = 'function',
+          ['function'] = {
+            name = tool.name,
+            description = tool.description,
+            parameters = tool.schema,
+          },
+        }
+      end, opts.tools)
+    end
 
     if not is_o1 then
       out.n = 1
       out.top_p = 1
-      out.stream = true
       out.temperature = opts.temperature
     end
 
@@ -242,6 +235,7 @@ M.copilot = {
 
   prepare_output = function(output)
     local references = {}
+    local tool_calls = {}
 
     if output.copilot_references then
       for _, reference in ipairs(output.copilot_references) do
@@ -255,23 +249,42 @@ M.copilot = {
       end
     end
 
-    local message
+    local choice
     if output.choices and #output.choices > 0 then
-      message = output.choices[1]
+      for _, choice in ipairs(output.choices) do
+        local message = choice.message or choice.delta
+        if message and message.tool_calls then
+          for i, tool_call in ipairs(message.tool_calls) do
+            local fn = tool_call['function']
+            if fn then
+              local index = tool_call.index or i
+              local id = tool_call.id or ('tooluse_' .. index)
+              table.insert(tool_calls, {
+                id = id,
+                index = index,
+                name = fn.name,
+                arguments = fn.arguments or '',
+              })
+            end
+          end
+        end
+      end
+
+      choice = output.choices[1]
     else
-      message = output
+      choice = output
     end
 
-    local content = message.message and message.message.content or message.delta and message.delta.content
-
-    local usage = message.usage and message.usage.total_tokens or output.usage and output.usage.total_tokens
-
-    local finish_reason = message.finish_reason or message.done_reason or output.finish_reason or output.done_reason
+    local message = choice.message or choice.delta
+    local content = message and message.content
+    local usage = choice.usage and choice.usage.total_tokens or output.usage and output.usage.total_tokens
+    local finish_reason = choice.finish_reason or choice.done_reason or output.finish_reason or output.done_reason
 
     return {
       content = content,
       finish_reason = finish_reason,
       total_tokens = usage,
+      tool_calls = tool_calls,
       references = references,
     }
   end,
@@ -336,6 +349,8 @@ M.github_models = {
           tokenizer = 'o200k_base',
           max_input_tokens = max_input_tokens,
           max_output_tokens = max_output_tokens,
+          streaming = true,
+          tool_calls = true,
         }
       end)
       :totable()

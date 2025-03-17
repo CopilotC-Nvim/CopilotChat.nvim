@@ -308,56 +308,67 @@ The default "noop" agent is `none`. For more information:
 - [Extension Agents Documentation](https://docs.github.com/en/copilot/using-github-copilot/using-extensions-to-integrate-external-tools-with-copilot-chat)
 - [Available Agents](https://github.com/marketplace?type=apps&copilot_app=true)
 
-## Contexts
+## Tools
 
-Contexts provide additional information to the chat. Add context using `#context_name[:input]` syntax:
+Tools provide additional information to the chat. Add tools using `#tool_name[:input]` syntax:
 
-| Context     | Input Support | Description                         |
-| ----------- | ------------- | ----------------------------------- |
-| `buffer`    | ✓ (number)    | Current or specified buffer content |
-| `buffers`   | ✓ (type)      | All buffers content (listed/all)    |
-| `file`      | ✓ (path)      | Content of specified file           |
-| `files`     | ✓ (glob)      | Workspace files                     |
-| `filenames` | ✓ (glob)      | Workspace file names                |
-| `git`       | ✓ (ref)       | Git diff (unstaged/staged/commit)   |
-| `url`       | ✓ (url)       | Content from URL                    |
-| `register`  | ✓ (name)      | Content of vim register             |
-| `quickfix`  | -             | Quickfix list file contents         |
-| `system`    | ✓ (command)   | Output of shell command             |
+| Tool          | Input Support | Description                         |
+| ------------- | ------------- | ----------------------------------- |
+| `buffer`      | ✓ (name)      | Retrieves content from a specific buffer |
+| `buffers`     | ✓ (scope)     | Fetches content from multiple buffers (listed/visible) |
+| `diagnostics` | ✓ (scope)     | Collects code diagnostics (errors, warnings) |
+| `file`        | ✓ (path)      | Reads content from a specified file path |
+| `git`         | ✓ (diff)      | Retrieves git diff information (unstaged/staged/sha) |
+| `glob`        | ✓ (pattern)   | Lists filenames matching a pattern in workspace |
+| `grep`        | ✓ (pattern)   | Searches for a pattern across files in workspace |
+| `quickfix`    | -             | Includes content of files in quickfix list |
+| `register`    | ✓ (register)  | Provides access to specified Vim register |
+| `system`      | ✓ (command)   | Executes a system shell command for output |
+| `url`         | ✓ (url)       | Fetches content from a specified URL |
 
 > [!TIP]
-> The AI is aware of these context providers and may request additional context
-> if needed by asking you to input a specific context command like `#file:path/to/file.js`.
+> The AI is aware of these tool providers and may request additional context
+> if needed by asking you to input a specific tool command like `#file:path/to/file.js`.
 
 Examples:
 
 ```markdown
-> #buffer
-> #buffer:2
-> #files:\*.lua
-> #filenames
+> #buffer:init.lua
+> #buffers:visible
+> #diagnostics:current
+> #file:path/to/file.js
 > #git:staged
+> #glob:**/*.lua
+> #grep:function setup
+> #quickfix
+> #register:+
+> #system:ls -la | grep lua
 > #url:https://example.com
-> #system:`ls -la | grep lua`
 ```
 
-Define your own contexts in the configuration with input handling and resolution:
+Define your own tools in the configuration with input handling and schema:
 
 ```lua
 {
-  contexts = {
+  tools = {
     birthday = {
-      input = function(callback)
-        vim.ui.select({ 'user', 'napoleon' }, {
-          prompt = 'Select birthday> ',
-        }, callback)
-      end,
+      description = "Retrieves birthday information for a person",
+      schema = {
+        type = 'object',
+        required = { 'name' },
+        properties = {
+          name = {
+            type = 'string',
+            enum = { 'Alice', 'Bob', 'Charlie' },
+            description = "Person's name",
+          },
+        },
+      },
       resolve = function(input)
         return {
           {
-            content = input .. ' birthday info',
-            filename = input .. '_birthday',
-            filetype = 'text',
+            type = 'text',
+            data = input.name .. ' birthday info',
           }
         }
       end
@@ -366,9 +377,9 @@ Define your own contexts in the configuration with input handling and resolution
 }
 ```
 
-### External Contexts
+### External Tools
 
-For external contexts, see the [contexts discussion page](https://github.com/CopilotC-Nvim/CopilotChat.nvim/discussions/categories/contexts).
+For external tools implementations, see the [discussion page](https://github.com/CopilotC-Nvim/CopilotChat.nvim/discussions/categories/tools).
 
 ## Selections
 
@@ -455,7 +466,6 @@ Below are all available configuration options with their default values:
 
   model = 'gpt-4o-2024-11-20', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   agent = 'copilot', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
-  context = nil, -- Default context or array of contexts to use (can be specified manually in prompt via #).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat.
 
   temperature = 0.1, -- GPT result temperature
@@ -520,24 +530,28 @@ Below are all available configuration options with their default values:
     },
   },
 
-  -- default contexts
-  -- see config/contexts.lua for implementation
-  contexts = {
+  -- default tools
+  -- see config/tools.lua for implementation
+  tools = {
     buffer = {
     },
     buffers = {
     },
     file = {
     },
-    files = {
+    glob = {
+    },
+    grep = {
+    },
+    quickfix = {
+    },
+    diagnostics = {
     },
     git = {
     },
     url = {
     },
     register = {
-    },
-    quickfix = {
     },
     system = {
     }
@@ -568,7 +582,7 @@ Below are all available configuration options with their default values:
     },
     Commit = {
       prompt = 'Write commit message for the change with commitizen convention. Keep the title under 50 characters and wrap message at 72 characters. Format as a gitcommit code block.',
-      context = 'git:staged',
+      sticky = '#git:staged',
     },
   },
 
