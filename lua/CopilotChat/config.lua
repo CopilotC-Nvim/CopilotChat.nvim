@@ -119,8 +119,8 @@ return {
   -- default providers
   providers = require('CopilotChat.config.providers'),
 
-  -- default contexts
-  contexts = require('CopilotChat.config.contexts'),
+  -- default tools
+  tools = require('CopilotChat.config.tools'),
 
   -- default prompts
   prompts = require('CopilotChat.config.prompts'),

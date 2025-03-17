@@ -1,6 +1,5 @@
 ---@class CopilotChat.Client.ask
 ---@field headless boolean
----@field contexts table<string, string>?
 ---@field selection CopilotChat.select.selection?
 ---@field embeddings table<CopilotChat.context.embed>?
 ---@field system_prompt string
@@ -15,6 +14,13 @@
 ---@class CopilotChat.Client.agent : CopilotChat.Provider.agent
 ---@field provider string
 
+---@class CopilotChat.Client.embed
+---@field type string
+---@field name string
+---@field content string
+---@field filetype string
+---@field start_line number?
+
 local log = require('plenary.log')
 local tiktoken = require('CopilotChat.tiktoken')
 local notify = require('CopilotChat.notify')
@@ -22,7 +28,8 @@ local utils = require('CopilotChat.utils')
 local class = utils.class
 
 --- Constants
-local CONTEXT_FORMAT = '[#file:%s](#file:%s-context)'
+local EMBED_FORMAT = '# %s:%s\n```%s\n%s\n```'
+local REFERENCE_FORMAT = '[#%s:%s](#%s:%s)'
 local LINE_CHARACTERS = 100
 local BIG_FILE_THRESHOLD = 1000 * LINE_CHARACTERS
 local BIG_EMBED_THRESHOLD = 200 * LINE_CHARACTERS
@@ -66,22 +73,17 @@ end
 
 --- Generate content block with line numbers, truncating if necessary
 ---@param content string: The content
----@param outline string?: The outline
 ---@param threshold number: The threshold for truncation
----@param start_line number|nil: The starting line number
+---@param start_line number?: The starting line number
 ---@return string
-local function generate_content_block(content, outline, threshold, start_line)
+local function generate_content_block(content, threshold, start_line)
   local total_chars = #content
-  if total_chars > threshold and outline then
-    content = outline
-    total_chars = #content
-  end
   if total_chars > threshold then
     content = content:sub(1, threshold)
     content = content .. '\n' .. TRUNCATED
   end
 
-  if start_line ~= -1 then
+  if start_line ~= nil then
     local lines = vim.split(content, '\n')
     local total_lines = #lines
     local max_length = #tostring(total_lines)
@@ -94,26 +96,6 @@ local function generate_content_block(content, outline, threshold, start_line)
   end
 
   return content
-end
-
---- Generate diagnostics message
----@param diagnostics table<CopilotChat.Diagnostic>
----@return string
-local function generate_diagnostics(diagnostics)
-  local out = {}
-  for _, diagnostic in ipairs(diagnostics) do
-    table.insert(
-      out,
-      string.format(
-        '%s line=%d-%d: %s',
-        diagnostic.severity,
-        diagnostic.start_line,
-        diagnostic.end_line,
-        diagnostic.content
-      )
-    )
-  end
-  return table.concat(out, '\n')
 end
 
 --- Generate messages for the given selection
@@ -132,8 +114,7 @@ local function generate_selection_messages(selection)
     return {}
   end
 
-  local out = string.format('# FILE:%s CONTEXT\n', filename:upper())
-  out = out .. "User's active selection:\n"
+  local out = "User's active selection:\n"
   if selection.start_line and selection.end_line then
     out = out .. string.format('Excerpt from %s, lines %s to %s:\n', filename, selection.start_line, selection.end_line)
   end
@@ -141,52 +122,57 @@ local function generate_selection_messages(selection)
     .. string.format(
       '```%s\n%s\n```',
       filetype,
-      generate_content_block(content, nil, BIG_FILE_THRESHOLD, selection.start_line)
+      generate_content_block(content, BIG_FILE_THRESHOLD, selection.start_line)
     )
 
   if selection.diagnostics then
-    out = out
-      .. string.format("\nDiagnostics in user's active selection:\n%s", generate_diagnostics(selection.diagnostics))
+    local diag_lines = {}
+    for _, diagnostic in ipairs(selection.diagnostics) do
+      table.insert(
+        diag_lines,
+        string.format(
+          '%s line=%d-%d: %s',
+          diagnostic.severity,
+          diagnostic.start_line,
+          diagnostic.end_line,
+          diagnostic.content
+        )
+      )
+    end
+
+    out = out .. string.format("\n\nDiagnostics in user's active selection:\n%s", table.concat(diag_lines, '\n'))
   end
 
   return {
     {
       name = filename,
-      context = string.format(CONTEXT_FORMAT, filename, filename),
+      context = string.format(REFERENCE_FORMAT, 'selection', filename, 'selection', filename),
       content = out,
       role = 'user',
     },
   }
 end
 
---- Generate messages for the given embeddings
+--- Generate messages for the given embeds
 --- @param embeddings table<CopilotChat.context.embed>?
 --- @return table<CopilotChat.Provider.input>
-local function generate_embeddings_messages(embeddings)
+local function generate_embed_messages(embeddings)
   if not embeddings then
     return {}
   end
 
   return vim.tbl_map(function(embedding)
     local out = string.format(
-      '# FILE:%s CONTEXT\n```%s\n%s\n```',
-      embedding.filename:upper(),
-      embedding.filetype or 'text',
-      generate_content_block(embedding.content, embedding.outline, BIG_FILE_THRESHOLD)
+      EMBED_FORMAT,
+      embedding.type,
+      embedding.name,
+      embedding.filetype or '',
+      generate_content_block(embedding.content, BIG_FILE_THRESHOLD, embedding.start_line)
     )
 
-    if embedding.diagnostics then
-      out = out
-        .. string.format(
-          '\nFILE:%s DIAGNOSTICS:\n%s',
-          embedding.filename:upper(),
-          generate_diagnostics(embedding.diagnostics)
-        )
-    end
-
     return {
-      name = embedding.filename,
-      context = string.format(CONTEXT_FORMAT, embedding.filename, embedding.filename),
+      name = embedding.name,
+      context = string.format(REFERENCE_FORMAT, embedding.type, embedding.name, embedding.type, embedding.name),
       content = out,
       role = 'user',
     }
@@ -195,48 +181,13 @@ end
 
 --- Generate ask request
 --- @param history table<CopilotChat.Provider.input>
---- @param contexts table<string, string>?
 --- @param prompt string
 --- @param system_prompt string
 --- @param generated_messages table<CopilotChat.Provider.input>
-local function generate_ask_request(history, contexts, prompt, system_prompt, generated_messages)
+local function generate_ask_request(history, prompt, system_prompt, generated_messages)
   local messages = {}
 
   system_prompt = vim.trim(system_prompt)
-
-  -- Include context help
-  if contexts and not vim.tbl_isempty(contexts) then
-    local help_text = [[When you need additional context, request it using this format:
-
-> #<command>:`<input>`
-
-Examples:
-> #file:`path/to/file.js`        (loads specific file)
-> #buffers:`visible`             (loads all visible buffers)
-> #git:`staged`                  (loads git staged changes)
-> #system:`uname -a`             (loads system information)
-
-Guidelines:
-- Always request context when needed rather than guessing about files or code
-- Use the > format on a new line when requesting context
-- Output context commands directly - never ask if the user wants to provide information
-- Assume the user will provide requested context in their next response
-
-Available context providers and their usage:]]
-
-    local context_names = vim.tbl_keys(contexts)
-    table.sort(context_names)
-    for _, name in ipairs(context_names) do
-      local description = contexts[name]
-      description = description:gsub('\n', '\n   ')
-      help_text = help_text .. '\n\n - #' .. name .. ': ' .. description
-    end
-
-    if system_prompt ~= '' then
-      system_prompt = system_prompt .. '\n\n'
-    end
-    system_prompt = system_prompt .. help_text
-  end
 
   -- Include system prompt
   if not utils.empty(system_prompt) then
@@ -291,12 +242,12 @@ end
 --- @return table<string>
 local function generate_embedding_request(inputs, threshold)
   return vim.tbl_map(function(embedding)
-    local content = generate_content_block(embedding.outline or embedding.content, nil, threshold, -1)
-    if embedding.filetype == 'raw' then
+    local content = generate_content_block(embedding.content, threshold)
+    if not embedding.name then
       return content
-    else
-      return string.format('File: `%s`\n```%s\n%s\n```', embedding.filename, embedding.filetype, content)
     end
+
+    return string.format(EMBED_FORMAT, embedding.type, embedding.name, embedding.filetype or '', content)
   end, inputs)
 end
 
@@ -481,12 +432,12 @@ function Client:ask(prompt, opts)
   local references = utils.ordered_map()
   local generated_messages = {}
   local selection_messages = generate_selection_messages(opts.selection)
-  local embeddings_messages = generate_embeddings_messages(opts.embeddings)
+  local embeddings_messages = generate_embed_messages(opts.embeddings)
 
   for _, message in ipairs(selection_messages) do
     table.insert(generated_messages, message)
     references:set(message.name, {
-      name = utils.filename(message.name),
+      name = message.name:gsub('^file://', ''),
       url = message.name,
     })
   end
@@ -656,10 +607,8 @@ function Client:ask(prompt, opts)
   end
 
   local headers = self:authenticate(provider_name)
-  local request = provider.prepare_input(
-    generate_ask_request(history, opts.contexts, prompt, opts.system_prompt, generated_messages),
-    options
-  )
+  local request =
+    provider.prepare_input(generate_ask_request(history, prompt, opts.system_prompt, generated_messages), options)
   local is_stream = request.stream
 
   local args = {
