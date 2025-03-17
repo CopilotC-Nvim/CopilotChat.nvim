@@ -2,7 +2,7 @@ local select = require('CopilotChat.select')
 
 ---@alias CopilotChat.config.Layout 'vertical'|'horizontal'|'float'|'replace'
 
----@class CopilotChat.config.window
+---@class CopilotChat.config.Window
 ---@field layout? CopilotChat.config.Layout|fun():CopilotChat.config.Layout
 ---@field relative 'editor'|'win'|'cursor'|'mouse'?
 ---@field border 'none'|'single'|'double'|'rounded'|'solid'|'shadow'?
@@ -14,19 +14,18 @@ local select = require('CopilotChat.select')
 ---@field footer string?
 ---@field zindex number?
 
----@class CopilotChat.config.shared
+---@class CopilotChat.config.Shared
 ---@field system_prompt string?
 ---@field model string?
 ---@field agent string?
----@field context string|table<string>|nil
 ---@field sticky string|table<string>|nil
 ---@field temperature number?
 ---@field headless boolean?
 ---@field stream nil|fun(chunk: string, source: CopilotChat.source):string
 ---@field callback nil|fun(response: string, source: CopilotChat.source):string
 ---@field remember_as_sticky boolean?
----@field selection false|nil|fun(source: CopilotChat.source):CopilotChat.select.selection?
----@field window CopilotChat.config.window?
+---@field selection false|nil|fun(source: CopilotChat.source):CopilotChat.select.Selection?
+---@field window CopilotChat.config.Window?
 ---@field show_help boolean?
 ---@field show_folds boolean?
 ---@field highlight_selection boolean?
@@ -38,7 +37,7 @@ local select = require('CopilotChat.select')
 ---@field clear_chat_on_new_prompt boolean?
 
 --- CopilotChat default configuration
----@class CopilotChat.config : CopilotChat.config.shared
+---@class CopilotChat.config.Config : CopilotChat.config.Shared
 ---@field debug boolean?
 ---@field log_level 'trace'|'debug'|'info'|'warn'|'error'|'fatal'?
 ---@field proxy string?
@@ -50,9 +49,9 @@ local select = require('CopilotChat.select')
 ---@field answer_header string?
 ---@field error_header string?
 ---@field separator string?
----@field providers table<string, CopilotChat.Provider>?
----@field contexts table<string, CopilotChat.config.context>?
----@field prompts table<string, CopilotChat.config.prompt|string>?
+---@field providers table<string, CopilotChat.config.providers.Provider>?
+---@field tools table<string, CopilotChat.config.tools.Tool>?
+---@field prompts table<string, CopilotChat.config.prompts.Prompt|string>?
 ---@field mappings CopilotChat.config.mappings?
 return {
 
@@ -62,7 +61,6 @@ return {
 
   model = 'gpt-4o-2024-11-20', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   agent = 'none', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
-  context = nil, -- Default context or array of contexts to use (can be specified manually in prompt via #).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat.
 
   temperature = 0.1, -- GPT result temperature
@@ -121,8 +119,8 @@ return {
   -- default providers
   providers = require('CopilotChat.config.providers'),
 
-  -- default contexts
-  contexts = require('CopilotChat.config.contexts'),
+  -- default tools
+  tools = require('CopilotChat.config.tools'),
 
   -- default prompts
   prompts = require('CopilotChat.config.prompts'),

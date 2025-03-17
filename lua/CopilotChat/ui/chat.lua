@@ -33,50 +33,50 @@ local function match_header(header)
   end
 end
 
----@class CopilotChat.ui.Chat.Section.Block.Header
+---@class CopilotChat.ui.chat.Header
 ---@field filename string
 ---@field start_line number
 ---@field end_line number
 ---@field filetype string
 
----@class CopilotChat.ui.Chat.Section.Block
----@field header CopilotChat.ui.Chat.Section.Block.Header
+---@class CopilotChat.ui.chat.Block
+---@field header CopilotChat.ui.chat.Header
 ---@field start_line number
 ---@field end_line number
 ---@field content string?
 
----@class CopilotChat.ui.Chat.Section
+---@class CopilotChat.ui.chat.Section
 ---@field answer boolean
 ---@field start_line number
 ---@field end_line number
----@field blocks table<CopilotChat.ui.Chat.Section.Block>
+---@field blocks table<CopilotChat.ui.chat.Block>
 ---@field content string?
 
----@class CopilotChat.ui.Chat : CopilotChat.ui.Overlay
+---@class CopilotChat.ui.chat.Chat : CopilotChat.ui.overlay.Overlay
 ---@field winnr number?
----@field config CopilotChat.config.shared
----@field layout CopilotChat.config.Layout?
----@field sections table<CopilotChat.ui.Chat.Section>
+---@field config CopilotChat.config.Shared
+---@field sections table<CopilotChat.ui.chat.Section>
 ---@field references table<CopilotChat.Provider.reference>
 ---@field token_count number?
 ---@field token_max_count number?
+---@field private layout CopilotChat.config.Layout?
 ---@field private question_header string
 ---@field private answer_header string
 ---@field private separator string
 ---@field private header_ns number
----@field private spinner CopilotChat.ui.Spinner
----@field private chat_overlay CopilotChat.ui.Overlay
+---@field private spinner CopilotChat.ui.spinner.Spinner
+---@field private chat_overlay CopilotChat.ui.overlay.Overlay
 local Chat = class(function(self, question_header, answer_header, separator, help, on_buf_create)
   Overlay.init(self, 'copilot-chat', help, on_buf_create)
 
   self.winnr = nil
   self.sections = {}
   self.config = {}
-  self.layout = nil
   self.references = {}
   self.token_count = nil
   self.token_max_count = nil
 
+  self.layout = nil
   self.question_header = question_header
   self.answer_header = answer_header
   self.separator = separator
@@ -112,7 +112,7 @@ end
 
 --- Get the closest section to the cursor.
 ---@param type? "answer"|"question" If specified, only considers sections of the given type
----@return CopilotChat.ui.Chat.Section?
+---@return CopilotChat.ui.chat.Section?
 function Chat:get_closest_section(type)
   if not self:visible() then
     return nil
@@ -139,7 +139,7 @@ function Chat:get_closest_section(type)
 end
 
 --- Get the closest code block to the cursor.
----@return CopilotChat.ui.Chat.Section.Block?
+---@return CopilotChat.ui.chat.Block?
 function Chat:get_closest_block()
   if not self:visible() then
     return nil
@@ -164,7 +164,7 @@ function Chat:get_closest_block()
 end
 
 --- Get the prompt in the chat window.
----@return CopilotChat.ui.Chat.Section?
+---@return CopilotChat.ui.chat.Section?
 function Chat:get_prompt()
   if not self:visible() then
     return
@@ -265,7 +265,7 @@ function Chat:overlay(opts)
 end
 
 --- Open the chat window.
----@param config CopilotChat.config.shared
+---@param config CopilotChat.config.Shared
 function Chat:open(config)
   self:validate()
 

@@ -1,18 +1,28 @@
----@class CopilotChat.Client.ask
+---@class CopilotChat.client.AskOptions
 ---@field headless boolean
----@field contexts table<string, string>?
----@field selection CopilotChat.select.selection?
----@field embeddings table<CopilotChat.context.embed>?
+---@field selection CopilotChat.select.Selection?
+---@field tools table<CopilotChat.client.Tool>?
+---@field resources table<CopilotChat.client.Resource>?
 ---@field system_prompt string
 ---@field model string
 ---@field agent string?
 ---@field temperature number
 ---@field on_progress? fun(response: string):nil
 
----@class CopilotChat.Client.model : CopilotChat.Provider.model
+---@class CopilotChat.client.Tool
+---@field name string
+---@field description string
+---@field schema table?
+
+---@class CopilotChat.client.Resource
+---@field name string
+---@field type string
+---@field data string
+
+---@class CopilotChat.client.Model : CopilotChat.config.providers.Model
 ---@field provider string
 
----@class CopilotChat.Client.agent : CopilotChat.Provider.agent
+---@class CopilotChat.client.Agent : CopilotChat.config.providers.Agent
 ---@field provider string
 
 local log = require('plenary.log')
@@ -22,7 +32,8 @@ local utils = require('CopilotChat.utils')
 local class = utils.class
 
 --- Constants
-local CONTEXT_FORMAT = '[#file:%s](#file:%s-context)'
+local EMBED_FORMAT = '# %s:%s\n```%s\n%s\n```'
+local REFERENCE_FORMAT = '[#%s:%s](#%s:%s)'
 local LINE_CHARACTERS = 100
 local BIG_FILE_THRESHOLD = 1000 * LINE_CHARACTERS
 local BIG_EMBED_THRESHOLD = 200 * LINE_CHARACTERS
@@ -30,8 +41,8 @@ local TRUNCATED = '... (truncated)'
 
 --- Resolve provider function
 ---@param model string
----@param models table<string, CopilotChat.Client.model>
----@param providers table<string, CopilotChat.Provider>
+---@param models table<string, CopilotChat.client.Model>
+---@param providers table<string, CopilotChat.config.providers.Provider>
 ---@return string, function
 local function resolve_provider_function(name, model, models, providers)
   local model_config = models[model]
@@ -65,23 +76,18 @@ local function resolve_provider_function(name, model, models, providers)
 end
 
 --- Generate content block with line numbers, truncating if necessary
----@param content string: The content
----@param outline string?: The outline
+---@param content string
 ---@param threshold number: The threshold for truncation
----@param start_line number|nil: The starting line number
+---@param start_line number?: The starting line number
 ---@return string
-local function generate_content_block(content, outline, threshold, start_line)
+local function generate_content_block(content, threshold, start_line)
   local total_chars = #content
-  if total_chars > threshold and outline then
-    content = outline
-    total_chars = #content
-  end
   if total_chars > threshold then
     content = content:sub(1, threshold)
     content = content .. '\n' .. TRUNCATED
   end
 
-  if start_line ~= -1 then
+  if start_line ~= nil then
     local lines = vim.split(content, '\n')
     local total_lines = #lines
     local max_length = #tostring(total_lines)
@@ -96,28 +102,8 @@ local function generate_content_block(content, outline, threshold, start_line)
   return content
 end
 
---- Generate diagnostics message
----@param diagnostics table<CopilotChat.Diagnostic>
----@return string
-local function generate_diagnostics(diagnostics)
-  local out = {}
-  for _, diagnostic in ipairs(diagnostics) do
-    table.insert(
-      out,
-      string.format(
-        '%s line=%d-%d: %s',
-        diagnostic.severity,
-        diagnostic.start_line,
-        diagnostic.end_line,
-        diagnostic.content
-      )
-    )
-  end
-  return table.concat(out, '\n')
-end
-
 --- Generate messages for the given selection
---- @param selection CopilotChat.select.selection?
+--- @param selection CopilotChat.select.Selection?
 --- @return table<CopilotChat.Provider.input>
 local function generate_selection_messages(selection)
   if not selection then
@@ -132,8 +118,7 @@ local function generate_selection_messages(selection)
     return {}
   end
 
-  local out = string.format('# FILE:%s CONTEXT\n', filename:upper())
-  out = out .. "User's active selection:\n"
+  local out = "User's active selection:\n"
   if selection.start_line and selection.end_line then
     out = out .. string.format('Excerpt from %s, lines %s to %s:\n', filename, selection.start_line, selection.end_line)
   end
@@ -141,53 +126,40 @@ local function generate_selection_messages(selection)
     .. string.format(
       '```%s\n%s\n```',
       filetype,
-      generate_content_block(content, nil, BIG_FILE_THRESHOLD, selection.start_line)
+      generate_content_block(content, BIG_FILE_THRESHOLD, selection.start_line)
     )
-
-  if selection.diagnostics then
-    out = out
-      .. string.format("\nDiagnostics in user's active selection:\n%s", generate_diagnostics(selection.diagnostics))
-  end
 
   return {
     {
       name = filename,
-      context = string.format(CONTEXT_FORMAT, filename, filename),
+      reference = string.format(REFERENCE_FORMAT, 'selection', filename, 'selection', filename),
       content = out,
       role = 'user',
     },
   }
 end
 
---- Generate messages for the given embeddings
---- @param embeddings table<CopilotChat.context.embed>?
+--- Generate messages for the given embeds
+--- @param embeddings table<CopilotChat.client.Content>?
 --- @return table<CopilotChat.Provider.input>
-local function generate_embeddings_messages(embeddings)
+local function generate_embed_messages(embeddings)
   if not embeddings then
     return {}
   end
 
   return vim.tbl_map(function(embedding)
-    local out = string.format(
-      '# FILE:%s CONTEXT\n```%s\n%s\n```',
-      embedding.filename:upper(),
-      embedding.filetype or 'text',
-      generate_content_block(embedding.content, embedding.outline, BIG_FILE_THRESHOLD)
-    )
-
-    if embedding.diagnostics then
-      out = out
-        .. string.format(
-          '\nFILE:%s DIAGNOSTICS:\n%s',
-          embedding.filename:upper(),
-          generate_diagnostics(embedding.diagnostics)
-        )
+    local content = generate_content_block(embedding.data, BIG_FILE_THRESHOLD, 1)
+    local name = embedding.source
+    local filetype = ''
+    if embedding.type == 'resource' then
+      name = vim.uri_to_fname(embedding.uri or '')
+      filetype = utils.mime_to_filetype(embedding.mimetype)
     end
 
     return {
-      name = embedding.filename,
-      context = string.format(CONTEXT_FORMAT, embedding.filename, embedding.filename),
-      content = out,
+      name = name,
+      reference = string.format(REFERENCE_FORMAT, embedding.type, name, embedding.type, name),
+      content = string.format(EMBED_FORMAT, embedding.type, name, filetype, content),
       role = 'user',
     }
   end, embeddings)
@@ -195,48 +167,13 @@ end
 
 --- Generate ask request
 --- @param history table<CopilotChat.Provider.input>
---- @param contexts table<string, string>?
 --- @param prompt string
 --- @param system_prompt string
 --- @param generated_messages table<CopilotChat.Provider.input>
-local function generate_ask_request(history, contexts, prompt, system_prompt, generated_messages)
+local function generate_ask_request(history, prompt, system_prompt, generated_messages)
   local messages = {}
 
   system_prompt = vim.trim(system_prompt)
-
-  -- Include context help
-  if contexts and not vim.tbl_isempty(contexts) then
-    local help_text = [[When you need additional context, request it using this format:
-
-> #<command>:`<input>`
-
-Examples:
-> #file:`path/to/file.js`        (loads specific file)
-> #buffers:`visible`             (loads all visible buffers)
-> #git:`staged`                  (loads git staged changes)
-> #system:`uname -a`             (loads system information)
-
-Guidelines:
-- Always request context when needed rather than guessing about files or code
-- Use the > format on a new line when requesting context
-- Output context commands directly - never ask if the user wants to provide information
-- Assume the user will provide requested context in their next response
-
-Available context providers and their usage:]]
-
-    local context_names = vim.tbl_keys(contexts)
-    table.sort(context_names)
-    for _, name in ipairs(context_names) do
-      local description = contexts[name]
-      description = description:gsub('\n', '\n   ')
-      help_text = help_text .. '\n\n - #' .. name .. ': ' .. description
-    end
-
-    if system_prompt ~= '' then
-      system_prompt = system_prompt .. '\n\n'
-    end
-    system_prompt = system_prompt .. help_text
-  end
 
   -- Include system prompt
   if not utils.empty(system_prompt) then
@@ -246,7 +183,7 @@ Available context providers and their usage:]]
     })
   end
 
-  local context_references = {}
+  local references = {}
 
   -- Include embeddings and history
   for _, message in ipairs(generated_messages) do
@@ -255,8 +192,8 @@ Available context providers and their usage:]]
       role = message.role,
     })
 
-    if message.context then
-      context_references[message.context] = true
+    if message.reference then
+      references[message.reference] = true
     end
   end
   for _, message in ipairs(history) do
@@ -265,11 +202,11 @@ Available context providers and their usage:]]
 
   -- Include context references
   prompt = vim.trim(prompt)
-  if not vim.tbl_isempty(context_references) then
+  if not vim.tbl_isempty(references) then
     if prompt ~= '' then
       prompt = '\n\n' .. prompt
     end
-    prompt = table.concat(vim.tbl_keys(context_references), '\n') .. prompt
+    prompt = table.concat(vim.tbl_keys(references), '\n') .. prompt
   end
 
   -- Include user prompt
@@ -286,26 +223,27 @@ Available context providers and their usage:]]
 end
 
 --- Generate embedding request
---- @param inputs table<CopilotChat.context.embed>
+--- @param inputs table<CopilotChat.client.Content>
 --- @param threshold number
 --- @return table<string>
 local function generate_embedding_request(inputs, threshold)
   return vim.tbl_map(function(embedding)
-    local content = generate_content_block(embedding.outline or embedding.content, nil, threshold, -1)
-    if embedding.filetype == 'raw' then
-      return content
-    else
-      return string.format('File: `%s`\n```%s\n%s\n```', embedding.filename, embedding.filetype, content)
+    local content = generate_content_block(embedding.data, threshold)
+    if embedding.type == 'resource' then
+      local filetype = utils.mime_to_filetype(embedding.mimetype)
+      local filename = vim.uri_to_fname(embedding.uri or '')
+      return string.format(EMBED_FORMAT, embedding.type, filename, filetype, content)
     end
+    return content
   end, inputs)
 end
 
----@class CopilotChat.Client : Class
+---@class CopilotChat.client.Client : Class
 ---@field history table<CopilotChat.Provider.input>
----@field providers table<string, CopilotChat.Provider>
+---@field providers table<string, CopilotChat.config.providers.Provider>
 ---@field provider_cache table<string, table>
----@field models table<string, CopilotChat.Client.model>?
----@field agents table<string, CopilotChat.Client.agent>?
+---@field models table<string, CopilotChat.client.Model>?
+---@field agents table<string, CopilotChat.client.Agent>?
 ---@field current_job string?
 ---@field headers table<string, string>?
 local Client = class(function(self)
@@ -336,7 +274,7 @@ function Client:authenticate(provider_name)
 end
 
 --- Fetch models from the Copilot API
----@return table<string, CopilotChat.Client.model>
+---@return table<string, CopilotChat.client.Model>
 function Client:fetch_models()
   if self.models then
     return self.models
@@ -378,7 +316,7 @@ function Client:fetch_models()
 end
 
 --- Fetch agents from the Copilot API
----@return table<string, CopilotChat.Client.agent>
+---@return table<string, CopilotChat.client.Agent>
 function Client:fetch_agents()
   if self.agents then
     return self.agents
@@ -420,7 +358,7 @@ end
 
 --- Ask a question to Copilot
 ---@param prompt string: The prompt to send to Copilot
----@param opts CopilotChat.Client.ask: Options for the request
+---@param opts CopilotChat.client.AskOptions: Options for the request
 ---@return string?, table?, number?, number?
 function Client:ask(prompt, opts)
   opts = opts or {}
@@ -481,12 +419,12 @@ function Client:ask(prompt, opts)
   local references = utils.ordered_map()
   local generated_messages = {}
   local selection_messages = generate_selection_messages(opts.selection)
-  local embeddings_messages = generate_embeddings_messages(opts.embeddings)
+  local embeddings_messages = generate_embed_messages(opts.embeddings)
 
   for _, message in ipairs(selection_messages) do
     table.insert(generated_messages, message)
     references:set(message.name, {
-      name = utils.filename(message.name),
+      name = message.name:gsub('^file://', ''),
       url = message.name,
     })
   end
@@ -656,10 +594,8 @@ function Client:ask(prompt, opts)
   end
 
   local headers = self:authenticate(provider_name)
-  local request = provider.prepare_input(
-    generate_ask_request(history, opts.contexts, prompt, opts.system_prompt, generated_messages),
-    options
-  )
+  local request =
+    provider.prepare_input(generate_ask_request(history, prompt, opts.system_prompt, generated_messages), options)
   local is_stream = request.stream
 
   local args = {
@@ -778,9 +714,9 @@ function Client:list_agents()
 end
 
 --- Generate embeddings for the given inputs
----@param inputs table<CopilotChat.context.embed>: The inputs to embed
+---@param inputs table<CopilotChat.client.Content>: The inputs to embed
 ---@param model string
----@return table<CopilotChat.context.embed>
+---@return table<CopilotChat.client.Content>
 function Client:embed(inputs, model)
   if not inputs or #inputs == 0 then
     return inputs
@@ -889,5 +825,5 @@ function Client:load_providers(providers)
   end
 end
 
---- @type CopilotChat.Client
+--- @type CopilotChat.client.Client
 return Client()
