@@ -895,13 +895,11 @@ function M.ask(prompt, config)
       agent = selected_agent,
       temperature = config.temperature,
       on_progress = vim.schedule_wrap(function(token)
-        local to_print = not config.headless and token
-        if to_print and config.stream then
-          local out = config.stream(token, state.source)
-          if out ~= nil then
-            to_print = out
-          end
+        local out = config.stream and config.stream(token, state.source) or nil
+        if out == nil then
+          out = token
         end
+        local to_print = not config.headless and out
         if to_print and to_print ~= '' then
           M.chat:append(token)
         end
@@ -924,13 +922,11 @@ function M.ask(prompt, config)
     end
 
     -- Call the callback function and store to history
-    local to_store = not config.headless and response
-    if to_store and config.callback then
-      local out = config.callback(response, state.source)
-      if out ~= nil then
-        to_store = out
-      end
+    local out = config.callback and config.callback(response, state.source) or nil
+    if out == nil then
+      out = response
     end
+    local to_store = not config.headless and out
     if to_store and to_store ~= '' then
       table.insert(client.history, {
         content = prompt,

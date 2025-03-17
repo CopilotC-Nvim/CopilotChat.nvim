@@ -334,26 +334,20 @@ end
 function M.filetype(filename)
   local ft = vim.filetype.match({ filename = filename })
 
-  if not ft and vim.endswith(filename, '.sh') then
-    return 'sh'
-  end
-
-  -- weird TypeScript bug for vim.filetype.match
-  -- see: https://github.com/neovim/neovim/issues/27265
-  if not ft then
-    local base_name = vim.fs.basename(filename)
-    local split_name = vim.split(base_name, '%.')
-    if #split_name > 1 then
-      local ext = split_name[#split_name]
-      if ext == 'ts' then
-        ft = 'typescript'
-      end
+  if not ft or ft == '' then
+    if vim.endswith(filename, '.sh') then
+      return 'sh'
     end
-  end
 
-  if ft == '' then
+    -- weird TypeScript bug for vim.filetype.match
+    -- see: https://github.com/neovim/neovim/issues/27265
+    if vim.endswith(filename, '.ts') then
+      return 'typescript'
+    end
+
     return nil
   end
+
   return ft
 end
 
