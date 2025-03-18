@@ -313,7 +313,9 @@ function Chat:open(config)
     if height ~= 0 then
       cmd = height .. cmd
     end
-    cmd = 'botright ' .. cmd
+    if vim.api.nvim_get_option('splitbelow') then
+      cmd = 'botright ' .. cmd
+    end
     vim.cmd(cmd)
     self.winnr = vim.api.nvim_get_current_win()
     vim.api.nvim_set_current_win(orig)
