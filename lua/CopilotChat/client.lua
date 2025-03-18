@@ -1,5 +1,4 @@
 ---@class CopilotChat.Client.ask
----@field load_history boolean
 ---@field headless boolean
 ---@field contexts table<string, string>?
 ---@field selection CopilotChat.select.selection?
@@ -15,10 +14,6 @@
 
 ---@class CopilotChat.Client.agent : CopilotChat.Provider.agent
 ---@field provider string
-
----@class CopilotChat.Client.memory
----@field content string
----@field last_summarized_index number
 
 local log = require('plenary.log')
 local tiktoken = require('CopilotChat.tiktoken')
@@ -200,12 +195,11 @@ end
 
 --- Generate ask request
 --- @param history table<CopilotChat.Provider.input>
---- @param memory CopilotChat.Client.memory?
 --- @param contexts table<string, string>?
 --- @param prompt string
 --- @param system_prompt string
 --- @param generated_messages table<CopilotChat.Provider.input>
-local function generate_ask_request(history, memory, contexts, prompt, system_prompt, generated_messages)
+local function generate_ask_request(history, contexts, prompt, system_prompt, generated_messages)
   local messages = {}
 
   system_prompt = vim.trim(system_prompt)
@@ -242,14 +236,6 @@ Available context providers and their usage:]]
       system_prompt = system_prompt .. '\n\n'
     end
     system_prompt = system_prompt .. help_text
-  end
-
-  -- Include memory
-  if memory and memory.content and memory.content ~= '' then
-    if system_prompt ~= '' then
-      system_prompt = system_prompt .. '\n\n'
-    end
-    system_prompt = system_prompt .. 'Context from previous conversation:\n' .. memory.content
   end
 
   -- Include system prompt
@@ -322,7 +308,6 @@ end
 ---@field agents table<string, CopilotChat.Client.agent>?
 ---@field current_job string?
 ---@field headers table<string, string>?
----@field memory CopilotChat.Client.memory?
 local Client = class(function(self)
   self.history = {}
   self.providers = {}
@@ -331,7 +316,6 @@ local Client = class(function(self)
   self.agents = nil
   self.current_job = nil
   self.headers = nil
-  self.memory = nil
 end)
 
 --- Authenticate with GitHub and get the required headers
@@ -493,11 +477,7 @@ function Client:ask(prompt, opts)
     notify.publish(notify.STATUS, 'Generating request')
   end
 
-  local history = {}
-  if opts.load_history then
-    history = vim.list_slice(self.history, self.memory and (self.memory.last_summarized_index + 1) or 1)
-  end
-
+  local history = not opts.headless and vim.list_slice(self.history) or {}
   local references = utils.ordered_map()
   local generated_messages = {}
   local selection_messages = generate_selection_messages(opts.selection)
@@ -521,8 +501,7 @@ function Client:ask(prompt, opts)
     -- Count required tokens that we cannot reduce
     local prompt_tokens = tiktoken.count(prompt)
     local system_tokens = tiktoken.count(opts.system_prompt)
-    local memory_tokens = self.memory and tiktoken.count(self.memory.content) or 0
-    local required_tokens = prompt_tokens + system_tokens + selection_tokens + memory_tokens
+    local required_tokens = prompt_tokens + system_tokens + selection_tokens
 
     -- Reserve space for first embedding
     local reserved_tokens = #embeddings_messages > 0 and tiktoken.count(embeddings_messages[1].content) or 0
@@ -534,26 +513,10 @@ function Client:ask(prompt, opts)
       history_tokens = history_tokens + tiktoken.count(msg.content)
     end
 
-    -- If we're over history limit, trigger summarization
-    if history_tokens > history_limit then
-      if not opts.headless and #history >= 4 then
-        self:summarize_history(opts.model)
-
-        -- Recalculate history and tokens
-        history = vim.list_slice(self.history, self.memory and (self.memory.last_summarized_index + 1) or 1)
-        history_tokens = 0
-        for _, msg in ipairs(history) do
-          history_tokens = history_tokens + tiktoken.count(msg.content)
-        end
-        required_tokens = required_tokens - memory_tokens
-        memory_tokens = self.memory and tiktoken.count(self.memory.content) or 0
-        required_tokens = required_tokens + memory_tokens
-      else
-        while history_tokens > history_limit and #history > 0 do
-          local entry = table.remove(history, 1)
-          history_tokens = history_tokens - tiktoken.count(entry.content)
-        end
-      end
+    -- Remove history messages until we are under the limit
+    while history_tokens > history_limit and #history > 0 do
+      local entry = table.remove(history, 1)
+      history_tokens = history_tokens - tiktoken.count(entry.content)
     end
 
     -- Now add as many files as possible with remaining token budget
@@ -694,7 +657,7 @@ function Client:ask(prompt, opts)
 
   local headers = self:authenticate(provider_name)
   local request = provider.prepare_input(
-    generate_ask_request(history, self.memory, opts.contexts, prompt, opts.system_prompt, generated_messages),
+    generate_ask_request(history, opts.contexts, prompt, opts.system_prompt, generated_messages),
     options
   )
   local is_stream = request.stream
@@ -907,7 +870,6 @@ end
 function Client:reset()
   local stopped = self:stop()
   self.history = {}
-  self.memory = nil
   return stopped
 end
 
@@ -922,41 +884,6 @@ function Client:load_providers(providers)
   self.providers = providers
   for provider_name, _ in pairs(providers) do
     self.provider_cache[provider_name] = {}
-  end
-end
-
---- Summarize conversation history to extract critical information
----@param model string The model to use for summarization
-function Client:summarize_history(model)
-  local system_prompt = [[You are an expert programming assistant tasked with memory management.
-Your job is to create concise yet comprehensive summaries of technical conversations.
-Focus on extracting and preserving:
-1. Technical details: languages, frameworks, libraries, and specific technologies discussed
-2. Context: user's project structure, goals, constraints, and preferences
-3. Implementation details: patterns, approaches, or solutions that were discussed
-4. Important decisions or conclusions reached
-5. Unresolved questions or issues that need further attention
-
-If the conversation includes previous memory summaries, integrate that information carefully.
-Prioritize technical accuracy over conversational elements.
-Format your response as a structured summary with clear sections using markdown.
-Ensure all critical code samples, commands, and configuration snippets are preserved.]]
-
-  notify.publish(notify.STATUS, string.format('Summarizing memory (%d messages)', #self.history))
-
-  local response = self:ask('Create a technical summary of our conversation for future context', {
-    load_history = true,
-    headless = true,
-    model = model,
-    temperature = 0,
-    system_prompt = system_prompt,
-  })
-
-  if response then
-    self.memory = {
-      content = vim.trim(response),
-      last_summarized_index = #self.history,
-    }
   end
 end
 

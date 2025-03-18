@@ -25,8 +25,7 @@ CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat capabilities
 - 📝 Interactive chat UI with completion, diffs and quickfix integration
 - 🎯 Powerful prompt system with composable templates and sticky prompts
 - 🔄 Extensible context providers for granular workspace understanding (buffers, files, git diffs, URLs, and more)
-- ⚡ Efficient token usage with tiktoken optimization
-- 📜 Intelligent chat memory management with automatic summarization to handle lengthy conversations
+- ⚡ Efficient token usage with tiktoken token counting and memory management
 
 # Requirements
 
