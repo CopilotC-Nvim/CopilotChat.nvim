@@ -303,7 +303,7 @@ function Chat:open(config)
     if width ~= 0 then
       cmd = width .. cmd
     end
-    if vim.api.nvim_get_option_value('splitbelow', {}) then
+    if vim.api.nvim_get_option_value('splitright', {}) then
       cmd = 'botright ' .. cmd
     end
     vim.cmd(cmd)
