@@ -305,6 +305,8 @@ function Chat:open(config)
     end
     if vim.api.nvim_get_option_value('splitright', {}) then
       cmd = 'botright ' .. cmd
+    else
+      cmd = 'topleft ' .. cmd
     end
     vim.cmd(cmd)
     self.winnr = vim.api.nvim_get_current_win()
