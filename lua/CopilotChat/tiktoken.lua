@@ -9,6 +9,7 @@ end
 
 --- Load tiktoken data from cache or download it
 ---@param tokenizer string The tokenizer to load
+---@async
 local function load_tiktoken_data(tokenizer)
   utils.schedule_main()
 
@@ -35,6 +36,7 @@ local M = {}
 
 --- Load the tiktoken module
 ---@param tokenizer string The tokenizer to load
+---@async
 M.load = function(tokenizer)
   if not tiktoken_core then
     return
