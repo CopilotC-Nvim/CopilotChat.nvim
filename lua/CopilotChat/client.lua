@@ -681,9 +681,11 @@ function Client:ask(prompt, opts)
     self.current_job = nil
   end
 
-  log.debug('Response status:', response.status)
-  log.debug('Response body:\n', response.body)
-  log.debug('Response headers:\n', response.headers)
+  if response then
+    log.debug('Response status:', response.status)
+    log.debug('Response body:\n', response.body)
+    log.debug('Response headers:\n', response.headers)
+  end
 
   if err then
     local error_msg = 'Failed to get response: ' .. err
@@ -715,14 +717,16 @@ function Client:ask(prompt, opts)
     return
   end
 
-  if is_stream then
-    if utils.empty(response_text) then
-      for _, line in ipairs(vim.split(response.body, '\n')) do
-        parse_stream_line(line)
+  if response then
+    if is_stream then
+      if utils.empty(response_text) then
+        for _, line in ipairs(vim.split(response.body, '\n')) do
+          parse_stream_line(line)
+        end
       end
+    else
+      parse_line(response.body)
     end
-  else
-    parse_line(response.body)
   end
 
   if utils.empty(response_text) then
