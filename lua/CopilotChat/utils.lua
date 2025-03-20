@@ -339,6 +339,10 @@ function M.filetype(filename)
       return 'sh'
     end
 
+    if vim.endswith(filename, '.h') then
+      return 'c'
+    end
+
     -- weird TypeScript bug for vim.filetype.match
     -- see: https://github.com/neovim/neovim/issues/27265
     if vim.endswith(filename, '.ts') then
