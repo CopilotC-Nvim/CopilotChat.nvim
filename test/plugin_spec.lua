@@ -9,6 +9,7 @@ package.loaded['plenary.async'] = {
 package.loaded['plenary.curl'] = {}
 package.loaded['plenary.log'] = {}
 package.loaded['plenary.scandir'] = {}
+package.loaded['plenary.filetype'] = {}
 
 describe('CopilotChat plugin', function()
   it('should be able to load', function()
