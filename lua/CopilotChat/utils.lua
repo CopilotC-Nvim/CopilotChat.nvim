@@ -355,6 +355,35 @@ function M.filetype(filename)
   return ft
 end
 
+--- Get the mimetype from filetype
+---@param filetype string?
+---@return string
+function M.filetype_to_mimetype(filetype)
+  if not filetype or filetype == '' then
+    return 'text/plain'
+  end
+  if filetype == 'json' or filetype == 'yaml' then
+    return 'application/' .. filetype
+  end
+  if filetype == 'html' or filetype == 'css' then
+    return 'text/' .. filetype
+  end
+  return 'text/x-' .. filetype
+end
+
+--- Get the filetype from mimetype
+---@param mimetype string
+---@return string
+function M.mimetype_to_filetype(mimetype)
+  local out = mimetype:gsub('^text/x-', '')
+  out = out:gsub('^text/', '')
+  out = out:gsub('^application/', '')
+  out = out:gsub('^image/', '')
+  out = out:gsub('^video/', '')
+  out = out:gsub('^audio/', '')
+  return out
+end
+
 --- Get the file name
 ---@param filepath string The file path
 ---@return string
@@ -702,6 +731,46 @@ M.ts_parse = async.wrap(function(parser, callback)
     fn()
   end
 end, 2)
+
+--- Wait for a user input
+M.input = async.wrap(function(opts, callback)
+  local fn = function()
+    vim.ui.input(opts, function(input)
+      if input == nil or input == '' then
+        callback(nil)
+        return
+      end
+
+      callback(input)
+    end)
+  end
+
+  if vim.in_fast_event() then
+    vim.schedule(fn)
+  else
+    fn()
+  end
+end, 2)
+
+--- Select an item from a list
+M.select = async.wrap(function(choices, opts, callback)
+  local fn = function()
+    vim.ui.select(choices, opts, function(item)
+      if item == nil or item == '' then
+        callback(nil)
+        return
+      end
+
+      callback(item)
+    end)
+  end
+
+  if vim.in_fast_event() then
+    vim.schedule(fn)
+  else
+    fn()
+  end
+end, 3)
 
 --- Get the info for a key.
 ---@param name string
