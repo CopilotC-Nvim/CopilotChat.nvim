@@ -1,6 +1,7 @@
 local async = require('plenary.async')
 local curl = require('plenary.curl')
 local scandir = require('plenary.scandir')
+local filetype = require('plenary.filetype')
 
 local M = {}
 M.timers = {}
@@ -9,108 +10,6 @@ M.scan_args = {
   max_count = 2500,
   max_depth = 50,
   no_ignore = false,
-
-  -- Common binary file extensions to exclude
-  binary_extensions = {
-    -- Images
-    'png',
-    'jpg',
-    'jpeg',
-    'gif',
-    'bmp',
-    'tiff',
-    'webp',
-    'ico',
-    'svg',
-    'heic',
-    'heif',
-    'raw',
-    'psd',
-    'ai',
-    'eps',
-    -- Audio/Video
-    'mp3',
-    'wav',
-    'ogg',
-    'mp4',
-    'avi',
-    'mov',
-    'wmv',
-    'flv',
-    'mkv',
-    'webm',
-    'm4a',
-    'm4v',
-    'aac',
-    'flac',
-    'mid',
-    'midi',
-    -- Archives
-    'zip',
-    'tar',
-    'gz',
-    'rar',
-    '7z',
-    'bz2',
-    'xz',
-    'iso',
-    'dmg',
-    'pkg',
-    'deb',
-    'rpm',
-    -- Documents
-    'pdf',
-    'doc',
-    'docx',
-    'ppt',
-    'pptx',
-    'xls',
-    'xlsx',
-    'odp',
-    'odt',
-    'ods',
-    -- Executables
-    'exe',
-    'dll',
-    'so',
-    'dylib',
-    'app',
-    'msi',
-    'apk',
-    'class',
-    'jar',
-    -- Other binaries
-    'bin',
-    'dat',
-    'db',
-    'sqlite',
-    'o',
-    'obj',
-    'pyc',
-    'pyo',
-    'pyd',
-    'wasm',
-    'ttf',
-    'otf',
-    'woff',
-    'woff2',
-    -- Debug files
-    'pdb',
-    'dSYM',
-    -- Models and data formats
-    'h5',
-    'pb',
-    'onnx',
-    'pt',
-    'safetensors',
-    'hdf5',
-    'parquet',
-    'glb',
-    'gltf',
-    -- Swap/temp files
-    'swp',
-    'swo',
-  },
 }
 
 M.curl_args = {
@@ -332,26 +231,13 @@ end
 ---@param filename string The file name
 ---@return string|nil
 function M.filetype(filename)
-  local ft = vim.filetype.match({ filename = filename })
+  local ft = filetype.detect(filename, {
+    fs_access = false,
+  })
 
-  if not ft or ft == '' then
-    if vim.endswith(filename, '.sh') then
-      return 'sh'
-    end
-
-    if vim.endswith(filename, '.h') then
-      return 'c'
-    end
-
-    -- weird TypeScript bug for vim.filetype.match
-    -- see: https://github.com/neovim/neovim/issues/27265
-    if vim.endswith(filename, '.ts') then
-      return 'typescript'
-    end
-
+  if ft == '' then
     return nil
   end
-
   return ft
 end
 
@@ -528,7 +414,6 @@ end, 3)
 ---@field glob? string The glob pattern to match files
 ---@field hidden? boolean Whether to include hidden files
 ---@field no_ignore? boolean Whether to respect or ignore .gitignore
----@field binary_extensions string[]? The list of binary file extensions to exclude
 
 --- Scan a directory
 ---@param path string The directory path
@@ -538,12 +423,9 @@ M.scan_dir = async.wrap(function(path, opts, callback)
   opts = vim.tbl_deep_extend('force', M.scan_args, opts or {})
 
   local function filter_files(files)
-    if opts.binary_extensions and #opts.binary_extensions > 0 then
-      files = vim.tbl_filter(function(file)
-        local ext = file:lower():match('%.([^%.]+)$')
-        return not vim.tbl_contains(opts.binary_extensions, ext)
-      end, files)
-    end
+    files = vim.tbl_filter(function(file)
+      return file ~= '' and M.filetype(file) ~= nil
+    end, files)
     if opts.max_count and opts.max_count > 0 then
       files = vim.list_slice(files, 1, opts.max_count)
     end
@@ -579,10 +461,7 @@ M.scan_dir = async.wrap(function(path, opts, callback)
     vim.system(cmd, { text = true }, function(result)
       local files = {}
       if result and result.code == 0 and result.stdout ~= '' then
-        files = vim.tbl_filter(function(file)
-          return file ~= ''
-        end, vim.split(result.stdout, '\n'))
-        files = filter_files(files)
+        files = filter_files(vim.split(result.stdout, '\n'))
       end
 
       callback(files)
