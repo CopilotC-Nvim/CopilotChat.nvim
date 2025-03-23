@@ -1007,7 +1007,15 @@ function M.save(name, history_path)
     return
   end
 
-  local history = vim.json.encode(client.history)
+  local prompt = M.chat:get_prompt()
+  local history = vim.list_slice(client.history)
+  if prompt then
+    table.insert(history, {
+      content = prompt.content,
+      role = 'user',
+    })
+  end
+
   history_path = vim.fs.normalize(history_path)
   vim.fn.mkdir(history_path, 'p')
   history_path = history_path .. '/' .. name .. '.json'
@@ -1016,7 +1024,7 @@ function M.save(name, history_path)
     log.error('Failed to save history to ' .. history_path)
     return
   end
-  file:write(history)
+  file:write(vim.json.encode(history))
   file:close()
 
   log.info('Saved history to ' .. history_path)
