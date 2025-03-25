@@ -733,7 +733,7 @@ function M.select_model()
     vim.ui.select(choices, {
       prompt = 'Select a model> ',
       format_item = function(item)
-        local out = string.format('%s (%s)', item.id, item.provider)
+        local out = string.format('%s (%s:%s)', item.name, item.provider, item.id)
         if item.selected then
           out = '* ' .. out
         end
@@ -764,7 +764,7 @@ function M.select_agent()
     vim.ui.select(choices, {
       prompt = 'Select an agent> ',
       format_item = function(item)
-        local out = string.format('%s (%s)', item.id, item.provider)
+        local out = string.format('%s (%s:%s)', item.name, item.provider, item.id)
         if item.selected then
           out = '* ' .. out
         end
