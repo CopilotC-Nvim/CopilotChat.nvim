@@ -186,18 +186,14 @@ M.copilot = {
       end)
       :totable()
 
-    local version_map = {}
+    local name_map = {}
     for _, model in ipairs(models) do
-      if not version_map[model.version] or #model.id < #version_map[model.version] then
-        version_map[model.version] = model.id
+      if not name_map[model.name] or model.version > name_map[model.name].version then
+        name_map[model.name] = model
       end
     end
 
-    models = vim.tbl_map(function(id)
-      return vim.tbl_filter(function(model)
-        return model.id == id
-      end, models)[1]
-    end, vim.tbl_values(version_map))
+    models = vim.tbl_values(name_map)
 
     for _, model in ipairs(models) do
       if not model.policy then
