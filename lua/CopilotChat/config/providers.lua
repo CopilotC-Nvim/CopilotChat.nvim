@@ -171,7 +171,7 @@ M.copilot = {
     local models = vim
       .iter(response.body.data)
       :filter(function(model)
-        return model.capabilities.type == 'chat'
+        return model.capabilities.type == 'chat' and not vim.endswith(model.id, 'paygo')
       end)
       :map(function(model)
         return {
