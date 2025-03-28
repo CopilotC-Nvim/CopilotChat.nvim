@@ -375,6 +375,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/810650?v=4",
       "profile": "https://teoljungberg.com",
       "contributions": ["code"]
+    },
+    {
+      "login": "JPricey",
+      "name": "Joe Price",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4826348?v=4",
+      "profile": "https://github.com/JPricey",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
