@@ -443,7 +443,7 @@ M.scan_dir = async.wrap(function(path, opts, callback)
     end
 
     if opts.max_depth then
-      table.insert(cmd, '-d')
+      table.insert(cmd, '--max-depth')
       table.insert(cmd, tostring(opts.max_depth))
     end
 
