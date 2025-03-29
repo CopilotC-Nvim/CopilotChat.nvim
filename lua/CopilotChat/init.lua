@@ -1,13 +1,14 @@
 local async = require('plenary.async')
 local log = require('plenary.log')
-local context = require('CopilotChat.context')
+local tools = require('CopilotChat.tools')
 local client = require('CopilotChat.client')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 
 local PLUGIN_NAME = 'CopilotChat'
-local WORD = '([^%s]+)'
-local WORD_INPUT = '([^%s:]+:`[^`]+`)'
+local WORD = '([^%s:]+)'
+local WORD_WITH_INPUT_UNQUOTED = WORD .. ':([^%s]+)'
+local WORD_WITH_INPUT_QUOTED = WORD .. ':`([^`]+)`'
 
 ---@class CopilotChat
 ---@field config CopilotChat.config
@@ -170,7 +171,9 @@ local function finish(start_of_chat)
   -- Reinsert sticky prompts from last prompt and last response
   local lines = {}
   if state.last_prompt then
-    lines = vim.split(state.last_prompt, '\n')
+    lines = vim.tbl_filter(function(line)
+      return not vim.startswith(line, '>! ')
+    end, vim.split(state.last_prompt, '\n'))
   end
   if state.last_response then
     for _, line in ipairs(vim.split(state.last_response, '\n')) do
@@ -183,7 +186,7 @@ local function finish(start_of_chat)
     if line:match('^```') then
       in_code_block = not in_code_block
     end
-    if vim.startswith(line, '> ') and not in_code_block then
+    if (vim.startswith(line, '> ') or vim.startswith(line, '>! ')) and not in_code_block then
       M.chat:append(line .. '\n')
       has_sticky = true
     end
@@ -303,6 +306,24 @@ function M.resolve_prompt(prompt, config)
   if prompts_to_use[config.system_prompt] then
     config.system_prompt = prompts_to_use[config.system_prompt].system_prompt
   end
+
+  if config.system_prompt then
+    config.system_prompt = config.system_prompt:gsub('{OS_NAME}', vim.uv.os_uname().sysname)
+
+    local context_string = ''
+    local context_names = vim.tbl_keys(M.config.contexts)
+    table.sort(context_names)
+    for _, name in ipairs(context_names) do
+      local tool = M.config.tools[name]
+      context_string = context_string .. tools.describe(name, tool) .. '\n'
+    end
+    context_string = vim.trim(context_string)
+
+    if context_string ~= '' then
+      config.system_prompt = config.system_prompt:gsub('{CONTEXTS}', context_string)
+    end
+  end
+
   return config, prompt
 end
 
@@ -315,18 +336,12 @@ function M.resolve_context(prompt, config)
   config, prompt = M.resolve_prompt(prompt, config)
 
   local contexts = {}
-  local function parse_context(prompt_context)
-    local split = vim.split(prompt_context, ':')
-    local context_name = table.remove(split, 1)
-    local context_input = vim.trim(table.concat(split, ':'))
-    if vim.startswith(context_input, '`') and vim.endswith(context_input, '`') then
-      context_input = context_input:sub(2, -2)
-    end
-
-    if M.config.contexts[context_name] then
+  local function parse_context(word, input)
+    local ctx = M.config.contexts[word]
+    if ctx then
       table.insert(contexts, {
-        name = context_name,
-        input = (context_input ~= '' and context_input or nil),
+        name = word,
+        input = context.parse_input(input, ctx.schema),
       })
 
       return true
@@ -335,12 +350,16 @@ function M.resolve_context(prompt, config)
     return false
   end
 
-  prompt = prompt:gsub('#' .. WORD_INPUT, function(match)
-    return parse_context(match) and '' or '#' .. match
+  prompt = prompt:gsub('#' .. WORD_WITH_INPUT_QUOTED, function(word, input)
+    return parse_context(word, input) and '' or string.format('#%s:`%s`', word, input)
   end)
 
-  prompt = prompt:gsub('#' .. WORD, function(match)
-    return parse_context(match) and '' or '#' .. match
+  prompt = prompt:gsub('#' .. WORD_WITH_INPUT_UNQUOTED, function(word, input)
+    return parse_context(word, input) and '' or string.format('#%s:%s', word, input)
+  end)
+
+  prompt = prompt:gsub('#' .. WORD, function(word)
+    return parse_context(word) and '' or string.format('#%s', word)
   end)
 
   if config.context then
@@ -357,11 +376,7 @@ function M.resolve_context(prompt, config)
   local embeddings = utils.ordered_map()
   for _, context_data in ipairs(contexts) do
     local context_value = M.config.contexts[context_data.name]
-    notify.publish(
-      notify.STATUS,
-      'Resolving context: ' .. context_data.name .. (context_data.input and ' with input: ' .. context_data.input or '')
-    )
-
+    notify.publish(notify.STATUS, 'Resolving context: ' .. context_data.name)
     local ok, resolved_embeddings = pcall(context_value.resolve, context_data.input, state.source or {}, prompt)
     if ok then
       for _, embedding in ipairs(resolved_embeddings) do
@@ -457,7 +472,7 @@ function M.set_source(source_winnr)
 end
 
 --- Get the selection from the source buffer.
----@return CopilotChat.select.selection?
+---@return CopilotChat.select.Selection?
 function M.get_selection()
   local config = vim.tbl_deep_extend('force', M.config, M.chat.config)
   local selection = config.selection
@@ -525,21 +540,16 @@ function M.trigger_complete(without_context)
 
   if not without_context and vim.startswith(prefix, '#') and vim.endswith(prefix, ':') then
     local found_context = M.config.contexts[prefix:sub(2, -2)]
-    if found_context and found_context.input then
+    if found_context and found_context.schema then
       async.run(function()
-        found_context.input(function(value)
-          if not value then
-            return
-          end
+        local value = context.enter_input(found_context.schema, state.source)
+        if not value then
+          return
+        end
 
-          local value_str = vim.trim(tostring(value))
-          if value_str:find('%s') then
-            value_str = '`' .. value_str .. '`'
-          end
-
-          vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { value_str })
-          vim.api.nvim_win_set_cursor(0, { row, col + #value_str })
-        end, state.source or {})
+        utils.schedule_main()
+        vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { value })
+        vim.api.nvim_win_set_cursor(0, { row, col + #value })
       end)
     end
 
@@ -634,8 +644,8 @@ function M.complete_items()
       word = '#' .. name,
       abbr = name,
       kind = 'context',
-      info = value.description or '',
-      menu = value.input and string.format('#%s:<input>', name) or string.format('#%s', name),
+      info = context.describe_context(name, value),
+      menu = vim.split(vim.trim(value.description or ''), '\n')[1],
       icase = 1,
       dup = 0,
       empty = 0,
@@ -848,14 +858,6 @@ function M.ask(prompt, config)
   config, prompt = M.resolve_prompt(prompt, config)
   local system_prompt = config.system_prompt or ''
 
-  -- Resolve context name and description
-  local contexts = {}
-  for name, context in pairs(M.config.contexts) do
-    if context.description then
-      contexts[name] = context.description
-    end
-  end
-
   -- Remove sticky prefix
   prompt = table.concat(
     vim.tbl_map(function(l)
@@ -886,7 +888,6 @@ function M.ask(prompt, config)
 
     local ask_ok, response, references, token_count, token_max_count = pcall(client.ask, client, prompt, {
       headless = config.headless,
-      contexts = contexts,
       selection = selection,
       embeddings = filtered_embeddings,
       system_prompt = system_prompt,

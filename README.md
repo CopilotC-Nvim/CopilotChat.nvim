@@ -339,6 +339,7 @@ Examples:
 > #git:staged
 > #url:https://example.com
 > #system:`ls -la | grep lua`
+> #command:`with;;multiple;;parameters`
 ```
 
 Define your own contexts in the configuration with input handling and resolution:
@@ -347,17 +348,22 @@ Define your own contexts in the configuration with input handling and resolution
 {
   contexts = {
     birthday = {
-      input = function(callback)
-        vim.ui.select({ 'user', 'napoleon' }, {
-          prompt = 'Select birthday> ',
-        }, callback)
-      end,
+      schema = {
+        type = 'object',
+        required = { 'name' },
+        properties = {
+          name = {
+            type = 'string'
+            enum = { 'Alice', 'Bob', 'Charlie' },
+          },
+        },
+      },
+
       resolve = function(input)
         return {
           {
-            content = input .. ' birthday info',
-            filename = input .. '_birthday',
-            filetype = 'text',
+            type = 'text',
+            text = input.name .. ' birthday info',
           }
         }
       end

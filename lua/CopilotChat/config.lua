@@ -23,7 +23,7 @@ local select = require('CopilotChat.select')
 ---@field stream nil|fun(chunk: string, source: CopilotChat.source):string
 ---@field callback nil|fun(response: string, source: CopilotChat.source):string
 ---@field remember_as_sticky boolean?
----@field selection false|nil|fun(source: CopilotChat.source):CopilotChat.select.selection?
+---@field selection false|nil|fun(source: CopilotChat.source):CopilotChat.select.Selection?
 ---@field window CopilotChat.config.window?
 ---@field show_help boolean?
 ---@field show_folds boolean?
@@ -119,8 +119,8 @@ return {
   -- default providers
   providers = require('CopilotChat.config.providers'),
 
-  -- default contexts
-  contexts = require('CopilotChat.config.contexts'),
+  -- default tools
+  tools = require('CopilotChat.config.tools'),
 
   -- default prompts
   prompts = require('CopilotChat.config.prompts'),
