@@ -104,21 +104,24 @@ end
 
 ---@class CopilotChat.Provider
 ---@field disabled nil|boolean
----@field get_headers nil|fun():table<string, string>,number?
----@field get_agents nil|fun(headers:table):table<CopilotChat.Provider.agent>
----@field get_models nil|fun(headers:table):table<CopilotChat.Provider.model>
----@field embed nil|string|fun(inputs:table<string>, headers:table):table<CopilotChat.Provider.embed>
+---@field api_base string
+---@field default_headers table?
+---@field get_headers nil|fun(self: CopilotChat.Provider):table<string, string>,number?
+---@field get_agents nil|fun(self: CopilotChat.Provider, headers:table):table<CopilotChat.Provider.agent>
+---@field get_models nil|fun(self: CopilotChat.Provider, headers:table):table<CopilotChat.Provider.model>
+---@field embed nil|string|fun(self: CopilotChat.Provider, inputs:table<string>, headers:table):table<CopilotChat.Provider.embed>
 ---@field prepare_input nil|fun(inputs:table<CopilotChat.Provider.input>, opts:CopilotChat.Provider.options):table
 ---@field prepare_output nil|fun(output:table, opts:CopilotChat.Provider.options):CopilotChat.Provider.output
----@field get_url nil|fun(opts:CopilotChat.Provider.options):string
+---@field get_url nil|fun(self: CopilotChat.Provider, opts:CopilotChat.Provider.options):string
 
 ---@type table<string, CopilotChat.Provider>
 local M = {}
 
 M.copilot = {
   embed = 'copilot_embeddings',
+  api_base = 'https://api.githubcopilot.com',
 
-  get_headers = function()
+  get_headers = function(self)
     local response, err = utils.curl_get('https://api.github.com/copilot_internal/v2/token', {
       json_response = true,
       headers = {
@@ -129,18 +132,21 @@ M.copilot = {
     if err then
       error(err)
     end
+    if response.body.endpoints and response.body.endpoints.api then
+      self.api_base = response.body.endpoints.api
+    end
 
-    return {
+    return vim.tbl_extend('force', {
       ['Authorization'] = 'Bearer ' .. response.body.token,
       ['Editor-Version'] = EDITOR_VERSION,
       ['Editor-Plugin-Version'] = 'CopilotChat.nvim/*',
       ['Copilot-Integration-Id'] = 'vscode-chat',
-    },
+    }, self.default_headers or {}),
       response.body.expires_at
   end,
 
-  get_agents = function(headers)
-    local response, err = utils.curl_get('https://api.githubcopilot.com/agents', {
+  get_agents = function(self, headers)
+    local response, err = utils.curl_get(self.api_base .. '/agents', {
       json_response = true,
       headers = headers,
     })
@@ -158,8 +164,8 @@ M.copilot = {
     end, response.body.agents)
   end,
 
-  get_models = function(headers)
-    local response, err = utils.curl_get('https://api.githubcopilot.com/models', {
+  get_models = function(self, headers)
+    local response, err = utils.curl_get(self.api_base .. '/models', {
       json_response = true,
       headers = headers,
     })
@@ -197,7 +203,7 @@ M.copilot = {
 
     for _, model in ipairs(models) do
       if not model.policy then
-        utils.curl_post('https://api.githubcopilot.com/models/' .. model.id .. '/policy', {
+        utils.curl_post(self.api_base .. '/models/' .. model.id .. '/policy', {
           headers = headers,
           json_request = true,
           body = { state = 'enabled' },
@@ -276,27 +282,28 @@ M.copilot = {
     }
   end,
 
-  get_url = function(opts)
+  get_url = function(self, opts)
     if opts.agent then
-      return 'https://api.githubcopilot.com/agents/' .. opts.agent.id .. '?chat'
+      return self.api_base .. '/agents/' .. opts.agent.id .. '?chat'
     end
 
-    return 'https://api.githubcopilot.com/chat/completions'
+    return self.api_base .. '/chat/completions'
   end,
 }
 
 M.github_models = {
   embed = 'copilot_embeddings',
+  api_base = 'https://api.githubcopilot.com',
 
-  get_headers = function()
-    return {
+  get_headers = function(self)
+    return vim.tbl_extend('force', {
       ['Authorization'] = 'Bearer ' .. get_github_token(),
       ['x-ms-useragent'] = EDITOR_VERSION,
       ['x-ms-user-agent'] = EDITOR_VERSION,
-    }
+    }, self.default_headers or {})
   end,
 
-  get_models = function(headers)
+  get_models = function(self, headers)
     local response, err = utils.curl_post('https://api.catalog.azureml.ms/asset-gallery/v1.0/models', {
       headers = headers,
       json_request = true,
@@ -336,16 +343,17 @@ M.github_models = {
   prepare_input = M.copilot.prepare_input,
   prepare_output = M.copilot.prepare_output,
 
-  get_url = function()
+  get_url = function(self)
     return 'https://models.inference.ai.azure.com/chat/completions'
   end,
 }
 
 M.copilot_embeddings = {
   get_headers = M.copilot.get_headers,
+  api_base = M.copilot.api_base,
 
-  embed = function(inputs, headers)
-    local response, err = utils.curl_post('https://api.githubcopilot.com/embeddings', {
+  embed = function(self, inputs, headers)
+    local response, err = utils.curl_post(self.api_base .. '/embeddings', {
       headers = headers,
       json_request = true,
       json_response = true,

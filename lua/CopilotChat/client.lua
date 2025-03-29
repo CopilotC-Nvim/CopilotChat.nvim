@@ -327,7 +327,7 @@ function Client:authenticate(provider_name)
   local expires_at = self.provider_cache[provider_name].expires_at
 
   if provider.get_headers and (not headers or (expires_at and expires_at <= math.floor(os.time()))) then
-    headers, expires_at = provider.get_headers()
+    headers, expires_at = provider:get_headers()
     self.provider_cache[provider_name].headers = headers
     self.provider_cache[provider_name].expires_at = expires_at
   end
@@ -354,7 +354,7 @@ function Client:fetch_models()
         log.warn('Failed to authenticate with ' .. provider_name .. ': ' .. headers)
         goto continue
       end
-      local ok, provider_models = pcall(provider.get_models, headers)
+      local ok, provider_models = pcall(provider.get_models, provider, headers)
       if not ok then
         log.warn('Failed to fetch models from ' .. provider_name .. ': ' .. provider_models)
         goto continue
@@ -396,7 +396,7 @@ function Client:fetch_agents()
         log.warn('Failed to authenticate with ' .. provider_name .. ': ' .. headers)
         goto continue
       end
-      local ok, provider_agents = pcall(provider.get_agents, headers)
+      local ok, provider_agents = pcall(provider.get_agents, provider, headers)
       if not ok then
         log.warn('Failed to fetch agents from ' .. provider_name .. ': ' .. provider_agents)
         goto continue
@@ -671,7 +671,7 @@ function Client:ask(prompt, opts)
     args.stream = stream_func
   end
 
-  local response, err = utils.curl_post(provider.get_url(options), args)
+  local response, err = utils.curl_post(provider:get_url(options), args)
 
   if not opts.headless then
     if self.current_job ~= job_id then
@@ -817,7 +817,12 @@ function Client:embed(inputs, model)
     local success = false
     local attempts = 0
     while not success and attempts < 5 do -- Limit total attempts to 5
-      local ok, data = pcall(embed, generate_embedding_request(batch, threshold), self:authenticate(provider_name))
+      local ok, data = pcall(
+        embed,
+        self.providers[models[model].provider],
+        generate_embedding_request(batch, threshold),
+        self:authenticate(provider_name)
+      )
 
       if not ok then
         log.debug('Failed to get embeddings: ', data)
