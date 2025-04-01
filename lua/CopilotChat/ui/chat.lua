@@ -33,6 +33,8 @@ local function match_header(header)
   end
 end
 
+---@alias CopilotChat.ui.Chat.Layout 'vertical'|'horizontal'|'float'|'replace'
+
 ---@class CopilotChat.ui.Chat.Section.Block.Header
 ---@field filename string
 ---@field start_line number
@@ -55,6 +57,7 @@ end
 ---@class CopilotChat.ui.Chat : CopilotChat.ui.Overlay
 ---@field winnr number?
 ---@field config CopilotChat.config.shared
+---@field layout CopilotChat.ui.Chat.Layout?
 ---@field sections table<CopilotChat.ui.Chat.Section>
 ---@field references table<CopilotChat.Provider.reference>
 ---@field token_count number?
@@ -71,6 +74,7 @@ local Chat = class(function(self, question_header, answer_header, separator, hel
   self.winnr = nil
   self.sections = {}
   self.config = {}
+  self.layout = nil
   self.references = {}
   self.token_count = nil
   self.token_max_count = nil
@@ -268,15 +272,21 @@ function Chat:open(config)
   self:validate()
 
   local window = config.window or {}
+
   local layout = window.layout
+  if type(layout) == 'function' then
+    layout = layout()
+  end
+
   local width = window.width > 1 and window.width or math.floor(vim.o.columns * window.width)
   local height = window.height > 1 and window.height or math.floor(vim.o.lines * window.height)
 
-  if self.config and self.config.window and self.config.window.layout ~= layout then
+  if self.layout ~= layout then
     self:close()
   end
 
   self.config = config
+  self.layout = layout
 
   if self:visible() then
     return
@@ -357,7 +367,7 @@ function Chat:close(bufnr)
     utils.return_to_normal_mode()
   end
 
-  if self.config.window and self.config.window.layout == 'replace' then
+  if self.layout == 'replace' then
     if bufnr then
       self:restore(self.winnr, bufnr)
     end
