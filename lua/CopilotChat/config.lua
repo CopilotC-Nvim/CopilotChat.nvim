@@ -1,7 +1,9 @@
 local select = require('CopilotChat.select')
 
+---@alias CopilotChat.config.Layout 'vertical'|'horizontal'|'float'|'replace'
+
 ---@class CopilotChat.config.window
----@field layout 'vertical'|'horizontal'|'float'|'replace'?
+---@field layout? CopilotChat.config.Layout|fun():CopilotChat.config.Layout
 ---@field relative 'editor'|'win'|'cursor'|'mouse'?
 ---@field border 'none'|'single'|'double'|'rounded'|'solid'|'shadow'?
 ---@field width number?
@@ -76,7 +78,7 @@ return {
 
   -- default window options
   window = {
-    layout = 'vertical', -- 'vertical', 'horizontal', 'float', 'replace'
+    layout = 'vertical', -- 'vertical', 'horizontal', 'float', 'replace', or a function that returns the layout
     width = 0.5, -- fractional width of parent, or absolute width in columns when > 1
     height = 0.5, -- fractional height of parent, or absolute height in rows when > 1
     -- Options below only apply to floating windows
