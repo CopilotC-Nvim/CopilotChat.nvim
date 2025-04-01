@@ -1,7 +1,9 @@
 local select = require('CopilotChat.select')
 
+---@alias CopilotChat.config.Layout 'vertical'|'horizontal'|'float'|'replace'
+
 ---@class CopilotChat.config.window
----@field layout? CopilotChat.ui.Chat.Layout|fun():CopilotChat.ui.Chat.Layout
+---@field layout? CopilotChat.config.Layout|fun():CopilotChat.config.Layout
 ---@field relative 'editor'|'win'|'cursor'|'mouse'?
 ---@field border 'none'|'single'|'double'|'rounded'|'solid'|'shadow'?
 ---@field width number?

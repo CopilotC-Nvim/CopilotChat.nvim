@@ -33,8 +33,6 @@ local function match_header(header)
   end
 end
 
----@alias CopilotChat.ui.Chat.Layout 'vertical'|'horizontal'|'float'|'replace'
-
 ---@class CopilotChat.ui.Chat.Section.Block.Header
 ---@field filename string
 ---@field start_line number
@@ -57,7 +55,7 @@ end
 ---@class CopilotChat.ui.Chat : CopilotChat.ui.Overlay
 ---@field winnr number?
 ---@field config CopilotChat.config.shared
----@field layout CopilotChat.ui.Chat.Layout?
+---@field layout CopilotChat.config.Layout?
 ---@field sections table<CopilotChat.ui.Chat.Section>
 ---@field references table<CopilotChat.Provider.reference>
 ---@field token_count number?
