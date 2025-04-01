@@ -382,6 +382,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/4826348?v=4",
       "profile": "https://github.com/JPricey",
       "contributions": ["code"]
+    },
+    {
+      "login": "ouuan",
+      "name": "Yufan You",
+      "avatar_url": "https://avatars.githubusercontent.com/u/30581822?v=4",
+      "profile": "https://ouuan.moe/about",
+      "contributions": ["doc", "code"]
     }
   ],
   "contributorsPerLine": 7,
