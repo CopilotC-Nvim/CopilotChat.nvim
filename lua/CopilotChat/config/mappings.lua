@@ -64,7 +64,7 @@ local function get_diff(block)
     change = block.content,
     reference = reference or '',
     filetype = filetype or '',
-    filename = filename,
+    filename = utils.filename(filename),
     start_line = start_line,
     end_line = end_line,
     bufnr = bufnr,
@@ -240,7 +240,6 @@ return {
 
       local lines = vim.split(diff.change, '\n', { trimempty = false })
       vim.api.nvim_buf_set_lines(diff.bufnr, diff.start_line - 1, diff.end_line, false, lines)
-
       copilot.set_selection(diff.bufnr, diff.start_line, diff.start_line + #lines - 1)
     end,
   },
