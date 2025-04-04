@@ -3,7 +3,7 @@ local copilot = require('CopilotChat')
 local client = require('CopilotChat.client')
 local utils = require('CopilotChat.utils')
 
----@class CopilotChat.config.mappings.diff
+---@class CopilotChat.config.mappings.Diff
 ---@field change string
 ---@field reference string
 ---@field filename string
@@ -14,7 +14,7 @@ local utils = require('CopilotChat.utils')
 
 --- Get diff data from a block
 ---@param block CopilotChat.ui.Chat.Section.Block?
----@return CopilotChat.config.mappings.diff?
+---@return CopilotChat.config.mappings.Diff?
 local function get_diff(block)
   -- If no block found, return nil
   if not block then
@@ -72,9 +72,9 @@ local function get_diff(block)
 end
 
 --- Prepare a buffer for applying a diff
----@param diff CopilotChat.config.mappings.diff?
+---@param diff CopilotChat.config.mappings.Diff?
 ---@param source CopilotChat.source?
----@return CopilotChat.config.mappings.diff?
+---@return CopilotChat.config.mappings.Diff?
 local function prepare_diff_buffer(diff, source)
   if not diff then
     return diff

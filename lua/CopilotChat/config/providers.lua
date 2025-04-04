@@ -67,25 +67,25 @@ local function get_github_token()
   error('Failed to find GitHub token')
 end
 
----@class CopilotChat.Provider.model
+---@class CopilotChat.config.providers.Model
 ---@field id string
 ---@field name string
 ---@field tokenizer string?
 ---@field max_input_tokens number?
 ---@field max_output_tokens number?
 
----@class CopilotChat.Provider.agent
+---@class CopilotChat.config.providers.Agent
 ---@field id string
 ---@field name string
 ---@field description string?
 
----@class CopilotChat.Provider.embed
+---@class CopilotChat.config.providers.Embed
 ---@field index number
 ---@field embedding table<number>
 
 ---@class CopilotChat.Provider.options
----@field model CopilotChat.Provider.model
----@field agent CopilotChat.Provider.agent?
+---@field model CopilotChat.config.providers.Model
+---@field agent CopilotChat.config.providers.Agent?
 ---@field temperature number?
 
 ---@class CopilotChat.Provider.input
@@ -102,17 +102,17 @@ end
 ---@field total_tokens number?
 ---@field references table<CopilotChat.Provider.reference>?
 
----@class CopilotChat.Provider
+---@class CopilotChat.config.providers.Provider
 ---@field disabled nil|boolean
 ---@field get_headers nil|fun():table<string, string>,number?
----@field get_agents nil|fun(headers:table):table<CopilotChat.Provider.agent>
----@field get_models nil|fun(headers:table):table<CopilotChat.Provider.model>
----@field embed nil|string|fun(inputs:table<string>, headers:table):table<CopilotChat.Provider.embed>
+---@field get_agents nil|fun(headers:table):table<CopilotChat.config.providers.Agent>
+---@field get_models nil|fun(headers:table):table<CopilotChat.config.providers.Model>
+---@field embed nil|string|fun(inputs:table<string>, headers:table):table<CopilotChat.config.providers.Embed>
 ---@field prepare_input nil|fun(inputs:table<CopilotChat.Provider.input>, opts:CopilotChat.Provider.options):table
 ---@field prepare_output nil|fun(output:table, opts:CopilotChat.Provider.options):CopilotChat.Provider.output
 ---@field get_url nil|fun(opts:CopilotChat.Provider.options):string
 
----@type table<string, CopilotChat.Provider>
+---@type table<string, CopilotChat.config.providers.Provider>
 local M = {}
 
 M.copilot = {

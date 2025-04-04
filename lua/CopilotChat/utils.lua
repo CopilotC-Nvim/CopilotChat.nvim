@@ -241,6 +241,35 @@ function M.filetype(filename)
   return ft
 end
 
+--- Get the mimetype from filetype
+---@param filetype string?
+---@return string
+function M.filetype_to_mimetype(filetype)
+  if not filetype or filetype == '' then
+    return 'text/plain'
+  end
+  if filetype == 'json' or filetype == 'yaml' then
+    return 'application/' .. filetype
+  end
+  if filetype == 'html' or filetype == 'css' then
+    return 'text/' .. filetype
+  end
+  return 'text/x-' .. filetype
+end
+
+--- Get the filetype from mimetype
+---@param mimetype string
+---@return string
+function M.mimetype_to_filetype(mimetype)
+  local out = mimetype:gsub('^text/x-', '')
+  out = out:gsub('^text/', '')
+  out = out:gsub('^application/', '')
+  out = out:gsub('^image/', '')
+  out = out:gsub('^video/', '')
+  out = out:gsub('^audio/', '')
+  return out
+end
+
 --- Get the file name
 ---@param filepath string The file path
 ---@return string
@@ -582,6 +611,46 @@ M.ts_parse = async.wrap(function(parser, callback)
   end
 end, 2)
 
+--- Wait for a user input
+M.input = async.wrap(function(opts, callback)
+  local fn = function()
+    vim.ui.input(opts, function(input)
+      if input == nil or input == '' then
+        callback(nil)
+        return
+      end
+
+      callback(input)
+    end)
+  end
+
+  if vim.in_fast_event() then
+    vim.schedule(fn)
+  else
+    fn()
+  end
+end, 2)
+
+--- Select an item from a list
+M.select = async.wrap(function(choices, opts, callback)
+  local fn = function()
+    vim.ui.select(choices, opts, function(item)
+      if item == nil or item == '' then
+        callback(nil)
+        return
+      end
+
+      callback(item)
+    end)
+  end
+
+  if vim.in_fast_event() then
+    vim.schedule(fn)
+  else
+    fn()
+  end
+end, 3)
+
 --- Get the info for a key.
 ---@param name string
 ---@param key table
@@ -763,42 +832,6 @@ function M.glob_to_pattern(g)
     end
   end
   return p
-end
-
----@class CopilotChat.Diagnostic
----@field content string
----@field start_line number
----@field end_line number
----@field severity string
-
---- Get diagnostics in a given range
---- @param bufnr number
---- @param start_line number?
---- @param end_line number?
---- @return table<CopilotChat.Diagnostic>|nil
-function M.diagnostics(bufnr, start_line, end_line)
-  local diagnostics = vim.diagnostic.get(bufnr)
-  local range_diagnostics = {}
-  local severity = {
-    [1] = 'ERROR',
-    [2] = 'WARNING',
-    [3] = 'INFORMATION',
-    [4] = 'HINT',
-  }
-
-  for _, diagnostic in ipairs(diagnostics) do
-    local lnum = diagnostic.lnum + 1
-    if (not start_line or lnum >= start_line) and (not end_line or lnum <= end_line) then
-      table.insert(range_diagnostics, {
-        severity = severity[diagnostic.severity],
-        content = diagnostic.message,
-        start_line = lnum,
-        end_line = diagnostic.end_lnum and diagnostic.end_lnum + 1 or lnum,
-      })
-    end
-  end
-
-  return #range_diagnostics > 0 and range_diagnostics or nil
 end
 
 return M

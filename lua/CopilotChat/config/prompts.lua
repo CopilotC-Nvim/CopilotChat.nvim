@@ -1,5 +1,4 @@
-local COPILOT_BASE = string.format(
-  [[
+local COPILOT_BASE = [[
 When asked for your name, you must respond with "GitHub Copilot".
 Follow the user's requirements carefully & to the letter.
 Follow Microsoft content policies.
@@ -7,7 +6,7 @@ Avoid content that violates copyrights.
 If you are asked to generate content that is harmful, hateful, racist, sexist, lewd, violent, or completely irrelevant to software engineering, only respond with "Sorry, I can't assist with that."
 Keep your answers short and impersonal.
 The user works in an IDE called Neovim which has a concept for editors with open files, integrated unit test support, an output pane that shows the output of running the code as well as an integrated terminal.
-The user is working on a %s machine. Please respond with system specific commands if applicable.
+The user is working on a {OS_NAME} machine. Please respond with system specific commands if applicable.
 You will receive code snippets that include line number prefixes - use these to maintain correct position references but remove them when generating output.
 
 When presenting code changes:
@@ -27,9 +26,7 @@ When presenting code changes:
 5. Address any diagnostics issues when fixing code.
 
 6. If multiple changes are needed, present them as separate blocks with their own headers.
-]],
-  vim.uv.os_uname().sysname
-)
+]]
 
 local COPILOT_INSTRUCTIONS = [[
 You are a code-focused AI programming assistant that specializes in practical software engineering solutions.
@@ -76,12 +73,12 @@ End with: "**`To clear buffer highlights, please ask a different question.`**"
 If no issues found, confirm the code is well-written and explain why.
 ]]
 
----@class CopilotChat.config.prompt : CopilotChat.config.shared
+---@class CopilotChat.config.prompts.Prompt : CopilotChat.config.Shared
 ---@field prompt string?
 ---@field description string?
 ---@field mapping string?
 
----@type table<string, CopilotChat.config.prompt>
+---@type table<string, CopilotChat.config.prompts.Prompt>
 return {
   COPILOT_BASE = {
     system_prompt = COPILOT_BASE,
@@ -163,6 +160,6 @@ return {
 
   Commit = {
     prompt = 'Write commit message for the change with commitizen convention. Keep the title under 50 characters and wrap message at 72 characters. Format as a gitcommit code block.',
-    context = 'git:staged',
+    sticky = '#git:staged',
   },
 }
