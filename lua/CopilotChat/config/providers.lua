@@ -322,12 +322,20 @@ M.github_models = {
         return vim.tbl_contains(model.inferenceTasks, 'chat-completion')
       end)
       :map(function(model)
+        local context_window = model.modelLimits.textLimits.inputContextWindow
+        local max_output_tokens = model.modelLimits.textLimits.maxOutputTokens
+        local max_input_tokens = context_window - max_output_tokens
+        if max_input_tokens <= 0 then
+          max_output_tokens = 4096
+          max_input_tokens = context_window - max_output_tokens
+        end
+
         return {
           id = model.name,
           name = model.displayName,
           tokenizer = 'o200k_base',
-          max_input_tokens = model.modelLimits.textLimits.inputContextWindow,
-          max_output_tokens = model.modelLimits.textLimits.maxOutputTokens,
+          max_input_tokens = max_input_tokens,
+          max_output_tokens = max_output_tokens,
         }
       end)
       :totable()
