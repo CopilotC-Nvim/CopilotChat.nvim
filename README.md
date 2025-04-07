@@ -312,19 +312,19 @@ The default "noop" agent is `none`. For more information:
 
 Tools provide additional information to the chat. Add tools using `#tool_name[:input]` syntax:
 
-| Tool          | Input Support | Description                         |
-| ------------- | ------------- | ----------------------------------- |
-| `buffer`      | ✓ (name)      | Retrieves content from a specific buffer |
+| Tool          | Input Support | Description                                            |
+| ------------- | ------------- | ------------------------------------------------------ |
+| `buffer`      | ✓ (name)      | Retrieves content from a specific buffer               |
 | `buffers`     | ✓ (scope)     | Fetches content from multiple buffers (listed/visible) |
-| `diagnostics` | ✓ (scope)     | Collects code diagnostics (errors, warnings) |
-| `file`        | ✓ (path)      | Reads content from a specified file path |
-| `git`         | ✓ (diff)      | Retrieves git diff information (unstaged/staged/sha) |
-| `glob`        | ✓ (pattern)   | Lists filenames matching a pattern in workspace |
-| `grep`        | ✓ (pattern)   | Searches for a pattern across files in workspace |
-| `quickfix`    | -             | Includes content of files in quickfix list |
-| `register`    | ✓ (register)  | Provides access to specified Vim register |
-| `system`      | ✓ (command)   | Executes a system shell command for output |
-| `url`         | ✓ (url)       | Fetches content from a specified URL |
+| `diagnostics` | ✓ (scope)     | Collects code diagnostics (errors, warnings)           |
+| `file`        | ✓ (path)      | Reads content from a specified file path               |
+| `git`         | ✓ (diff)      | Retrieves git diff information (unstaged/staged/sha)   |
+| `glob`        | ✓ (pattern)   | Lists filenames matching a pattern in workspace        |
+| `grep`        | ✓ (pattern)   | Searches for a pattern across files in workspace       |
+| `quickfix`    | -             | Includes content of files in quickfix list             |
+| `register`    | ✓ (register)  | Provides access to specified Vim register              |
+| `system`      | ✓ (command)   | Executes a system shell command for output             |
+| `url`         | ✓ (url)       | Fetches content from a specified URL                   |
 
 > [!TIP]
 > The AI is aware of these tool providers and may request additional context
@@ -338,7 +338,7 @@ Examples:
 > #diagnostics:current
 > #file:path/to/file.js
 > #git:staged
-> #glob:**/*.lua
+> #glob:\*_/_.lua
 > #grep:function setup
 > #quickfix
 > #register:+
