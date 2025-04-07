@@ -333,7 +333,7 @@ function M.resolve_tools(prompt, config)
     if not utils.empty(M.chat.tool_calls) then
       for _, tool_call in ipairs(M.chat.tool_calls) do
         if tool_call.name == name and vim.trim(tool_call.id) == vim.trim(input) then
-          input = utils.json_decode(tool_call.arguments)
+          input = utils.empty(tool_call.arguments) and {} or utils.json_decode(tool_call.arguments)
           tool_id = tool_call.id
           break
         end

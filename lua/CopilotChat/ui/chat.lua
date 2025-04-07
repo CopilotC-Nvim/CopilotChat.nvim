@@ -612,7 +612,10 @@ function Chat:render()
     -- Parse tool calls
     if self.tool_calls then
       for _, tool_call in ipairs(self.tool_calls) do
-        if line:match(string.format('#%s:%s', tool_call.name, vim.pesc(tool_call.id))) then
+        if
+          not utils.empty(tool_call.arguments)
+          and line:match(string.format('#%s:%s', tool_call.name, vim.pesc(tool_call.id)))
+        then
           vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, 0, {
             virt_lines = vim.tbl_map(function(json_line)
               return { { json_line, 'CopilotChatAnnotation' } }
