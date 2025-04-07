@@ -495,8 +495,9 @@ return {
     normal = 'gh',
     callback = function()
       local chat_help = '**`Special tokens`**\n'
-      chat_help = chat_help .. '`#<context>` to select a context\n'
-      chat_help = chat_help .. '`#<context>:<input>` to select input for context\n'
+      chat_help = chat_help .. '`@<group>` to include group of tools in chat\n'
+      chat_help = chat_help .. '`#<tool>` to call a tool\n'
+      chat_help = chat_help .. '`#<tool>:<input>` to select input for tool\n'
       chat_help = chat_help .. '`/<prompt>` to select a prompt\n'
       chat_help = chat_help .. '`$<model>` to select a model\n'
       chat_help = chat_help .. '`> <text>` to make a sticky prompt (copied to next prompt)\n'
