@@ -484,7 +484,7 @@ end
 ---@param schema table?
 ---@return table
 function M.parse_input(input, schema)
-  if not input or input == '' or not schema or not schema.properties then
+  if not schema or not schema.properties then
     return {}
   end
 
@@ -492,7 +492,7 @@ function M.parse_input(input, schema)
     return input
   end
 
-  local parts = vim.split(input, INPUT_SEPARATOR)
+  local parts = vim.split(input or '', INPUT_SEPARATOR)
   local result = {}
   local prop_names = sorted_propnames(schema)
 
@@ -500,7 +500,7 @@ function M.parse_input(input, schema)
   local i = 1
   for _, prop_name in ipairs(prop_names) do
     local prop_schema = schema.properties[prop_name]
-    local value = parts[i] ~= '' and parts[i] or nil
+    local value = not utils.empty(parts[i]) and parts[i] or nil
     if value == nil and prop_schema.default ~= nil then
       value = prop_schema.default
     end
