@@ -292,25 +292,24 @@ For supported models, see:
 
 ## Tools
 
-Tools provide additional information to the chat. Add tools using `#tool_name[:input]` syntax:
+Tools provide additional information to the chat.
+Tools can be organized into groups by setting the `group` property. Tools assigned to a group are not automatically made available to the LLM - they must be explicitly activated. 
+To use grouped tools in your prompt, include `@group_name` in your message. This allows the LLM to access and use all tools in that group during the current interaction. 
+Add tools using `#tool_name[:input]` syntax: 
 
-| Tool          | Input Support | Description                                            |
-| ------------- | ------------- | ------------------------------------------------------ |
-| `buffer`      | ✓ (name)      | Retrieves content from a specific buffer               |
-| `buffers`     | ✓ (scope)     | Fetches content from multiple buffers (listed/visible) |
-| `diagnostics` | ✓ (scope)     | Collects code diagnostics (errors, warnings)           |
-| `file`        | ✓ (path)      | Reads content from a specified file path               |
-| `git`         | ✓ (diff)      | Retrieves git diff information (unstaged/staged/sha)   |
-| `glob`        | ✓ (pattern)   | Lists filenames matching a pattern in workspace        |
-| `grep`        | ✓ (pattern)   | Searches for a pattern across files in workspace       |
-| `quickfix`    | -             | Includes content of files in quickfix list             |
-| `register`    | ✓ (register)  | Provides access to specified Vim register              |
-| `system`      | ✓ (command)   | Executes a system shell command for output             |
-| `url`         | ✓ (url)       | Fetches content from a specified URL                   |
-
-> [!TIP]
-> The AI is aware of these tool providers and may request additional context
-> if needed by asking you to input a specific tool command like `#file:path/to/file.js`.
+| Tool          |  Group  | Input Support | Description                                            |
+| ------------- | ------- | ------------- | ------------------------------------------------------ |
+| `buffer`      | copilot | ✓ (name)      | Retrieves content from a specific buffer               |
+| `buffers`     | copilot | ✓ (scope)     | Fetches content from multiple buffers (listed/visible) |
+| `diagnostics` | copilot | ✓ (scope)     | Collects code diagnostics (errors, warnings)           |
+| `file`        | copilot | ✓ (path)      | Reads content from a specified file path               |
+| `git`         | copilot | ✓ (diff)      | Retrieves git diff information (unstaged/staged/sha)   |
+| `glob`        | copilot | ✓ (pattern)   | Lists filenames matching a pattern in workspace        |
+| `grep`        | copilot | ✓ (pattern)   | Searches for a pattern across files in workspace       |
+| `quickfix`    | copilot | -             | Includes content of files in quickfix list             |
+| `register`    | copilot | ✓ (register)  | Provides access to specified Vim register              |
+| `system`      | copilot | ✓ (command)   | Executes a system shell command for output             |
+| `url`         | copilot | ✓ (url)       | Fetches content from a specified URL                   |
 
 Examples:
 
@@ -444,7 +443,7 @@ Below are all available configuration options with their default values:
   system_prompt = 'COPILOT_INSTRUCTIONS', -- System prompt to use (can be specified manually in prompt via /).
 
   model = 'gpt-4o-2024-11-20', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
-  group = 'copilot', -- Default group of tools or array of groups to use (can be specified manually in prompt via @).
+  group = nil, -- Default group of tools or array of groups to use (can be specified manually in prompt via @).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
 
   temperature = 0.1, -- GPT result temperature

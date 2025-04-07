@@ -49,7 +49,7 @@ local select = require('CopilotChat.select')
 ---@field error_header string?
 ---@field separator string?
 ---@field providers table<string, CopilotChat.config.providers.Provider>?
----@field tools table<string, table<string, CopilotChat.config.tools.Tool>>?
+---@field tools table<string, CopilotChat.config.tools.Tool>?
 ---@field prompts table<string, CopilotChat.config.prompts.Prompt|string>?
 ---@field mappings CopilotChat.config.mappings?
 return {
@@ -116,9 +116,7 @@ return {
   providers = require('CopilotChat.config.providers'),
 
   -- default tools
-  tools = {
-    copilot = require('CopilotChat.config.tools'),
-  },
+  tools = require('CopilotChat.config.tools'),
 
   -- default prompts
   prompts = require('CopilotChat.config.prompts'),
