@@ -29,7 +29,7 @@ local function match_header(header)
   for _, pattern in ipairs(HEADER_PATTERNS) do
     local type, path, start_line, end_line = header:match(pattern)
     if path then
-      return type, utils.filepath(path), tonumber(start_line) or 1, tonumber(end_line) or tonumber(start_line) or 1
+      return type, path, tonumber(start_line) or 1, tonumber(end_line) or tonumber(start_line) or 1
     elseif type then
       return type, 'block'
     end
@@ -60,6 +60,7 @@ end
 ---@field config CopilotChat.config.Shared
 ---@field sections table<CopilotChat.ui.chat.Section>
 ---@field tool_calls table<CopilotChat.client.ToolCall>
+---@field references table<CopilotChat.client.Reference>
 ---@field token_count number?
 ---@field token_max_count number?
 ---@field private layout CopilotChat.config.Layout?
@@ -453,6 +454,8 @@ end
 --- Clear the chat window.
 function Chat:clear()
   self:validate()
+  self.tool_calls = nil
+  self.references = nil
   self.token_count = nil
   self.token_max_count = nil
   vim.bo[self.bufnr].modifiable = true
@@ -640,6 +643,22 @@ function Chat:render()
     end
 
     self:show_help(msg, last_section.start_line - last_section.end_line - 1)
+
+    if not utils.empty(self.references) then
+      msg = 'References:\n'
+      for _, ref in ipairs(self.references) do
+        msg = msg .. '  ' .. ref.name .. '\n'
+      end
+
+      vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, last_section.start_line - 2, 0, {
+        hl_mode = 'combine',
+        priority = 100,
+        virt_lines_above = true,
+        virt_lines = vim.tbl_map(function(t)
+          return { { t, 'CopilotChatHelp' } }
+        end, vim.split(msg, '\n')),
+      })
+    end
   else
     self:show_help()
   end
