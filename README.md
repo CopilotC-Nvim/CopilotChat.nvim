@@ -293,11 +293,11 @@ For supported models, see:
 ## Tools
 
 Tools provide additional information to the chat.
-Tools can be organized into groups by setting the `group` property. Tools assigned to a group are not automatically made available to the LLM - they must be explicitly activated. 
-To use grouped tools in your prompt, include `@group_name` in your message. This allows the LLM to access and use all tools in that group during the current interaction. 
-Add tools using `#tool_name[:input]` syntax: 
+Tools can be organized into groups by setting the `group` property. Tools assigned to a group are not automatically made available to the LLM - they must be explicitly activated.
+To use grouped tools in your prompt, include `@group_name` in your message. This allows the LLM to access and use all tools in that group during the current interaction.
+Add tools using `#tool_name[:input]` syntax:
 
-| Tool          |  Group  | Input Support | Description                                            |
+| Tool          | Group   | Input Support | Description                                            |
 | ------------- | ------- | ------------- | ------------------------------------------------------ |
 | `buffer`      | copilot | ✓ (name)      | Retrieves content from a specific buffer               |
 | `buffers`     | copilot | ✓ (scope)     | Fetches content from multiple buffers (listed/visible) |
