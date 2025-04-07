@@ -4,12 +4,15 @@ local utils = require('CopilotChat.utils')
 ---@class CopilotChat.config.tools.Tool
 ---@field description string?
 ---@field schema table?
+---@field group string?
 ---@field resolve fun(input: table, source: CopilotChat.source, prompt: string):table<CopilotChat.tools.Content>
 
 ---@type table<string, CopilotChat.config.tools.Tool>
 return {
   buffer = {
+    group = 'copilot',
     description = 'Retrieves content from a specific buffer. Useful for discussing or analyzing code from a particular file that is currently loaded.',
+
     schema = {
       type = 'object',
       required = { 'name' },
@@ -52,6 +55,7 @@ return {
   },
 
   buffers = {
+    group = 'copilot',
     description = 'Fetches content from multiple buffers. Helps with discussing or analyzing code across multiple files simultaneously.',
 
     schema = {
@@ -81,6 +85,7 @@ return {
   },
 
   file = {
+    group = 'copilot',
     description = 'Reads content from a specified file path, even if the file is not currently loaded as a buffer.',
 
     schema = {
@@ -107,6 +112,7 @@ return {
   },
 
   glob = {
+    group = 'copilot',
     description = 'Lists filenames matching a pattern in your workspace. Useful for discovering relevant files or understanding the project structure.',
 
     schema = {
@@ -136,6 +142,7 @@ return {
   },
 
   grep = {
+    group = 'copilot',
     description = 'Searches for a pattern across files in your workspace. Helpful for finding specific code elements or patterns.',
 
     schema = {
@@ -164,6 +171,7 @@ return {
   },
 
   quickfix = {
+    group = 'copilot',
     description = 'Includes the content of all files referenced in the current quickfix list. Useful for discussing compilation errors, search results, or other collected locations.',
 
     resolve = function()
@@ -195,6 +203,7 @@ return {
   },
 
   diagnostics = {
+    group = 'copilot',
     description = 'Collects code diagnostics (errors, warnings, etc.) from specified buffers. Helpful for troubleshooting and fixing code issues.',
 
     schema = {
@@ -269,6 +278,7 @@ return {
   },
 
   git = {
+    group = 'copilot',
     description = 'Retrieves git diff information. Requires git to be installed. Useful for discussing code changes or explaining the purpose of modifications.',
 
     schema = {
@@ -314,6 +324,7 @@ return {
   },
 
   url = {
+    group = 'copilot',
     description = 'Fetches content from a specified URL. Useful for referencing documentation, examples, or other online resources.',
 
     schema = {
@@ -336,6 +347,7 @@ return {
   },
 
   register = {
+    group = 'copilot',
     description = 'Provides access to the content of a specified Vim register. Useful for discussing yanked text, clipboard content, or previously executed commands.',
 
     schema = {
@@ -380,6 +392,7 @@ return {
   },
 
   system = {
+    group = 'copilot',
     description = [[Executes a system shell command and retrieves its output.
 
 Important:

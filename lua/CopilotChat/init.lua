@@ -62,8 +62,8 @@ local function insert_sticky(prompt, config)
   if config.remember_as_sticky and config.group and not vim.deep_equal(config.group, M.config.group) then
     if type(config.group) == 'table' then
       ---@diagnostic disable-next-line: param-type-mismatch
-      for _, tool in ipairs(config.group) do
-        stickies:set('@' .. tool, true)
+      for _, group in ipairs(config.group) do
+        stickies:set('@' .. group, true)
       end
     else
       stickies:set('@' .. config.group, true)
@@ -296,12 +296,8 @@ local function call_tools(prompt, config, resolved_tools)
 
     local tool = resolved_tools[name]
     if not tool and not tool_id then
-      for _, group in pairs(M.config.tools) do
-        if group[name] then
-          tool = group[name]
-          break
-        end
-      end
+      -- If we are using tool directly, ignore grouping
+      tool = M.config.tools[name]
     end
     if not tool then
       return nil
@@ -444,7 +440,13 @@ function M.resolve_tools(prompt, config)
   end
 
   prompt = prompt:gsub('@' .. WORD, function(match)
-    local group = M.config.tools[match]
+    local group = vim
+      .iter(vim.tbl_values(M.config.tools))
+      :filter(function(tool)
+        return tool.group == match
+      end)
+      :next()
+
     if group then
       table.insert(groups, match)
       return ''
@@ -454,9 +456,8 @@ function M.resolve_tools(prompt, config)
 
   local out = {}
   for _, group in ipairs(groups) do
-    local group_tools = M.config.tools[group]
-    if group_tools then
-      for name, tool in pairs(group_tools) do
+    for name, tool in pairs(M.config.tools) do
+      if not tool.group or tool.group == group then
         out[name] = tool
       end
     end
@@ -649,8 +650,14 @@ function M.complete_items()
     }
   end
 
-  local all_tools = {}
-  for name, group in pairs(M.config.tools) do
+  local all_groups = {}
+  for name, tool in pairs(M.config.tools) do
+    if tool.group then
+      all_groups[tool.group] = all_groups[tool.group] or {}
+      all_groups[tool.group][name] = tool
+    end
+  end
+  for name, group in pairs(all_groups) do
     local group_tools = vim.tbl_keys(group)
     items[#items + 1] = {
       word = '@' .. name,
@@ -662,12 +669,9 @@ function M.complete_items()
       dup = 0,
       empty = 0,
     }
-
-    for tool_name, tool in pairs(group) do
-      all_tools[tool_name] = tool
-    end
   end
-  local tools_to_use = tools.parse_tools(all_tools)
+
+  local tools_to_use = tools.parse_tools(M.config.tools)
   for _, tool in pairs(tools_to_use) do
     items[#items + 1] = {
       word = '#' .. tool.name,
