@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
 
 CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat capabilities directly into your editor. It provides:
 
-- 🤖 GitHub Copilot Chat integration with official model and agent support (GPT-4o, Claude 3.7 Sonnet, Gemini 2.0 Flash, and more)
+- 🤖 GitHub Copilot Chat integration with official model support (GPT-4o, Claude 3.7 Sonnet, Gemini 2.0 Flash, and more)
 - 💻 Rich workspace context powered by smart embeddings system
 - 🔒 Explicit context sharing - only sends what you specifically request, either as context or selection (by default visual selection)
 - 🔌 Modular provider architecture supporting both official and custom LLM backends (Ollama, LM Studio, Mistral.ai and more)
@@ -62,8 +62,7 @@ Plugin features that use picker:
 
 - `:CopilotChatPrompts` - for selecting prompts
 - `:CopilotChatModels` - for selecting models
-- `:CopilotChatAgents` - for selecting agents
-- `#<context>:<input>` - for selecting context input
+- `#<tool>:<input>` - for selecting context input
 
 # Installation
 
@@ -148,7 +147,6 @@ Commands are used to control the chat interface:
 | `:CopilotChatLoad <name>?` | Load chat history             |
 | `:CopilotChatPrompts`      | View/select prompt templates  |
 | `:CopilotChatModels`       | View/select available models  |
-| `:CopilotChatAgents`       | View/select available agents  |
 | `:CopilotChat<PromptName>` | Use specific prompt template  |
 
 ## Key Mappings
@@ -253,7 +251,7 @@ Define your own system prompts in the configuration (similar to `prompts`):
 
 ### Sticky Prompts
 
-Sticky prompts persist across chat sessions. They're useful for maintaining context or agent selection. They work as follows:
+Sticky prompts persist across chat sessions. They're useful for maintaining model or resource selection. They work as follows:
 
 1. Prefix text with `> ` using markdown blockquote syntax
 2. The prompt will be copied at the start of every new chat prompt
@@ -262,7 +260,7 @@ Sticky prompts persist across chat sessions. They're useful for maintaining cont
 Examples:
 
 ```markdown
-> #files
+> #glob:*.lua
 > List all files in the workspace
 
 > @models Using Mistral-small
@@ -274,15 +272,12 @@ You can also set default sticky prompts in the configuration:
 ```lua
 {
   sticky = {
-    '@models Using Mistral-small',
-    '#files',
+    '#glob:*.lua',
   }
 }
 ```
 
-## Models and Agents
-
-### Models
+## Models
 
 You can control which AI model to use in three ways:
 
@@ -294,19 +289,6 @@ For supported models, see:
 
 - [Copilot Chat Models](https://docs.github.com/en/copilot/using-github-copilot/ai-models/changing-the-ai-model-for-copilot-chat#ai-models-for-copilot-chat)
 - [GitHub Marketplace Models](https://github.com/marketplace/models) (experimental, limited usage)
-
-### Agents
-
-Agents determine the AI assistant's capabilities. Control agents in three ways:
-
-1. List available agents with `:CopilotChatAgents`
-2. Set agent in prompt with `@agent_name`
-3. Configure default agent via `agent` config key
-
-The default "noop" agent is `none`. For more information:
-
-- [Extension Agents Documentation](https://docs.github.com/en/copilot/using-github-copilot/using-extensions-to-integrate-external-tools-with-copilot-chat)
-- [Available Agents](https://github.com/marketplace?type=apps&copilot_app=true)
 
 ## Tools
 
@@ -441,9 +423,6 @@ Custom providers can implement these methods:
 
   -- Optional: Get available models
   get_models?(headers: table): table<CopilotChat.Provider.model>,
-
-  -- Optional: Get available agents
-  get_agents?(headers: table): table<CopilotChat.Provider.agent>,
 }
 ```
 
@@ -465,14 +444,13 @@ Below are all available configuration options with their default values:
   system_prompt = 'COPILOT_INSTRUCTIONS', -- System prompt to use (can be specified manually in prompt via /).
 
   model = 'gpt-4o-2024-11-20', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
-  agent = 'copilot', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat.
 
   temperature = 0.1, -- GPT result temperature
   headless = false, -- Do not write to chat buffer and use history (useful for using custom processing)
   stream = nil, -- Function called when receiving stream updates (returned string is appended to the chat buffer)
   callback = nil, -- Function called when full response is received (retuned string is stored to history)
-  remember_as_sticky = true, -- Remember model/agent/context as sticky prompts when asking questions
+  remember_as_sticky = true, -- Remember model as sticky prompts when asking questions
 
   -- default selection
   -- see select.lua for implementation
@@ -689,7 +667,6 @@ chat.ask(prompt, config)      -- Ask a question with optional config
 chat.response()               -- Get the last response text
 chat.resolve_prompt()         -- Resolve prompt references
 chat.resolve_context()        -- Resolve context embeddings (WARN: async, requires plenary.async.run)
-chat.resolve_agent()          -- Resolve agent from prompt (WARN: async, requires plenary.async.run)
 chat.resolve_model()          -- Resolve model from prompt (WARN: async, requires plenary.async.run)
 
 -- Window Management
@@ -710,7 +687,6 @@ chat.set_selection(bufnr, start_line, end_line, clear) -- Set or clear selection
 -- Prompt & Context Management
 chat.select_prompt(config)    -- Open prompt selector with optional config
 chat.select_model()           -- Open model selector
-chat.select_agent()           -- Open agent selector
 chat.prompts()                -- Get all available prompts
 
 -- Completion

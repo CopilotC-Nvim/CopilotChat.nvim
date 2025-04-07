@@ -5,7 +5,6 @@
 ---@field resources table<CopilotChat.client.Resource>?
 ---@field system_prompt string
 ---@field model string
----@field agent string?
 ---@field temperature number
 ---@field on_progress? fun(response: string):nil
 
@@ -47,20 +46,14 @@
 ---@class CopilotChat.client.EmbeddedResource : CopilotChat.client.Resource, CopilotChat.client.Embed
 
 ---@class CopilotChat.client.Model
+---@field provider string?
 ---@field id string
 ---@field name string
 ---@field tokenizer string?
 ---@field max_input_tokens number?
 ---@field max_output_tokens number?
----@field provider string?
 ---@field streaming boolean?
 ---@field tool_calls boolean?
-
----@class CopilotChat.client.Agent
----@field id string
----@field name string
----@field description string?
----@field provider string?
 
 local log = require('plenary.log')
 local tiktoken = require('CopilotChat.tiktoken')
@@ -243,7 +236,6 @@ end
 ---@field private providers table<string, CopilotChat.config.providers.Provider>
 ---@field private provider_cache table<string, table>
 ---@field private models table<string, CopilotChat.client.Model>?
----@field private agents table<string, CopilotChat.client.Agent>?
 ---@field private current_job string?
 ---@field private headers table<string, string>?
 local Client = class(function(self)
@@ -251,7 +243,6 @@ local Client = class(function(self)
   self.providers = {}
   self.provider_cache = {}
   self.models = nil
-  self.agents = nil
   self.current_job = nil
   self.headers = nil
 end)
@@ -315,62 +306,15 @@ function Client:fetch_models()
   return self.models
 end
 
---- Fetch agents from the Copilot API
----@return table<string, CopilotChat.client.Agent>
-function Client:fetch_agents()
-  if self.agents then
-    return self.agents
-  end
-
-  local agents = {}
-  local provider_order = vim.tbl_keys(self.providers)
-  table.sort(provider_order)
-  for _, provider_name in ipairs(provider_order) do
-    local provider = self.providers[provider_name]
-    if not provider.disabled and provider.get_agents then
-      notify.publish(notify.STATUS, 'Fetching agents from ' .. provider_name)
-      local ok, headers = pcall(self.authenticate, self, provider_name)
-      if not ok then
-        log.warn('Failed to authenticate with ' .. provider_name .. ': ' .. headers)
-        goto continue
-      end
-      local ok, provider_agents = pcall(provider.get_agents, headers)
-      if not ok then
-        log.warn('Failed to fetch agents from ' .. provider_name .. ': ' .. provider_agents)
-        goto continue
-      end
-
-      for _, agent in ipairs(provider_agents) do
-        agent.provider = provider_name
-        if agents[agent.id] then
-          agent.id = agent.id .. ':' .. provider_name
-        end
-        agents[agent.id] = agent
-      end
-
-      ::continue::
-    end
-  end
-
-  self.agents = agents
-  return self.agents
-end
-
 --- Ask a question to Copilot
 ---@param prompt string: The prompt to send to Copilot
 ---@param opts CopilotChat.client.AskOptions: Options for the request
 ---@return CopilotChat.client.AskResponse?
 function Client:ask(prompt, opts)
   opts = opts or {}
-
-  if opts.agent == 'none' or opts.agent == 'copilot' then
-    opts.agent = nil
-  end
-
   local job_id = utils.uuid()
 
   log.debug('Model:', opts.model)
-  log.debug('Agent:', opts.agent)
   log.debug('Tools:', #opts.tools)
   log.debug('Resources:', #opts.resources)
 
@@ -378,12 +322,6 @@ function Client:ask(prompt, opts)
   local model_config = models[opts.model]
   if not model_config then
     error('Model not found: ' .. opts.model)
-  end
-
-  local agents = self:fetch_agents()
-  local agent_config = opts.agent and agents[opts.agent]
-  if opts.agent and not agent_config then
-    error('Agent not found: ' .. opts.agent)
   end
 
   local provider_name = model_config.provider
@@ -398,9 +336,6 @@ function Client:ask(prompt, opts)
   local options = {
     model = vim.tbl_extend('force', model_config, {
       id = opts.model:gsub(':' .. provider_name .. '$', ''),
-    }),
-    agent = agent_config and vim.tbl_extend('force', agent_config, {
-      id = opts.agent and opts.agent:gsub(':' .. provider_name .. '$', ''),
     }),
     temperature = opts.temperature,
     tools = opts.tools,
@@ -701,28 +636,6 @@ function Client:list_models()
   return vim.tbl_map(function(id)
     return models[id]
   end, result)
-end
-
---- List available agents
----@return table<string, table>
-function Client:list_agents()
-  local agents = self:fetch_agents()
-  local result = vim.tbl_keys(agents)
-
-  table.sort(result, function(a, b)
-    a = agents[a]
-    b = agents[b]
-    if a.provider ~= b.provider then
-      return a.provider < b.provider
-    end
-    return a.id < b.id
-  end)
-
-  local out = vim.tbl_map(function(id)
-    return agents[id]
-  end, result)
-  table.insert(out, 1, { id = 'none', name = 'None', description = 'No agent', provider = 'none' })
-  return out
 end
 
 --- Generate embeddings for the given inputs

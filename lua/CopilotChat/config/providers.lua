@@ -69,7 +69,6 @@ end
 
 ---@class CopilotChat.config.providers.Options
 ---@field model CopilotChat.client.Model
----@field agent CopilotChat.client.Agent?
 ---@field temperature number?
 ---@field tools table<CopilotChat.client.Tool>?
 
@@ -83,7 +82,6 @@ end
 ---@class CopilotChat.config.providers.Provider
 ---@field disabled nil|boolean
 ---@field get_headers nil|fun():table<string, string>,number?
----@field get_agents nil|fun(headers:table):table<CopilotChat.client.Agent>
 ---@field get_models nil|fun(headers:table):table<CopilotChat.client.Model>
 ---@field embed nil|string|fun(inputs:table<string>, headers:table):table<CopilotChat.client.Embed>
 ---@field prepare_input nil|fun(inputs:table<CopilotChat.client.Message>, opts:CopilotChat.config.providers.Options):table
@@ -115,25 +113,6 @@ M.copilot = {
       ['Copilot-Integration-Id'] = 'vscode-chat',
     },
       response.body.expires_at
-  end,
-
-  get_agents = function(headers)
-    local response, err = utils.curl_get('https://api.githubcopilot.com/agents', {
-      json_response = true,
-      headers = headers,
-    })
-
-    if err then
-      error(err)
-    end
-
-    return vim.tbl_map(function(agent)
-      return {
-        id = agent.slug,
-        name = agent.name,
-        description = agent.description,
-      }
-    end, response.body.agents)
   end,
 
   get_models = function(headers)
@@ -290,10 +269,6 @@ M.copilot = {
   end,
 
   get_url = function(opts)
-    if opts.agent then
-      return 'https://api.githubcopilot.com/agents/' .. opts.agent.id .. '?chat'
-    end
-
     return 'https://api.githubcopilot.com/chat/completions'
   end,
 }

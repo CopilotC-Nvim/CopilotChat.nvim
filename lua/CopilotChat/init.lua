@@ -59,10 +59,6 @@ local function insert_sticky(prompt, config)
     stickies:set('$' .. config.model, true)
   end
 
-  if config.remember_as_sticky and config.agent and config.agent ~= M.config.agent then
-    stickies:set('@' .. config.agent, true)
-  end
-
   if
     config.remember_as_sticky
     and config.system_prompt
@@ -386,30 +382,6 @@ function M.resolve_tools(prompt, config)
   return resources, prompt
 end
 
---- Resolve the agent from the prompt.
----@param prompt string?
----@param config CopilotChat.config.Shared?
----@return string, string
----@async
-function M.resolve_agent(prompt, config)
-  config, prompt = M.resolve_prompt(prompt, config)
-
-  local agents = vim.tbl_map(function(agent)
-    return agent.id
-  end, client:list_agents())
-
-  local selected_agent = config.agent or ''
-  prompt = prompt:gsub('@' .. WORD, function(match)
-    if vim.tbl_contains(agents, match) then
-      selected_agent = match
-      return ''
-    end
-    return '@' .. match
-  end)
-
-  return selected_agent, prompt
-end
-
 --- Resolve the model from the prompt.
 ---@param prompt string?
 ---@param config CopilotChat.config.Shared?
@@ -581,7 +553,6 @@ end
 ---@async
 function M.complete_items()
   local models = client:list_models()
-  local agents = client:list_agents()
   local prompts_to_use = M.prompts()
   local items = {}
 
@@ -614,19 +585,6 @@ function M.complete_items()
       abbr = model.id,
       kind = model.provider,
       menu = model.name,
-      icase = 1,
-      dup = 0,
-      empty = 0,
-    }
-  end
-
-  for _, agent in pairs(agents) do
-    items[#items + 1] = {
-      word = '@' .. agent.id,
-      abbr = agent.id,
-      kind = agent.provider,
-      info = agent.description,
-      menu = agent.name,
       icase = 1,
       dup = 0,
       empty = 0,
@@ -747,37 +705,6 @@ function M.select_model()
   end)
 end
 
---- Select default Copilot agent.
-function M.select_agent()
-  async.run(function()
-    local agents = client:list_agents()
-    local choices = vim.tbl_map(function(agent)
-      return {
-        id = agent.id,
-        name = agent.name,
-        provider = agent.provider,
-        selected = agent.id == M.config.agent,
-      }
-    end, agents)
-
-    utils.schedule_main()
-    vim.ui.select(choices, {
-      prompt = 'Select an agent> ',
-      format_item = function(item)
-        local out = string.format('%s (%s:%s)', item.name, item.provider, item.id)
-        if item.selected then
-          out = '* ' .. out
-        end
-        return out
-      end,
-    }, function(choice)
-      if choice then
-        M.config.agent = choice.id
-      end
-    end)
-  end)
-end
-
 --- Select a prompt template to use.
 ---@param config CopilotChat.config.Shared?
 function M.select_prompt(config)
@@ -871,7 +798,6 @@ function M.ask(prompt, config)
   local selection = M.get_selection()
 
   local ok, err = pcall(async.run, function()
-    local selected_agent, prompt = M.resolve_agent(prompt, config)
     local selected_model, prompt = M.resolve_model(prompt, config)
     local resources, prompt = M.resolve_tools(prompt, config)
     local selected_tools = tools.parse_tools(M.config.tools)
@@ -900,7 +826,6 @@ function M.ask(prompt, config)
       tools = selected_tools,
       system_prompt = system_prompt,
       model = selected_model,
-      agent = selected_agent,
       temperature = config.temperature,
       on_progress = vim.schedule_wrap(function(token)
         local out = config.stream and config.stream(token, state.source) or nil
