@@ -453,6 +453,15 @@ return {
           table.insert(lines, '')
         end
 
+        local selected_tools = vim.tbl_keys(copilot.resolve_tools(prompt, config))
+        if not utils.empty(selected_tools) then
+          table.insert(lines, '**Tools**')
+          table.insert(lines, '```')
+          table.insert(lines, table.concat(selected_tools, ', '))
+          table.insert(lines, '```')
+          table.insert(lines, '')
+        end
+
         if system_prompt then
           table.insert(lines, '**System Prompt**')
           table.insert(lines, '````')
