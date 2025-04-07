@@ -20,12 +20,12 @@ CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat capabilities
 
 - 🤖 GitHub Copilot Chat integration with official model support (GPT-4o, Claude 3.7 Sonnet, Gemini 2.0 Flash, and more)
 - 💻 Rich workspace context powered by smart embeddings system
-- 🔒 Explicit context sharing - only sends what you specifically request, either as context or selection (by default visual selection)
-- 🔌 Modular provider architecture supporting both official and custom LLM backends (Ollama, LM Studio, Mistral.ai and more)
+- 🔒 Explicit data sharing - only sends what you specifically request, either as resource or selection (by default visual selection)
+- 🔌 Modular provider architecture supporting both official and custom LLM backends (Ollama, Gemini, Mistral.ai and more)
 - 📝 Interactive chat UI with completion, diffs and quickfix integration
 - 🎯 Powerful prompt system with composable templates and sticky prompts
-- 🔄 Extensible context providers for granular workspace understanding (buffers, files, git diffs, URLs, and more)
-- ⚡ Efficient token usage with tiktoken token counting and memory management
+- 🔄 Extensible tool calling system for granular workspace understanding (buffers, files, git diffs, URLs, and more)
+- ⚡ Efficient token usage with tiktoken token counting and history management
 
 # Requirements
 
@@ -62,7 +62,7 @@ Plugin features that use picker:
 
 - `:CopilotChatPrompts` - for selecting prompts
 - `:CopilotChatModels` - for selecting models
-- `#<tool>:<input>` - for selecting context input
+- `#<tool>:<input>` - for selecting tool input
 
 # Installation
 
@@ -610,9 +610,6 @@ Below are all available configuration options with their default values:
       full_diff = false, -- Show full diff instead of unified diff when showing diff window
     },
     show_info = {
-      normal = 'gi',
-    },
-    show_context = {
       normal = 'gc',
     },
     show_help = {
@@ -652,8 +649,8 @@ Types of copilot highlights:
 - `CopilotChatStatus` - Status and spinner in chat buffer
 - `CopilotChatHelp` - Help messages in chat buffer (help, references)
 - `CopilotChatSelection` - Selection highlight in source buffer
-- `CopilotChatKeyword` - Keyword highlight in chat buffer (e.g. prompts, contexts)
-- `CopilotChatInput` - Input highlight in chat buffer (for contexts)
+- `CopilotChatKeyword` - Keyword highlight in chat buffer (e.g. prompts, tools)
+- `CopilotChatAnnotation` - Annotation highlight in chat buffer (file headers, tool call headers, tool call body)
 
 # API Reference
 
@@ -666,7 +663,7 @@ local chat = require("CopilotChat")
 chat.ask(prompt, config)      -- Ask a question with optional config
 chat.response()               -- Get the last response text
 chat.resolve_prompt()         -- Resolve prompt references
-chat.resolve_context()        -- Resolve context embeddings (WARN: async, requires plenary.async.run)
+chat.resolve_tools()          -- Resolve tools that are available for automatic use by LLM
 chat.resolve_model()          -- Resolve model from prompt (WARN: async, requires plenary.async.run)
 
 -- Window Management
@@ -684,7 +681,7 @@ chat.set_source(winnr)        -- Set the source window
 chat.get_selection()                                   -- Get the current selection
 chat.set_selection(bufnr, start_line, end_line, clear) -- Set or clear selection
 
--- Prompt & Context Management
+-- Prompt & Model Management
 chat.select_prompt(config)    -- Open prompt selector with optional config
 chat.select_model()           -- Open model selector
 chat.prompts()                -- Get all available prompts
@@ -737,22 +734,21 @@ window:overlay(opts)         -- Show overlay with specified options
 ```lua
 -- Open chat, ask a question and handle response
 require("CopilotChat").open()
-require("CopilotChat").ask("Explain this code", {
+require("CopilotChat").ask("#buffer Explain this code", {
   callback = function(response)
     vim.notify("Got response: " .. response:sub(1, 50) .. "...")
     return response
   end,
-  context = "buffer"
 })
 
 -- Save and load chat history
 require("CopilotChat").save("my_debugging_session")
 require("CopilotChat").load("my_debugging_session")
 
--- Use custom context and model
+-- Use custom sticky and model
 require("CopilotChat").ask("How can I optimize this?", {
   model = "gpt-4o",
-  context = {"buffer", "git:staged"}
+  sticky = {"#buffer", "#git:staged"}
 })
 ```
 

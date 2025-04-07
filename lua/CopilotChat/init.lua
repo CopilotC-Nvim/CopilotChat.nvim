@@ -425,7 +425,7 @@ end
 --- Resolve the tools from the prompt.
 ---@param prompt string?
 ---@param config CopilotChat.config.Shared?
----@return table<string, CopilotChat.config.tools.Tool>
+---@return table<string, CopilotChat.config.tools.Tool>, string
 function M.resolve_tools(prompt, config)
   config, prompt = M.resolve_prompt(prompt, config)
 
@@ -462,7 +462,7 @@ function M.resolve_tools(prompt, config)
       end
     end
   end
-  return out
+  return out, prompt
 end
 
 --- Get the current source buffer and window.
