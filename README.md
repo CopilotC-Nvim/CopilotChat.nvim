@@ -444,7 +444,8 @@ Below are all available configuration options with their default values:
   system_prompt = 'COPILOT_INSTRUCTIONS', -- System prompt to use (can be specified manually in prompt via /).
 
   model = 'gpt-4o-2024-11-20', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
-  sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat.
+  group = 'copilot', -- Default group of tools or array of groups to use (can be specified manually in prompt via @).
+  sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
 
   temperature = 0.1, -- GPT result temperature
   headless = false, -- Do not write to chat buffer and use history (useful for using custom processing)
