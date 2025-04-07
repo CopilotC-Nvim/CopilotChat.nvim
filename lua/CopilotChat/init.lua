@@ -93,7 +93,9 @@ local function insert_sticky(prompt, config)
   -- Insert stickies at start of prompt
   local prompt_lines = {}
   for _, sticky in ipairs(stickies:keys()) do
-    table.insert(prompt_lines, '> ' .. sticky)
+    if sticky ~= '' then
+      table.insert(prompt_lines, '> ' .. sticky)
+    end
   end
   if #prompt_lines > 0 then
     table.insert(prompt_lines, '')
@@ -958,16 +960,9 @@ function M.ask(prompt, config)
 
     if not config.headless then
       M.chat.tool_calls = tool_calls
+      M.chat.references = references
       M.chat.token_count = token_count
       M.chat.token_max_count = token_max_count
-
-      if not utils.empty(references) then
-        M.chat:append('\n\n**`References`**:')
-        for _, ref in ipairs(references) do
-          M.chat:append(string.format('\n[%s](%s)', ref.name, ref.url))
-        end
-      end
-
       finish()
     end
   end)
@@ -989,7 +984,6 @@ function M.stop(reset)
     client:reset()
     M.chat:clear()
     vim.diagnostic.reset(vim.api.nvim_create_namespace('copilot-chat-diagnostics'))
-    state.tool_calls = nil
 
     -- Clear the selection
     if state.source then
