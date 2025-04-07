@@ -260,7 +260,7 @@ Sticky prompts persist across chat sessions. They're useful for maintaining mode
 Examples:
 
 ```markdown
-> #glob:*.lua
+> #glob:\*.lua
 > List all files in the workspace
 
 > @models Using Mistral-small
