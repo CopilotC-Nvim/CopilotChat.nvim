@@ -17,7 +17,6 @@ local select = require('CopilotChat.select')
 ---@class CopilotChat.config.Shared
 ---@field system_prompt string?
 ---@field model string?
----@field agent string?
 ---@field sticky string|table<string>|nil
 ---@field temperature number?
 ---@field headless boolean?
@@ -59,14 +58,13 @@ return {
   system_prompt = 'COPILOT_INSTRUCTIONS', -- System prompt to use (can be specified manually in prompt via /).
 
   model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
-  agent = 'none', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat.
 
-  temperature = 0.1, -- GPT result temperature
+  temperature = 0.1, -- Result temperature
   headless = false, -- Do not write to chat buffer and use history (useful for using custom processing)
   stream = nil, -- Function called when receiving stream updates (returned string is appended to the chat buffer)
   callback = nil, -- Function called when full response is received (retuned string is stored to history)
-  remember_as_sticky = true, -- Remember model/agent/context as sticky prompts when asking questions
+  remember_as_sticky = true, -- Remember model as sticky prompts when asking questions
 
   -- default selection
   selection = select.visual,

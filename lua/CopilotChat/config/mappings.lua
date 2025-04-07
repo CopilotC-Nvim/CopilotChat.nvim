@@ -434,7 +434,6 @@ return {
       local system_prompt = config.system_prompt
 
       async.run(function()
-        local selected_agent = copilot.resolve_agent(prompt, config)
         local selected_model = copilot.resolve_model(prompt, config)
 
         utils.schedule_main()
@@ -451,11 +450,6 @@ return {
 
         if selected_model then
           table.insert(lines, '**Model**: `' .. selected_model .. '`')
-          table.insert(lines, '')
-        end
-
-        if selected_agent then
-          table.insert(lines, '**Agent**: `' .. selected_agent .. '`')
           table.insert(lines, '')
         end
 
@@ -501,7 +495,6 @@ return {
     normal = 'gh',
     callback = function()
       local chat_help = '**`Special tokens`**\n'
-      chat_help = chat_help .. '`@<agent>` to select an agent\n'
       chat_help = chat_help .. '`#<context>` to select a context\n'
       chat_help = chat_help .. '`#<context>:<input>` to select input for context\n'
       chat_help = chat_help .. '`/<prompt>` to select a prompt\n'
