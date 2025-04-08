@@ -189,19 +189,7 @@ end
 ---@param err string|table|nil
 local function show_error(err)
   err = err or 'Unknown error'
-
-  if type(err) == 'string' then
-    while true do
-      local new_err = err:gsub('^[^:]+:%d+: ', '')
-      if new_err == err then
-        break
-      end
-      err = new_err
-    end
-  else
-    err = utils.make_string(err)
-  end
-
+  err = utils.make_string(err)
   M.chat:append('\n' .. M.config.error_header .. '\n```error\n' .. err .. '\n```')
   finish()
 end
