@@ -25,6 +25,7 @@ local select = require('CopilotChat.select')
 ---@field stream nil|fun(chunk: string, source: CopilotChat.source):string
 ---@field callback nil|fun(response: string, source: CopilotChat.source):string
 ---@field remember_as_sticky boolean?
+---@field include_contexts_in_prompt boolean?
 ---@field selection false|nil|fun(source: CopilotChat.source):CopilotChat.select.selection?
 ---@field window CopilotChat.config.window?
 ---@field show_help boolean?
@@ -70,6 +71,8 @@ return {
   stream = nil, -- Function called when receiving stream updates (returned string is appended to the chat buffer)
   callback = nil, -- Function called when full response is received (retuned string is stored to history)
   remember_as_sticky = true, -- Remember model/agent/context as sticky prompts when asking questions
+
+  include_contexts_in_prompt = true, -- Include contexts in prompt
 
   -- default selection
   selection = function(source)
