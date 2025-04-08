@@ -639,12 +639,14 @@ end
 ---@return table<CopilotChat.client.EmbeddedResource>
 function Client:embed(inputs, model)
   if not inputs or #inputs == 0 then
+    ---@diagnostic disable-next-line: return-type-mismatch
     return inputs
   end
 
   local models = self:fetch_models()
   local ok, provider_name, embed = pcall(resolve_provider_function, 'embed', model, models, self.providers)
   if not ok then
+    ---@diagnostic disable-next-line: return-type-mismatch
     return inputs
   end
 
