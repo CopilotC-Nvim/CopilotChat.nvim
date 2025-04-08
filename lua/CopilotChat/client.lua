@@ -593,7 +593,7 @@ function Client:ask(prompt, opts)
 
   if response then
     if is_stream then
-      if utils.empty(response_text) then
+      if utils.empty(response_text) and not finished then
         for _, line in ipairs(vim.split(response.body, '\n')) do
           parse_stream_line(line)
         end
@@ -602,11 +602,6 @@ function Client:ask(prompt, opts)
       parse_line(response.body)
     end
     response_text = response_buffer:tostring()
-  end
-
-  if utils.empty(response_text) then
-    error('Failed to get response: empty response')
-    return
   end
 
   return {

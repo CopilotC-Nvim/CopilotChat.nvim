@@ -237,7 +237,7 @@ M.copilot = {
             local fn = tool_call['function']
             if fn then
               local index = tool_call.index or i
-              local id = tool_call.id or ('tooluse_' .. index)
+              local id = utils.empty(tool_call.id) and ('tooluse_' .. index) or tool_call.id
               table.insert(tool_calls, {
                 id = id,
                 index = index,
@@ -268,7 +268,7 @@ M.copilot = {
     }
   end,
 
-  get_url = function(opts)
+  get_url = function()
     return 'https://api.githubcopilot.com/chat/completions'
   end,
 }
