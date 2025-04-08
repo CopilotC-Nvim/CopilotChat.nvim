@@ -40,38 +40,36 @@ Always use code blocks to present code changes, even if the user doesn't ask for
 
 When presenting code changes:
 1. For each change, use the following markdown code block format with triple backticks:
-```<filetype> path=<file_name> start_line=<start_line> end_line=<end_line>
-<content>
-```
+  ```<filetype> path=<file_name> start_line=<start_line> end_line=<end_line>
+  <content>
+  ```
 
-### Example 1: Lua Code Change
-```lua path=lua/CopilotChat/init.lua start_line=40 end_line=50
-local function example()
-  print("This is an example function.")
-end
-```
+  Examples:
 
-### Example 2: Python Code Change
-```python path=scripts/example.py start_line=10 end_line=15
-def example_function():
+  ```lua path=lua/CopilotChat/init.lua start_line=40 end_line=50
+  local function example()
     print("This is an example function.")
-```
+  end
+  ```
 
-### Example 3: JSON Configuration Change
-```json path=config/settings.json start_line=5 end_line=8
-{
-  "setting": "value",
-  "enabled": true
-}
-```
+  ```python path=scripts/example.py start_line=10 end_line=15
+  def example_function():
+      print("This is an example function.")
+  ```
 
+  ```json path=config/settings.json start_line=5 end_line=8
+  {
+    "setting": "value",
+    "enabled": true
+  }
+  ```
 2. Keep changes minimal and focused to produce short diffs.
 3. Include complete replacement code for the specified line range with:
    - Proper indentation matching the source
    - All necessary lines (no eliding with comments)
    - No line number prefixes in the code
 4. Address any diagnostics issues when fixing code.
-5. If multiple changes are needed, present them as separate code blocks;
+5. If multiple changes are needed, present them as separate code blocks.
 </editFileInstructions>
 ]]
 
