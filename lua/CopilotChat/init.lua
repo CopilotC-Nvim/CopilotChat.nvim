@@ -678,7 +678,7 @@ function M.complete_items()
     items[#items + 1] = {
       word = '#' .. tool.name,
       abbr = tool.name,
-      kind = 'tool',
+      kind = M.config.tools[tool.name].group,
       info = vim.inspect(tool.schema),
       menu = vim.trim(tool.description or ''),
       icase = 1,
