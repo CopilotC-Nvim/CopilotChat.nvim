@@ -334,6 +334,13 @@ function M.make_string(...)
       x = vim.inspect(x)
     else
       x = tostring(x)
+      while true do
+        local new_x = x:gsub('^[^:]+:%d+: ', '')
+        if new_x == x then
+          break
+        end
+        x = new_x
+      end
     end
 
     t[#t + 1] = x
