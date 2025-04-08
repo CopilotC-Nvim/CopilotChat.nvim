@@ -758,7 +758,7 @@ function M.process_resources(prompt, model, headless, resources)
 
   -- Embed the data and process the results
   for _, input in ipairs(client:embed(to_process, model)) do
-    if input.filetype ~= 'raw' then
+    if input._hash then
       embedding_cache[input._hash] = input.embedding
     end
     table.insert(results, input)
