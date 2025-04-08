@@ -20,7 +20,7 @@ CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat capabilities
 
 - 🤖 GitHub Copilot Chat integration with official model and agent support (GPT-4o, Claude 3.7 Sonnet, Gemini 2.0 Flash, and more)
 - 💻 Rich workspace context powered by smart embeddings system
-- 🔒 Explicit context sharing - only sends what you specifically request, either as context or selection
+- 🔒 Explicit context sharing - only sends what you specifically request, either as context or selection (by default visual selection)
 - 🔌 Modular provider architecture supporting both official and custom LLM backends (Ollama, LM Studio, Mistral.ai and more)
 - 📝 Interactive chat UI with completion, diffs and quickfix integration
 - 🎯 Powerful prompt system with composable templates and sticky prompts
@@ -387,7 +387,7 @@ You can set a default selection in the configuration:
 
 ```lua
 {
-  -- Default uses visual selection or falls back to buffer
+  -- Uses visual selection or falls back to buffer
   selection = function(source)
     return select.visual(source) or select.buffer(source)
   end
@@ -466,9 +466,7 @@ Below are all available configuration options with their default values:
 
   -- default selection
   -- see select.lua for implementation
-  selection = function(source)
-    return select.visual(source) or select.buffer(source)
-  end,
+  selection = select.visual,
 
   -- default window options
   window = {

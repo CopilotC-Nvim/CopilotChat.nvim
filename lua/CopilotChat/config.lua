@@ -75,9 +75,7 @@ return {
   include_contexts_in_prompt = true, -- Include contexts in prompt
 
   -- default selection
-  selection = function(source)
-    return select.visual(source) or select.buffer(source)
-  end,
+  selection = select.visual,
 
   -- default window options
   window = {
