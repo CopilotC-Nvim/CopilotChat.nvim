@@ -42,7 +42,7 @@ end
 function M.check()
   start('CopilotChat.nvim [core]')
 
-  local vim_version = vim.trim(vim.api.nvim_command_output('version'))
+  local vim_version = vim.trim(vim.api.nvim_exec2('version', { output = true }).output)
   if vim.fn.has('nvim-0.10.0') == 1 then
     ok('nvim: ' .. vim_version)
   else
