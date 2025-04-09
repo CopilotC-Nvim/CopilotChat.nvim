@@ -19,7 +19,7 @@ return {
       properties = {
         name = {
           type = 'string',
-          description = 'Buffer name to include in chat context.',
+          description = 'Buffer filename to include in chat context.',
           enum = function()
             return vim
               .iter(vim.api.nvim_list_bufs())
@@ -216,6 +216,12 @@ return {
           enum = { 'current', 'listed', 'visible' },
           default = 'current',
         },
+        severity = {
+          type = 'string',
+          description = 'Minimum severity level of diagnostics to include.',
+          enum = { 'error', 'warn', 'info', 'hint' },
+          default = 'warn',
+        },
       },
     },
 
@@ -243,7 +249,11 @@ return {
       -- Collect diagnostics for each buffer
       for _, bufnr in ipairs(buffers) do
         local filename = vim.api.nvim_buf_get_name(bufnr)
-        local diagnostics = vim.diagnostic.get(bufnr)
+        local diagnostics = vim.diagnostic.get(bufnr, {
+          severity = {
+            min = vim.diagnostic.severity[input.severity:upper()],
+          }
+        })
 
         if #diagnostics > 0 then
           local diag_lines = {}
