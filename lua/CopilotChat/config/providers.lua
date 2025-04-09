@@ -138,7 +138,7 @@ M.copilot = {
           max_input_tokens = model.capabilities.limits.max_prompt_tokens,
           max_output_tokens = model.capabilities.limits.max_output_tokens,
           streaming = model.capabilities.supports.streaming,
-          tool_calls = model.capabilities.supports.tool_calls,
+          tools = model.capabilities.supports.tool_calls,
           policy = not model['policy'] or model['policy']['state'] == 'enabled',
           version = model.version,
         }
@@ -183,10 +183,10 @@ M.copilot = {
     local out = {
       messages = inputs,
       model = opts.model.id,
-      stream = opts.model.streaming == nil and true or opts.model.streaming,
+      stream = opts.model.streaming or false,
     }
 
-    if opts.tools and opts.model.tool_calls then
+    if opts.tools and opts.model.tools then
       out.tools = vim.tbl_map(function(tool)
         return {
           type = 'function',
@@ -325,7 +325,6 @@ M.github_models = {
           max_input_tokens = max_input_tokens,
           max_output_tokens = max_output_tokens,
           streaming = true,
-          tool_calls = true,
         }
       end)
       :totable()
