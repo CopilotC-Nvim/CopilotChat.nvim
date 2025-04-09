@@ -252,7 +252,7 @@ return {
         local diagnostics = vim.diagnostic.get(bufnr, {
           severity = {
             min = vim.diagnostic.severity[input.severity:upper()],
-          }
+          },
         })
 
         if #diagnostics > 0 then
