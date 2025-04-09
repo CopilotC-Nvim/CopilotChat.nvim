@@ -752,6 +752,8 @@ function M.select_model()
         id = model.id,
         name = model.name,
         provider = model.provider,
+        streaming = model.streaming,
+        tools = model.tools,
         selected = model.id == M.config.model,
       }
     end, models)
@@ -760,10 +762,27 @@ function M.select_model()
     vim.ui.select(choices, {
       prompt = 'Select a model> ',
       format_item = function(item)
-        local out = string.format('%s (%s:%s)', item.name, item.provider, item.id)
+        local indicators = {}
+        local out = item.name
+
         if item.selected then
           out = '* ' .. out
         end
+
+        if item.provider then
+          table.insert(indicators, item.provider)
+        end
+        if item.streaming then
+          table.insert(indicators, 'streaming')
+        end
+        if item.tools then
+          table.insert(indicators, 'tools')
+        end
+
+        if #indicators > 0 then
+          out = out .. ' [' .. table.concat(indicators, ', ') .. ']'
+        end
+
         return out
       end,
     }, function(choice)

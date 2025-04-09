@@ -53,7 +53,7 @@
 ---@field max_input_tokens number?
 ---@field max_output_tokens number?
 ---@field streaming boolean?
----@field tool_calls boolean?
+---@field tools boolean?
 
 local log = require('plenary.log')
 local tiktoken = require('CopilotChat.tiktoken')
