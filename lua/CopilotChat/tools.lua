@@ -585,7 +585,7 @@ function M.get_file(filename, filetype)
 
   return {
     type = 'resource',
-    uri = 'file://' .. filename,
+    uri = vim.uri_from_fname(filename),
     data = data.content,
     mimetype = utils.filetype_to_mimetype(filetype),
   }
@@ -606,7 +606,7 @@ function M.get_buffer(bufnr)
 
   return {
     type = 'resource',
-    uri = 'file://' .. utils.filepath(vim.api.nvim_buf_get_name(bufnr)),
+    uri = vim.uri_from_fname(utils.filepath(vim.api.nvim_buf_get_name(bufnr))),
     data = table.concat(content, '\n'),
     mimetype = utils.filetype_to_mimetype(vim.bo[bufnr].filetype),
   }
