@@ -583,7 +583,7 @@ function Chat:render()
 
         vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l, 0, {
           virt_lines_above = true,
-          virt_lines = { { { text, 'CopilotChatAnnotation' } } },
+          virt_lines = { { { text, 'CopilotChatAnnotationHeader' } } },
           priority = 100,
           strict = false,
         })
@@ -592,6 +592,12 @@ function Chat:render()
         current_block.content =
           table.concat(vim.list_slice(lines, current_block.start_line, current_block.end_line), '\n')
         table.insert(current_section.blocks, current_block)
+
+        vim.hl.range(self.bufnr, self.header_ns, 'CopilotChatAnnotation', { current_block.start_line - 1, 0 }, {
+          current_block.end_line,
+          #line,
+        })
+
         current_block = nil
       end
     end
@@ -606,7 +612,7 @@ function Chat:render()
 
       vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l, 0, {
         virt_lines_above = true,
-        virt_lines = { { { text, 'CopilotChatAnnotation' } } },
+        virt_lines = { { { text, 'CopilotChatAnnotationHeader' } } },
         priority = 100,
         strict = false,
       })
@@ -615,17 +621,19 @@ function Chat:render()
     -- Parse tool calls
     if self.tool_calls then
       for _, tool_call in ipairs(self.tool_calls) do
-        if
-          not utils.empty(tool_call.arguments)
-          and line:match(string.format('#%s:%s', tool_call.name, vim.pesc(tool_call.id)))
-        then
-          vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, 0, {
-            virt_lines = vim.tbl_map(function(json_line)
-              return { { json_line, 'CopilotChatAnnotation' } }
-            end, vim.split(vim.inspect(vim.json.decode(tool_call.arguments)), '\n')),
-            priority = 100,
-            strict = false,
-          })
+        if line:match(string.format('#%s:%s', tool_call.name, vim.pesc(tool_call.id))) then
+          vim.hl.range(self.bufnr, self.header_ns, 'CopilotChatAnnotationHeader', { l - 1, 0 }, { l - 1, #line })
+
+          if not utils.empty(tool_call.arguments) then
+            vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, 0, {
+              virt_lines = vim.tbl_map(function(json_line)
+                return { { json_line, 'CopilotChatAnnotation' } }
+              end, vim.split(vim.inspect(vim.json.decode(tool_call.arguments)), '\n')),
+              priority = 100,
+              strict = false,
+            })
+          end
+
           break
         end
       end
