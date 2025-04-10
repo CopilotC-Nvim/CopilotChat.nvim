@@ -10,7 +10,7 @@ local WORD = '([^%s:]+)'
 local WORD_WITH_INPUT_QUOTED = WORD .. ':`([^`]+)`'
 local WORD_WITH_INPUT_UNQUOTED = WORD .. ':?([^%s`]*)'
 local TOOL_OUTPUT_FORMAT = '```%s tool=%s id=%s\n%s\n```'
-local REFERENCE_FORMAT = '#%s:`%s`'
+local RESOURCE_FORMAT = '#%s:`%s`'
 
 ---@class CopilotChat
 ---@field config CopilotChat.config.Config
@@ -301,24 +301,27 @@ local function call_tools(prompt, config, resolved_tools)
     local result = ''
     for _, content in ipairs(output) do
       if content then
+        local content_out = nil
         if content.type == 'resource' then
-          table.insert(resources, content)
-          local reference_type = vim.startswith(content.uri, 'file://') and 'file' or 'url'
-          local filename = utils.uri_to_filename(content.uri)
-          if not utils.empty(result) then
-            result = result .. '\n'
+          if vim.startswith(content.uri, 'file://') then
+            content_out = string.format(RESOURCE_FORMAT, 'file', utils.uri_to_filename(content.uri))
+            table.insert(resources, content)
+          elseif content.uri:match('^https?://') then
+            content_out = string.format(RESOURCE_FORMAT, 'url', content.uri)
+            table.insert(resources, content)
           end
-          local reference = string.format(REFERENCE_FORMAT, reference_type, filename)
-          result = result .. reference
-          if tool_id then
-            table.insert(state.sticky, reference)
-          end
-        else
-          if not utils.empty(result) then
-            result = result .. '\n'
-          end
-          result = result .. string.format(TOOL_OUTPUT_FORMAT, content.type, name, tool_id or '', content.data)
         end
+
+        if not content_out then
+          content_out = string.format(TOOL_OUTPUT_FORMAT, content.type, name, tool_id or '', content.data)
+        elseif tool_id then
+          table.insert(state.sticky, content_out)
+        end
+
+        if not utils.empty(result) then
+          result = result .. '\n'
+        end
+        result = result .. content_out
       end
     end
 

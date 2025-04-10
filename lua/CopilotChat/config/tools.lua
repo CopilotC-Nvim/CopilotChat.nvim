@@ -257,10 +257,10 @@ return {
 
         if #diagnostics > 0 then
           local diag_lines = {}
-          table.insert(diag_lines, string.format('# %s DIAGNOSTICS', filename))
+          table.insert(diag_lines, string.format('# DIAGNOSTICS: %s', filename))
 
           for _, diag in ipairs(diagnostics) do
-            local severity = ({ 'ERROR', 'WARN', 'INFO', 'HINT' })[diag.severity] or 'UNKNOWN'
+            local severity = vim.diagnostic.severity[diag.severity] or 'UNKNOWN'
             local line_text = vim.api.nvim_buf_get_lines(bufnr, diag.lnum, diag.lnum + 1, false)[1] or ''
 
             table.insert(
