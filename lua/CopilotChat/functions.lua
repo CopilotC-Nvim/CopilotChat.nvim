@@ -1,18 +1,3 @@
----@class CopilotChat.tools.Content
----@field type 'text' | 'resource' | 'error'
----@field data string
-
----@class CopilotChat.tools.TextContent : CopilotChat.tools.Content
----@field type 'text'
-
----@class CopilotChat.tools.ResourceContent : CopilotChat.tools.Content
----@field type 'resource'
----@field uri string
----@field mimetype string
-
----@class CopilotChat.tools.ErrorContent : CopilotChat.tools.Content
----@field type 'error'
-
 ---@class CopilotChat.tools.Symbol
 ---@field name string?
 ---@field signature string
@@ -457,6 +442,45 @@ local function filter_schema(tbl)
   return result
 end
 
+---@param uri string The URI to parse
+---@param pattern string The pattern to match against (e.g., 'file://{path}')
+---@return table|nil inputs Extracted parameters or nil if no match
+function M.match_uri(uri, pattern)
+  -- Convert the pattern into a Lua pattern by escaping special characters
+  -- and replacing {name} placeholders with capture groups
+  local lua_pattern = pattern:gsub('([%(%)%.%%%+%-%*%?%[%]%^%$])', '%%%1')
+
+  -- Extract parameter names from the pattern
+  local param_names = {}
+  for param in pattern:gmatch('{([^}:*]+)[^}]*}') do
+    table.insert(param_names, param)
+    -- Replace {param} with a capture group in our Lua pattern
+    -- Use non-greedy capture to handle multiple params properly
+    lua_pattern = lua_pattern:gsub('{' .. param .. '[^}]*}', '(.-)')
+  end
+
+  -- If no parameters, just do a direct comparison
+  if #param_names == 0 then
+    return uri == pattern and {} or nil
+  end
+
+  -- Match the URI against our constructed pattern
+  local matches = { uri:match('^' .. lua_pattern .. '$') }
+
+  -- If match failed, return nil
+  if #matches == 0 or matches[1] == nil then
+    return nil
+  end
+
+  -- Build the result table mapping parameter names to their values
+  local result = {}
+  for i, param_name in ipairs(param_names) do
+    result[param_name] = matches[i]
+  end
+
+  return result
+end
+
 --- Prepare the schema for use
 ---@param tools table<string, CopilotChat.config.tools.Tool>
 ---@return table<CopilotChat.client.Tool>
@@ -670,7 +694,7 @@ end
 ---@param prompt string
 ---@param model string
 ---@param headless boolean
----@param resources table<CopilotChat.tools.ResourceContent>
+---@param resources table<CopilotChat.config.functions.ResourceContent>
 ---@return table<CopilotChat.client.Resource>
 function M.process_resources(prompt, model, headless, resources)
   local client_resources = vim.tbl_map(function(resource)

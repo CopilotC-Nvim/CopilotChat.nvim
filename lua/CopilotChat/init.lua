@@ -1,16 +1,16 @@
 local async = require('plenary.async')
 local log = require('plenary.log')
-local tools = require('CopilotChat.tools')
+local functions = require('CopilotChat.functions')
 local client = require('CopilotChat.client')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 
 local PLUGIN_NAME = 'CopilotChat'
 local WORD = '([^%s:]+)'
+local WORD_NO_INPUT = '([^%s]+)'
 local WORD_WITH_INPUT_QUOTED = WORD .. ':`([^`]+)`'
 local WORD_WITH_INPUT_UNQUOTED = WORD .. ':?([^%s`]*)'
 local TOOL_OUTPUT_FORMAT = '```%s tool=%s id=%s\n%s\n```'
-local RESOURCE_FORMAT = '#%s:`%s`'
 
 ---@class CopilotChat
 ---@field config CopilotChat.config.Config
@@ -59,14 +59,9 @@ local function insert_sticky(prompt, config)
     stickies:set('$' .. config.model, true)
   end
 
-  if config.remember_as_sticky and config.group and not vim.deep_equal(config.group, M.config.group) then
-    if type(config.group) == 'table' then
-      ---@diagnostic disable-next-line: param-type-mismatch
-      for _, group in ipairs(config.group) do
-        stickies:set('@' .. group, true)
-      end
-    else
-      stickies:set('@' .. config.group, true)
+  if config.remember_as_sticky and config.agent and not vim.deep_equal(config.agent, M.config.agent) then
+    for _, agent in ipairs(utils.to_table(config.agent)) do
+      stickies:set('@' .. agent, true)
     end
   end
 
@@ -80,13 +75,8 @@ local function insert_sticky(prompt, config)
   end
 
   if config.sticky and not vim.deep_equal(config.sticky, M.config.sticky) then
-    if type(config.sticky) == 'table' then
-      ---@diagnostic disable-next-line: param-type-mismatch
-      for _, sticky in ipairs(config.sticky) do
-        stickies:set(sticky, true)
-      end
-    else
-      stickies:set(config.sticky, true)
+    for _, sticky in ipairs(utils.to_table(config.sticky)) do
+      stickies:set(sticky, true)
     end
   end
 
@@ -152,13 +142,8 @@ local function finish(start_of_chat)
   if start_of_chat then
     local sticky = {}
     if M.config.sticky then
-      if type(M.config.sticky) == 'table' then
-        ---@diagnostic disable-next-line: param-type-mismatch
-        for _, sticky_line in ipairs(M.config.sticky) do
-          table.insert(sticky, sticky_line)
-        end
-      else
-        table.insert(sticky, M.config.sticky)
+      for _, sticky_line in ipairs(utils.to_table(M.config.sticky)) do
+        table.insert(sticky, sticky_line)
       end
     end
     state.sticky = sticky
@@ -242,19 +227,44 @@ end
 --- Call and resolve tools from the prompt.
 ---@param prompt string?
 ---@param config CopilotChat.config.Shared?
----@param resolved_tools table<string, CopilotChat.config.tools.Tool>
----@return table<CopilotChat.client.Resource>, string
+---@return table<CopilotChat.client.Tool>, table<CopilotChat.client.Resource>, string
 ---@async
-local function call_tools(prompt, config, resolved_tools)
+function M.resolve_tools(prompt, config)
   config, prompt = M.resolve_prompt(prompt, config)
-
+  local enabled_tools = {}
   local resources = {}
-  local tool_matches = utils.ordered_map()
+
+  local agents = utils.to_table(config.agent)
+
+  -- Check for @agent pattern to find enabled tools
+  prompt = prompt:gsub('@' .. WORD, function(match)
+    local agent = vim
+      .iter(vim.tbl_values(M.config.functions))
+      :filter(function(tool)
+        return tool.agent == match
+      end)
+      :next()
+
+    if agent then
+      table.insert(agents, match)
+      return ''
+    end
+    return '@' .. match
+  end)
+  for _, agent in ipairs(agents) do
+    for name, tool in pairs(M.config.functions) do
+      if tool.agent == agent then
+        enabled_tools[name] = tool
+      end
+    end
+  end
+
+  local matches = utils.ordered_map()
 
   -- Check for #word:`input` pattern
   for word, input in prompt:gmatch('#' .. WORD_WITH_INPUT_QUOTED) do
     local pattern = string.format('#%s:`%s`', word, input)
-    tool_matches:set(pattern, {
+    matches:set(pattern, {
       word = word,
       input = input,
     })
@@ -263,15 +273,23 @@ local function call_tools(prompt, config, resolved_tools)
   -- Check for #word:input pattern
   for word, input in prompt:gmatch('#' .. WORD_WITH_INPUT_UNQUOTED) do
     local pattern = utils.empty(input) and string.format('#%s', word) or string.format('#%s:%s', word, input)
-    tool_matches:set(pattern, {
+    matches:set(pattern, {
       word = word,
       input = input,
     })
   end
 
+  -- Check for ##word:input pattern
+  for word in prompt:gmatch('##' .. WORD_NO_INPUT) do
+    local pattern = string.format('##%s', word)
+    matches:set(pattern, {
+      word = word,
+    })
+  end
+
   -- Resolve each tool reference
   local function expand_tool(name, input)
-    notify.publish(notify.STATUS, 'Running tool: ' .. name)
+    notify.publish(notify.STATUS, 'Running function: ' .. name)
 
     local tool_id = nil
     if not utils.empty(M.chat.tool_calls) then
@@ -284,16 +302,31 @@ local function call_tools(prompt, config, resolved_tools)
       end
     end
 
-    local tool = resolved_tools[name]
-    if not tool and not tool_id then
-      -- If we are using tool directly, ignore grouping
-      tool = M.config.tools[name]
+    local tool = tool_id and enabled_tools[name]
+    if not tool then
+      -- Check if tool is resource and call it even when not enabled
+      tool = M.config.functions[name]
+      if tool and not tool.uri then
+        return nil
+      end
+    end
+    if not tool then
+      -- Check if input matches uri
+      for tool_name, tool_spec in pairs(M.config.functions) do
+        local match = functions.match_uri(name, tool_spec.uri)
+        if match then
+          name = tool_name
+          tool = tool_spec
+          input = match
+          break
+        end
+      end
     end
     if not tool then
       return nil
     end
 
-    local ok, output = pcall(tool.resolve, tools.parse_input(input, tool.schema), state.source or {}, prompt)
+    local ok, output = pcall(tool.resolve, functions.parse_input(input, tool.schema), state.source or {}, prompt)
     if not ok then
       return string.format(TOOL_OUTPUT_FORMAT, 'error', name, tool_id or '', utils.make_string(output)) .. '\n'
     end
@@ -303,19 +336,13 @@ local function call_tools(prompt, config, resolved_tools)
       if content then
         local content_out = nil
         if content.type == 'resource' then
-          if vim.startswith(content.uri, 'file://') then
-            content_out = string.format(RESOURCE_FORMAT, 'file', utils.uri_to_filename(content.uri))
-            table.insert(resources, content)
-          elseif content.uri:match('^https?://') then
-            content_out = string.format(RESOURCE_FORMAT, 'url', content.uri)
-            table.insert(resources, content)
+          content_out = '##' .. content.uri
+          table.insert(resources, content)
+          if tool_id then
+            table.insert(state.sticky, content_out)
           end
-        end
-
-        if not content_out then
+        else
           content_out = string.format(TOOL_OUTPUT_FORMAT, content.type, name, tool_id or '', content.data)
-        elseif tool_id then
-          table.insert(state.sticky, content_out)
         end
 
         if not utils.empty(result) then
@@ -329,13 +356,13 @@ local function call_tools(prompt, config, resolved_tools)
   end
 
   -- Resolve and process all tools
-  for _, pattern in ipairs(tool_matches:keys()) do
-    local match = tool_matches:get(pattern)
+  for _, pattern in ipairs(matches:keys()) do
+    local match = matches:get(pattern)
     local out = expand_tool(match.word, match.input) or pattern
     prompt = prompt:gsub(vim.pesc(pattern), out, 1)
   end
 
-  return resources, prompt
+  return functions.parse_tools(enabled_tools), resources, prompt
 end
 
 --- Resolve the final prompt and config from prompt template.
@@ -413,49 +440,6 @@ function M.resolve_model(prompt, config)
   end)
 
   return selected_model, prompt
-end
-
---- Resolve the tools from the prompt.
----@param prompt string?
----@param config CopilotChat.config.Shared?
----@return table<string, CopilotChat.config.tools.Tool>, string
-function M.resolve_tools(prompt, config)
-  config, prompt = M.resolve_prompt(prompt, config)
-
-  local groups = {}
-  if config.group then
-    if type(config.group) == 'table' then
-      ---@diagnostic disable-next-line: param-type-mismatch
-      vim.list_extend(groups, config.group)
-    else
-      table.insert(groups, config.group)
-    end
-  end
-
-  prompt = prompt:gsub('@' .. WORD, function(match)
-    local group = vim
-      .iter(vim.tbl_values(M.config.tools))
-      :filter(function(tool)
-        return tool.group == match
-      end)
-      :next()
-
-    if group then
-      table.insert(groups, match)
-      return ''
-    end
-    return '@' .. match
-  end)
-
-  local out = {}
-  for _, group in ipairs(groups) do
-    for name, tool in pairs(M.config.tools) do
-      if not tool.group or tool.group == group then
-        out[name] = tool
-      end
-    end
-  end
-  return out, prompt
 end
 
 --- Get the current source buffer and window.
@@ -557,10 +541,10 @@ function M.trigger_complete(without_input)
   end
 
   if not without_input and vim.startswith(prefix, '#') and vim.endswith(prefix, ':') then
-    local found_tool = M.config.tools[prefix:sub(2, -2)]
+    local found_tool = M.config.functions[prefix:sub(2, -2)]
     if found_tool and found_tool.schema then
       async.run(function()
-        local value = tools.enter_input(found_tool.schema, state.source)
+        local value = functions.enter_input(found_tool.schema, state.source)
         if not value then
           return
         end
@@ -643,39 +627,42 @@ function M.complete_items()
     }
   end
 
-  local all_groups = {}
-  for name, tool in pairs(M.config.tools) do
-    if tool.group then
-      all_groups[tool.group] = all_groups[tool.group] or {}
-      all_groups[tool.group][name] = tool
+  local agents = {}
+  for name, tool in pairs(M.config.functions) do
+    if tool.agent then
+      agents[tool.agent] = agents[tool.agent] or {}
+      agents[tool.agent][name] = tool
     end
   end
-  for name, group in pairs(all_groups) do
-    local group_tools = vim.tbl_keys(group)
+  for name, agent in pairs(agents) do
+    local agent_tools = vim.tbl_keys(agent)
     items[#items + 1] = {
       word = '@' .. name,
       abbr = name,
       kind = 'group',
-      info = table.concat(group_tools, '\n'),
-      menu = string.format('%s tools', #group_tools),
+      info = table.concat(agent_tools, '\n'),
+      menu = string.format('%s tools', #agent_tools),
       icase = 1,
       dup = 0,
       empty = 0,
     }
   end
 
-  local tools_to_use = tools.parse_tools(M.config.tools)
+  local tools_to_use = functions.parse_tools(M.config.functions)
   for _, tool in pairs(tools_to_use) do
-    items[#items + 1] = {
-      word = '#' .. tool.name,
-      abbr = tool.name,
-      kind = M.config.tools[tool.name].group,
-      info = vim.inspect(tool.schema),
-      menu = vim.trim(tool.description or ''),
-      icase = 1,
-      dup = 0,
-      empty = 0,
-    }
+    local uri = M.config.functions[tool.name].uri
+    if uri then
+      items[#items + 1] = {
+        word = '#' .. tool.name,
+        abbr = tool.name,
+        kind = M.config.functions[tool.name].agent or 'resource',
+        info = vim.inspect(tool),
+        menu = uri,
+        icase = 1,
+        dup = 0,
+        empty = 0,
+      }
+    end
   end
 
   table.sort(items, function(a, b)
@@ -889,10 +876,9 @@ function M.ask(prompt, config)
   local selection = M.get_selection()
 
   local ok, err = pcall(async.run, function()
-    local selected_tools, prompt = M.resolve_tools(prompt, config)
+    local selected_tools, resources, prompt = M.resolve_tools(prompt, config)
     local selected_model, prompt = M.resolve_model(prompt, config)
-    local resources, prompt = call_tools(prompt, config, selected_tools)
-    local query_ok, resources = pcall(tools.process_resources, prompt, selected_model, config.headless, resources)
+    local query_ok, resources = pcall(functions.process_resources, prompt, selected_model, config.headless, resources)
 
     if not query_ok then
       utils.schedule_main()
@@ -914,7 +900,7 @@ function M.ask(prompt, config)
       headless = config.headless,
       selection = selection,
       resources = resources,
-      tools = tools.parse_tools(selected_tools),
+      tools = selected_tools,
       system_prompt = system_prompt,
       model = selected_model,
       temperature = config.temperature,
