@@ -103,6 +103,24 @@ function M.ordered_map()
   }
 end
 
+--- Convert arguments to a table
+---@param ... any The arguments
+---@return table
+function M.to_table(...)
+  local result = {}
+  for i = 1, select('#', ...) do
+    local x = select(i, ...)
+    if type(x) == 'table' then
+      for _, v in ipairs(x) do
+        table.insert(result, v)
+      end
+    elseif x ~= nil then
+      table.insert(result, x)
+    end
+  end
+  return result
+end
+
 ---@class StringBuffer
 ---@field add fun(self:StringBuffer, s:string)
 ---@field set fun(self:StringBuffer, s:string)

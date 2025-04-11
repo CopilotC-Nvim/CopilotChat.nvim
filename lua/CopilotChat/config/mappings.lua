@@ -435,6 +435,10 @@ return {
 
       async.run(function()
         local selected_model = copilot.resolve_model(prompt, config)
+        local selected_tools, resources = copilot.resolve_tools(prompt, config)
+        selected_tools = vim.tbl_map(function(tool)
+          return tool.name
+        end, selected_tools)
 
         utils.schedule_main()
         table.insert(lines, '**Logs**: `' .. copilot.config.log_path .. '`')
@@ -453,11 +457,27 @@ return {
           table.insert(lines, '')
         end
 
-        local selected_tools = vim.tbl_keys(copilot.resolve_tools(prompt, config))
         if not utils.empty(selected_tools) then
           table.insert(lines, '**Tools**')
           table.insert(lines, '```')
           table.insert(lines, table.concat(selected_tools, ', '))
+          table.insert(lines, '```')
+          table.insert(lines, '')
+        end
+
+        for _, resource in ipairs(resources) do
+          local resource_lines = vim.split(resource.data, '\n')
+          local preview = vim.list_slice(resource_lines, 1, math.min(10, #resource_lines))
+          local header = string.format('**%s** (%s lines)', resource.uri, #resource_lines)
+          if #resource_lines > 10 then
+            header = header .. ' (truncated)'
+          end
+
+          table.insert(lines, header)
+          table.insert(lines, '```' .. utils.mimetype_to_filetype(resource.mimetype))
+          for _, line in ipairs(preview) do
+            table.insert(lines, line)
+          end
           table.insert(lines, '```')
           table.insert(lines, '')
         end
@@ -504,9 +524,9 @@ return {
     normal = 'gh',
     callback = function()
       local chat_help = '**`Special tokens`**\n'
-      chat_help = chat_help .. '`@<group>` to include group of tools in chat\n'
-      chat_help = chat_help .. '`#<tool>` to call a tool\n'
-      chat_help = chat_help .. '`#<tool>:<input>` to select input for tool\n'
+      chat_help = chat_help .. '`@<agent>` to enable agent\n'
+      chat_help = chat_help .. '`#<tool>` to add resource\n'
+      chat_help = chat_help .. '`#<tool>:<input>` to add resource with input\n'
       chat_help = chat_help .. '`/<prompt>` to select a prompt\n'
       chat_help = chat_help .. '`$<model>` to select a model\n'
       chat_help = chat_help .. '`> <text>` to make a sticky prompt (copied to next prompt)\n'

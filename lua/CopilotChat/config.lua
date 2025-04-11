@@ -17,7 +17,7 @@ local select = require('CopilotChat.select')
 ---@class CopilotChat.config.Shared
 ---@field system_prompt string?
 ---@field model string?
----@field group string|table<string>|nil
+---@field agent string|table<string>|nil
 ---@field sticky string|table<string>|nil
 ---@field temperature number?
 ---@field headless boolean?
@@ -49,7 +49,7 @@ local select = require('CopilotChat.select')
 ---@field error_header string?
 ---@field separator string?
 ---@field providers table<string, CopilotChat.config.providers.Provider>?
----@field tools table<string, CopilotChat.config.tools.Tool>?
+---@field functions table<string, CopilotChat.config.functions.Function>?
 ---@field prompts table<string, CopilotChat.config.prompts.Prompt|string>?
 ---@field mappings CopilotChat.config.mappings?
 return {
@@ -59,7 +59,7 @@ return {
   system_prompt = 'COPILOT_INSTRUCTIONS', -- System prompt to use (can be specified manually in prompt via /).
 
   model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
-  group = 'copilot', -- Default group of tools or array of groups to use (can be specified manually in prompt via @).
+  agent = nil, -- Default agent or array of agents to use (can be specified manually in prompt via @).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat.
 
   temperature = 0.1, -- Result temperature
@@ -115,8 +115,8 @@ return {
   -- default providers
   providers = require('CopilotChat.config.providers'),
 
-  -- default tools
-  tools = require('CopilotChat.config.tools'),
+  -- default functions
+  functions = require('CopilotChat.config.functions'),
 
   -- default prompts
   prompts = require('CopilotChat.config.prompts'),
