@@ -1,4 +1,4 @@
-local functions = require('CopilotChat.functions')
+local resources = require('CopilotChat.resources')
 local utils = require('CopilotChat.utils')
 
 ---@class CopilotChat.config.functions.Content
@@ -47,8 +47,18 @@ return {
     },
 
     resolve = function(input)
+      local data, mimetype = resources.get_file(input.path)
+      if not data then
+        error('File not found: ' .. input.path)
+      end
+
       return {
-        functions.get_file(utils.filepath(input.path), utils.filetype(input.path)),
+        {
+          type = 'resource',
+          uri = 'file://' .. input.path,
+          mimetype = mimetype,
+          data = data,
+        },
       }
     end,
   },
@@ -158,8 +168,17 @@ return {
       if not found_buf then
         error('Buffer not found: ' .. name)
       end
+      local data, mimetype = resources.get_buffer(found_buf)
+      if not data then
+        error('Buffer not found: ' .. name)
+      end
       return {
-        functions.get_buffer(found_buf),
+        {
+          type = 'resource',
+          uri = 'neovim://buffer/' .. name,
+          mimetype = mimetype,
+          data = data,
+        },
       }
     end,
   },
@@ -185,7 +204,19 @@ return {
     resolve = function(input)
       utils.schedule_main()
       return vim.tbl_map(
-        functions.get_buffer,
+        function(bufnr)
+          local name = vim.api.nvim_buf_get_name(bufnr)
+          local data, mimetype = resources.get_buffer(bufnr)
+          if not data then
+            return nil
+          end
+          return {
+            type = 'resource',
+            uri = 'neovim://buffer/' .. name,
+            mimetype = mimetype,
+            data = data,
+          }
+        end,
         vim.tbl_filter(function(b)
           return utils.buf_valid(b)
             and vim.fn.buflisted(b) == 1

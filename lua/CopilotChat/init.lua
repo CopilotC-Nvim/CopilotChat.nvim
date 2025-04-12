@@ -1,6 +1,7 @@
 local async = require('plenary.async')
 local log = require('plenary.log')
 local functions = require('CopilotChat.functions')
+local resources = require('CopilotChat.resources')
 local client = require('CopilotChat.client')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
@@ -232,7 +233,7 @@ end
 function M.resolve_tools(prompt, config)
   config, prompt = M.resolve_prompt(prompt, config)
   local enabled_tools = {}
-  local resources = {}
+  local resolved_resources = {}
 
   local agents = utils.to_table(config.agent)
 
@@ -313,12 +314,14 @@ function M.resolve_tools(prompt, config)
     if not tool then
       -- Check if input matches uri
       for tool_name, tool_spec in pairs(M.config.functions) do
-        local match = functions.match_uri(name, tool_spec.uri)
-        if match then
-          name = tool_name
-          tool = tool_spec
-          input = match
-          break
+        if tool_spec.uri then
+          local match = functions.match_uri(name, tool_spec.uri)
+          if match then
+            name = tool_name
+            tool = tool_spec
+            input = match
+            break
+          end
         end
       end
     end
@@ -337,7 +340,7 @@ function M.resolve_tools(prompt, config)
         local content_out = nil
         if content.type == 'resource' then
           content_out = '##' .. content.uri
-          table.insert(resources, content)
+          table.insert(resolved_resources, content)
           if tool_id then
             table.insert(state.sticky, content_out)
           end
@@ -362,7 +365,7 @@ function M.resolve_tools(prompt, config)
     prompt = prompt:gsub(vim.pesc(pattern), out, 1)
   end
 
-  return functions.parse_tools(enabled_tools), resources, prompt
+  return functions.parse_tools(enabled_tools), resolved_resources, prompt
 end
 
 --- Resolve the final prompt and config from prompt template.
@@ -876,15 +879,16 @@ function M.ask(prompt, config)
   local selection = M.get_selection()
 
   local ok, err = pcall(async.run, function()
-    local selected_tools, resources, prompt = M.resolve_tools(prompt, config)
+    local selected_tools, selected_resources, prompt = M.resolve_tools(prompt, config)
     local selected_model, prompt = M.resolve_model(prompt, config)
-    local query_ok, resources = pcall(functions.process_resources, prompt, selected_model, config.headless, resources)
+    local query_ok, selected_resources =
+      pcall(resources.process_resources, prompt, selected_model, config.headless, selected_resources)
 
     if not query_ok then
       utils.schedule_main()
-      log.error(resources)
+      log.error(selected_resources)
       if not config.headless then
-        show_error(resources)
+        show_error(selected_resources)
       end
       return
     end
@@ -899,7 +903,7 @@ function M.ask(prompt, config)
     local ask_ok, ask_response = pcall(client.ask, client, prompt, {
       headless = config.headless,
       selection = selection,
-      resources = resources,
+      resources = selected_resources,
       tools = selected_tools,
       system_prompt = system_prompt,
       model = selected_model,
