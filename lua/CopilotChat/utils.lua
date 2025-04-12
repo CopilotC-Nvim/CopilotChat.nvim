@@ -281,9 +281,13 @@ function M.filetype_to_mimetype(filetype)
 end
 
 --- Get the filetype from mimetype
----@param mimetype string
+---@param mimetype string?
 ---@return string
 function M.mimetype_to_filetype(mimetype)
+  if not mimetype or mimetype == '' then
+    return 'text/plain'
+  end
+
   local out = mimetype:gsub('^text/x-', '')
   out = out:gsub('^text/', '')
   out = out:gsub('^application/', '')
