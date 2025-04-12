@@ -477,20 +477,21 @@ return {
         local selection = copilot.get_selection()
         if selection then
           table.insert(lines, '**Selection**')
+          table.insert(lines, '')
           table.insert(
             lines,
-            string.format(
-              '````%s path=%s start_line=%s end_line=%s',
-              selection.filetype,
-              selection.filename,
-              selection.start_line,
-              selection.end_line
-            )
+            string.format('**%s** (%s-%s)', selection.filename, selection.start_line, selection.end_line)
           )
+          table.insert(lines, string.format('````%s', selection.filetype))
           for _, line in ipairs(vim.split(selection.content, '\n')) do
             table.insert(lines, line)
           end
           table.insert(lines, '````')
+          table.insert(lines, '')
+        end
+
+        if not utils.empty(selected_resources) then
+          table.insert(lines, '**Resources**')
           table.insert(lines, '')
         end
 
@@ -523,8 +524,8 @@ return {
     callback = function()
       local chat_help = '**`Special tokens`**\n'
       chat_help = chat_help .. '`@<agent>` to enable agent\n'
-      chat_help = chat_help .. '`#<tool>` to add resource\n'
-      chat_help = chat_help .. '`#<tool>:<input>` to add resource with input\n'
+      chat_help = chat_help .. '`#<function>` to add resource\n'
+      chat_help = chat_help .. '`#<function>:<input>` to add resource with input\n'
       chat_help = chat_help .. '`/<prompt>` to select a prompt\n'
       chat_help = chat_help .. '`$<model>` to select a model\n'
       chat_help = chat_help .. '`> <text>` to make a sticky prompt (copied to next prompt)\n'
