@@ -592,12 +592,6 @@ function Chat:render()
         current_block.content =
           table.concat(vim.list_slice(lines, current_block.start_line, current_block.end_line), '\n')
         table.insert(current_section.blocks, current_block)
-
-        vim.hl.range(self.bufnr, self.header_ns, 'CopilotChatAnnotation', { current_block.start_line - 1, 0 }, {
-          current_block.end_line,
-          #line,
-        })
-
         current_block = nil
       end
     end
