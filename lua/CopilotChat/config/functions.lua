@@ -1,27 +1,17 @@
 local resources = require('CopilotChat.resources')
 local utils = require('CopilotChat.utils')
 
----@class CopilotChat.config.functions.Content
----@field type 'text' | 'resource' | 'error'
+---@class CopilotChat.config.functions.Result
 ---@field data string
-
----@class CopilotChat.config.functions.TextContent : CopilotChat.config.functions.Content
----@field type 'text'
-
----@class CopilotChat.config.functions.ResourceContent : CopilotChat.config.functions.Content
----@field type 'resource'
----@field uri string
----@field mimetype string
-
----@class CopilotChat.config.functions.ErrorContent : CopilotChat.config.functions.Content
----@field type 'error'
+---@field mimetype string?
+---@field uri string?
 
 ---@class CopilotChat.config.functions.Function
 ---@field description string?
 ---@field schema table?
 ---@field agent string?
 ---@field uri string?
----@field resolve fun(input: table, source: CopilotChat.source, prompt: string):table<CopilotChat.config.functions.Content>
+---@field resolve fun(input: table, source: CopilotChat.source, prompt: string):table<CopilotChat.config.functions.Result>
 
 ---@type table<string, CopilotChat.config.functions.Function>
 return {
@@ -54,7 +44,6 @@ return {
 
       return {
         {
-          type = 'resource',
           uri = 'file://' .. input.path,
           mimetype = mimetype,
           data = data,
@@ -87,7 +76,6 @@ return {
 
       return {
         {
-          type = 'resource',
           uri = 'files://glob/' .. input.pattern,
           mimetype = 'text/plain',
           data = table.concat(files, '\n'),
@@ -119,7 +107,6 @@ return {
 
       return {
         {
-          type = 'resource',
           uri = 'files://grep/' .. input.pattern,
           mimetype = 'text/plain',
           data = table.concat(files, '\n'),
@@ -174,7 +161,6 @@ return {
       end
       return {
         {
-          type = 'resource',
           uri = 'neovim://buffer/' .. name,
           mimetype = mimetype,
           data = data,
@@ -211,7 +197,6 @@ return {
             return nil
           end
           return {
-            type = 'resource',
             uri = 'neovim://buffer/' .. name,
             mimetype = mimetype,
             data = data,
@@ -337,7 +322,6 @@ return {
           end
 
           table.insert(out, {
-            type = 'resource',
             uri = 'neovim://diagnostics/' .. name,
             mimetype = 'text/plain',
             data = table.concat(diag_lines, '\n'),
@@ -388,7 +372,6 @@ return {
 
       return {
         {
-          type = 'resource',
           uri = 'neovim://register/' .. input.register,
           mimetype = 'text/plain',
           data = lines,
@@ -437,7 +420,6 @@ return {
 
       return {
         {
-          type = 'resource',
           uri = 'git://diff/' .. input.target,
           mimetype = 'text/plain',
           data = out.stdout,
@@ -463,7 +445,6 @@ return {
 
       return {
         {
-          type = 'resource',
           uri = 'git://status',
           mimetype = 'text/plain',
           data = out.stdout,
@@ -489,9 +470,17 @@ return {
     },
 
     resolve = function(input)
-      utils.schedule_main()
+      local data, mimetype = resources.get_url(input.url)
+      if not data then
+        error('URL not found: ' .. input.url)
+      end
+
       return {
-        functions.get_url(input.url),
+        {
+          uri = input.url,
+          mimetype = mimetype,
+          data = data,
+        },
       }
     end,
   },
