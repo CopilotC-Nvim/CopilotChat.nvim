@@ -260,7 +260,7 @@ Sticky prompts persist across chat sessions. They're useful for maintaining mode
 Examples:
 
 ```markdown
-> #glob:\*.lua
+> #glob:`*.lua`
 > List all files in the workspace
 
 > @models Using Mistral-small
@@ -319,11 +319,10 @@ Examples:
 > #diagnostics:current
 > #file:path/to/file.js
 > #git:staged
-> #glob:\*_/_.lua
-> #grep:function setup
+> #glob:`**/*.lua`
+> #grep:`function setup`
 > #quickfix
 > #register:+
-> #system:ls -la | grep lua
 > #url:https://example.com
 ```
 
@@ -525,14 +524,14 @@ Below are all available configuration options with their default values:
     },
     diagnostics = {
     },
-    git = {
+    gitdiff = {
+    },
+    gitstatus = {
     },
     url = {
     },
     register = {
     },
-    system = {
-    }
   },
 
   -- default prompts
