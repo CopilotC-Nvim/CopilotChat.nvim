@@ -34,7 +34,7 @@ function M.visual(source)
 
   return {
     content = lines_content,
-    filename = utils.filepath(vim.api.nvim_buf_get_name(bufnr)),
+    filename = vim.api.nvim_buf_get_name(bufnr),
     filetype = vim.bo[bufnr].filetype,
     start_line = start_line,
     end_line = finish_line,
@@ -54,7 +54,7 @@ function M.buffer(source)
 
   return {
     content = table.concat(lines, '\n'),
-    filename = utils.filepath(vim.api.nvim_buf_get_name(bufnr)),
+    filename = vim.api.nvim_buf_get_name(bufnr),
     filetype = vim.bo[bufnr].filetype,
     start_line = 1,
     end_line = #lines,
@@ -76,7 +76,7 @@ function M.line(source)
 
   return {
     content = line,
-    filename = utils.filepath(vim.api.nvim_buf_get_name(bufnr)),
+    filename = vim.api.nvim_buf_get_name(bufnr),
     filetype = vim.bo[bufnr].filetype,
     start_line = cursor[1],
     end_line = cursor[1],
@@ -109,7 +109,7 @@ function M.unnamed(source)
 
   return {
     content = lines_content,
-    filename = utils.filepath(vim.api.nvim_buf_get_name(bufnr)),
+    filename = vim.api.nvim_buf_get_name(bufnr),
     filetype = vim.bo[bufnr].filetype,
     start_line = start_line,
     end_line = finish_line,

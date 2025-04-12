@@ -189,8 +189,14 @@ return {
 
     resolve = function(input)
       utils.schedule_main()
-      return vim.tbl_map(
-        function(bufnr)
+      return vim
+        .iter(vim.api.nvim_list_bufs())
+        :filter(function(bufnr)
+          return utils.buf_valid(bufnr)
+            and vim.fn.buflisted(bufnr) == 1
+            and (input.scope == 'listed' or #vim.fn.win_findbuf(bufnr) > 0)
+        end)
+        :map(function(bufnr)
           local name = vim.api.nvim_buf_get_name(bufnr)
           local data, mimetype = resources.get_buffer(bufnr)
           if not data then
@@ -201,13 +207,11 @@ return {
             mimetype = mimetype,
             data = data,
           }
-        end,
-        vim.tbl_filter(function(b)
-          return utils.buf_valid(b)
-            and vim.fn.buflisted(b) == 1
-            and (input.scope == 'listed' or #vim.fn.win_findbuf(b) > 0)
-        end, vim.api.nvim_list_bufs())
-      )
+        end)
+        :filter(function(file_data)
+          return file_data ~= nil
+        end)
+        :totable()
     end,
   },
 
@@ -235,7 +239,15 @@ return {
       return vim
         .iter(vim.tbl_keys(unique_files))
         :map(function(file)
-          return functions.get_file(utils.filepath(file), utils.filetype(file))
+          local data, mimetype = resources.get_file(file)
+          if not data then
+            return nil
+          end
+          return {
+            uri = 'file://' .. file,
+            mimetype = mimetype,
+            data = data,
+          }
         end)
         :filter(function(file_data)
           return file_data ~= nil

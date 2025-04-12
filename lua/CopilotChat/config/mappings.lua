@@ -63,7 +63,7 @@ local function get_diff(block)
     change = block.content,
     reference = reference or '',
     filetype = filetype or '',
-    filename = utils.filepath(filename),
+    filename = filename,
     start_line = start_line,
     end_line = end_line,
     bufnr = bufnr,
@@ -477,7 +477,16 @@ return {
         local selection = copilot.get_selection()
         if selection then
           table.insert(lines, '**Selection**')
-          table.insert(lines, '````' .. selection.filetype)
+          table.insert(
+            lines,
+            string.format(
+              '````%s path=%s start_line=%s end_line=%s',
+              selection.filetype,
+              selection.filename,
+              selection.start_line,
+              selection.end_line
+            )
+          )
           for _, line in ipairs(vim.split(selection.content, '\n')) do
             table.insert(lines, line)
           end
