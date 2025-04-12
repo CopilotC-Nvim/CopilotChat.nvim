@@ -396,7 +396,7 @@ function M.resolve_prompt(prompt, config)
   end
 
   if config.system_prompt then
-    config.system_prompt = config.system_prompt:gsub('{OS_NAME}', vim.uv.os_uname().sysname)
+    config.system_prompt = config.system_prompt:gsub('{OS_NAME}', jit.os)
     if state.source then
       config.system_prompt = config.system_prompt:gsub('{DIR}', state.source.cwd())
     end
