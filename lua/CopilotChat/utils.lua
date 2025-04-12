@@ -198,11 +198,6 @@ function M.return_to_normal_mode()
   end
 end
 
---- Mark a function as deprecated
-function M.deprecate(old, new)
-  vim.deprecate(old, new, '3.0.X', 'CopilotChat.nvim', false)
-end
-
 --- Debounce a function
 function M.debounce(id, fn, delay)
   if M.timers[id] then
@@ -210,21 +205,6 @@ function M.debounce(id, fn, delay)
     M.timers[id] = nil
   end
   M.timers[id] = vim.defer_fn(fn, delay)
-end
-
---- Create key-value list from table
----@param tbl table The table
----@return table
-function M.kv_list(tbl)
-  local result = {}
-  for k, v in pairs(tbl) do
-    table.insert(result, {
-      key = k,
-      value = v,
-    })
-  end
-
-  return result
 end
 
 --- Check if a buffer is valid
