@@ -338,14 +338,15 @@ function M.resolve_tools(prompt, config)
     for _, content in ipairs(output) do
       if content then
         local content_out = nil
-        if content.type == 'resource' then
+        if content.uri then
           content_out = '##' .. content.uri
           table.insert(resolved_resources, content)
           if tool_id then
             table.insert(state.sticky, content_out)
           end
         else
-          content_out = string.format(TOOL_OUTPUT_FORMAT, content.type, name, tool_id or '', content.data)
+          local ft = utils.mimetype_to_filetype(content.mimetype)
+          content_out = string.format(TOOL_OUTPUT_FORMAT, ft, name, tool_id or '', content.data)
         end
 
         if not utils.empty(result) then
