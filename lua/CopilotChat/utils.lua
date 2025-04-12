@@ -247,7 +247,7 @@ function M.filename_same(file1, file2)
   if not file1 or not file2 then
     return false
   end
-  return M.filepath(file1) == M.filepath(file2)
+  return vim.fn.fnamemodify(file1, ':p') == vim.fn.fnamemodify(file2, ':p')
 end
 
 --- Get the filetype of a file
@@ -285,7 +285,7 @@ end
 ---@return string
 function M.mimetype_to_filetype(mimetype)
   if not mimetype or mimetype == '' then
-    return 'text/plain'
+    return 'text'
   end
 
   local out = mimetype:gsub('^text/x-', '')
@@ -316,13 +316,6 @@ end
 ---@return string
 function M.filename(filepath)
   return vim.fs.basename(filepath)
-end
-
---- Get the file path
----@param filename string The file name
----@return string
-function M.filepath(filename)
-  return vim.fs.abspath(filename)
 end
 
 --- Generate a UUID
