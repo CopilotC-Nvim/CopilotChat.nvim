@@ -323,7 +323,7 @@ function M.resolve_tools(prompt, config)
         local content_out = nil
         if content.uri then
           content_out = '##' .. content.uri
-          table.insert(resolved_resources, content)
+          table.insert(resolved_resources, resources.to_resource(content))
           if tool_id then
             table.insert(state.sticky, content_out)
           end
@@ -868,16 +868,12 @@ function M.ask(prompt, config)
   local ok, err = pcall(async.run, function()
     local selected_tools, selected_resources, prompt = M.resolve_tools(prompt, config)
     local selected_model, prompt = M.resolve_model(prompt, config)
-    local query_ok, selected_resources =
+    local query_ok, processed_resources =
       pcall(resources.process_resources, prompt, selected_model, config.headless, selected_resources)
-
-    if not query_ok then
-      utils.schedule_main()
-      log.error(selected_resources)
-      if not config.headless then
-        show_error(selected_resources)
-      end
-      return
+    if query_ok then
+      selected_resources = processed_resources
+    else
+      log.warn('Failed to process resources', processed_resources)
     end
 
     if not config.headless then

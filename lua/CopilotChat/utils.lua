@@ -288,7 +288,7 @@ function M.mimetype_to_filetype(mimetype)
     return 'text'
   end
 
-  local out = mimetype:gsub('^text/x-', '')
+  local out = mimetype:gsub('^text/x%-', '')
   out = out:gsub('^text/', '')
   out = out:gsub('^application/', '')
   out = out:gsub('^image/', '')
