@@ -60,7 +60,7 @@ return {
 
   model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   agent = nil, -- Default agent or array of agents to use (can be specified manually in prompt via @).
-  sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat.
+  sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
 
   temperature = 0.1, -- Result temperature
   headless = false, -- Do not write to chat buffer and use history (useful for using custom processing)
