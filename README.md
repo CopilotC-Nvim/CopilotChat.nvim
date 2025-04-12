@@ -24,7 +24,7 @@ CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat capabilities
 - 🔌 Modular provider architecture supporting both official and custom LLM backends (Ollama, Gemini, Mistral.ai and more)
 - 📝 Interactive chat UI with completion, diffs and quickfix integration
 - 🎯 Powerful prompt system with composable templates and sticky prompts
-- 🔄 Extensible tool calling system for granular workspace understanding (buffers, files, git diffs, URLs, and more)
+- 🔄 Extensible function calling system for granular workspace understanding (buffers, files, git diffs, URLs, and more)
 - ⚡ Efficient token usage with tiktoken token counting and history management
 
 # Requirements
@@ -62,7 +62,7 @@ Plugin features that use picker:
 
 - `:CopilotChatPrompts` - for selecting prompts
 - `:CopilotChatModels` - for selecting models
-- `#<tool>:<input>` - for selecting tool input
+- `#<function>:<input>` - for selecting function input
 
 # Installation
 
@@ -290,26 +290,26 @@ For supported models, see:
 - [Copilot Chat Models](https://docs.github.com/en/copilot/using-github-copilot/ai-models/changing-the-ai-model-for-copilot-chat#ai-models-for-copilot-chat)
 - [GitHub Marketplace Models](https://github.com/marketplace/models) (experimental, limited usage)
 
-## Tools
+## Functions
 
-Tools provide additional information to the chat.
+Functions provide additional information and behaviour to the chat.
 Tools can be organized into groups by setting the `group` property. Tools assigned to a group are not automatically made available to the LLM - they must be explicitly activated.
 To use grouped tools in your prompt, include `@group_name` in your message. This allows the LLM to access and use all tools in that group during the current interaction.
 Add tools using `#tool_name[:input]` syntax:
 
-| Tool          | Group   | Input Support | Description                                            |
-| ------------- | ------- | ------------- | ------------------------------------------------------ |
-| `buffer`      | copilot | ✓ (name)      | Retrieves content from a specific buffer               |
-| `buffers`     | copilot | ✓ (scope)     | Fetches content from multiple buffers (listed/visible) |
-| `diagnostics` | copilot | ✓ (scope)     | Collects code diagnostics (errors, warnings)           |
-| `file`        | copilot | ✓ (path)      | Reads content from a specified file path               |
-| `git`         | copilot | ✓ (diff)      | Retrieves git diff information (unstaged/staged/sha)   |
-| `glob`        | copilot | ✓ (pattern)   | Lists filenames matching a pattern in workspace        |
-| `grep`        | copilot | ✓ (pattern)   | Searches for a pattern across files in workspace       |
-| `quickfix`    | copilot | -             | Includes content of files in quickfix list             |
-| `register`    | copilot | ✓ (register)  | Provides access to specified Vim register              |
-| `system`      | copilot | ✓ (command)   | Executes a system shell command for output             |
-| `url`         | copilot | ✓ (url)       | Fetches content from a specified URL                   |
+| Function      | Input Support | Description                                            |
+| ------------- | ------------- | ------------------------------------------------------ |
+| `buffer`      | ✓ (name)      | Retrieves content from a specific buffer               |
+| `buffers`     | ✓ (scope)     | Fetches content from multiple buffers (listed/visible) |
+| `diagnostics` | ✓ (scope)     | Collects code diagnostics (errors, warnings)           |
+| `file`        | ✓ (path)      | Reads content from a specified file path               |
+| `gitdiff`     | ✓ (sha)       | Retrieves git diff information (unstaged/staged/sha)   |
+| `gitstatus`   | -             | Retrieves git status information                       |
+| `glob`        | ✓ (pattern)   | Lists filenames matching a pattern in workspace        |
+| `grep`        | ✓ (pattern)   | Searches for a pattern across files in workspace       |
+| `quickfix`    | -             | Includes content of files in quickfix list             |
+| `register`    | ✓ (register)  | Provides access to specified Vim register              |
+| `url`         | ✓ (url)       | Fetches content from a specified URL                   |
 
 Examples:
 
@@ -327,11 +327,11 @@ Examples:
 > #url:https://example.com
 ```
 
-Define your own tools in the configuration with input handling and schema:
+Define your own functions in the configuration with input handling and schema:
 
 ```lua
 {
-  tools = {
+  functions = {
     birthday = {
       description = "Retrieves birthday information for a person",
       schema = {
@@ -358,9 +358,9 @@ Define your own tools in the configuration with input handling and schema:
 }
 ```
 
-### External Tools
+### External Functions
 
-For external tools implementations, see the [discussion page](https://github.com/CopilotC-Nvim/CopilotChat.nvim/discussions/categories/tools).
+For external functions implementations, see the [discussion page](https://github.com/CopilotC-Nvim/CopilotChat.nvim/discussions/categories/functions).
 
 ## Selections
 
