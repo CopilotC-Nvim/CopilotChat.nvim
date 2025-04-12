@@ -434,7 +434,7 @@ return {
 
       async.run(function()
         local selected_model = copilot.resolve_model(prompt, config)
-        local selected_tools, resources = copilot.resolve_tools(prompt, config)
+        local selected_tools, selected_resources = copilot.resolve_tools(prompt, config)
         selected_tools = vim.tbl_map(function(tool)
           return tool.name
         end, selected_tools)
@@ -494,16 +494,16 @@ return {
           table.insert(lines, '')
         end
 
-        for _, resource in ipairs(resources) do
+        for _, resource in ipairs(selected_resources) do
           local resource_lines = vim.split(resource.data, '\n')
           local preview = vim.list_slice(resource_lines, 1, math.min(10, #resource_lines))
-          local header = string.format('**%s** (%s lines)', resource.uri, #resource_lines)
+          local header = string.format('**%s** (%s lines)', resource.name, #resource_lines)
           if #resource_lines > 10 then
             header = header .. ' (truncated)'
           end
 
           table.insert(lines, header)
-          table.insert(lines, '```' .. utils.mimetype_to_filetype(resource.mimetype))
+          table.insert(lines, '```' .. resource.type)
           for _, line in ipairs(preview) do
             table.insert(lines, line)
           end

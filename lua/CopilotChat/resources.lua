@@ -481,30 +481,33 @@ function M.get_url(url)
   return content, utils.filetype_to_mimetype(ft)
 end
 
+--- Transform a resource into a format suitable for the client
+---@param resource CopilotChat.config.functions.Result
+---@return CopilotChat.client.Resource
+function M.to_resource(resource)
+  return {
+    name = utils.uri_to_filename(resource.uri),
+    type = utils.mimetype_to_filetype(resource.mimetype),
+    data = resource.data,
+  }
+end
+
 --- Process resources based on the query
 ---@param prompt string
 ---@param model string
 ---@param headless boolean
----@param resources table<CopilotChat.config.functions.ResourceContent>
+---@param resources table<CopilotChat.client.Resource>
 ---@return table<CopilotChat.client.Resource>
 function M.process_resources(prompt, model, headless, resources)
-  local client_resources = vim.tbl_map(function(resource)
-    return {
-      name = utils.uri_to_filename(resource.uri),
-      type = utils.mimetype_to_filetype(resource.mimetype),
-      data = resource.data,
-    }
-  end, resources)
-
   -- If we dont need to embed anything, just return directly
-  if #client_resources < MULTI_FILE_THRESHOLD then
-    return client_resources
+  if #resources < MULTI_FILE_THRESHOLD then
+    return resources
   end
 
   notify.publish(notify.STATUS, 'Preparing embedding outline')
 
   -- Get the outlines for each resource
-  for _, input in ipairs(client_resources) do
+  for _, input in ipairs(resources) do
     local hash = input.name .. utils.quick_hash(input.data)
     input._hash = hash
 
@@ -547,16 +550,16 @@ function M.process_resources(prompt, model, headless, resources)
   end
 
   -- Rank embeddings by symbols
-  client_resources = data_ranked_by_symbols(query, client_resources)
-  log.debug('Ranked data:', #client_resources)
-  for i, item in ipairs(client_resources) do
+  resources = data_ranked_by_symbols(query, resources)
+  log.debug('Ranked data:', #resources)
+  for i, item in ipairs(resources) do
     log.debug(string.format('%s: %s - %s', i, item.score, item.name))
   end
 
   -- Prepare embeddings for processing
   local to_process = {}
   local results = {}
-  for _, input in ipairs(client_resources) do
+  for _, input in ipairs(resources) do
     local hash = input._hash
     local embed = embedding_cache[hash]
     if embed then
