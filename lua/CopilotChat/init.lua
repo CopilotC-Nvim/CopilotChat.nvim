@@ -26,14 +26,12 @@ local M = {}
 --- @class CopilotChat.state
 --- @field source CopilotChat.source?
 --- @field sticky string[]?
---- @field highlights_loaded boolean
 local state = {
   -- Current state tracking
   source = nil,
 
   -- Last state tracking
   sticky = nil,
-  highlights_loaded = false,
 }
 
 --- Insert sticky values from config into prompt
@@ -120,21 +118,6 @@ local function update_highlights()
       strict = false,
     })
   end
-
-  if state.highlights_loaded then
-    return
-  end
-
-  async.run(function()
-    local items = M.complete_items()
-    utils.schedule_main()
-
-    for _, item in ipairs(items) do
-      vim.cmd('syntax match CopilotChatKeyword "' .. vim.fn.escape(item.word, '.-$^*[]') .. '" containedin=ALL')
-    end
-
-    state.highlights_loaded = true
-  end)
 end
 
 --- Finish writing to chat buffer.
@@ -656,11 +639,14 @@ function M.complete_items()
   for _, tool in pairs(tools_to_use) do
     local uri = M.config.functions[tool.name].uri
     if uri then
+      local info =
+        string.format('%s\n\n%s', tool.description, tool.schema and vim.inspect(tool.schema, { indent = '  ' }) or '')
+
       items[#items + 1] = {
         word = '#' .. tool.name,
         abbr = tool.name,
-        kind = M.config.functions[tool.name].agent or 'resource',
-        info = vim.inspect(tool),
+        kind = 'resource',
+        info = info,
         menu = uri,
         icase = 1,
         dup = 0,

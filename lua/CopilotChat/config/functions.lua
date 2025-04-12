@@ -470,6 +470,10 @@ return {
     },
 
     resolve = function(input)
+      if not input.url:match('^https?://') then
+        input.url = 'https://' .. input.url
+      end
+
       local data, mimetype = resources.get_url(input.url)
       if not data then
         error('URL not found: ' .. input.url)
