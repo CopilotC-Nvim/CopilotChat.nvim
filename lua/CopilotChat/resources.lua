@@ -478,7 +478,7 @@ function M.get_url(url)
     url_cache[url] = content
   end
 
-  return content, utils.mimetype_to_filetype(ft)
+  return content, utils.filetype_to_mimetype(ft)
 end
 
 --- Process resources based on the query

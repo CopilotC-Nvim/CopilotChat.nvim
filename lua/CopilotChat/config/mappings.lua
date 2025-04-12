@@ -1,6 +1,5 @@
 local async = require('plenary.async')
 local copilot = require('CopilotChat')
-local client = require('CopilotChat.client')
 local utils = require('CopilotChat.utils')
 
 ---@class CopilotChat.config.mappings.Diff
@@ -465,23 +464,6 @@ return {
           table.insert(lines, '')
         end
 
-        for _, resource in ipairs(resources) do
-          local resource_lines = vim.split(resource.data, '\n')
-          local preview = vim.list_slice(resource_lines, 1, math.min(10, #resource_lines))
-          local header = string.format('**%s** (%s lines)', resource.uri, #resource_lines)
-          if #resource_lines > 10 then
-            header = header .. ' (truncated)'
-          end
-
-          table.insert(lines, header)
-          table.insert(lines, '```' .. utils.mimetype_to_filetype(resource.mimetype))
-          for _, line in ipairs(preview) do
-            table.insert(lines, line)
-          end
-          table.insert(lines, '```')
-          table.insert(lines, '')
-        end
-
         if system_prompt then
           table.insert(lines, '**System Prompt**')
           table.insert(lines, '````')
@@ -503,14 +485,21 @@ return {
           table.insert(lines, '')
         end
 
-        if not utils.empty(client.history) then
-          table.insert(lines, ('**History** (#%s, truncated)'):format(#client.history))
-          table.insert(lines, '')
-
-          for _, message in ipairs(client.history) do
-            table.insert(lines, '**' .. message.role .. '**')
-            table.insert(lines, '`' .. vim.split(message.content, '\n')[1] .. '`')
+        for _, resource in ipairs(resources) do
+          local resource_lines = vim.split(resource.data, '\n')
+          local preview = vim.list_slice(resource_lines, 1, math.min(10, #resource_lines))
+          local header = string.format('**%s** (%s lines)', resource.uri, #resource_lines)
+          if #resource_lines > 10 then
+            header = header .. ' (truncated)'
           end
+
+          table.insert(lines, header)
+          table.insert(lines, '```' .. utils.mimetype_to_filetype(resource.mimetype))
+          for _, line in ipairs(preview) do
+            table.insert(lines, line)
+          end
+          table.insert(lines, '```')
+          table.insert(lines, '')
         end
 
         copilot.chat:overlay({
