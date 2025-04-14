@@ -6,7 +6,6 @@
 ---@field filetype string
 ---@field bufnr number
 
-local utils = require('CopilotChat.utils')
 local M = {}
 
 --- Select and process current visual selection
