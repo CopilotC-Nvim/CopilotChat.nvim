@@ -10,14 +10,14 @@
 
 ---@class CopilotChat.client.AskResponse
 ---@field content string
----@field total_tokens number
----@field max_tokens number
+---@field token_count number
+---@field token_max_count number
 ---@field tool_calls table<CopilotChat.client.ToolCall>?
----@field references table<CopilotChat.client.Reference>?
 
 ---@class CopilotChat.client.Message
 ---@field role string
 ---@field content string
+---@field tool_calls table<CopilotChat.client.ToolCall>?
 
 ---@class CopilotChat.client.Reference
 ---@field name string
@@ -155,7 +155,6 @@ local function generate_selection_message(selection)
     )
 
   return {
-    name = filename,
     content = out,
     role = 'user',
   }
@@ -172,7 +171,6 @@ local function generate_resource_message(resource)
   local content = generate_content_block(resource.data, BIG_FILE_THRESHOLD, 1)
 
   return {
-    name = resource.name,
     content = string.format(RESOURCE_FORMAT, resource.name, resource.type, content),
     role = 'user',
   }
@@ -354,7 +352,6 @@ function Client:ask(prompt, opts)
   end
 
   local history = not opts.headless and vim.list_slice(self.history) or {}
-  local references = utils.ordered_map()
   local tool_calls = utils.ordered_map()
   local generated_messages = {}
   local selection_message = opts.selection and generate_selection_message(opts.selection)
@@ -362,10 +359,6 @@ function Client:ask(prompt, opts)
 
   if selection_message then
     table.insert(generated_messages, selection_message)
-    references:set(selection_message.name, {
-      name = selection_message.name,
-      url = selection_message.name,
-    })
   end
 
   if max_tokens then
@@ -396,10 +389,6 @@ function Client:ask(prompt, opts)
       if remaining_tokens - tokens >= 0 then
         remaining_tokens = remaining_tokens - tokens
         table.insert(generated_messages, message)
-        references:set(message.name, {
-          name = message.name,
-          url = message.name,
-        })
       else
         break
       end
@@ -408,16 +397,12 @@ function Client:ask(prompt, opts)
     -- Add all embedding messages as we cant limit them
     for _, message in ipairs(resource_messages) do
       table.insert(generated_messages, message)
-      references:set(message.name, {
-        name = message.name,
-        url = message.name,
-      })
     end
   end
 
-  local last_message = nil
   local errored = false
   local finished = false
+  local token_count = 0
   local response_buffer = utils.string_buffer()
 
   local function finish_stream(err, job)
@@ -457,12 +442,9 @@ function Client:ask(prompt, opts)
     end
 
     local out = provider.prepare_output(content, options)
-    last_message = out
 
-    if out.references then
-      for _, reference in ipairs(out.references) do
-        references:set(reference.name, reference)
-      end
+    if out.total_tokens then
+      token_count = out.total_tokens
     end
 
     if out.tool_calls then
@@ -606,10 +588,9 @@ function Client:ask(prompt, opts)
 
   return {
     content = response_text,
-    total_tokens = last_message and last_message.total_tokens or 0,
-    max_tokens = max_tokens,
+    token_count = token_count,
+    token_max_count = max_tokens,
     tool_calls = tool_calls:values(),
-    references = references:values(),
   }
 end
 

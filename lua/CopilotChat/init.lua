@@ -919,7 +919,6 @@ function M.ask(prompt, config)
     end
 
     local response = ask_response.content
-    local references = ask_response.references
     local token_count = ask_response.token_count
     local token_max_count = ask_response.token_max_count
     local tool_calls = ask_response.tool_calls
@@ -943,7 +942,6 @@ function M.ask(prompt, config)
 
     if not config.headless then
       M.chat.tool_calls = tool_calls
-      M.chat.references = references
       M.chat.token_count = token_count
       M.chat.token_max_count = token_max_count
       finish()
