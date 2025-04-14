@@ -77,7 +77,6 @@ end
 ---@field finish_reason string?
 ---@field total_tokens number?
 ---@field tool_calls table<CopilotChat.client.ToolCall>
----@field references table<CopilotChat.client.Reference>
 
 ---@class CopilotChat.config.providers.Provider
 ---@field disabled nil|boolean
@@ -213,20 +212,7 @@ M.copilot = {
   end,
 
   prepare_output = function(output)
-    local references = {}
     local tool_calls = {}
-
-    if output.copilot_references then
-      for _, reference in ipairs(output.copilot_references) do
-        local metadata = reference.metadata
-        if metadata and metadata.display_name and metadata.display_url then
-          table.insert(references, {
-            name = metadata.display_name,
-            url = metadata.display_url,
-          })
-        end
-      end
-    end
 
     local choice
     if output.choices and #output.choices > 0 then
@@ -256,7 +242,10 @@ M.copilot = {
 
     local message = choice.message or choice.delta
     local content = message and message.content
-    local usage = choice.usage and choice.usage.total_tokens or output.usage and output.usage.total_tokens
+    local usage = choice.usage and choice.usage.total_tokens
+    if not usage then
+      usage = output.usage and output.usage.total_tokens
+    end
     local finish_reason = choice.finish_reason or choice.done_reason or output.finish_reason or output.done_reason
 
     return {
@@ -264,7 +253,6 @@ M.copilot = {
       finish_reason = finish_reason,
       total_tokens = usage,
       tool_calls = tool_calls,
-      references = references,
     }
   end,
 
