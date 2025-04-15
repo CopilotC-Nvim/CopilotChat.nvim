@@ -634,6 +634,7 @@ function M.complete_items()
       abbr = name,
       kind = 'tool',
       info = tool.description,
+      menu = tool.group or '',
       icase = 1,
       dup = 0,
       empty = 0,
