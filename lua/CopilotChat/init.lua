@@ -58,9 +58,9 @@ local function insert_sticky(prompt, config)
     stickies:set('$' .. config.model, true)
   end
 
-  if config.remember_as_sticky and config.agent and not vim.deep_equal(config.agent, M.config.agent) then
-    for _, agent in ipairs(utils.to_table(config.agent)) do
-      stickies:set('@' .. agent, true)
+  if config.remember_as_sticky and config.tools and not vim.deep_equal(config.tools, M.config.tools) then
+    for _, tool in ipairs(utils.to_table(config.tools)) do
+      stickies:set('@' .. tool, true)
     end
   end
 
@@ -217,27 +217,21 @@ function M.resolve_tools(prompt, config)
   config, prompt = M.resolve_prompt(prompt, config)
   local enabled_tools = {}
   local resolved_resources = {}
+  local matches = utils.to_table(config.tools)
 
-  local agents = utils.to_table(config.agent)
-
-  -- Check for @agent pattern to find enabled tools
+  -- Check for @tool pattern to find enabled tools
   prompt = prompt:gsub('@' .. WORD, function(match)
-    local agent = vim
-      .iter(vim.tbl_values(M.config.functions))
-      :filter(function(tool)
-        return tool.agent == match
-      end)
-      :next()
-
-    if agent then
-      table.insert(agents, match)
-      return ''
+    for name, tool in pairs(M.config.functions) do
+      if name == match or tool.group == match then
+        table.insert(matches, match)
+        return ''
+      end
     end
     return '@' .. match
   end)
-  for _, agent in ipairs(agents) do
+  for _, match in ipairs(matches) do
     for name, tool in pairs(M.config.functions) do
-      if tool.agent == agent then
+      if name == match or tool.group == match then
         enabled_tools[name] = tool
       end
     end
@@ -614,21 +608,21 @@ function M.complete_items()
     }
   end
 
-  local agents = {}
+  local groups = {}
   for name, tool in pairs(M.config.functions) do
-    if tool.agent then
-      agents[tool.agent] = agents[tool.agent] or {}
-      agents[tool.agent][name] = tool
+    if tool.group then
+      groups[tool.group] = groups[tool.group] or {}
+      groups[tool.group][name] = tool
     end
   end
-  for name, agent in pairs(agents) do
-    local agent_tools = vim.tbl_keys(agent)
+  for name, group in pairs(groups) do
+    local group_tools = vim.tbl_keys(group)
     items[#items + 1] = {
       word = '@' .. name,
       abbr = name,
       kind = 'group',
-      info = table.concat(agent_tools, '\n'),
-      menu = string.format('%s tools', #agent_tools),
+      info = table.concat(group_tools, '\n'),
+      menu = string.format('%s tools', #group_tools),
       icase = 1,
       dup = 0,
       empty = 0,

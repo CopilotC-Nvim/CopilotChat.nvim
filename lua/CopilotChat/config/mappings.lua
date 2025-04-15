@@ -523,7 +523,7 @@ return {
     normal = 'gh',
     callback = function()
       local chat_help = '**`Special tokens`**\n'
-      chat_help = chat_help .. '`@<agent>` to enable agent\n'
+      chat_help = chat_help .. '`@<function>` to share function\n'
       chat_help = chat_help .. '`#<function>` to add resource\n'
       chat_help = chat_help .. '`#<function>:<input>` to add resource with input\n'
       chat_help = chat_help .. '`/<prompt>` to select a prompt\n'

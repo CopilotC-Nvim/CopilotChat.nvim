@@ -17,7 +17,7 @@ local select = require('CopilotChat.select')
 ---@class CopilotChat.config.Shared
 ---@field system_prompt string?
 ---@field model string?
----@field agent string|table<string>|nil
+---@field tools string|table<string>|nil
 ---@field sticky string|table<string>|nil
 ---@field temperature number?
 ---@field headless boolean?
@@ -59,7 +59,7 @@ return {
   system_prompt = 'COPILOT_INSTRUCTIONS', -- System prompt to use (can be specified manually in prompt via /).
 
   model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
-  agent = nil, -- Default agent or array of agents to use (can be specified manually in prompt via @).
+  tools = nil, -- Default tool or array of tools (or groups) to share with LLM (can be specified manually in prompt via @).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
 
   temperature = 0.1, -- Result temperature
