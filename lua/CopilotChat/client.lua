@@ -161,19 +161,23 @@ local function generate_selection_message(selection)
 end
 
 --- Generate messages for the given resources
---- @param resource CopilotChat.client.Resource
---- @return CopilotChat.client.Message?
-local function generate_resource_message(resource)
-  if not resource.data or resource.data == '' then
-    return nil
-  end
+--- @param resources CopilotChat.client.Resource[]
+--- @return table<CopilotChat.client.Message>
+local function generate_resource_messages(resources)
+  return vim
+    .iter(resources or {})
+    :filter(function(resource)
+      return resource.data and resource.data ~= ''
+    end)
+    :map(function(resource)
+      local content = generate_content_block(resource.data, BIG_FILE_THRESHOLD, 1)
 
-  local content = generate_content_block(resource.data, BIG_FILE_THRESHOLD, 1)
-
-  return {
-    content = string.format(RESOURCE_FORMAT, resource.name, resource.type, content),
-    role = 'user',
-  }
+      return {
+        content = string.format(RESOURCE_FORMAT, resource.name, resource.type, content),
+        role = 'user',
+      }
+    end)
+    :totable()
 end
 
 --- Generate ask request
@@ -355,7 +359,7 @@ function Client:ask(prompt, opts)
   local tool_calls = utils.ordered_map()
   local generated_messages = {}
   local selection_message = opts.selection and generate_selection_message(opts.selection)
-  local resource_messages = vim.tbl_map(generate_resource_message, opts.resources or {})
+  local resource_messages = generate_resource_messages(opts.resources)
 
   if selection_message then
     table.insert(generated_messages, selection_message)
