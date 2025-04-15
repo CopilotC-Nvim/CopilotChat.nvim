@@ -1,7 +1,9 @@
 local select = require('CopilotChat.select')
 
+---@alias CopilotChat.config.Layout 'vertical'|'horizontal'|'float'|'replace'
+
 ---@class CopilotChat.config.window
----@field layout 'vertical'|'horizontal'|'float'|'replace'?
+---@field layout? CopilotChat.config.Layout|fun():CopilotChat.config.Layout
 ---@field relative 'editor'|'win'|'cursor'|'mouse'?
 ---@field border 'none'|'single'|'double'|'rounded'|'solid'|'shadow'?
 ---@field width number?
@@ -23,6 +25,7 @@ local select = require('CopilotChat.select')
 ---@field stream nil|fun(chunk: string, source: CopilotChat.source):string
 ---@field callback nil|fun(response: string, source: CopilotChat.source):string
 ---@field remember_as_sticky boolean?
+---@field include_contexts_in_prompt boolean?
 ---@field selection false|nil|fun(source: CopilotChat.source):CopilotChat.select.selection?
 ---@field window CopilotChat.config.window?
 ---@field show_help boolean?
@@ -58,7 +61,7 @@ return {
 
   system_prompt = 'COPILOT_INSTRUCTIONS', -- System prompt to use (can be specified manually in prompt via /).
 
-  model = 'gpt-4o-2024-11-20', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
+  model = 'gpt-4o', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   agent = 'none', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
   context = nil, -- Default context or array of contexts to use (can be specified manually in prompt via #).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat.
@@ -69,14 +72,14 @@ return {
   callback = nil, -- Function called when full response is received (retuned string is stored to history)
   remember_as_sticky = true, -- Remember model/agent/context as sticky prompts when asking questions
 
+  include_contexts_in_prompt = true, -- Include contexts in prompt
+
   -- default selection
-  selection = function(source)
-    return select.visual(source) or select.buffer(source)
-  end,
+  selection = select.visual,
 
   -- default window options
   window = {
-    layout = 'vertical', -- 'vertical', 'horizontal', 'float', 'replace'
+    layout = 'vertical', -- 'vertical', 'horizontal', 'float', 'replace', or a function that returns the layout
     width = 0.5, -- fractional width of parent, or absolute width in columns when > 1
     height = 0.5, -- fractional height of parent, or absolute height in rows when > 1
     -- Options below only apply to floating windows

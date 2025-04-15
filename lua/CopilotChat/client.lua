@@ -709,9 +709,6 @@ function Client:ask(prompt, opts)
   end
 
   local response_text = response_buffer:tostring()
-  log.trace('Response text:\n', response_text)
-  log.debug('Response message:\n', vim.inspect(last_message))
-
   if errored then
     error(response_text)
     return
@@ -727,6 +724,7 @@ function Client:ask(prompt, opts)
     else
       parse_line(response.body)
     end
+    response_text = response_buffer:tostring()
   end
 
   if utils.empty(response_text) then

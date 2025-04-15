@@ -850,9 +850,11 @@ function M.ask(prompt, config)
 
   -- Resolve context name and description
   local contexts = {}
-  for name, context in pairs(M.config.contexts) do
-    if context.description then
-      contexts[name] = context.description
+  if config.include_contexts_in_prompt then
+    for name, context in pairs(M.config.contexts) do
+      if context.description then
+        contexts[name] = context.description
+      end
     end
   end
 

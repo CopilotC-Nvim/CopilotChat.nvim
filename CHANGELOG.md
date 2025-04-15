@@ -1,5 +1,27 @@
 # Changelog
 
+## [3.11.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v3.10.1...v3.11.0) (2025-04-09)
+
+
+### Features
+
+* add option to disable contexts in prompts ([14c78d2](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/14c78d24e1db88384dc878e870665c3a7ad61a3a))
+* change default selection to visual only ([a63031f](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/a63031fc706d4e34e118c46339ae2b5681fab21e)), closes [#1103](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1103)
+
+
+### Bug Fixes
+
+* set default model to gpt-4o again ([381d5cd](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/381d5cddd25abec595c3c611e96cae2ba61d7ea5)), closes [#1105](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1105)
+
+## [3.10.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v3.10.0...v3.10.1) (2025-04-04)
+
+
+### Bug Fixes
+
+* **client:** update response_text after parsing response ([#1093](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1093)) ([34d1b4f](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/34d1b4fc816401c9bad88b33f71ef943a7dd2396)), closes [#1064](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1064)
+* **diff:** normalize filename ([#1095](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1095)) ([81754ea](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/81754ea35253c48459db5712ae60531ea2c5ef75))
+* handle invalid context window size in GitHub models ([#1094](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1094)) ([00bf27e](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/00bf27ed201b9509105afaac4d5bdcc46ce89f35))
+
 ## [1.9.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v1.8.0...v1.9.0) (2024-02-24)
 
 

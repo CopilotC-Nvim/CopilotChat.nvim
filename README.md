@@ -20,7 +20,7 @@ CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat capabilities
 
 - 🤖 GitHub Copilot Chat integration with official model and agent support (GPT-4o, Claude 3.7 Sonnet, Gemini 2.0 Flash, and more)
 - 💻 Rich workspace context powered by smart embeddings system
-- 🔒 Explicit context sharing - only sends what you specifically request, either as context or selection
+- 🔒 Explicit context sharing - only sends what you specifically request, either as context or selection (by default visual selection)
 - 🔌 Modular provider architecture supporting both official and custom LLM backends (Ollama, LM Studio, Mistral.ai and more)
 - 📝 Interactive chat UI with completion, diffs and quickfix integration
 - 🎯 Powerful prompt system with composable templates and sticky prompts
@@ -387,7 +387,7 @@ You can set a default selection in the configuration:
 
 ```lua
 {
-  -- Default uses visual selection or falls back to buffer
+  -- Uses visual selection or falls back to buffer
   selection = function(source)
     return select.visual(source) or select.buffer(source)
   end
@@ -466,13 +466,11 @@ Below are all available configuration options with their default values:
 
   -- default selection
   -- see select.lua for implementation
-  selection = function(source)
-    return select.visual(source) or select.buffer(source)
-  end,
+  selection = select.visual,
 
   -- default window options
   window = {
-    layout = 'vertical', -- 'vertical', 'horizontal', 'float', 'replace'
+    layout = 'vertical', -- 'vertical', 'horizontal', 'float', 'replace', or a function that returns the layout
     width = 0.5, -- fractional width of parent, or absolute width in columns when > 1
     height = 0.5, -- fractional height of parent, or absolute height in rows when > 1
     -- Options below only apply to floating windows
@@ -883,6 +881,8 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/ThisIsMani"><img src="https://avatars.githubusercontent.com/u/84711804?v=4?s=100" width="100px;" alt="Mani Chandra"/><br /><sub><b>Mani Chandra</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=ThisIsMani" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://nischalbasuti.github.io/"><img src="https://avatars.githubusercontent.com/u/14853910?v=4?s=100" width="100px;" alt="Nischal Basuti"/><br /><sub><b>Nischal Basuti</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=nischalbasuti" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://teoljungberg.com"><img src="https://avatars.githubusercontent.com/u/810650?v=4?s=100" width="100px;" alt="Teo Ljungberg"/><br /><sub><b>Teo Ljungberg</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=teoljungberg" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/JPricey"><img src="https://avatars.githubusercontent.com/u/4826348?v=4?s=100" width="100px;" alt="Joe Price"/><br /><sub><b>Joe Price</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=JPricey" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://ouuan.moe/about"><img src="https://avatars.githubusercontent.com/u/30581822?v=4?s=100" width="100px;" alt="Yufan You"/><br /><sub><b>Yufan You</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=ouuan" title="Documentation">📖</a> <a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=ouuan" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
