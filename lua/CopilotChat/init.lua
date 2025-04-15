@@ -634,6 +634,17 @@ function M.complete_items()
       empty = 0,
     }
   end
+  for name, tool in pairs(M.config.functions) do
+    items[#items + 1] = {
+      word = '@' .. name,
+      abbr = name,
+      kind = 'tool',
+      info = tool.description,
+      icase = 1,
+      dup = 0,
+      empty = 0,
+    }
+  end
 
   local tools_to_use = functions.parse_tools(M.config.functions)
   for _, tool in pairs(tools_to_use) do
