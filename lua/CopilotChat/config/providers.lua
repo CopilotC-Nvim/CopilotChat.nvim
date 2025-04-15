@@ -104,8 +104,6 @@ end
 
 ---@class CopilotChat.Provider
 ---@field disabled nil|boolean
----@field api_base string
----@field default_headers table?
 ---@field get_headers nil|fun(self: CopilotChat.Provider):table<string, string>,number?
 ---@field get_agents nil|fun(self: CopilotChat.Provider, headers:table):table<CopilotChat.Provider.agent>
 ---@field get_models nil|fun(self: CopilotChat.Provider, headers:table):table<CopilotChat.Provider.model>
@@ -133,19 +131,21 @@ M.copilot = {
       error(err)
     end
     if response.body.endpoints and response.body.endpoints.api then
+      ---@diagnostic disable-next-line: inject-field
       self.api_base = response.body.endpoints.api
     end
 
-    return vim.tbl_extend('force', {
+    return {
       ['Authorization'] = 'Bearer ' .. response.body.token,
       ['Editor-Version'] = EDITOR_VERSION,
       ['Editor-Plugin-Version'] = 'CopilotChat.nvim/*',
       ['Copilot-Integration-Id'] = 'vscode-chat',
-    }, self.default_headers or {}),
+    },
       response.body.expires_at
   end,
 
   get_agents = function(self, headers)
+    ---@diagnostic disable-next-line: undefined-field
     local response, err = utils.curl_get(self.api_base .. '/agents', {
       json_response = true,
       headers = headers,
@@ -165,6 +165,7 @@ M.copilot = {
   end,
 
   get_models = function(self, headers)
+    ---@diagnostic disable-next-line: undefined-field
     local response, err = utils.curl_get(self.api_base .. '/models', {
       json_response = true,
       headers = headers,
@@ -203,6 +204,7 @@ M.copilot = {
 
     for _, model in ipairs(models) do
       if not model.policy then
+        ---@diagnostic disable-next-line: undefined-field
         utils.curl_post(self.api_base .. '/models/' .. model.id .. '/policy', {
           headers = headers,
           json_request = true,
@@ -284,23 +286,24 @@ M.copilot = {
 
   get_url = function(self, opts)
     if opts.agent then
+      ---@diagnostic disable-next-line: undefined-field
       return self.api_base .. '/agents/' .. opts.agent.id .. '?chat'
     end
 
+    ---@diagnostic disable-next-line: undefined-field
     return self.api_base .. '/chat/completions'
   end,
 }
 
 M.github_models = {
   embed = 'copilot_embeddings',
-  api_base = 'https://api.githubcopilot.com',
 
   get_headers = function(self)
-    return vim.tbl_extend('force', {
+    return {
       ['Authorization'] = 'Bearer ' .. get_github_token(),
       ['x-ms-useragent'] = EDITOR_VERSION,
       ['x-ms-user-agent'] = EDITOR_VERSION,
-    }, self.default_headers or {})
+    }
   end,
 
   get_models = function(self, headers)
@@ -350,9 +353,11 @@ M.github_models = {
 
 M.copilot_embeddings = {
   get_headers = M.copilot.get_headers,
+  ---@diagnostic disable-next-line: undefined-field
   api_base = M.copilot.api_base,
 
   embed = function(self, inputs, headers)
+    ---@diagnostic disable-next-line: undefined-field
     local response, err = utils.curl_post(self.api_base .. '/embeddings', {
       headers = headers,
       json_request = true,
