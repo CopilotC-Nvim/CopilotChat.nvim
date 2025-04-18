@@ -389,6 +389,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/30581822?v=4",
       "profile": "https://ouuan.moe/about",
       "contributions": ["doc", "code"]
+    },
+    {
+      "login": "m4dd0c",
+      "name": "Manish Kumar",
+      "avatar_url": "https://avatars.githubusercontent.com/u/77256586?v=4",
+      "profile": "https://m4dd0c.netlify.app",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
