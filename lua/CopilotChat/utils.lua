@@ -168,26 +168,6 @@ function M.temp_file(text)
   return temp_file
 end
 
---- Blend a color with the neovim background
----@param color_name string The color name
----@param blend number The blend percentage
----@return string?
-function M.blend_color(color_name, blend)
-  local color_int = vim.api.nvim_get_hl(0, { name = color_name }).fg
-  local bg_int = vim.api.nvim_get_hl(0, { name = 'Normal' }).bg
-
-  if not color_int or not bg_int then
-    return
-  end
-
-  local color = { (color_int / 65536) % 256, (color_int / 256) % 256, color_int % 256 }
-  local bg = { (bg_int / 65536) % 256, (bg_int / 256) % 256, bg_int % 256 }
-  local r = math.floor((color[1] * blend + bg[1] * (100 - blend)) / 100)
-  local g = math.floor((color[2] * blend + bg[2] * (100 - blend)) / 100)
-  local b = math.floor((color[3] * blend + bg[3] * (100 - blend)) / 100)
-  return string.format('#%02x%02x%02x', r, g, b)
-end
-
 --- Return to normal mode
 function M.return_to_normal_mode()
   local mode = vim.fn.mode():lower()

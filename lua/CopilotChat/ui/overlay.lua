@@ -19,10 +19,6 @@ local Overlay = class(function(self, name, help, on_buf_create)
   self.on_hide = nil
 
   self.help_ns = vim.api.nvim_create_namespace('copilot-chat-help')
-  self.hl_ns = vim.api.nvim_create_namespace('copilot-chat-highlights')
-  vim.api.nvim_set_hl(self.hl_ns, '@diff.plus', { bg = utils.blend_color('DiffAdd', 20) })
-  vim.api.nvim_set_hl(self.hl_ns, '@diff.minus', { bg = utils.blend_color('DiffDelete', 20) })
-  vim.api.nvim_set_hl(self.hl_ns, '@diff.delta', { bg = utils.blend_color('DiffChange', 20) })
 end)
 
 --- Show the overlay buffer
@@ -38,7 +34,6 @@ function Overlay:show(text, winnr, filetype, syntax, on_show, on_hide)
   end
 
   self:validate()
-  vim.api.nvim_win_set_hl_ns(winnr, self.hl_ns)
   text = text .. '\n'
 
   self.cursor = vim.api.nvim_win_get_cursor(winnr)
@@ -122,7 +117,6 @@ function Overlay:restore(winnr, bufnr)
   end
 
   vim.api.nvim_win_set_buf(winnr, bufnr)
-  vim.api.nvim_win_set_hl_ns(winnr, 0)
 
   if self.cursor then
     vim.api.nvim_win_set_cursor(winnr, self.cursor)
