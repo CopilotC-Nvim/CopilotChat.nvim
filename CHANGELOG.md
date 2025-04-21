@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.11.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v3.11.0...v3.11.1) (2025-04-21)
+
+
+### Bug Fixes
+
+* **validation:** Ensure If the 	erminal buffer is excluded from #buffers and #buffer ([bc644cd](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/bc644cd97d272e6b46272cbb11147a5891fa08ff))
+
 ## [3.11.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v3.10.1...v3.11.0) (2025-04-09)
 
 
