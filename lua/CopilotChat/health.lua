@@ -4,7 +4,6 @@ local start = vim.health.start or vim.health.report_start
 local error = vim.health.error or vim.health.report_error
 local warn = vim.health.warn or vim.health.report_warn
 local ok = vim.health.ok or vim.health.report_ok
-local info = vim.health.info or vim.health.report_info
 
 --- Run a command and handle potential errors
 ---@param executable string
@@ -42,7 +41,7 @@ end
 function M.check()
   start('CopilotChat.nvim [core]')
 
-  local vim_version = vim.trim(vim.api.nvim_command_output('version'))
+  local vim_version = vim.trim(vim.api.nvim_exec2('version', { output = true }).output)
   if vim.fn.has('nvim-0.10.0') == 1 then
     ok('nvim: ' .. vim_version)
   else
