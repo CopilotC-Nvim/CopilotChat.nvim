@@ -340,7 +340,9 @@ function Chat:open(config)
   vim.wo[self.winnr].wrap = true
   vim.wo[self.winnr].linebreak = true
   vim.wo[self.winnr].cursorline = true
-  vim.wo[self.winnr].conceallevel = 2
+  -- Set conceallevel based on config: hide markdown syntax when enabled
+  local conceal_level = config.conceal_markdown_syntax and 2 or 0
+  vim.wo[self.winnr].conceallevel = conceal_level
   vim.wo[self.winnr].foldlevel = 99
   if config.show_folds then
     vim.wo[self.winnr].foldcolumn = '1'

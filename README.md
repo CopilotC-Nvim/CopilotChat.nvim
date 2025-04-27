@@ -12,7 +12,7 @@
 
 ![image](https://github.com/user-attachments/assets/9ee30811-0fb8-4500-91f6-34ea6b26adea)
 
-https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
+<https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6>
 
 </div>
 
@@ -255,9 +255,9 @@ Define your own system prompts in the configuration (similar to `prompts`):
 
 Sticky prompts persist across chat sessions. They're useful for maintaining context or agent selection. They work as follows:
 
-1. Prefix text with `> ` using markdown blockquote syntax
+1. Prefix text with `>` using markdown blockquote syntax
 2. The prompt will be copied at the start of every new chat prompt
-3. Edit sticky prompts freely while maintaining the `> ` prefix
+3. Edit sticky prompts freely while maintaining the `>` prefix
 
 Examples:
 
@@ -486,6 +486,8 @@ Below are all available configuration options with their default values:
   show_help = true, -- Shows help message as virtual lines when waiting for user input
   highlight_selection = true, -- Highlight selection
   highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
+  -- Hide markdown syntax (like backticks) by using conceallevel=2 in Neovim. When false, show markdown syntax.
+  conceal_markdown_syntax = true,
   references_display = 'virtual', -- 'virtual', 'write', Display references in chat as virtual text or write to buffer
   auto_follow_cursor = true, -- Auto-follow cursor in chat
   auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt

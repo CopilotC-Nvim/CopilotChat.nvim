@@ -96,6 +96,7 @@ return {
   show_folds = true, -- Shows folds for sections in chat
   highlight_selection = true, -- Highlight selection
   highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
+  conceal_markdown_syntax = true, -- Whether to hide markdown syntax (like backticks) by using concea
   references_display = 'virtual', -- 'virtual', 'write', Display references in chat as virtual text or write to buffer
   auto_follow_cursor = true, -- Auto-follow cursor in chat
   auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
