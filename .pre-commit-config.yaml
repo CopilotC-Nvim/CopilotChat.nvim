@@ -4,6 +4,6 @@ repos:
     hooks:
       - id: prettier
   - repo: https://github.com/JohnnyMorganz/StyLua
-    rev: v2.0.2
+    rev: v2.1.0
     hooks:
       - id: stylua-github

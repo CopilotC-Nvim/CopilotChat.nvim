@@ -210,10 +210,15 @@ function M.kv_list(tbl)
 end
 
 --- Check if a buffer is valid
+--- Check if the buffer is not a terminal
 ---@param bufnr number? The buffer number
 ---@return boolean
 function M.buf_valid(bufnr)
-  return bufnr and vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_is_loaded(bufnr) or false
+  return bufnr
+      and vim.api.nvim_buf_is_valid(bufnr)
+      and vim.api.nvim_buf_is_loaded(bufnr)
+      and vim.bo[bufnr].buftype ~= 'terminal'
+    or false
 end
 
 --- Check if file paths are the same
