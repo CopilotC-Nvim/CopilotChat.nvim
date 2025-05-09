@@ -453,7 +453,7 @@ Below are all available configuration options with their default values:
 
   system_prompt = 'COPILOT_INSTRUCTIONS', -- System prompt to use (can be specified manually in prompt via /).
 
-  model = 'gpt-4o-2024-11-20', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
+  model = 'gpt-4.1', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   agent = 'copilot', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
   context = nil, -- Default context or array of contexts to use (can be specified manually in prompt via #).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat.
@@ -761,7 +761,7 @@ require("CopilotChat").load("my_debugging_session")
 
 -- Use custom context and model
 require("CopilotChat").ask("How can I optimize this?", {
-  model = "gpt-4o",
+  model = "gpt-4.1",
   context = {"buffer", "git:staged"}
 })
 ```
