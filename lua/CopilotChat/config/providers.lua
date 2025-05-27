@@ -140,7 +140,7 @@ M.copilot = {
   end,
 
   get_agents = function(headers)
-    local response, err = utils.curl_get('https://api.githubcopilot.com/agents', {
+    local response, err = utils.curl_get('https://api.business.githubcopilot.com/agents', {
       json_response = true,
       headers = headers,
     })
@@ -159,7 +159,7 @@ M.copilot = {
   end,
 
   get_models = function(headers)
-    local response, err = utils.curl_get('https://api.githubcopilot.com/models', {
+    local response, err = utils.curl_get('https://api.business.githubcopilot.com/models', {
       json_response = true,
       headers = headers,
     })
@@ -197,7 +197,7 @@ M.copilot = {
 
     for _, model in ipairs(models) do
       if not model.policy then
-        utils.curl_post('https://api.githubcopilot.com/models/' .. model.id .. '/policy', {
+        utils.curl_post('https://api.business.githubcopilot.com/models/' .. model.id .. '/policy', {
           headers = headers,
           json_request = true,
           body = { state = 'enabled' },
@@ -278,10 +278,10 @@ M.copilot = {
 
   get_url = function(opts)
     if opts.agent then
-      return 'https://api.githubcopilot.com/agents/' .. opts.agent.id .. '?chat'
+      return 'https://api.business.githubcopilot.com/agents/' .. opts.agent.id .. '?chat'
     end
 
-    return 'https://api.githubcopilot.com/chat/completions'
+    return 'https://api.business.githubcopilot.com/chat/completions'
   end,
 }
 
@@ -353,7 +353,7 @@ M.copilot_embeddings = {
   get_headers = M.copilot.get_headers,
 
   embed = function(inputs, headers)
-    local response, err = utils.curl_post('https://api.githubcopilot.com/embeddings', {
+    local response, err = utils.curl_post('https://api.business.githubcopilot.com/embeddings', {
       headers = headers,
       json_request = true,
       json_response = true,
