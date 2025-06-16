@@ -403,6 +403,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/6123841?v=4",
       "profile": "https://www.azdanov.dev",
       "contributions": ["doc", "code"]
+    },
+    {
+      "login": "fredrikaverpil",
+      "name": "Fredrik Averpil",
+      "avatar_url": "https://avatars.githubusercontent.com/u/994357?v=4",
+      "profile": "http://fredrikaverpil.github.io",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
