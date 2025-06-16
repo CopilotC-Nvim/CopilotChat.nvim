@@ -1,7 +1,6 @@
 local async = require('plenary.async')
 local curl = require('plenary.curl')
 local scandir = require('plenary.scandir')
-local filetype = require('plenary.filetype')
 
 local M = {}
 M.timers = {}
@@ -236,6 +235,7 @@ end
 ---@param filename string The file name
 ---@return string|nil
 function M.filetype(filename)
+  local filetype = require('plenary.filetype')
   local ft = filetype.detect(filename, {
     fs_access = false,
   })
