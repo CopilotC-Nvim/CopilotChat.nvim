@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.12.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v3.12.0...v3.12.1) (2025-06-16)
+
+
+### Bug Fixes
+
+* move plenary import into function ([#1162](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1162)) ([5229bc4](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/5229bc48d655247449652d37ba525429ecfcce99))
+
 ## [3.12.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v3.11.1...v3.12.0) (2025-05-09)
 
 
