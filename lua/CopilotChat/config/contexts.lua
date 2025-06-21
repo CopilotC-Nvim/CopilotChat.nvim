@@ -297,6 +297,43 @@ return {
     end,
   },
 
+  diagnostics = {
+    description = 'All workspace diagnostics',
+    resolve = function()
+      local diagnostics = vim.diagnostic.get(nil)
+      local lines = {}
+      local severity_labels = {
+        [vim.diagnostic.severity.ERROR] = 'ERROR',
+        [vim.diagnostic.severity.WARN] = 'WARN',
+        [vim.diagnostic.severity.INFO] = 'INFO',
+        [vim.diagnostic.severity.HINT] = 'HINT',
+      }
+
+      utils.schedule_main()
+
+      for _, d in ipairs(diagnostics) do
+        local filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(d.bufnr), ':.')
+        table.insert(
+          lines,
+          string.format(
+            '%s:%d - %s - %s',
+            filename,
+            (d.lnum or 0) + 1,
+            severity_labels[d.severity] or '',
+            d.message or ''
+          )
+        )
+      end
+      return {
+        {
+          content = table.concat(lines, '\n'),
+          filename = 'workspace_diagnostics',
+          filetype = 'text',
+        },
+      }
+    end,
+  },
+
   system = {
     description = [[Includes output of provided system shell command in chat context. Supports input.
 
