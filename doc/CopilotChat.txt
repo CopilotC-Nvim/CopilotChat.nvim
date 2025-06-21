@@ -239,15 +239,16 @@ Predefined prompt templates for common tasks. Reference them with `/PromptName`
 in chat, use `:CopilotChat<PromptName>` or `:CopilotChatPrompts` to select
 them:
 
-  Prompt     Description
-  ---------- --------------------------------------------------
-  Explain    Write an explanation for the selected code
-  Review     Review the selected code
-  Fix        Rewrite the code with bug fixes
-  Optimize   Optimize code for performance and readability
-  Docs       Add documentation comments to the code
-  Tests      Generate tests for the code
-  Commit     Write commit message using commitizen convention
+  Prompt      Description
+  ----------  --------------------------------------------------
+  Explain     Write an explanation for the selected code
+  Review      Review the selected code
+  Fix         Rewrite the code with bug fixes
+  Optimize    Optimize code for performance and readability
+  Docs        Add documentation comments to the code
+  Tests       Generate tests for the code
+  Commit      Write commit message using commitizen convention
+  Diagnostics Propose fix for workspace diagnostics
 Define your own prompts in the configuration:
 
 >lua
@@ -363,6 +364,7 @@ Contexts provide additional information to the chat. Add context using
   ----------- --------------- -------------------------------------
   buffer      ✓ (number)      Current or specified buffer content
   buffers     ✓ (type)        All buffers content (listed/all)
+  diagnostics -               All workspace diagnostics
   file        ✓ (path)        Content of specified file
   files       ✓ (glob)        Workspace files
   filenames   ✓ (glob)        Workspace file names
