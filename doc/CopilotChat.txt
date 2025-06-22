@@ -1,4 +1,4 @@
-*CopilotChat.txt*           For NVIM v0.8.0          Last change: 2025 June 16
+*CopilotChat.txt*           For NVIM v0.8.0          Last change: 2025 June 22
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -882,7 +882,7 @@ See CONTRIBUTING.md </CONTRIBUTING.md> for detailed guidelines.
 Thanks goes to these wonderful people (emoji key
 <https://allcontributors.org/docs/en/emoji-key>):
 
-gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻neutrinoA4💻 📖Jack Muratore💻Adriel Velazquez💻 📖Tomas Slusny💻 📖Nisal📖Tobias Gårdhus📖Petr Dlouhý📖Dylan Madisetti💻Aaron Weisberg💻 📖Jose Tlacuilo💻 📖Kevin Traver💻 📖dTry💻Arata Furukawa💻Ling💻Ivan Frolov💻Folke Lemaitre💻 📖GitMurf💻Dmitrii Lipin💻jinzhongjia📖guill💻Sjon-Paul Brown💻Renzo Mondragón💻 📖fjchen7💻Radosław Woźniak💻JakubPecenka💻thomastthai📖Tomáš Janoušek💻Toddneal Stallworth📖Sergey Alexandrov💻Léopold Mebazaa💻JunKi Jin💻abdennourzahaf📖Josiah💻Tony Fischer💻 📖Kohei Wada💻Sebastian Yaghoubi📖johncming💻Rokas Brazdžionis💻Sola📖 💻Mani Chandra💻Nischal Basuti📖Teo Ljungberg💻Joe Price💻Yufan You📖 💻Manish Kumar💻Anton Ždanov📖 💻This project follows the all-contributors
+gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻neutrinoA4💻 📖Jack Muratore💻Adriel Velazquez💻 📖Tomas Slusny💻 📖Nisal📖Tobias Gårdhus📖Petr Dlouhý📖Dylan Madisetti💻Aaron Weisberg💻 📖Jose Tlacuilo💻 📖Kevin Traver💻 📖dTry💻Arata Furukawa💻Ling💻Ivan Frolov💻Folke Lemaitre💻 📖GitMurf💻Dmitrii Lipin💻jinzhongjia📖guill💻Sjon-Paul Brown💻Renzo Mondragón💻 📖fjchen7💻Radosław Woźniak💻JakubPecenka💻thomastthai📖Tomáš Janoušek💻Toddneal Stallworth📖Sergey Alexandrov💻Léopold Mebazaa💻JunKi Jin💻abdennourzahaf📖Josiah💻Tony Fischer💻 📖Kohei Wada💻Sebastian Yaghoubi📖johncming💻Rokas Brazdžionis💻Sola📖 💻Mani Chandra💻Nischal Basuti📖Teo Ljungberg💻Joe Price💻Yufan You📖 💻Manish Kumar💻Anton Ždanov📖 💻Fredrik Averpil💻This project follows the all-contributors
 <https://github.com/all-contributors/all-contributors> specification.
 Contributions of any kind are welcome!
 
