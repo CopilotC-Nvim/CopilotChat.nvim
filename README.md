@@ -491,6 +491,7 @@ Below are all available configuration options with their default values:
   auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
   insert_at_end = false, -- Move cursor to end of buffer when inserting text
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
+  disable_context_tip = false, -- Disable context tip/help in the system prompts (this lists tools available in the current context and hints the LLM to use them)
 
   -- Static config starts here (can be configured only via setup function)
 

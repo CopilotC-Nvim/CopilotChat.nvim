@@ -37,6 +37,7 @@ local select = require('CopilotChat.select')
 ---@field auto_insert_mode boolean?
 ---@field insert_at_end boolean?
 ---@field clear_chat_on_new_prompt boolean?
+---@field disable_context_tip boolean?
 
 --- CopilotChat default configuration
 ---@class CopilotChat.config : CopilotChat.config.shared
@@ -101,6 +102,7 @@ return {
   auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
   insert_at_end = false, -- Move cursor to end of buffer when inserting text
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
+  disable_context_tip = false, -- Disable context tip/help in the prompts
 
   -- Static config starts here (can be configured only via setup function)
 

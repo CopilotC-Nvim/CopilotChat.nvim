@@ -895,6 +895,7 @@ function M.ask(prompt, config)
       model = selected_model,
       agent = selected_agent,
       temperature = config.temperature,
+      disable_context_tip = config.disable_context_tip,
       on_progress = vim.schedule_wrap(function(token)
         local out = config.stream and config.stream(token, state.source) or nil
         if out == nil then

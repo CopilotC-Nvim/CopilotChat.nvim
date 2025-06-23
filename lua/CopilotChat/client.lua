@@ -8,6 +8,7 @@
 ---@field agent string?
 ---@field temperature number
 ---@field on_progress? fun(response: string):nil
+---@field disable_context_tip boolean?
 
 ---@class CopilotChat.Client.model : CopilotChat.Provider.model
 ---@field provider string
@@ -199,13 +200,15 @@ end
 --- @param prompt string
 --- @param system_prompt string
 --- @param generated_messages table<CopilotChat.Provider.input>
-local function generate_ask_request(history, contexts, prompt, system_prompt, generated_messages)
+--- @param opts table?
+local function generate_ask_request(history, contexts, prompt, system_prompt, generated_messages, opts)
   local messages = {}
+  opts = opts or {}
 
   system_prompt = vim.trim(system_prompt)
 
   -- Include context help
-  if contexts and not vim.tbl_isempty(contexts) then
+  if contexts and not vim.tbl_isempty(contexts) and not opts.disable_context_tip then
     local help_text = [[When you need additional context, request it using this format:
 
 > #<command>:`<input>`
@@ -657,7 +660,7 @@ function Client:ask(prompt, opts)
 
   local headers = self:authenticate(provider_name)
   local request = provider.prepare_input(
-    generate_ask_request(history, opts.contexts, prompt, opts.system_prompt, generated_messages),
+    generate_ask_request(history, opts.contexts, prompt, opts.system_prompt, generated_messages, opts),
     options
   )
   local is_stream = request.stream
