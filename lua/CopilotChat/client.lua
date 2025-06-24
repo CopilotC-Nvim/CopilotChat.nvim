@@ -8,20 +8,16 @@
 ---@field temperature number
 ---@field on_progress? fun(response: string):nil
 
----@class CopilotChat.client.AskResponse
----@field content string
----@field token_count number
----@field token_max_count number
----@field tool_calls table<CopilotChat.client.ToolCall>?
-
 ---@class CopilotChat.client.Message
 ---@field role string
 ---@field content string
+---@field tool_call_id string?
 ---@field tool_calls table<CopilotChat.client.ToolCall>?
 
----@class CopilotChat.client.Reference
----@field name string
----@field url string
+---@class CopilotChat.client.AskResponse
+---@field message CopilotChat.client.Message
+---@field token_count number
+---@field token_max_count number
 
 ---@class CopilotChat.client.ToolCall
 ---@field id number

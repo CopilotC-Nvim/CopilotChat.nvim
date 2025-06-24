@@ -59,9 +59,9 @@ end
 ---@field winnr number?
 ---@field config CopilotChat.config.Shared
 ---@field sections table<CopilotChat.ui.chat.Section>
----@field tool_calls table<CopilotChat.client.ToolCall>
 ---@field token_count number?
 ---@field token_max_count number?
+---@field private messages table<CopilotChat.client.Message>
 ---@field private layout CopilotChat.config.Layout?
 ---@field private question_header string
 ---@field private answer_header string
@@ -77,6 +77,7 @@ local Chat = class(function(self, question_header, answer_header, separator, hel
   self.config = {}
   self.token_count = nil
   self.token_max_count = nil
+  self.messages = {}
 
   self.layout = nil
   self.question_header = question_header
@@ -414,6 +415,17 @@ function Chat:finish()
   vim.bo[self.bufnr].modifiable = true
   if self.config.auto_insert_mode and self:focused() then
     vim.cmd('startinsert')
+  end
+end
+
+function Chat:add_message(message)
+  local last_message = self.messages[#self.messages]
+
+  if last_message and last_message.role == message.role then
+    last_message.content = last_message.content .. message.content
+    self:append(message.content)
+  else
+    table.insert(self.messages, message)
   end
 end
 
