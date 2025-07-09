@@ -481,7 +481,7 @@ M.scan_dir = async.wrap(function(path, opts, callback)
     vim.tbl_deep_extend('force', opts, {
       depth = opts.max_depth,
       add_dirs = false,
-      search_pattern = M.glob_to_pattern(opts.glob),
+      search_pattern = opts.glob and M.glob_to_pattern(opts.glob) or nil,
       respect_gitignore = not opts.no_ignore,
       on_exit = function(files)
         callback(filter_files(files))
