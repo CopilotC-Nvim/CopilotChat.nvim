@@ -63,7 +63,7 @@ local function get_diff(block)
     change = block.content,
     reference = reference or '',
     filetype = filetype or '',
-    filename = filename,
+    filename = utils.filepath(filename),
     start_line = start_line,
     end_line = end_line,
     bufnr = bufnr,

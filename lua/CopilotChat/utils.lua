@@ -1,7 +1,6 @@
 local async = require('plenary.async')
 local curl = require('plenary.curl')
 local scandir = require('plenary.scandir')
-local filetype = require('plenary.filetype')
 
 local M = {}
 M.timers = {}
@@ -214,6 +213,7 @@ end
 ---@param filename string The file name
 ---@return string|nil
 function M.filetype(filename)
+  local filetype = require('plenary.filetype')
   local ft = filetype.detect(filename, {
     fs_access = false,
   })
@@ -506,7 +506,7 @@ M.glob = async.wrap(function(path, opts, callback)
     vim.tbl_deep_extend('force', opts, {
       depth = opts.max_depth,
       add_dirs = false,
-      search_pattern = M.glob_to_pattern(opts.pattern),
+      search_pattern = opts.glob and M.glob_to_pattern(opts.glob) or nil,
       respect_gitignore = not opts.no_ignore,
       on_exit = function(files)
         callback(filter_files(files, opts.max_count))

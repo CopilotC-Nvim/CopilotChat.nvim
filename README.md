@@ -441,7 +441,7 @@ Below are all available configuration options with their default values:
 
   system_prompt = 'COPILOT_INSTRUCTIONS', -- System prompt to use (can be specified manually in prompt via /).
 
-  model = 'gpt-4o-2024-11-20', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
+  model = 'gpt-4.1', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   group = nil, -- Default group of tools or array of groups to use (can be specified manually in prompt via @).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
 
@@ -746,8 +746,8 @@ require("CopilotChat").load("my_debugging_session")
 
 -- Use custom sticky and model
 require("CopilotChat").ask("How can I optimize this?", {
-  model = "gpt-4o",
-  sticky = {"#buffer", "#git:staged"}
+  model = "gpt-4.1",
+  context = {"buffer", "git:staged"}
 })
 ```
 
@@ -869,6 +869,11 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/JPricey"><img src="https://avatars.githubusercontent.com/u/4826348?v=4?s=100" width="100px;" alt="Joe Price"/><br /><sub><b>Joe Price</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=JPricey" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://ouuan.moe/about"><img src="https://avatars.githubusercontent.com/u/30581822?v=4?s=100" width="100px;" alt="Yufan You"/><br /><sub><b>Yufan You</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=ouuan" title="Documentation">📖</a> <a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=ouuan" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://m4dd0c.netlify.app"><img src="https://avatars.githubusercontent.com/u/77256586?v=4?s=100" width="100px;" alt="Manish Kumar"/><br /><sub><b>Manish Kumar</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=m4dd0c" title="Code">💻</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://www.azdanov.dev"><img src="https://avatars.githubusercontent.com/u/6123841?v=4?s=100" width="100px;" alt="Anton Ždanov"/><br /><sub><b>Anton Ždanov</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=azdanov" title="Documentation">📖</a> <a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=azdanov" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://fredrikaverpil.github.io"><img src="https://avatars.githubusercontent.com/u/994357?v=4?s=100" width="100px;" alt="Fredrik Averpil"/><br /><sub><b>Fredrik Averpil</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=fredrikaverpil" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://a14n.net"><img src="https://avatars.githubusercontent.com/u/509703?v=4?s=100" width="100px;" alt="Aaron D Borden"/><br /><sub><b>Aaron D Borden</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=adborden" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>

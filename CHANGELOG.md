@@ -1,5 +1,26 @@
 # Changelog
 
+## [3.12.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v3.12.0...v3.12.1) (2025-06-16)
+
+
+### Bug Fixes
+
+* move plenary import into function ([#1162](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1162)) ([5229bc4](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/5229bc48d655247449652d37ba525429ecfcce99))
+
+## [3.12.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v3.11.1...v3.12.0) (2025-05-09)
+
+
+### Features
+
+* switch to new default model gpt-4.1 ([5f105cf](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/5f105cf2453585487d3c9ccfe7fd129d3344056c))
+
+## [3.11.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v3.11.0...v3.11.1) (2025-04-21)
+
+
+### Bug Fixes
+
+* **validation:** Ensure If the 	erminal buffer is excluded from #buffers and #buffer ([bc644cd](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/bc644cd97d272e6b46272cbb11147a5891fa08ff))
+
 ## [3.11.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v3.10.1...v3.11.0) (2025-04-09)
 
 
