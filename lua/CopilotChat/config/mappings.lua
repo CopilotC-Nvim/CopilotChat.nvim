@@ -1,9 +1,8 @@
 local async = require('plenary.async')
 local copilot = require('CopilotChat')
-local client = require('CopilotChat.client')
 local utils = require('CopilotChat.utils')
 
----@class CopilotChat.config.mappings.diff
+---@class CopilotChat.config.mappings.Diff
 ---@field change string
 ---@field reference string
 ---@field filename string
@@ -13,8 +12,8 @@ local utils = require('CopilotChat.utils')
 ---@field bufnr number?
 
 --- Get diff data from a block
----@param block CopilotChat.ui.Chat.Section.Block?
----@return CopilotChat.config.mappings.diff?
+---@param block CopilotChat.ui.chat.Block?
+---@return CopilotChat.config.mappings.Diff?
 local function get_diff(block)
   -- If no block found, return nil
   if not block then
@@ -44,7 +43,7 @@ local function get_diff(block)
     end
 
     filename = header.filename
-    filetype = header.filetype or vim.filetype.match({ filename = filename })
+    filetype = header.filetype or utils.filetype(filename)
     start_line = header.start_line
     end_line = header.end_line
 
@@ -72,9 +71,9 @@ local function get_diff(block)
 end
 
 --- Prepare a buffer for applying a diff
----@param diff CopilotChat.config.mappings.diff?
+---@param diff CopilotChat.config.mappings.Diff?
 ---@param source CopilotChat.source?
----@return CopilotChat.config.mappings.diff?
+---@return CopilotChat.config.mappings.Diff?
 local function prepare_diff_buffer(diff, source)
   if not diff then
     return diff
@@ -422,7 +421,7 @@ return {
   },
 
   show_info = {
-    normal = 'gi',
+    normal = 'gc',
     callback = function(source)
       local section = copilot.chat:get_closest_section('question')
       if not section or section.answer then
@@ -434,8 +433,11 @@ return {
       local system_prompt = config.system_prompt
 
       async.run(function()
-        local selected_agent = copilot.resolve_agent(prompt, config)
         local selected_model = copilot.resolve_model(prompt, config)
+        local selected_tools, selected_resources = copilot.resolve_tools(prompt, config)
+        selected_tools = vim.tbl_map(function(tool)
+          return tool.name
+        end, selected_tools)
 
         utils.schedule_main()
         table.insert(lines, '**Logs**: `' .. copilot.config.log_path .. '`')
@@ -454,82 +456,55 @@ return {
           table.insert(lines, '')
         end
 
-        if selected_agent then
-          table.insert(lines, '**Agent**: `' .. selected_agent .. '`')
+        if not utils.empty(selected_tools) then
+          table.insert(lines, '**Tools**')
+          table.insert(lines, '```')
+          table.insert(lines, table.concat(selected_tools, ', '))
+          table.insert(lines, '```')
           table.insert(lines, '')
         end
 
         if system_prompt then
           table.insert(lines, '**System Prompt**')
-          table.insert(lines, '```')
+          table.insert(lines, '````')
           for _, line in ipairs(vim.split(vim.trim(system_prompt), '\n')) do
             table.insert(lines, line)
           end
-          table.insert(lines, '```')
+          table.insert(lines, '````')
           table.insert(lines, '')
         end
 
-        if client.memory then
-          table.insert(lines, '**Memory**')
-          table.insert(lines, '```markdown')
-          for _, line in ipairs(vim.split(client.memory.content, '\n')) do
+        local selection = copilot.get_selection()
+        if selection then
+          table.insert(lines, '**Selection**')
+          table.insert(lines, '')
+          table.insert(
+            lines,
+            string.format('**%s** (%s-%s)', selection.filename, selection.start_line, selection.end_line)
+          )
+          table.insert(lines, string.format('````%s', selection.filetype))
+          for _, line in ipairs(vim.split(selection.content, '\n')) do
             table.insert(lines, line)
           end
-          table.insert(lines, '```')
+          table.insert(lines, '````')
           table.insert(lines, '')
         end
 
-        if not utils.empty(client.history) then
-          table.insert(lines, ('**History** (#%s, truncated)'):format(#client.history))
+        if not utils.empty(selected_resources) then
+          table.insert(lines, '**Resources**')
           table.insert(lines, '')
-
-          for _, message in ipairs(client.history) do
-            table.insert(lines, '**' .. message.role .. '**')
-            table.insert(lines, '`' .. vim.split(message.content, '\n')[1] .. '`')
-          end
         end
 
-        copilot.chat:overlay({
-          text = vim.trim(table.concat(lines, '\n')) .. '\n',
-        })
-      end)
-    end,
-  },
-
-  show_context = {
-    normal = 'gc',
-    callback = function()
-      local section = copilot.chat:get_closest_section('question')
-      if not section or section.answer then
-        return
-      end
-
-      local lines = {}
-
-      local selection = copilot.get_selection()
-      if selection then
-        table.insert(lines, '**Selection**')
-        table.insert(lines, '```' .. selection.filetype)
-        for _, line in ipairs(vim.split(selection.content, '\n')) do
-          table.insert(lines, line)
-        end
-        table.insert(lines, '```')
-        table.insert(lines, '')
-      end
-
-      async.run(function()
-        local embeddings = copilot.resolve_context(section.content)
-
-        for _, embedding in ipairs(embeddings) do
-          local embed_lines = vim.split(embedding.content, '\n')
-          local preview = vim.list_slice(embed_lines, 1, math.min(10, #embed_lines))
-          local header = string.format('**%s** (%s lines)', embedding.filename, #embed_lines)
-          if #embed_lines > 10 then
+        for _, resource in ipairs(selected_resources) do
+          local resource_lines = vim.split(resource.data, '\n')
+          local preview = vim.list_slice(resource_lines, 1, math.min(10, #resource_lines))
+          local header = string.format('**%s** (%s lines)', resource.name, #resource_lines)
+          if #resource_lines > 10 then
             header = header .. ' (truncated)'
           end
 
           table.insert(lines, header)
-          table.insert(lines, '```' .. embedding.filetype)
+          table.insert(lines, '```' .. resource.type)
           for _, line in ipairs(preview) do
             table.insert(lines, line)
           end
@@ -537,7 +512,6 @@ return {
           table.insert(lines, '')
         end
 
-        utils.schedule_main()
         copilot.chat:overlay({
           text = vim.trim(table.concat(lines, '\n')) .. '\n',
         })
@@ -549,9 +523,9 @@ return {
     normal = 'gh',
     callback = function()
       local chat_help = '**`Special tokens`**\n'
-      chat_help = chat_help .. '`@<agent>` to select an agent\n'
-      chat_help = chat_help .. '`#<context>` to select a context\n'
-      chat_help = chat_help .. '`#<context>:<input>` to select input for context\n'
+      chat_help = chat_help .. '`@<function>` to share function\n'
+      chat_help = chat_help .. '`#<function>` to add resource\n'
+      chat_help = chat_help .. '`#<function>:<input>` to add resource with input\n'
       chat_help = chat_help .. '`/<prompt>` to select a prompt\n'
       chat_help = chat_help .. '`$<model>` to select a model\n'
       chat_help = chat_help .. '`> <text>` to make a sticky prompt (copied to next prompt)\n'

@@ -18,14 +18,14 @@ https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
 
 CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat capabilities directly into your editor. It provides:
 
-- 🤖 GitHub Copilot Chat integration with official model and agent support (GPT-4o, Claude 3.7 Sonnet, Gemini 2.0 Flash, and more)
+- 🤖 GitHub Copilot Chat integration with official model support (GPT-4o, Claude 3.7 Sonnet, Gemini 2.0 Flash, and more)
 - 💻 Rich workspace context powered by smart embeddings system
-- 🔒 Explicit context sharing - only sends what you specifically request, either as context or selection (by default visual selection)
-- 🔌 Modular provider architecture supporting both official and custom LLM backends (Ollama, LM Studio, Mistral.ai and more)
+- 🔒 Explicit data sharing - only sends what you specifically request, either as resource or selection (by default visual selection)
+- 🔌 Modular provider architecture supporting both official and custom LLM backends (Ollama, Gemini, Mistral.ai and more)
 - 📝 Interactive chat UI with completion, diffs and quickfix integration
 - 🎯 Powerful prompt system with composable templates and sticky prompts
-- 🔄 Extensible context providers for granular workspace understanding (buffers, files, git diffs, URLs, and more)
-- ⚡ Efficient token usage with tiktoken token counting and memory management
+- 🔄 Extensible function calling system for granular workspace understanding (buffers, files, git diffs, URLs, and more)
+- ⚡ Efficient token usage with tiktoken token counting and history management
 
 # Requirements
 
@@ -62,8 +62,7 @@ Plugin features that use picker:
 
 - `:CopilotChatPrompts` - for selecting prompts
 - `:CopilotChatModels` - for selecting models
-- `:CopilotChatAgents` - for selecting agents
-- `#<context>:<input>` - for selecting context input
+- `#<function>:<input>` - for selecting function input
 
 # Installation
 
@@ -148,7 +147,6 @@ Commands are used to control the chat interface:
 | `:CopilotChatLoad <name>?` | Load chat history             |
 | `:CopilotChatPrompts`      | View/select prompt templates  |
 | `:CopilotChatModels`       | View/select available models  |
-| `:CopilotChatAgents`       | View/select available agents  |
 | `:CopilotChat<PromptName>` | Use specific prompt template  |
 
 ## Key Mappings
@@ -253,7 +251,7 @@ Define your own system prompts in the configuration (similar to `prompts`):
 
 ### Sticky Prompts
 
-Sticky prompts persist across chat sessions. They're useful for maintaining context or agent selection. They work as follows:
+Sticky prompts persist across chat sessions. They're useful for maintaining model or resource selection. They work as follows:
 
 1. Prefix text with `> ` using markdown blockquote syntax
 2. The prompt will be copied at the start of every new chat prompt
@@ -262,7 +260,7 @@ Sticky prompts persist across chat sessions. They're useful for maintaining cont
 Examples:
 
 ```markdown
-> #files
+> #glob:`*.lua`
 > List all files in the workspace
 
 > @models Using Mistral-small
@@ -274,15 +272,12 @@ You can also set default sticky prompts in the configuration:
 ```lua
 {
   sticky = {
-    '@models Using Mistral-small',
-    '#files',
+    '#glob:*.lua',
   }
 }
 ```
 
-## Models and Agents
-
-### Models
+## Models
 
 You can control which AI model to use in three ways:
 
@@ -295,69 +290,65 @@ For supported models, see:
 - [Copilot Chat Models](https://docs.github.com/en/copilot/using-github-copilot/ai-models/changing-the-ai-model-for-copilot-chat#ai-models-for-copilot-chat)
 - [GitHub Marketplace Models](https://github.com/marketplace/models) (experimental, limited usage)
 
-### Agents
+## Functions
 
-Agents determine the AI assistant's capabilities. Control agents in three ways:
+Functions provide additional information and behaviour to the chat.
+Tools can be organized into groups by setting the `group` property. Tools assigned to a group are not automatically made available to the LLM - they must be explicitly activated.
+To use grouped tools in your prompt, include `@group_name` in your message. This allows the LLM to access and use all tools in that group during the current interaction.
+Add tools using `#tool_name[:input]` syntax:
 
-1. List available agents with `:CopilotChatAgents`
-2. Set agent in prompt with `@agent_name`
-3. Configure default agent via `agent` config key
-
-The default "noop" agent is `none`. For more information:
-
-- [Extension Agents Documentation](https://docs.github.com/en/copilot/using-github-copilot/using-extensions-to-integrate-external-tools-with-copilot-chat)
-- [Available Agents](https://github.com/marketplace?type=apps&copilot_app=true)
-
-## Contexts
-
-Contexts provide additional information to the chat. Add context using `#context_name[:input]` syntax:
-
-| Context     | Input Support | Description                         |
-| ----------- | ------------- | ----------------------------------- |
-| `buffer`    | ✓ (number)    | Current or specified buffer content |
-| `buffers`   | ✓ (type)      | All buffers content (listed/all)    |
-| `file`      | ✓ (path)      | Content of specified file           |
-| `files`     | ✓ (glob)      | Workspace files                     |
-| `filenames` | ✓ (glob)      | Workspace file names                |
-| `git`       | ✓ (ref)       | Git diff (unstaged/staged/commit)   |
-| `url`       | ✓ (url)       | Content from URL                    |
-| `register`  | ✓ (name)      | Content of vim register             |
-| `quickfix`  | -             | Quickfix list file contents         |
-| `system`    | ✓ (command)   | Output of shell command             |
-
-> [!TIP]
-> The AI is aware of these context providers and may request additional context
-> if needed by asking you to input a specific context command like `#file:path/to/file.js`.
+| Function      | Input Support | Description                                            |
+| ------------- | ------------- | ------------------------------------------------------ |
+| `buffer`      | ✓ (name)      | Retrieves content from a specific buffer               |
+| `buffers`     | ✓ (scope)     | Fetches content from multiple buffers (listed/visible) |
+| `diagnostics` | ✓ (scope)     | Collects code diagnostics (errors, warnings)           |
+| `file`        | ✓ (path)      | Reads content from a specified file path               |
+| `gitdiff`     | ✓ (sha)       | Retrieves git diff information (unstaged/staged/sha)   |
+| `gitstatus`   | -             | Retrieves git status information                       |
+| `glob`        | ✓ (pattern)   | Lists filenames matching a pattern in workspace        |
+| `grep`        | ✓ (pattern)   | Searches for a pattern across files in workspace       |
+| `quickfix`    | -             | Includes content of files in quickfix list             |
+| `register`    | ✓ (register)  | Provides access to specified Vim register              |
+| `url`         | ✓ (url)       | Fetches content from a specified URL                   |
 
 Examples:
 
 ```markdown
-> #buffer
-> #buffer:2
-> #files:\*.lua
-> #filenames
+> #buffer:init.lua
+> #buffers:visible
+> #diagnostics:current
+> #file:path/to/file.js
 > #git:staged
+> #glob:`**/*.lua`
+> #grep:`function setup`
+> #quickfix
+> #register:+
 > #url:https://example.com
-> #system:`ls -la | grep lua`
 ```
 
-Define your own contexts in the configuration with input handling and resolution:
+Define your own functions in the configuration with input handling and schema:
 
 ```lua
 {
-  contexts = {
+  functions = {
     birthday = {
-      input = function(callback)
-        vim.ui.select({ 'user', 'napoleon' }, {
-          prompt = 'Select birthday> ',
-        }, callback)
-      end,
+      description = "Retrieves birthday information for a person",
+      schema = {
+        type = 'object',
+        required = { 'name' },
+        properties = {
+          name = {
+            type = 'string',
+            enum = { 'Alice', 'Bob', 'Charlie' },
+            description = "Person's name",
+          },
+        },
+      },
       resolve = function(input)
         return {
           {
-            content = input .. ' birthday info',
-            filename = input .. '_birthday',
-            filetype = 'text',
+            type = 'text',
+            data = input.name .. ' birthday info',
           }
         }
       end
@@ -366,9 +357,9 @@ Define your own contexts in the configuration with input handling and resolution
 }
 ```
 
-### External Contexts
+### External Functions
 
-For external contexts, see the [contexts discussion page](https://github.com/CopilotC-Nvim/CopilotChat.nvim/discussions/categories/contexts).
+For external functions implementations, see the [discussion page](https://github.com/CopilotC-Nvim/CopilotChat.nvim/discussions/categories/functions).
 
 ## Selections
 
@@ -430,9 +421,6 @@ Custom providers can implement these methods:
 
   -- Optional: Get available models
   get_models?(headers: table): table<CopilotChat.Provider.model>,
-
-  -- Optional: Get available agents
-  get_agents?(headers: table): table<CopilotChat.Provider.agent>,
 }
 ```
 
@@ -454,15 +442,14 @@ Below are all available configuration options with their default values:
   system_prompt = 'COPILOT_INSTRUCTIONS', -- System prompt to use (can be specified manually in prompt via /).
 
   model = 'gpt-4.1', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
-  agent = 'copilot', -- Default agent to use, see ':CopilotChatAgents' for available agents (can be specified manually in prompt via @).
-  context = nil, -- Default context or array of contexts to use (can be specified manually in prompt via #).
-  sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat.
+  group = nil, -- Default group of tools or array of groups to use (can be specified manually in prompt via @).
+  sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
 
   temperature = 0.1, -- GPT result temperature
   headless = false, -- Do not write to chat buffer and use history (useful for using custom processing)
   stream = nil, -- Function called when receiving stream updates (returned string is appended to the chat buffer)
   callback = nil, -- Function called when full response is received (retuned string is stored to history)
-  remember_as_sticky = true, -- Remember model/agent/context as sticky prompts when asking questions
+  remember_as_sticky = true, -- Remember model as sticky prompts when asking questions
 
   -- default selection
   -- see select.lua for implementation
@@ -520,27 +507,31 @@ Below are all available configuration options with their default values:
     },
   },
 
-  -- default contexts
-  -- see config/contexts.lua for implementation
-  contexts = {
+  -- default tools
+  -- see config/tools.lua for implementation
+  tools = {
     buffer = {
     },
     buffers = {
     },
     file = {
     },
-    files = {
+    glob = {
     },
-    git = {
+    grep = {
+    },
+    quickfix = {
+    },
+    diagnostics = {
+    },
+    gitdiff = {
+    },
+    gitstatus = {
     },
     url = {
     },
     register = {
     },
-    quickfix = {
-    },
-    system = {
-    }
   },
 
   -- default prompts
@@ -568,7 +559,7 @@ Below are all available configuration options with their default values:
     },
     Commit = {
       prompt = 'Write commit message for the change with commitizen convention. Keep the title under 50 characters and wrap message at 72 characters. Format as a gitcommit code block.',
-      context = 'git:staged',
+      sticky = '#git:staged',
     },
   },
 
@@ -618,9 +609,6 @@ Below are all available configuration options with their default values:
       full_diff = false, -- Show full diff instead of unified diff when showing diff window
     },
     show_info = {
-      normal = 'gi',
-    },
-    show_context = {
       normal = 'gc',
     },
     show_help = {
@@ -660,8 +648,8 @@ Types of copilot highlights:
 - `CopilotChatStatus` - Status and spinner in chat buffer
 - `CopilotChatHelp` - Help messages in chat buffer (help, references)
 - `CopilotChatSelection` - Selection highlight in source buffer
-- `CopilotChatKeyword` - Keyword highlight in chat buffer (e.g. prompts, contexts)
-- `CopilotChatInput` - Input highlight in chat buffer (for contexts)
+- `CopilotChatKeyword` - Keyword highlight in chat buffer (e.g. prompts, tools)
+- `CopilotChatAnnotation` - Annotation highlight in chat buffer (file headers, tool call headers, tool call body)
 
 # API Reference
 
@@ -674,8 +662,7 @@ local chat = require("CopilotChat")
 chat.ask(prompt, config)      -- Ask a question with optional config
 chat.response()               -- Get the last response text
 chat.resolve_prompt()         -- Resolve prompt references
-chat.resolve_context()        -- Resolve context embeddings (WARN: async, requires plenary.async.run)
-chat.resolve_agent()          -- Resolve agent from prompt (WARN: async, requires plenary.async.run)
+chat.resolve_tools()          -- Resolve tools that are available for automatic use by LLM
 chat.resolve_model()          -- Resolve model from prompt (WARN: async, requires plenary.async.run)
 
 -- Window Management
@@ -693,10 +680,9 @@ chat.set_source(winnr)        -- Set the source window
 chat.get_selection()                                   -- Get the current selection
 chat.set_selection(bufnr, start_line, end_line, clear) -- Set or clear selection
 
--- Prompt & Context Management
+-- Prompt & Model Management
 chat.select_prompt(config)    -- Open prompt selector with optional config
 chat.select_model()           -- Open model selector
-chat.select_agent()           -- Open agent selector
 chat.prompts()                -- Get all available prompts
 
 -- Completion
@@ -747,19 +733,18 @@ window:overlay(opts)         -- Show overlay with specified options
 ```lua
 -- Open chat, ask a question and handle response
 require("CopilotChat").open()
-require("CopilotChat").ask("Explain this code", {
+require("CopilotChat").ask("#buffer Explain this code", {
   callback = function(response)
     vim.notify("Got response: " .. response:sub(1, 50) .. "...")
     return response
   end,
-  context = "buffer"
 })
 
 -- Save and load chat history
 require("CopilotChat").save("my_debugging_session")
 require("CopilotChat").load("my_debugging_session")
 
--- Use custom context and model
+-- Use custom sticky and model
 require("CopilotChat").ask("How can I optimize this?", {
   model = "gpt-4.1",
   context = {"buffer", "git:staged"}
