@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.12.2](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v3.12.1...v3.12.2) (2025-07-09)
+
+
+### Bug Fixes
+
+* [#1153](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1153) use filepath on accept ([#1170](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1170)) ([6d8236f](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/6d8236f83353317de8819cbfac75f791574d6374))
+
 ## [3.12.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v3.12.0...v3.12.1) (2025-06-16)
 
 
