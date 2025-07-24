@@ -417,6 +417,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/509703?v=4",
       "profile": "https://a14n.net",
       "contributions": ["code"]
+    },
+    {
+      "login": "AtifChy",
+      "name": "Md. Iftakhar Awal Chowdhury",
+      "avatar_url": "https://avatars.githubusercontent.com/u/42291930?v=4",
+      "profile": "https://github.com/AtifChy",
+      "contributions": ["code", "doc"]
     }
   ],
   "contributorsPerLine": 7,
