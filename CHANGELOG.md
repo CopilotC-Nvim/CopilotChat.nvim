@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.13.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v3.12.2...v3.13.0) (2025-07-24)
+
+
+### Features
+
+* add Windows_NT support in Makefile and dynamic library loading ([#1190](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1190)) ([7559fd2](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/7559fd25928f8f3cf311ff25b95bdc5f9ec736d7))
+
 ## [3.12.2](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v3.12.1...v3.12.2) (2025-07-09)
 
 
