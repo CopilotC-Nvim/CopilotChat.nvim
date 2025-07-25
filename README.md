@@ -416,10 +416,10 @@ Custom providers can implement these methods:
   embed?: string|function,
 
   -- Optional: Get extra request headers with optional expiration time
-  get_headers?(): table<string,string>, number?,
+  get_headers?(self: CopilotChat.Provider): table<string,string>, number?,
 
   -- Optional: Get API endpoint URL
-  get_url?(opts: CopilotChat.Provider.options): string,
+  get_url?(self: CopilotChat.Provider, opts: CopilotChat.Provider.options): string,
 
   -- Optional: Prepare request input
   prepare_input?(inputs: table<CopilotChat.Provider.input>, opts: CopilotChat.Provider.options): table,
@@ -428,10 +428,10 @@ Custom providers can implement these methods:
   prepare_output?(output: table, opts: CopilotChat.Provider.options): CopilotChat.Provider.output,
 
   -- Optional: Get available models
-  get_models?(headers: table): table<CopilotChat.Provider.model>,
+  get_models?(self: CopilotChat.Provider, headers: table): table<CopilotChat.Provider.model>,
 
   -- Optional: Get available agents
-  get_agents?(headers: table): table<CopilotChat.Provider.agent>,
+  get_agents?(self: CopilotChat.Provider, headers: table): table<CopilotChat.Provider.agent>,
 }
 ```
 
