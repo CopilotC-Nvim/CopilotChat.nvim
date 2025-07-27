@@ -121,7 +121,7 @@ function Chat:get_closest_section(role)
   self:render()
   local cursor_pos = vim.api.nvim_win_get_cursor(self.winnr)
   local cursor_line = cursor_pos[1]
-  local closest_section = nil
+  local closest_message = nil
   local max_line_below_cursor = -1
 
   for _, message in ipairs(self.messages) do
@@ -129,11 +129,11 @@ function Chat:get_closest_section(role)
     local matches_role = not role or section.role == role
     if matches_role and section.start_line <= cursor_line and section.start_line > max_line_below_cursor then
       max_line_below_cursor = section.start_line
-      closest_section = section
+      closest_message = message
     end
   end
 
-  return closest_section
+  return closest_message
 end
 
 --- Get the closest code block to the cursor.
@@ -534,13 +534,29 @@ function Chat:render()
   end
 
   for l, line in ipairs(lines) do
-    local separator_found = false
-
     -- Detect section header with ID
     for header_name, header_value in pairs(self.headers) do
       local id = parse_header(header_value, line)
       if id then
-        separator_found = true
+        -- Draw the separator as virtual text over the header line, hiding the id and anything after the header
+        if self.config.highlight_headers then
+          local sep_col = vim.fn.strwidth(header_value)
+          vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, sep_col, {
+            virt_text = {
+              { string.rep(self.separator, vim.go.columns), 'CopilotChatSeparator' },
+            },
+            virt_text_win_col = sep_col,
+            priority = 200,
+            strict = false,
+          })
+          vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, 0, {
+            end_col = sep_col,
+            hl_group = 'CopilotChatHeader',
+            priority = 100,
+            strict = false,
+          })
+        end
+
         -- Finish previous message
         if current_message then
           current_message.section.end_line = l - 1
@@ -577,26 +593,7 @@ function Chat:render()
       end
     end
 
-    -- Highlight separators
-    if self.config.highlight_headers and separator_found then
-      local sep = vim.fn.strwidth(line) - vim.fn.strwidth(self.separator)
-      vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, sep, {
-        virt_text_win_col = sep,
-        virt_text = {
-          { string.rep(self.separator, vim.go.columns), 'CopilotChatSeparator' },
-        },
-        priority = 100,
-        strict = false,
-      })
-      vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, 0, {
-        end_col = sep + 1,
-        hl_group = 'CopilotChatHeader',
-        priority = 100,
-        strict = false,
-      })
-    end
-
-    -- Parse code blocks for assistant
+    -- Code blocks
     if current_message and current_message.role == 'assistant' then
       local filetype, filename, start_line, end_line = match_header(line)
       if filetype and filename and not current_block then
@@ -628,23 +625,21 @@ function Chat:render()
       end
     end
 
-    -- Tool calls (unchanged)
-    for _, message in ipairs(self.messages) do
-      if message.tool_calls then
-        for _, tool_call in ipairs(message.tool_calls) do
-          if line:match(string.format('#%s:%s', tool_call.name, vim.pesc(tool_call.id))) then
-            vim.api.nvim_buf_add_highlight(self.bufnr, self.header_ns, 'CopilotChatAnnotationHeader', l - 1, 0, #line)
-            if not utils.empty(tool_call.arguments) then
-              vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, 0, {
-                virt_lines = vim.tbl_map(function(json_line)
-                  return { { json_line, 'CopilotChatAnnotation' } }
-                end, vim.split(vim.inspect(utils.json_decode(tool_call.arguments)), '\n')),
-                priority = 100,
-                strict = false,
-              })
-            end
-            break
+    -- Tool calls
+    if current_message and current_message.tool_calls then
+      for _, tool_call in ipairs(current_message.tool_calls) do
+        if line:match(string.format('#%s:%s', tool_call.name, vim.pesc(tool_call.id))) then
+          vim.api.nvim_buf_add_highlight(self.bufnr, self.header_ns, 'CopilotChatAnnotationHeader', l - 1, 0, #line)
+          if not utils.empty(tool_call.arguments) then
+            vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, 0, {
+              virt_lines = vim.tbl_map(function(json_line)
+                return { { json_line, 'CopilotChatAnnotation' } }
+              end, vim.split(vim.inspect(utils.json_decode(tool_call.arguments)), '\n')),
+              priority = 100,
+              strict = false,
+            })
           end
+          break
         end
       end
     end
@@ -652,7 +647,7 @@ function Chat:render()
     -- If last line, finish last message
     if l == #lines and current_message then
       current_message.section.end_line = l
-      current_message.section.content = vim.trim(
+      current_message.content = vim.trim(
         table.concat(vim.list_slice(lines, current_message.section.start_line, current_message.section.end_line), '\n')
       )
     end

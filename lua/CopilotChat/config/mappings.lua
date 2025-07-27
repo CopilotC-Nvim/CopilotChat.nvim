@@ -162,12 +162,12 @@ return {
     normal = '<CR>',
     insert = '<C-s>',
     callback = function()
-      local section = copilot.chat:get_closest_section('user')
-      if not section then
+      local message = copilot.chat:get_closest_section('user')
+      if not message then
         return
       end
 
-      copilot.ask(section.content)
+      copilot.ask(message.content)
     end,
   },
 
@@ -351,7 +351,8 @@ return {
         -- Apply all diffs from same file
         if #modified > 0 then
           -- Find all diffs from the same file in this section
-          local section = copilot.chat:get_closest_section('assistant')
+          local message = copilot.chat:get_closest_section('assistant')
+          local section = message and message.section
           local same_file_diffs = {}
           if section then
             for _, block in ipairs(section.blocks) do
@@ -423,13 +424,13 @@ return {
   show_info = {
     normal = 'gc',
     callback = function(source)
-      local section = copilot.chat:get_closest_section('user')
-      if not section then
+      local message = copilot.chat:get_closest_section('user')
+      if not message then
         return
       end
 
       local lines = {}
-      local config, prompt = copilot.resolve_prompt(section.content)
+      local config, prompt = copilot.resolve_prompt(message.content)
       local system_prompt = config.system_prompt
 
       async.run(function()

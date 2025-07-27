@@ -570,8 +570,6 @@ M.grep = async.wrap(function(path, opts, callback)
     return
   end
 
-  vim.print(table.concat(cmd, ' '))
-
   vim.system(cmd, { text = true }, function(result)
     local files = {}
     if result and result.code == 0 and result.stdout ~= '' then
