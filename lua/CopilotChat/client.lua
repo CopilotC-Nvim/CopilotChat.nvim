@@ -213,8 +213,6 @@ local function generate_ask_request(prompt, system_prompt, history, generated_me
     })
   end
 
-  log.debug('System prompt:\n', system_prompt)
-  log.debug('Prompt:\n', prompt)
   return messages
 end
 
@@ -297,7 +295,7 @@ function Client:fetch_models()
     end
   end
 
-  log.debug('Fetched models:', vim.inspect(models))
+  log.debug('Fetched models:', #models)
   self.models = models
   return self.models
 end
@@ -423,7 +421,6 @@ function Client:ask(prompt, opts)
       return
     end
 
-    log.debug('Response line:', line)
     if not opts.headless then
       notify.publish(notify.STATUS, '')
     end
@@ -537,12 +534,6 @@ function Client:ask(prompt, opts)
     end
 
     self.current_job = nil
-  end
-
-  if response then
-    log.debug('Response status:', response.status)
-    log.debug('Response body:\n', response.body)
-    log.debug('Response headers:\n', response.headers)
   end
 
   if err then

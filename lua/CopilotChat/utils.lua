@@ -355,8 +355,10 @@ end
 ---@param opts table? The options
 ---@async
 M.curl_get = async.wrap(function(url, opts, callback)
+  log.debug('curl_get request:', url, opts)
   local args = {
     on_error = function(err)
+      log.debug('curl_get error:', err and err.stderr or err)
       callback(nil, err and err.stderr or err)
     end,
   }
@@ -365,6 +367,8 @@ M.curl_get = async.wrap(function(url, opts, callback)
   args = vim.tbl_deep_extend('force', args, opts or {})
 
   args.callback = function(response)
+    log.debug('curl_get response status:', response and response.status)
+    log.debug('curl_get response:', response)
     if response and not vim.startswith(tostring(response.status), '20') then
       callback(response, response.body)
       return
@@ -392,9 +396,10 @@ end, 3)
 ---@param opts table? The options
 ---@async
 M.curl_post = async.wrap(function(url, opts, callback)
+  log.debug('curl_post request:', url, opts)
   local args = {
-    callback = callback,
     on_error = function(err)
+      log.debug('curl_post error:', err and err.stderr or err)
       callback(nil, err and err.stderr or err)
     end,
   }
@@ -402,13 +407,9 @@ M.curl_post = async.wrap(function(url, opts, callback)
   args = vim.tbl_deep_extend('force', M.curl_args, args)
   args = vim.tbl_deep_extend('force', args, opts or {})
 
-  if args.json_response then
-    args.headers = vim.tbl_deep_extend('force', args.headers or {}, {
-      Accept = 'application/json',
-    })
-  end
-
   args.callback = function(response)
+    log.debug('curl_post response status:', response and response.status)
+    log.debug('curl_post response:', response)
     if response and not vim.startswith(tostring(response.status), '20') then
       callback(response, response.body)
       return
@@ -426,6 +427,12 @@ M.curl_post = async.wrap(function(url, opts, callback)
       response.body = body
       callback(response)
     end
+  end
+
+  if args.json_response then
+    args.headers = vim.tbl_deep_extend('force', args.headers or {}, {
+      Accept = 'application/json',
+    })
   end
 
   if args.json_request then
