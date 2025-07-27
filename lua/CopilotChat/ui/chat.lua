@@ -182,25 +182,6 @@ function Chat:get_prompt()
   return section
 end
 
---- Set the prompt in the chat window.
----@param prompt string?
-function Chat:set_prompt(prompt)
-  if not self:visible() then
-    return
-  end
-
-  local section = self:get_prompt()
-  if not section then
-    return
-  end
-
-  local modifiable = vim.bo[self.bufnr].modifiable
-  vim.bo[self.bufnr].modifiable = true
-  local lines = prompt and vim.split('\n' .. prompt, '\n') or {}
-  vim.api.nvim_buf_set_lines(self.bufnr, section.start_line - 1, section.end_line, false, lines)
-  vim.bo[self.bufnr].modifiable = modifiable
-end
-
 --- Add a sticky line to the prompt in the chat window.
 ---@param sticky string
 function Chat:add_sticky(sticky)
@@ -418,14 +399,53 @@ function Chat:finish()
   end
 end
 
-function Chat:add_message(message)
+function Chat:add_message(message, replace)
   local last_message = self.messages[#self.messages]
+  local needs_header = false
 
+  -- Check if we need to add a header (role change or first message)
+  if not last_message or last_message.role ~= message.role then
+    needs_header = true
+  end
+
+  -- Add appropriate header based on role
+  if needs_header then
+    local header = message.role == 'user' and self.question_header or self.answer_header
+    if last_message then
+      header = '\n' .. header
+    end
+    self:append(header .. self.separator .. '\n\n')
+  elseif replace and last_message then
+    self:append('')
+    self:render()
+
+    local content = message.content
+    last_message.content = content
+    local last_section = self.sections[#self.sections]
+    if last_section then
+      last_section.content = content
+      vim.bo[self.bufnr].modifiable = true
+      vim.api.nvim_buf_set_lines(
+        self.bufnr,
+        last_section.start_line - 1,
+        last_section.end_line,
+        false,
+        vim.split(content, '\n')
+      )
+      vim.bo[self.bufnr].modifiable = false
+    end
+
+    self:append('')
+    return
+  end
+
+  -- Handle message content combining or creation
   if last_message and last_message.role == message.role then
     last_message.content = last_message.content .. message.content
     self:append(message.content)
   else
     table.insert(self.messages, message)
+    self:append(message.content)
   end
 end
 
@@ -465,9 +485,9 @@ end
 --- Clear the chat window.
 function Chat:clear()
   self:validate()
-  self.tool_calls = nil
   self.token_count = nil
   self.token_max_count = nil
+  self.messages = {}
   vim.bo[self.bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, {})
   vim.bo[self.bufnr].modifiable = false
@@ -623,22 +643,24 @@ function Chat:render()
     end
 
     -- Parse tool calls
-    if self.tool_calls then
-      for _, tool_call in ipairs(self.tool_calls) do
-        if line:match(string.format('#%s:%s', tool_call.name, vim.pesc(tool_call.id))) then
-          vim.api.nvim_buf_add_highlight(self.bufnr, self.header_ns, 'CopilotChatAnnotationHeader', l - 1, 0, #line)
+    for _, message in ipairs(self.messages) do
+      if message.tool_calls then
+        for _, tool_call in ipairs(message.tool_calls) do
+          if line:match(string.format('#%s:%s', tool_call.name, vim.pesc(tool_call.id))) then
+            vim.api.nvim_buf_add_highlight(self.bufnr, self.header_ns, 'CopilotChatAnnotationHeader', l - 1, 0, #line)
 
-          if not utils.empty(tool_call.arguments) then
-            vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, 0, {
-              virt_lines = vim.tbl_map(function(json_line)
-                return { { json_line, 'CopilotChatAnnotation' } }
-              end, vim.split(vim.inspect(vim.json.decode(tool_call.arguments)), '\n')),
-              priority = 100,
-              strict = false,
-            })
+            if not utils.empty(tool_call.arguments) then
+              vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, 0, {
+                virt_lines = vim.tbl_map(function(json_line)
+                  return { { json_line, 'CopilotChatAnnotation' } }
+                end, vim.split(vim.inspect(vim.json.decode(tool_call.arguments)), '\n')),
+                priority = 100,
+                strict = false,
+              })
+            end
+
+            break
           end
-
-          break
         end
       end
     end

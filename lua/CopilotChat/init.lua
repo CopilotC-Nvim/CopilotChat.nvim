@@ -131,24 +131,29 @@ local function finish(start_of_chat)
       end
     end
     state.sticky = sticky
-  else
-    M.chat:append('\n\n')
   end
 
-  M.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
+  local prompt_content = ''
 
   if not utils.empty(M.chat.tool_calls) then
     for _, tool_call in ipairs(M.chat.tool_calls) do
-      M.chat:append(string.format('#%s:%s\n', tool_call.name, tool_call.id))
+      prompt_content = prompt_content .. string.format('#%s:%s\n', tool_call.name, tool_call.id)
     end
-    M.chat:append('\n')
+    prompt_content = prompt_content .. '\n'
   end
 
   if not utils.empty(state.sticky) then
     for _, sticky in ipairs(state.sticky) do
-      M.chat:append('> ' .. sticky .. '\n')
+      prompt_content = prompt_content .. '> ' .. sticky .. '\n'
     end
-    M.chat:append('\n')
+    prompt_content = prompt_content .. '\n'
+  end
+
+  if prompt_content ~= '' then
+    M.chat:add_message({
+      role = 'user',
+      content = prompt_content,
+    })
   end
 
   M.chat:finish()
@@ -159,7 +164,12 @@ end
 local function show_error(err)
   err = err or 'Unknown error'
   err = utils.make_string(err)
-  M.chat:append('\n' .. M.config.error_header .. '\n```error\n' .. err .. '\n```')
+
+  M.chat:add_message({
+    role = 'assistant',
+    content = '\n```error\n' .. err .. '\n```\n',
+  })
+
   finish()
 end
 
@@ -706,7 +716,11 @@ function M.open(config)
   if section then
     local prompt = insert_sticky(section.content, config)
     if prompt then
-      M.chat:set_prompt(prompt)
+      M.chat:add_message({
+        role = 'user',
+        content = prompt,
+      }, true)
+      M.chat:finish()
     end
   end
 
@@ -849,8 +863,10 @@ function M.ask(prompt, config)
     end
 
     state.sticky = sticky
-    M.chat:set_prompt(prompt)
-    M.chat:append('\n\n')
+    M.chat:add_message({
+      role = 'user',
+      content = '\n' .. prompt .. '\n',
+    }, true)
     M.chat:follow()
   else
     update_source()
@@ -882,11 +898,15 @@ function M.ask(prompt, config)
       log.warn('Failed to process resources', processed_resources)
     end
 
+    prompt = vim.trim(prompt)
+    vim.print(prompt)
+
     if not config.headless then
       utils.schedule_main()
-      M.chat:set_prompt(vim.trim(prompt))
-      M.chat:append('\n\n' .. M.config.answer_header .. M.config.separator .. '\n\n')
-      M.chat:follow()
+      M.chat:add_message({
+        role = 'user',
+        content = '\n' .. prompt .. '\n',
+      }, true)
     end
 
     local ask_ok, ask_response = pcall(client.ask, client, prompt, {
@@ -904,7 +924,10 @@ function M.ask(prompt, config)
         end
         local to_print = not config.headless and out
         if to_print and to_print ~= '' then
-          M.chat:append(token)
+          M.chat:add_message({
+            content = to_print,
+            role = 'assistant',
+          })
         end
       end),
     })
@@ -924,15 +947,14 @@ function M.ask(prompt, config)
       return
     end
 
-    local response = ask_response.content
+    local response = ask_response.message
     local token_count = ask_response.token_count
     local token_max_count = ask_response.token_max_count
-    local tool_calls = ask_response.tool_calls
 
     -- Call the callback function and store to history
-    local out = config.callback and config.callback(response, state.source) or nil
+    local out = config.callback and config.callback(response.content, state.source) or nil
     if out == nil then
-      out = response
+      out = response.content
     end
     local to_store = not config.headless and out
     if to_store and to_store ~= '' then
@@ -947,7 +969,8 @@ function M.ask(prompt, config)
     end
 
     if not config.headless then
-      M.chat.tool_calls = tool_calls
+      response.content = '\n' .. vim.trim(response.content) .. '\n'
+      M.chat:add_message(response, true)
       M.chat.token_count = token_count
       M.chat.token_max_count = token_max_count
       finish()
@@ -1059,30 +1082,11 @@ function M.load(name, history_path)
   M.chat:clear()
 
   client.history = history
-  for i, message in ipairs(history) do
-    if message.role == 'user' then
-      if i > 1 then
-        M.chat:append('\n\n')
-      end
-      M.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
-      M.chat:append(message.content)
-    elseif message.role == 'assistant' then
-      M.chat:append('\n\n' .. M.config.answer_header .. M.config.separator .. '\n\n')
-      M.chat:append(message.content)
-    end
+  for _, message in ipairs(history) do
+    M.chat:add_message(message)
   end
 
   log.info('Loaded history from ' .. history_path)
-
-  if #history > 0 then
-    local last = history[#history]
-    if last and last.role == 'user' then
-      M.chat:append('\n\n')
-      M.chat:finish()
-      return
-    end
-  end
-
   finish(#history == 0)
 end
 

@@ -587,10 +587,13 @@ function Client:ask(prompt, opts)
   end
 
   return {
-    content = response_text,
+    message = {
+      role = 'assistant',
+      content = response_text,
+      tool_calls = #tool_calls:values() > 0 and tool_calls:values() or nil,
+    },
     token_count = token_count,
     token_max_count = max_tokens,
-    tool_calls = tool_calls:values(),
   }
 end
 
