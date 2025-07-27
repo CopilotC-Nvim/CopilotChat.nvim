@@ -355,10 +355,10 @@ end
 ---@param opts table? The options
 ---@async
 M.curl_get = async.wrap(function(url, opts, callback)
-  log.debug('curl_get request:', url, opts)
+  log.debug('GET request:', url, opts)
   local args = {
     on_error = function(err)
-      log.debug('curl_get error:', err and err.stderr or err)
+      log.debug('GET error:', err)
       callback(nil, err and err.stderr or err)
     end,
   }
@@ -367,8 +367,7 @@ M.curl_get = async.wrap(function(url, opts, callback)
   args = vim.tbl_deep_extend('force', args, opts or {})
 
   args.callback = function(response)
-    log.debug('curl_get response status:', response and response.status)
-    log.debug('curl_get response:', response)
+    log.debug('GET response:', response)
     if response and not vim.startswith(tostring(response.status), '20') then
       callback(response, response.body)
       return
@@ -396,10 +395,10 @@ end, 3)
 ---@param opts table? The options
 ---@async
 M.curl_post = async.wrap(function(url, opts, callback)
-  log.debug('curl_post request:', url, opts)
+  log.debug('POST request:', url, opts)
   local args = {
     on_error = function(err)
-      log.debug('curl_post error:', err and err.stderr or err)
+      log.debug('POST error:', err)
       callback(nil, err and err.stderr or err)
     end,
   }
@@ -408,8 +407,7 @@ M.curl_post = async.wrap(function(url, opts, callback)
   args = vim.tbl_deep_extend('force', args, opts or {})
 
   args.callback = function(response)
-    log.debug('curl_post response status:', response and response.status)
-    log.debug('curl_post response:', response)
+    log.debug('POST response:', url, response)
     if response and not vim.startswith(tostring(response.status), '20') then
       callback(response, response.body)
       return
