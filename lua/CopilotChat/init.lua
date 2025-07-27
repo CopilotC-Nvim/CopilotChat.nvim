@@ -733,7 +733,7 @@ function M.open(config)
     if prompt then
       M.chat:add_message({
         role = 'user',
-        content = prompt,
+        content = '\n' .. prompt,
       }, true)
       M.chat:finish()
     end
