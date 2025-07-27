@@ -1,5 +1,6 @@
 ---@class CopilotChat.client.AskOptions
 ---@field headless boolean
+---@field history table<CopilotChat.client.Message>
 ---@field selection CopilotChat.select.Selection?
 ---@field tools table<CopilotChat.client.Tool>?
 ---@field resources table<CopilotChat.client.Resource>?
@@ -230,14 +231,12 @@ local function generate_embedding_request(inputs, threshold)
 end
 
 ---@class CopilotChat.client.Client : Class
----@field history table<CopilotChat.client.Message>
 ---@field private providers table<string, CopilotChat.config.providers.Provider>
 ---@field private provider_cache table<string, table>
 ---@field private models table<string, CopilotChat.client.Model>?
 ---@field private current_job string?
 ---@field private headers table<string, string>?
 local Client = class(function(self)
-  self.history = {}
   self.providers = {}
   self.provider_cache = {}
   self.models = nil
@@ -315,6 +314,7 @@ function Client:ask(prompt, opts)
   log.debug('Model:', opts.model)
   log.debug('Tools:', #opts.tools)
   log.debug('Resources:', #opts.resources)
+  log.debug('History:', #opts.history)
 
   local models = self:fetch_models()
   local model_config = models[opts.model]
@@ -351,7 +351,7 @@ function Client:ask(prompt, opts)
     notify.publish(notify.STATUS, 'Generating request')
   end
 
-  local history = not opts.headless and vim.list_slice(self.history) or {}
+  local history = not opts.headless and vim.list_slice(opts.history) or {}
   local tool_calls = utils.ordered_map()
   local generated_messages = {}
   local selection_message = opts.selection and generate_selection_message(opts.selection)
@@ -707,14 +707,6 @@ function Client:stop()
   end
 
   return false
-end
-
---- Reset the history and stop any running job
----@return boolean
-function Client:reset()
-  local stopped = self:stop()
-  self.history = {}
-  return stopped
 end
 
 --- Check if there is a running job

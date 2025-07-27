@@ -229,6 +229,14 @@ function M.resolve_functions(prompt, config)
   local resolved_resources = {}
   local resolved_tools = {}
   local matches = utils.to_table(config.tools)
+  local tool_calls = {}
+  for _, message in ipairs(M.chat.messages) do
+    if message.tool_calls then
+      for _, tool_call in ipairs(message.tool_calls) do
+        table.insert(tool_calls, tool_call)
+      end
+    end
+  end
 
   -- Check for @tool pattern to find enabled tools
   prompt = prompt:gsub('@' .. WORD, function(match)
@@ -280,10 +288,7 @@ function M.resolve_functions(prompt, config)
   local function expand_tool(name, input)
     notify.publish(notify.STATUS, 'Running function: ' .. name)
 
-    local last_message = M.chat.messages[#M.chat.messages]
-    local tool_calls = last_message and last_message.tool_calls or {}
     local tool_id = nil
-
     if not utils.empty(tool_calls) then
       for _, tool_call in ipairs(tool_calls) do
         if tool_call.name == name and vim.trim(tool_call.id) == vim.trim(input) and enabled_tools[name] then
@@ -912,7 +917,6 @@ function M.ask(prompt, config)
     end
 
     prompt = vim.trim(prompt)
-    vim.print(prompt)
 
     if not config.headless then
       utils.schedule_main()
@@ -921,7 +925,7 @@ function M.ask(prompt, config)
         M.chat:add_message({
           role = 'tool',
           tool_call_id = tool.id,
-          content = tool.result,
+          content = tool.result .. '\n',
         })
       end
 
@@ -933,6 +937,7 @@ function M.ask(prompt, config)
 
     local ask_ok, ask_response = pcall(client.ask, client, prompt, {
       headless = config.headless,
+      history = vim.list_slice(M.chat.messages, 1, #M.chat.messages - 1),
       selection = selection,
       resources = resolved_resources,
       tools = selected_tools,
@@ -940,14 +945,9 @@ function M.ask(prompt, config)
       model = selected_model,
       temperature = config.temperature,
       on_progress = vim.schedule_wrap(function(token)
-        local out = config.stream and config.stream(token, state.source) or nil
-        if out == nil then
-          out = token
-        end
-        local to_print = not config.headless and out
-        if to_print and to_print ~= '' then
+        if not config.headless then
           M.chat:add_message({
-            content = to_print,
+            content = token,
             role = 'assistant',
           })
         end
@@ -973,21 +973,16 @@ function M.ask(prompt, config)
     local token_count = ask_response.token_count
     local token_max_count = ask_response.token_max_count
 
-    -- Call the callback function and store to history
-    local out = config.callback and config.callback(response.content, state.source) or nil
-    if out == nil then
-      out = response.content
-    end
-    local to_store = not config.headless and out
-    if to_store and to_store ~= '' then
-      table.insert(client.history, {
-        content = prompt,
-        role = 'user',
-      })
-      table.insert(client.history, {
-        content = to_store,
-        role = 'assistant',
-      })
+    -- Call the callback function
+    if config.callback then
+      local callback_ok, callback_response = pcall(config.callback, response.content, state.source)
+      if not callback_ok then
+        log.error('Callback error: ' .. callback_response)
+        if not config.headless then
+          show_error(callback_response)
+        end
+        return
+      end
     end
 
     if not config.headless then
@@ -1010,10 +1005,9 @@ end
 --- Stop current copilot output and optionally reset the chat ten show the help message.
 ---@param reset boolean?
 function M.stop(reset)
-  local stopped = false
+  local stopped = client:stop()
 
   if reset then
-    client:reset()
     M.chat:clear()
     vim.diagnostic.reset(vim.api.nvim_create_namespace('copilot-chat-diagnostics'))
 
@@ -1021,13 +1015,9 @@ function M.stop(reset)
     if state.source then
       M.set_selection(state.source.bufnr, 0, 0, true)
     end
-
-    stopped = true
-  else
-    stopped = client:stop()
   end
 
-  if stopped then
+  if stopped or reset then
     finish(reset)
   end
 end
@@ -1050,15 +1040,7 @@ function M.save(name, history_path)
     return
   end
 
-  local prompt = M.chat:get_prompt()
-  local history = vim.list_slice(client.history)
-  if prompt then
-    table.insert(history, {
-      content = prompt.content,
-      role = 'user',
-    })
-  end
-
+  local history = M.chat.messages
   history_path = vim.fs.normalize(history_path)
   vim.fn.mkdir(history_path, 'p')
   history_path = history_path .. '/' .. name .. '.json'
@@ -1100,15 +1082,13 @@ function M.load(name, history_path)
     },
   })
 
-  client:reset()
-  M.chat:clear()
+  log.info('Loaded history from ' .. history_path)
 
-  client.history = history
+  M.stop(true)
   for _, message in ipairs(history) do
     M.chat:add_message(message)
   end
 
-  log.info('Loaded history from ' .. history_path)
   finish(#history == 0)
 end
 

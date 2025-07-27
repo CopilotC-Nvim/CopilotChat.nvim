@@ -21,8 +21,7 @@ local select = require('CopilotChat.select')
 ---@field sticky string|table<string>|nil
 ---@field temperature number?
 ---@field headless boolean?
----@field stream nil|fun(chunk: string, source: CopilotChat.source):string
----@field callback nil|fun(response: string, source: CopilotChat.source):string
+---@field callback nil|fun(response: string, source: CopilotChat.source)
 ---@field remember_as_sticky boolean?
 ---@field selection false|nil|fun(source: CopilotChat.source):CopilotChat.select.Selection?
 ---@field window CopilotChat.config.Window?
