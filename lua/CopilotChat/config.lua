@@ -61,8 +61,7 @@ return {
 
   temperature = 0.1, -- Result temperature
   headless = false, -- Do not write to chat buffer and use history (useful for using custom processing)
-  stream = nil, -- Function called when receiving stream updates (returned string is appended to the chat buffer)
-  callback = nil, -- Function called when full response is received (retuned string is stored to history)
+  callback = nil, -- Function called when full response is received
   remember_as_sticky = true, -- Remember model as sticky prompts when asking questions
 
   -- default selection

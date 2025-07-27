@@ -183,7 +183,6 @@ return {
         end
       end
       vim.diagnostic.set(vim.api.nvim_create_namespace('copilot-chat-diagnostics'), source.bufnr, diagnostics)
-      return response
     end,
   },
 
