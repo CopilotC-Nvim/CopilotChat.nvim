@@ -2,6 +2,23 @@ local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local current_tokenizer = nil
 
+--- @return string
+local function get_lib_extension()
+  if jit.os:lower() == 'mac' or jit.os:lower() == 'osx' then
+    return '.dylib'
+  end
+  if jit.os:lower() == 'windows' then
+    return '.dll'
+  end
+  return '.so'
+end
+
+package.cpath = package.cpath
+  .. ';'
+  .. debug.getinfo(1).source:match('@?(.*/)')
+  .. '../../build/?'
+  .. get_lib_extension()
+
 local tiktoken_ok, tiktoken_core = pcall(require, 'tiktoken_core')
 if not tiktoken_ok then
   tiktoken_core = nil

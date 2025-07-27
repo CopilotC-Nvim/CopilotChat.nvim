@@ -40,7 +40,6 @@ CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat capabilities
 ## Optional Dependencies
 
 - [tiktoken_core](https://github.com/gptlang/lua-tiktoken) - For accurate token counting
-
   - Arch Linux: Install [`luajit-tiktoken-bin`](https://aur.archlinux.org/packages/luajit-tiktoken-bin) or [`lua51-tiktoken-bin`](https://aur.archlinux.org/packages/lua51-tiktoken-bin) from AUR
   - Via luarocks: `sudo luarocks install --lua-version 5.1 tiktoken_core`
   - Manual: Download from [lua-tiktoken releases](https://github.com/gptlang/lua-tiktoken/releases) and save as `tiktoken_core.so` in your Lua path
@@ -874,6 +873,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://www.azdanov.dev"><img src="https://avatars.githubusercontent.com/u/6123841?v=4?s=100" width="100px;" alt="Anton Ždanov"/><br /><sub><b>Anton Ždanov</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=azdanov" title="Documentation">📖</a> <a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=azdanov" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://fredrikaverpil.github.io"><img src="https://avatars.githubusercontent.com/u/994357?v=4?s=100" width="100px;" alt="Fredrik Averpil"/><br /><sub><b>Fredrik Averpil</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=fredrikaverpil" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://a14n.net"><img src="https://avatars.githubusercontent.com/u/509703?v=4?s=100" width="100px;" alt="Aaron D Borden"/><br /><sub><b>Aaron D Borden</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=adborden" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/AtifChy"><img src="https://avatars.githubusercontent.com/u/42291930?v=4?s=100" width="100px;" alt="Md. Iftakhar Awal Chowdhury"/><br /><sub><b>Md. Iftakhar Awal Chowdhury</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=AtifChy" title="Code">💻</a> <a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=AtifChy" title="Documentation">📖</a></td>
     </tr>
   </tbody>
 </table>
