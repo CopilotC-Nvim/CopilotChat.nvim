@@ -196,18 +196,17 @@ local function generate_ask_request(prompt, system_prompt, history, generated_me
   end
 
   -- Include generated messages and history
-  for _, message in ipairs(history) do
-    table.insert(messages, message)
-  end
   for _, message in ipairs(generated_messages) do
     table.insert(messages, {
       content = message.content,
       role = message.role,
     })
   end
-
-  -- Include user prompt
-  if not utils.empty(prompt) then
+  for _, message in ipairs(history) do
+    table.insert(messages, message)
+  end
+  if not utils.empty(prompt) and utils.empty(history) then
+    -- Include user prompt if we have no history
     table.insert(messages, {
       content = prompt,
       role = 'user',
@@ -315,7 +314,6 @@ function Client:ask(prompt, opts)
   log.debug('Tools:', #opts.tools)
   log.debug('Resources:', #opts.resources)
   log.debug('History:', #opts.history)
-  log.debug(vim.inspect(opts.history))
 
   local models = self:fetch_models()
   local model_config = models[opts.model]

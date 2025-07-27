@@ -934,7 +934,7 @@ function M.ask(prompt, config)
 
     local ask_ok, ask_response = pcall(client.ask, client, prompt, {
       headless = config.headless,
-      history = vim.list_slice(M.chat.messages, 1, #M.chat.messages - 1),
+      history = M.chat.messages,
       selection = selection,
       resources = resolved_resources,
       tools = selected_tools,

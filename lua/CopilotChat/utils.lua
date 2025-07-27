@@ -1,6 +1,7 @@
 local async = require('plenary.async')
 local curl = require('plenary.curl')
 local scandir = require('plenary.scandir')
+local log = require('plenary.log')
 
 local M = {}
 M.timers = {}
