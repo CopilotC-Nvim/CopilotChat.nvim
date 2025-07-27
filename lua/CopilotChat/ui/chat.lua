@@ -54,7 +54,7 @@ end
 
 ---@class CopilotChat.ui.chat.Message : CopilotChat.client.Message
 ---@field id string
----@field section? CopilotChat.ui.chat.Section
+---@field section CopilotChat.ui.chat.Section?
 
 ---@class CopilotChat.ui.chat.Chat : CopilotChat.ui.overlay.Overlay
 ---@field winnr number?
@@ -110,10 +110,10 @@ function Chat:focused()
   return self:visible() and vim.api.nvim_get_current_win() == self.winnr
 end
 
---- Get the closest section to the cursor.
+--- Get the closest message to the cursor.
 ---@param role string? If specified, only considers sections of the given role
----@return CopilotChat.ui.chat.Section?
-function Chat:get_closest_section(role)
+---@return CopilotChat.ui.chat.Message?
+function Chat:get_closest_message(role)
   if not self:visible() then
     return nil
   end

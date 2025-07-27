@@ -162,7 +162,7 @@ return {
     normal = '<CR>',
     insert = '<C-s>',
     callback = function()
-      local message = copilot.chat:get_closest_section('user')
+      local message = copilot.chat:get_closest_message('user')
       if not message then
         return
       end
@@ -351,7 +351,7 @@ return {
         -- Apply all diffs from same file
         if #modified > 0 then
           -- Find all diffs from the same file in this section
-          local message = copilot.chat:get_closest_section('assistant')
+          local message = copilot.chat:get_closest_message('assistant')
           local section = message and message.section
           local same_file_diffs = {}
           if section then
@@ -424,7 +424,7 @@ return {
   show_info = {
     normal = 'gc',
     callback = function(source)
-      local message = copilot.chat:get_closest_section('user')
+      local message = copilot.chat:get_closest_message('user')
       if not message then
         return
       end

@@ -723,7 +723,7 @@ window:follow()              -- Move cursor to end of chat content
 window:focus()               -- Focus the chat window
 
 -- Advanced Features
-window:get_closest_section() -- Get section closest to cursor
+window:get_closest_message() -- Get message closest to cursor
 window:get_closest_block()   -- Get code block closest to cursor
 window:overlay(opts)         -- Show overlay with specified options
 ```
