@@ -495,10 +495,9 @@ end
 --- Process resources based on the query
 ---@param prompt string
 ---@param model string
----@param headless boolean
 ---@param resources table<CopilotChat.client.Resource>
 ---@return table<CopilotChat.client.Resource>
-function M.process_resources(prompt, model, headless, resources)
+function M.process_resources(prompt, model, resources)
   -- If we dont need to embed anything, just return directly
   if #resources < MULTI_FILE_THRESHOLD then
     return resources
@@ -534,20 +533,6 @@ function M.process_resources(prompt, model, headless, resources)
 
   -- Build query from history and prompt
   local query = prompt
-  if not headless then
-    query = table.concat(
-      vim
-        .iter(client.history)
-        :filter(function(m)
-          return m.role == 'user'
-        end)
-        :map(function(m)
-          return vim.trim(m.content)
-        end)
-        :totable(),
-      '\n'
-    ) .. '\n' .. prompt
-  end
 
   -- Rank embeddings by symbols
   resources = data_ranked_by_symbols(query, resources)

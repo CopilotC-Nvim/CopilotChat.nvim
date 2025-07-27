@@ -903,8 +903,7 @@ function M.ask(prompt, config)
   local ok, err = pcall(async.run, function()
     local selected_tools, resolved_resources, resolved_tools, prompt = M.resolve_functions(prompt, config)
     local selected_model, prompt = M.resolve_model(prompt, config)
-    local query_ok, processed_resources =
-      pcall(resources.process_resources, prompt, selected_model, config.headless, resolved_resources)
+    local query_ok, processed_resources = pcall(resources.process_resources, prompt, selected_model, resolved_resources)
     if query_ok then
       resolved_resources = processed_resources
     else
