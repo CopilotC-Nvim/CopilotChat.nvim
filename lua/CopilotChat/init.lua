@@ -1036,7 +1036,10 @@ function M.save(name, history_path)
     return
   end
 
-  local history = M.chat.messages
+  local history = vim.deepcopy(M.chat.messages)
+  for _, message in ipairs(history) do
+    message.section = nil
+  end
   history_path = vim.fs.normalize(history_path)
   vim.fn.mkdir(history_path, 'p')
   history_path = history_path .. '/' .. name .. '.json'

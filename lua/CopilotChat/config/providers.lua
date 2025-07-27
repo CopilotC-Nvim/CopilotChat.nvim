@@ -170,14 +170,23 @@ M.copilot = {
     local is_o1 = vim.startswith(opts.model.id, 'o1')
 
     inputs = vim.tbl_map(function(input)
+      local output = {
+        role = input.role,
+        content = input.content,
+      }
+
       if is_o1 then
         if input.role == 'system' then
-          input.role = 'user'
+          output.role = 'user'
         end
       end
 
+      if input.tool_call_id then
+        output.tool_call_id = input.tool_call_id
+      end
+
       if input.tool_calls then
-        input.tool_calls = vim.tbl_map(function(tool_call)
+        output.tool_calls = vim.tbl_map(function(tool_call)
           return {
             id = tool_call.id,
             type = 'function',
@@ -189,7 +198,7 @@ M.copilot = {
         end, input.tool_calls)
       end
 
-      return input
+      return output
     end, inputs)
 
     local out = {
