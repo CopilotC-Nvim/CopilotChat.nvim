@@ -151,12 +151,10 @@ local function finish(start_of_chat)
     prompt_content = prompt_content .. '\n'
   end
 
-  if prompt_content ~= '' then
-    M.chat:add_message({
-      role = 'user',
-      content = prompt_content,
-    })
-  end
+  M.chat:add_message({
+    role = 'user',
+    content = prompt_content,
+  })
 
   M.chat:finish()
 end
