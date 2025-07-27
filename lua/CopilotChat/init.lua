@@ -11,7 +11,7 @@ local WORD = '([^%s:]+)'
 local WORD_NO_INPUT = '([^%s]+)'
 local WORD_WITH_INPUT_QUOTED = WORD .. ':`([^`]+)`'
 local WORD_WITH_INPUT_UNQUOTED = WORD .. ':?([^%s`]*)'
-local TOOL_OUTPUT_FORMAT = '```%s tool=%s id=%s\n%s\n```'
+local BLOCK_OUTPUT_FORMAT = '```%s\n%s\n```'
 
 ---@class CopilotChat
 ---@field config CopilotChat.config.Config
@@ -169,7 +169,7 @@ local function show_error(err)
 
   M.chat:add_message({
     role = 'assistant',
-    content = '\n```error\n' .. err .. '\n```\n',
+    content = '\n' .. string.format(BLOCK_OUTPUT_FORMAT, 'error', err) .. '\n',
   })
 
   finish()
@@ -220,15 +220,16 @@ local function update_source()
   M.set_source(use_prev_window and vim.fn.win_getid(vim.fn.winnr('#')) or vim.api.nvim_get_current_win())
 end
 
---- Call and resolve tools from the prompt.
+--- Call and resolve function calls from the prompt.
 ---@param prompt string?
 ---@param config CopilotChat.config.Shared?
----@return table<CopilotChat.client.Tool>, table<CopilotChat.client.Resource>, string
+---@return table<CopilotChat.client.Tool>, table<CopilotChat.client.Resource>, table, string
 ---@async
-function M.resolve_tools(prompt, config)
+function M.resolve_functions(prompt, config)
   config, prompt = M.resolve_prompt(prompt, config)
   local enabled_tools = {}
   local resolved_resources = {}
+  local resolved_tools = {}
   local matches = utils.to_table(config.tools)
 
   -- Check for @tool pattern to find enabled tools
@@ -281,10 +282,13 @@ function M.resolve_tools(prompt, config)
   local function expand_tool(name, input)
     notify.publish(notify.STATUS, 'Running function: ' .. name)
 
+    local last_message = M.chat.messages[#M.chat.messages]
+    local tool_calls = last_message and last_message.tool_calls or {}
     local tool_id = nil
-    if not utils.empty(M.chat.tool_calls) then
-      for _, tool_call in ipairs(M.chat.tool_calls) do
-        if tool_call.name == name and vim.trim(tool_call.id) == vim.trim(input) then
+
+    if not utils.empty(tool_calls) then
+      for _, tool_call in ipairs(tool_calls) do
+        if tool_call.name == name and vim.trim(tool_call.id) == vim.trim(input) and enabled_tools[name] then
           input = utils.empty(tool_call.arguments) and {} or utils.json_decode(tool_call.arguments)
           tool_id = tool_call.id
           break
@@ -292,14 +296,7 @@ function M.resolve_tools(prompt, config)
       end
     end
 
-    local tool = tool_id and enabled_tools[name]
-    if not tool then
-      -- Check if tool is resource and call it even when not enabled
-      tool = M.config.functions[name]
-      if tool and not tool.uri then
-        return nil
-      end
-    end
+    local tool = enabled_tools[name]
     if not tool then
       -- Check if input matches uri
       for tool_name, tool_spec in pairs(M.config.functions) do
@@ -317,32 +314,44 @@ function M.resolve_tools(prompt, config)
     if not tool then
       return nil
     end
-
-    local ok, output = pcall(tool.resolve, functions.parse_input(input, tool.schema), state.source or {}, prompt)
-    if not ok then
-      return string.format(TOOL_OUTPUT_FORMAT, 'error', name, tool_id or '', utils.make_string(output)) .. '\n'
+    if not tool_id and not tool.uri then
+      -- If this is a tool that is not resource and was not called by LLM, reject it
+      return nil
     end
 
     local result = ''
-    for _, content in ipairs(output) do
-      if content then
-        local content_out = nil
-        if content.uri then
-          content_out = '##' .. content.uri
-          table.insert(resolved_resources, resources.to_resource(content))
-          if tool_id then
-            table.insert(state.sticky, content_out)
+    local ok, output = pcall(tool.resolve, functions.parse_input(input, tool.schema), state.source or {}, prompt)
+    if not ok then
+      result = string.format(BLOCK_OUTPUT_FORMAT, 'error', utils.make_string(output))
+    else
+      for _, content in ipairs(output) do
+        if content then
+          local content_out = nil
+          if content.uri then
+            content_out = '##' .. content.uri
+            table.insert(resolved_resources, resources.to_resource(content))
+            if tool_id then
+              table.insert(state.sticky, content_out)
+            end
+          else
+            content_out = string.format(BLOCK_OUTPUT_FORMAT, utils.mimetype_to_filetype(content.mimetype), content.data)
           end
-        else
-          local ft = utils.mimetype_to_filetype(content.mimetype)
-          content_out = string.format(TOOL_OUTPUT_FORMAT, ft, name, tool_id or '', content.data)
-        end
 
-        if not utils.empty(result) then
-          result = result .. '\n'
+          if not utils.empty(result) then
+            result = result .. '\n'
+          end
+          result = result .. content_out
         end
-        result = result .. content_out
       end
+    end
+
+    if tool_id then
+      table.insert(resolved_tools, {
+        id = tool_id,
+        result = result,
+      })
+
+      return nil
     end
 
     return result
@@ -355,7 +364,7 @@ function M.resolve_tools(prompt, config)
     prompt = prompt:gsub(vim.pesc(pattern), out, 1)
   end
 
-  return functions.parse_tools(enabled_tools), resolved_resources, prompt
+  return functions.parse_tools(enabled_tools), resolved_resources, resolved_tools, prompt
 end
 
 --- Resolve the final prompt and config from prompt template.
@@ -890,12 +899,12 @@ function M.ask(prompt, config)
   local selection = M.get_selection()
 
   local ok, err = pcall(async.run, function()
-    local selected_tools, selected_resources, prompt = M.resolve_tools(prompt, config)
+    local selected_tools, resolved_resources, resolved_tools, prompt = M.resolve_functions(prompt, config)
     local selected_model, prompt = M.resolve_model(prompt, config)
     local query_ok, processed_resources =
-      pcall(resources.process_resources, prompt, selected_model, config.headless, selected_resources)
+      pcall(resources.process_resources, prompt, selected_model, config.headless, resolved_resources)
     if query_ok then
-      selected_resources = processed_resources
+      resolved_resources = processed_resources
     else
       log.warn('Failed to process resources', processed_resources)
     end
@@ -905,6 +914,15 @@ function M.ask(prompt, config)
 
     if not config.headless then
       utils.schedule_main()
+
+      for _, tool in ipairs(resolved_tools) do
+        M.chat:add_message({
+          role = 'tool',
+          tool_call_id = tool.id,
+          content = tool.result,
+        })
+      end
+
       M.chat:add_message({
         role = 'user',
         content = '\n' .. prompt .. '\n',
@@ -914,7 +932,7 @@ function M.ask(prompt, config)
     local ask_ok, ask_response = pcall(client.ask, client, prompt, {
       headless = config.headless,
       selection = selection,
-      resources = selected_resources,
+      resources = resolved_resources,
       tools = selected_tools,
       system_prompt = system_prompt,
       model = selected_model,
@@ -1132,8 +1150,7 @@ function M.setup(config)
     M.chat:delete()
   end
   M.chat = require('CopilotChat.ui.chat')(
-    M.config.question_header,
-    M.config.answer_header,
+    M.config.headers,
     M.config.separator,
     utils.key_to_info('show_help', M.config.mappings.show_help),
     function(bufnr)

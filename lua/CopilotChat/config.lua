@@ -44,9 +44,7 @@ local select = require('CopilotChat.select')
 ---@field chat_autocomplete boolean?
 ---@field log_path string?
 ---@field history_path string?
----@field question_header string?
----@field answer_header string?
----@field error_header string?
+---@field headers table<string, string>?
 ---@field separator string?
 ---@field providers table<string, CopilotChat.config.providers.Provider>?
 ---@field functions table<string, CopilotChat.config.functions.Function>?
@@ -107,9 +105,12 @@ return {
   log_path = vim.fn.stdpath('state') .. '/CopilotChat.log', -- Default path to log file
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
 
-  question_header = '## User ', -- Header to use for user questions
-  answer_header = '## Copilot ', -- Header to use for AI answers
-  error_header = '## Error ', -- Header to use for errors
+  headers = {
+    user = '## User ', -- Header to use for user questions
+    assistant = '## Copilot ', -- Header to use for AI answers
+    tool = '## Tool ', -- Header to use for tool calls
+  },
+
   separator = '───', -- Separator to use in chat
 
   -- default providers

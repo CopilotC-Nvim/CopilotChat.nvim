@@ -49,7 +49,7 @@ end
 ---@field content string?
 
 ---@class CopilotChat.ui.chat.Section
----@field answer boolean
+---@field role string
 ---@field start_line number
 ---@field end_line number
 ---@field blocks table<CopilotChat.ui.chat.Block>
@@ -58,18 +58,17 @@ end
 ---@class CopilotChat.ui.chat.Chat : CopilotChat.ui.overlay.Overlay
 ---@field winnr number?
 ---@field config CopilotChat.config.Shared
----@field sections table<CopilotChat.ui.chat.Section>
 ---@field token_count number?
 ---@field token_max_count number?
+---@field sections table<CopilotChat.ui.chat.Section>
 ---@field messages table<CopilotChat.client.Message>
 ---@field private layout CopilotChat.config.Layout?
----@field private question_header string
----@field private answer_header string
+---@field private headers table<string, string>
 ---@field private separator string
 ---@field private header_ns number
 ---@field private spinner CopilotChat.ui.spinner.Spinner
 ---@field private chat_overlay CopilotChat.ui.overlay.Overlay
-local Chat = class(function(self, question_header, answer_header, separator, help, on_buf_create)
+local Chat = class(function(self, headers, separator, help, on_buf_create)
   Overlay.init(self, 'copilot-chat', help, on_buf_create)
 
   self.winnr = nil
@@ -80,8 +79,7 @@ local Chat = class(function(self, question_header, answer_header, separator, hel
   self.messages = {}
 
   self.layout = nil
-  self.question_header = question_header
-  self.answer_header = answer_header
+  self.headers = headers or {}
   self.separator = separator
   self.header_ns = vim.api.nvim_create_namespace('copilot-chat-headers')
 
@@ -114,9 +112,9 @@ function Chat:focused()
 end
 
 --- Get the closest section to the cursor.
----@param type? "answer"|"question" If specified, only considers sections of the given type
+---@param role string? If specified, only considers sections of the given role
 ---@return CopilotChat.ui.chat.Section?
-function Chat:get_closest_section(type)
+function Chat:get_closest_section(role)
   if not self:visible() then
     return nil
   end
@@ -128,11 +126,8 @@ function Chat:get_closest_section(type)
   local max_line_below_cursor = -1
 
   for _, section in ipairs(self.sections) do
-    local matches_type = not type
-      or (type == 'answer' and section.answer)
-      or (type == 'question' and not section.answer)
-
-    if matches_type and section.start_line <= cursor_line and section.start_line > max_line_below_cursor then
+    local matches_role = not role or section.role == role
+    if matches_role and section.start_line <= cursor_line and section.start_line > max_line_below_cursor then
       max_line_below_cursor = section.start_line
       closest_section = section
     end
@@ -175,7 +170,7 @@ function Chat:get_prompt()
 
   self:render()
   local section = self.sections[#self.sections]
-  if not section or section.answer then
+  if not section or section.role ~= 'user' then
     return
   end
 
@@ -410,7 +405,7 @@ function Chat:add_message(message, replace)
 
   -- Add appropriate header based on role
   if needs_header then
-    local header = message.role == 'user' and self.question_header or self.answer_header
+    local header = self.headers[message.role]
     if last_message then
       header = '\n' .. header
     end
@@ -527,7 +522,6 @@ end
 function Chat:render()
   vim.api.nvim_buf_clear_namespace(self.bufnr, self.header_ns, 0, -1)
   local lines = vim.api.nvim_buf_get_lines(self.bufnr, 0, -1, false)
-  local line_count = #lines
 
   local sections = {}
   local current_section = nil
@@ -536,38 +530,28 @@ function Chat:render()
   for l, line in ipairs(lines) do
     local separator_found = false
 
-    if line == self.answer_header .. self.separator then
-      separator_found = true
-      if current_section then
-        current_section.end_line = l - 1
-        current_section.content =
-          vim.trim(table.concat(vim.list_slice(lines, current_section.start_line, current_section.end_line), '\n'))
-        table.insert(sections, current_section)
-      end
-      current_section = {
-        answer = true,
-        start_line = l + 1,
-        blocks = {},
-      }
-    elseif line == self.question_header .. self.separator then
-      separator_found = true
-      if current_section then
-        current_section.end_line = l - 1
-        current_section.content =
-          vim.trim(table.concat(vim.list_slice(lines, current_section.start_line, current_section.end_line), '\n'))
-        table.insert(sections, current_section)
-      end
-      current_section = {
-        answer = false,
-        start_line = l + 1,
-        blocks = {},
-      }
-    elseif l == line_count then
-      if current_section then
-        current_section.end_line = l
-        current_section.content =
-          vim.trim(table.concat(vim.list_slice(lines, current_section.start_line, current_section.end_line), '\n'))
-        table.insert(sections, current_section)
+    if l == #lines and current_section then
+      current_section.end_line = l
+      current_section.content =
+        vim.trim(table.concat(vim.list_slice(lines, current_section.start_line, current_section.end_line), '\n'))
+      table.insert(sections, current_section)
+    else
+      for header_name, header_value in pairs(self.headers) do
+        if line == header_value .. self.separator then
+          separator_found = true
+          if current_section then
+            current_section.end_line = l - 1
+            current_section.content =
+              vim.trim(table.concat(vim.list_slice(lines, current_section.start_line, current_section.end_line), '\n'))
+            table.insert(sections, current_section)
+          end
+
+          current_section = {
+            role = header_name,
+            start_line = l + 1,
+            blocks = {},
+          }
+        end
       end
     end
 
@@ -592,7 +576,7 @@ function Chat:render()
       })
     end
 
-    if current_section and current_section.answer then
+    if current_section and current_section.role == 'assistant' then
       -- Parse code block headers
       local filetype, filename, start_line, end_line = match_header(line)
       if filetype and filename and not current_block then
@@ -667,7 +651,7 @@ function Chat:render()
   end
 
   local last_section = sections[#sections]
-  if last_section and not last_section.answer then
+  if last_section and last_section.role == 'user' then
     local msg = self.config.show_help and self.help or ''
     if self.token_count and self.token_max_count then
       if msg ~= '' then
