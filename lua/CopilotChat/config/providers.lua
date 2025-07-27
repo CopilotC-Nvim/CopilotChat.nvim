@@ -176,6 +176,19 @@ M.copilot = {
         end
       end
 
+      if input.tool_calls then
+        input.tool_calls = vim.tbl_map(function(tool_call)
+          return {
+            id = tool_call.id,
+            type = 'function',
+            ['function'] = {
+              name = tool_call.name,
+              arguments = tool_call.arguments or nil,
+            },
+          }
+        end, input.tool_calls)
+      end
+
       return input
     end, inputs)
 

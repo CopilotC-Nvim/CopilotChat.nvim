@@ -315,6 +315,7 @@ function Client:ask(prompt, opts)
   log.debug('Tools:', #opts.tools)
   log.debug('Resources:', #opts.resources)
   log.debug('History:', #opts.history)
+  log.debug(vim.inspect(opts.history))
 
   local models = self:fetch_models()
   local model_config = models[opts.model]
