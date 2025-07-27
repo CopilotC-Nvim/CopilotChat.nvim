@@ -61,7 +61,7 @@ end
 ---@field sections table<CopilotChat.ui.chat.Section>
 ---@field token_count number?
 ---@field token_max_count number?
----@field private messages table<CopilotChat.client.Message>
+---@field messages table<CopilotChat.client.Message>
 ---@field private layout CopilotChat.config.Layout?
 ---@field private question_header string
 ---@field private answer_header string

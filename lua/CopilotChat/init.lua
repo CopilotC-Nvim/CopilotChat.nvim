@@ -134,9 +134,11 @@ local function finish(start_of_chat)
   end
 
   local prompt_content = ''
+  local last_message = M.chat.messages[#M.chat.messages]
+  local tool_calls = last_message and last_message.tool_calls or {}
 
-  if not utils.empty(M.chat.tool_calls) then
-    for _, tool_call in ipairs(M.chat.tool_calls) do
+  if not utils.empty(tool_calls) then
+    for _, tool_call in ipairs(tool_calls) do
       prompt_content = prompt_content .. string.format('#%s:%s\n', tool_call.name, tool_call.id)
     end
     prompt_content = prompt_content .. '\n'
