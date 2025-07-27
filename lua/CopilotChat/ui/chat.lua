@@ -13,70 +13,73 @@ function CopilotChatFoldExpr(lnum, separator)
   return '='
 end
 
+local TOOL_PATTERN = '^```?(%w+)%s+tool=(%S+)%s+id=(%S*)$'
 local HEADER_PATTERNS = {
-  '%[file:.+%]%((.+)%) line:(%d+)-?(%d*)',
-  '%[file:(.+)%] line:(%d+)-?(%d*)',
+  '^```?(%w+)%s+path=(%S+)%s+start_line=(%d+)%s+end_line=(%d+)$',
+  '^```(%w+)$',
 }
 
 ---@param header? string
----@return string?, number?, number?
+---@return string?, string?, number?, number?
 local function match_header(header)
   if not header then
     return
   end
 
   for _, pattern in ipairs(HEADER_PATTERNS) do
-    local filename, start_line, end_line = header:match(pattern)
-    if filename then
-      return utils.filepath(filename), tonumber(start_line) or 1, tonumber(end_line) or tonumber(start_line) or 1
+    local type, path, start_line, end_line = header:match(pattern)
+    if path then
+      return type, path, tonumber(start_line) or 1, tonumber(end_line) or tonumber(start_line) or 1
+    elseif type then
+      return type, 'block'
     end
   end
 end
 
----@class CopilotChat.ui.Chat.Section.Block.Header
+---@class CopilotChat.ui.chat.Header
 ---@field filename string
 ---@field start_line number
 ---@field end_line number
 ---@field filetype string
 
----@class CopilotChat.ui.Chat.Section.Block
----@field header CopilotChat.ui.Chat.Section.Block.Header
+---@class CopilotChat.ui.chat.Block
+---@field header CopilotChat.ui.chat.Header
 ---@field start_line number
 ---@field end_line number
 ---@field content string?
 
----@class CopilotChat.ui.Chat.Section
+---@class CopilotChat.ui.chat.Section
 ---@field answer boolean
 ---@field start_line number
 ---@field end_line number
----@field blocks table<CopilotChat.ui.Chat.Section.Block>
+---@field blocks table<CopilotChat.ui.chat.Block>
 ---@field content string?
 
----@class CopilotChat.ui.Chat : CopilotChat.ui.Overlay
+---@class CopilotChat.ui.chat.Chat : CopilotChat.ui.overlay.Overlay
 ---@field winnr number?
----@field config CopilotChat.config.shared
----@field layout CopilotChat.config.Layout?
----@field sections table<CopilotChat.ui.Chat.Section>
----@field references table<CopilotChat.Provider.reference>
+---@field config CopilotChat.config.Shared
+---@field sections table<CopilotChat.ui.chat.Section>
 ---@field token_count number?
 ---@field token_max_count number?
+---@field messages table<CopilotChat.client.Message>
+---@field private layout CopilotChat.config.Layout?
 ---@field private question_header string
 ---@field private answer_header string
 ---@field private separator string
 ---@field private header_ns number
----@field private spinner CopilotChat.ui.Spinner
----@field private chat_overlay CopilotChat.ui.Overlay
+---@field private spinner CopilotChat.ui.spinner.Spinner
+---@field private chat_overlay CopilotChat.ui.overlay.Overlay
 local Chat = class(function(self, question_header, answer_header, separator, help, on_buf_create)
   Overlay.init(self, 'copilot-chat', help, on_buf_create)
 
   self.winnr = nil
   self.sections = {}
   self.config = {}
-  self.layout = nil
-  self.references = {}
   self.token_count = nil
   self.token_max_count = nil
+  self.messages = {}
 
+  self.layout = nil
   self.question_header = question_header
   self.answer_header = answer_header
   self.separator = separator
@@ -112,7 +115,7 @@ end
 
 --- Get the closest section to the cursor.
 ---@param type? "answer"|"question" If specified, only considers sections of the given type
----@return CopilotChat.ui.Chat.Section?
+---@return CopilotChat.ui.chat.Section?
 function Chat:get_closest_section(type)
   if not self:visible() then
     return nil
@@ -139,7 +142,7 @@ function Chat:get_closest_section(type)
 end
 
 --- Get the closest code block to the cursor.
----@return CopilotChat.ui.Chat.Section.Block?
+---@return CopilotChat.ui.chat.Block?
 function Chat:get_closest_block()
   if not self:visible() then
     return nil
@@ -164,7 +167,7 @@ function Chat:get_closest_block()
 end
 
 --- Get the prompt in the chat window.
----@return CopilotChat.ui.Chat.Section?
+---@return CopilotChat.ui.chat.Section?
 function Chat:get_prompt()
   if not self:visible() then
     return
@@ -177,25 +180,6 @@ function Chat:get_prompt()
   end
 
   return section
-end
-
---- Set the prompt in the chat window.
----@param prompt string?
-function Chat:set_prompt(prompt)
-  if not self:visible() then
-    return
-  end
-
-  local section = self:get_prompt()
-  if not section then
-    return
-  end
-
-  local modifiable = vim.bo[self.bufnr].modifiable
-  vim.bo[self.bufnr].modifiable = true
-  local lines = prompt and vim.split('\n' .. prompt, '\n') or {}
-  vim.api.nvim_buf_set_lines(self.bufnr, section.start_line - 1, section.end_line, false, lines)
-  vim.bo[self.bufnr].modifiable = modifiable
 end
 
 --- Add a sticky line to the prompt in the chat window.
@@ -265,7 +249,7 @@ function Chat:overlay(opts)
 end
 
 --- Open the chat window.
----@param config CopilotChat.config.shared
+---@param config CopilotChat.config.Shared
 function Chat:open(config)
   self:validate()
 
@@ -415,6 +399,56 @@ function Chat:finish()
   end
 end
 
+function Chat:add_message(message, replace)
+  local last_message = self.messages[#self.messages]
+  local needs_header = false
+
+  -- Check if we need to add a header (role change or first message)
+  if not last_message or last_message.role ~= message.role then
+    needs_header = true
+  end
+
+  -- Add appropriate header based on role
+  if needs_header then
+    local header = message.role == 'user' and self.question_header or self.answer_header
+    if last_message then
+      header = '\n' .. header
+    end
+    self:append(header .. self.separator .. '\n\n')
+  elseif replace and last_message then
+    self:append('')
+    self:render()
+
+    local content = message.content
+    last_message.content = content
+    local last_section = self.sections[#self.sections]
+    if last_section then
+      last_section.content = content
+      vim.bo[self.bufnr].modifiable = true
+      vim.api.nvim_buf_set_lines(
+        self.bufnr,
+        last_section.start_line - 1,
+        last_section.end_line,
+        false,
+        vim.split(content, '\n')
+      )
+      vim.bo[self.bufnr].modifiable = false
+    end
+
+    self:append('')
+    return
+  end
+
+  -- Handle message content combining or creation
+  if last_message and last_message.role == message.role then
+    last_message.content = last_message.content .. message.content
+    self:append(message.content)
+  else
+    table.insert(self.messages, message)
+    self:append(message.content)
+  end
+end
+
 --- Append text to the chat window.
 ---@param str string
 function Chat:append(str)
@@ -451,9 +485,9 @@ end
 --- Clear the chat window.
 function Chat:clear()
   self:validate()
-  self.references = {}
   self.token_count = nil
   self.token_max_count = nil
+  self.messages = {}
   vim.bo[self.bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, {})
   vim.bo[self.bufnr].modifiable = false
@@ -558,16 +592,10 @@ function Chat:render()
       })
     end
 
-    -- Parse code blocks
     if current_section and current_section.answer then
-      local filetype = line:match('^```(%w+)$')
-      if filetype and not current_block then
-        local filename, start_line, end_line = match_header(lines[l - 1])
-        if not filename then
-          filename, start_line, end_line = match_header(lines[l - 2])
-        end
-        filename = filename or 'code-block'
-
+      -- Parse code block headers
+      local filetype, filename, start_line, end_line = match_header(line)
+      if filetype and filename and not current_block then
         current_block = {
           header = {
             filename = filename,
@@ -577,12 +605,63 @@ function Chat:render()
           },
           start_line = l + 1,
         }
+
+        local text = string.format('[%s] %s', filetype, filename)
+        if start_line and end_line then
+          text = text .. string.format(' lines %d-%d', start_line, end_line)
+        end
+
+        vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l, 0, {
+          virt_lines_above = true,
+          virt_lines = { { { text, 'CopilotChatAnnotationHeader' } } },
+          priority = 100,
+          strict = false,
+        })
       elseif line == '```' and current_block then
         current_block.end_line = l - 1
         current_block.content =
           table.concat(vim.list_slice(lines, current_block.start_line, current_block.end_line), '\n')
         table.insert(current_section.blocks, current_block)
         current_block = nil
+      end
+    end
+
+    -- Parse tool headers
+    local tool_type, tool_name, tool_id = line:match(TOOL_PATTERN)
+    if tool_type and tool_name then
+      local text = string.format('[%s] %s', tool_type, tool_name)
+      if tool_id then
+        text = text .. ' ' .. tool_id
+      end
+
+      vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l, 0, {
+        virt_lines_above = true,
+        virt_lines = { { { text, 'CopilotChatAnnotationHeader' } } },
+        priority = 100,
+        strict = false,
+      })
+    end
+
+    -- Parse tool calls
+    for _, message in ipairs(self.messages) do
+      if message.tool_calls then
+        for _, tool_call in ipairs(message.tool_calls) do
+          if line:match(string.format('#%s:%s', tool_call.name, vim.pesc(tool_call.id))) then
+            vim.api.nvim_buf_add_highlight(self.bufnr, self.header_ns, 'CopilotChatAnnotationHeader', l - 1, 0, #line)
+
+            if not utils.empty(tool_call.arguments) then
+              vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, 0, {
+                virt_lines = vim.tbl_map(function(json_line)
+                  return { { json_line, 'CopilotChatAnnotation' } }
+                end, vim.split(vim.inspect(vim.json.decode(tool_call.arguments)), '\n')),
+                priority = 100,
+                strict = false,
+              })
+            end
+
+            break
+          end
+        end
       end
     end
   end
@@ -598,22 +677,6 @@ function Chat:render()
     end
 
     self:show_help(msg, last_section.start_line - last_section.end_line - 1)
-
-    if not utils.empty(self.references) and self.config.references_display == 'virtual' then
-      msg = 'References:\n'
-      for _, ref in ipairs(self.references) do
-        msg = msg .. '  ' .. ref.name .. '\n'
-      end
-
-      vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, last_section.start_line - 2, 0, {
-        hl_mode = 'combine',
-        priority = 100,
-        virt_lines_above = true,
-        virt_lines = vim.tbl_map(function(t)
-          return { { t, 'CopilotChatHelp' } }
-        end, vim.split(msg, '\n')),
-      })
-    end
   else
     self:show_help()
   end
