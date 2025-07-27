@@ -1099,6 +1099,15 @@ function M.log_level(level)
     plugin = PLUGIN_NAME,
     level = level,
     outfile = M.config.log_path,
+    fmt_msg = function(is_console, mode_name, src_path, src_line, msg)
+      local nameupper = mode_name:upper()
+      if is_console then
+        return string.format('[%s] %s', nameupper, msg)
+      else
+        local lineinfo = src_path .. ':' .. src_line
+        return string.format('[%-6s%s] %s: %s\n', nameupper, os.date(), lineinfo, msg)
+      end
+    end,
   }, true)
 end
 

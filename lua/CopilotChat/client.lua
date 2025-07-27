@@ -295,7 +295,7 @@ function Client:fetch_models()
     end
   end
 
-  log.debug('Fetched models:', #models)
+  log.debug('Fetched models:', #vim.tbl_keys(models))
   self.models = models
   return self.models
 end
