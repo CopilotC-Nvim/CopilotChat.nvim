@@ -13,7 +13,6 @@ function CopilotChatFoldExpr(lnum, separator)
   return '='
 end
 
-local TOOL_PATTERN = '^```?(%w+)%s+tool=(%S+)%s+id=(%S*)$'
 local HEADER_PATTERNS = {
   '^```?(%w+)%s+path=(%S+)%s+start_line=(%d+)%s+end_line=(%d+)$',
   '^```(%w+)$',
@@ -608,22 +607,6 @@ function Chat:render()
         table.insert(current_section.blocks, current_block)
         current_block = nil
       end
-    end
-
-    -- Parse tool headers
-    local tool_type, tool_name, tool_id = line:match(TOOL_PATTERN)
-    if tool_type and tool_name then
-      local text = string.format('[%s] %s', tool_type, tool_name)
-      if tool_id then
-        text = text .. ' ' .. tool_id
-      end
-
-      vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l, 0, {
-        virt_lines_above = true,
-        virt_lines = { { { text, 'CopilotChatAnnotationHeader' } } },
-        priority = 100,
-        strict = false,
-      })
     end
 
     -- Parse tool calls
