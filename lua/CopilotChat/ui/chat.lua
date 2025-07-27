@@ -446,6 +446,38 @@ function Chat:add_message(message, replace)
   end
 end
 
+function Chat:remove_message(role)
+  if not self:visible() then
+    return
+  end
+
+  self:render()
+  local message = self:get_closest_message(role)
+  if not message then
+    return
+  end
+
+  local section = message.section
+  if not section then
+    return
+  end
+
+  -- Remove the section from the buffer
+  vim.bo[self.bufnr].modifiable = true
+  vim.api.nvim_buf_set_lines(self.bufnr, section.start_line - 2, section.end_line + 1, false, {})
+  vim.bo[self.bufnr].modifiable = false
+
+  -- Remove the message from the messages list
+  for i, msg in ipairs(self.messages) do
+    if msg.id == message.id then
+      table.remove(self.messages, i)
+      break
+    end
+  end
+
+  self:render()
+end
+
 --- Append text to the chat window.
 ---@param str string
 function Chat:append(str)
@@ -625,9 +657,17 @@ function Chat:render()
       end
     end
 
-    -- Tool calls
-    if current_message and current_message.tool_calls then
-      for _, tool_call in ipairs(current_message.tool_calls) do
+    -- If last line, finish last message
+    if l == #lines and current_message then
+      current_message.section.end_line = l
+      current_message.content = vim.trim(
+        table.concat(vim.list_slice(lines, current_message.section.start_line, current_message.section.end_line), '\n')
+      )
+    end
+
+    -- Highlight response calls
+    for _, message in ipairs(self.messages) do
+      for _, tool_call in ipairs(message.tool_calls or {}) do
         if line:match(string.format('#%s:%s', tool_call.name, vim.pesc(tool_call.id))) then
           vim.api.nvim_buf_add_highlight(self.bufnr, self.header_ns, 'CopilotChatAnnotationHeader', l - 1, 0, #line)
           if not utils.empty(tool_call.arguments) then
@@ -643,18 +683,47 @@ function Chat:render()
         end
       end
     end
-
-    -- If last line, finish last message
-    if l == #lines and current_message then
-      current_message.section.end_line = l
-      current_message.content = vim.trim(
-        table.concat(vim.list_slice(lines, current_message.section.start_line, current_message.section.end_line), '\n')
-      )
-    end
   end
 
   -- Replace self.messages with new_messages (preserving tool_calls, etc.)
   self.messages = new_messages
+
+  -- Show tool call details as virt lines
+  for _, message in ipairs(self.messages) do
+    if message.tool_calls and #message.tool_calls > 0 then
+      local section = message.section
+      if section and section.end_line then
+        local virt_lines = { { { 'Tool calls:', 'CopilotChatAnnotationHeader' } } }
+        for _, tc in ipairs(message.tool_calls) do
+          table.insert(virt_lines, { { string.format('  %s:%s', tc.name, tostring(tc.id)), 'CopilotChatAnnotation' } })
+          for _, json_line in ipairs(vim.split(vim.inspect(utils.json_decode(tc.arguments)), '\n')) do
+            table.insert(virt_lines, { { '    ' .. json_line, 'CopilotChatAnnotation' } })
+          end
+        end
+        vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, section.end_line - 1, 0, {
+          virt_lines = virt_lines,
+          virt_lines_above = true,
+          priority = 100,
+          strict = false,
+        })
+      end
+    end
+
+    if message.tool_call_id then
+      local section = message.section
+      if section and section.start_line then
+        local virt_lines = {
+          { { 'Tool: ' .. message.tool_call_id, 'CopilotChatAnnotationHeader' } },
+        }
+        vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, section.start_line, 0, {
+          virt_lines = virt_lines,
+          virt_lines_above = true,
+          priority = 100,
+          strict = false,
+        })
+      end
+    end
+  end
 
   -- Show help as before, using last user message
   local last_message = self.messages[#self.messages]

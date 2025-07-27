@@ -137,16 +137,16 @@ local function finish(start_of_chat)
   local last_message = M.chat.messages[#M.chat.messages]
   local tool_calls = last_message and last_message.tool_calls or {}
 
-  if not utils.empty(tool_calls) then
-    for _, tool_call in ipairs(tool_calls) do
-      prompt_content = prompt_content .. string.format('#%s:%s\n', tool_call.name, tool_call.id)
+  if not utils.empty(state.sticky) then
+    for _, sticky in ipairs(state.sticky) do
+      prompt_content = prompt_content .. '> ' .. sticky .. '\n'
     end
     prompt_content = prompt_content .. '\n'
   end
 
-  if not utils.empty(state.sticky) then
-    for _, sticky in ipairs(state.sticky) do
-      prompt_content = prompt_content .. '> ' .. sticky .. '\n'
+  if not utils.empty(tool_calls) then
+    for _, tool_call in ipairs(tool_calls) do
+      prompt_content = prompt_content .. string.format('#%s:%s\n', tool_call.name, tool_call.id)
     end
     prompt_content = prompt_content .. '\n'
   end
@@ -915,10 +915,14 @@ function M.ask(prompt, config)
     if not config.headless then
       utils.schedule_main()
 
-      M.chat:add_message({
-        role = 'user',
-        content = '\n' .. prompt .. '\n',
-      }, true)
+      if not utils.empty(resolved_tools) then
+        M.chat:remove_message('user')
+      else
+        M.chat:add_message({
+          role = 'user',
+          content = '\n' .. prompt .. '\n',
+        }, true)
+      end
 
       for _, tool in ipairs(resolved_tools) do
         M.chat:add_message({
@@ -982,7 +986,12 @@ function M.ask(prompt, config)
     end
 
     if not config.headless then
-      response.content = '\n' .. vim.trim(response.content) .. '\n'
+      response.content = vim.trim(response.content)
+      if utils.empty(response.content) then
+        response.content = ''
+      else
+        response.content = '\n' .. response.content .. '\n'
+      end
       M.chat:add_message(response, true)
       M.chat.token_count = token_count
       M.chat.token_max_count = token_max_count
