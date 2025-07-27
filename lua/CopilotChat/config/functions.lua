@@ -161,7 +161,7 @@ return {
       end
       return {
         {
-          uri = 'file://' .. name,
+          uri = 'neovim://buffer/' .. name,
           mimetype = mimetype,
           data = data,
         },
@@ -203,7 +203,7 @@ return {
             return nil
           end
           return {
-            uri = 'file://' .. name,
+            uri = 'neovim://buffer/' .. name,
             mimetype = mimetype,
             data = data,
           }
