@@ -881,11 +881,6 @@ function M.ask(prompt, config)
     end
 
     state.sticky = sticky
-    M.chat:add_message({
-      role = 'user',
-      content = '\n' .. prompt .. '\n',
-    }, true)
-    M.chat:follow()
   else
     update_source()
   end
@@ -933,6 +928,8 @@ function M.ask(prompt, config)
           content = tool.result .. '\n',
         })
       end
+
+      M.chat:follow()
     end
 
     local ask_ok, ask_response = pcall(client.ask, client, prompt, {

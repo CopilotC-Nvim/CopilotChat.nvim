@@ -352,7 +352,7 @@ function Client:ask(prompt, opts)
     notify.publish(notify.STATUS, 'Generating request')
   end
 
-  local history = not opts.headless and vim.list_slice(opts.history) or {}
+  local history = not opts.headless and vim.deepcopy(opts.history) or {}
   local tool_calls = utils.ordered_map()
   local generated_messages = {}
   local selection_message = opts.selection and generate_selection_message(opts.selection)
