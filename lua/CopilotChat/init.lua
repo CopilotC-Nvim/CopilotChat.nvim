@@ -921,6 +921,11 @@ function M.ask(prompt, config)
     if not config.headless then
       utils.schedule_main()
 
+      M.chat:add_message({
+        role = 'user',
+        content = '\n' .. prompt .. '\n',
+      }, true)
+
       for _, tool in ipairs(resolved_tools) do
         M.chat:add_message({
           role = 'tool',
@@ -928,11 +933,6 @@ function M.ask(prompt, config)
           content = tool.result .. '\n',
         })
       end
-
-      M.chat:add_message({
-        role = 'user',
-        content = '\n' .. prompt .. '\n',
-      }, true)
     end
 
     local ask_ok, ask_response = pcall(client.ask, client, prompt, {

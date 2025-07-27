@@ -620,7 +620,7 @@ function Chat:render()
               vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, 0, {
                 virt_lines = vim.tbl_map(function(json_line)
                   return { { json_line, 'CopilotChatAnnotation' } }
-                end, vim.split(vim.inspect(vim.json.decode(tool_call.arguments)), '\n')),
+                end, vim.split(vim.inspect(utils.json_decode(tool_call.arguments)), '\n')),
                 priority = 100,
                 strict = false,
               })
