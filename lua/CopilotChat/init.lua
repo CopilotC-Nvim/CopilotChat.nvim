@@ -311,7 +311,11 @@ function M.resolve_functions(prompt, config)
         end
       end
     end
+    if not tool and not tool_id then
+      tool = M.config.functions[name]
+    end
     if not tool then
+      -- If tool is not found, return the original pattern
       return nil
     end
     if not tool_id and not tool.uri then
