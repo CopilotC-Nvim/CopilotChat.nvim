@@ -1,6 +1,7 @@
 name: "Convert TODO to Issue"
 on:
   push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       MANUAL_COMMIT_REF:
