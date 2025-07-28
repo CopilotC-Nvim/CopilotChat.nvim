@@ -166,8 +166,7 @@ Default mappings in the chat interface:
 | -       | `gqd`   | Add all diffs from chat to quickfix list   |
 | -       | `gy`    | Yank nearest diff to register              |
 | -       | `gd`    | Show diff between source and nearest diff  |
-| -       | `gi`    | Show info about current chat               |
-| -       | `gc`    | Show current chat context                  |
+| -       | `gc`    | Show info about current chat               |
 | -       | `gh`    | Show help message                          |
 
 The mappings can be customized by setting the `mappings` table in your configuration. Each mapping can have:
@@ -648,7 +647,7 @@ require("CopilotChat").load("my_debugging_session")
 -- Use custom sticky and model
 require("CopilotChat").ask("How can I optimize this?", {
   model = "gpt-4.1",
-  context = {"buffer", "git:staged"}
+  sticky = {"#buffer", "#gitdiff:staged"}
 })
 ```
 
