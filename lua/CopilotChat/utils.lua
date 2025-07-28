@@ -675,46 +675,6 @@ M.schedule_main = async.wrap(function(callback)
   end
 end, 1)
 
---- Run parse on a treesitter parser asynchronously if possible
----@param parser vim.treesitter.LanguageTree The parser
-M.ts_parse = async.wrap(function(parser, callback)
-  ---@diagnostic disable-next-line: invisible
-  if not parser._async_parse then
-    local fn = function()
-      local trees = parser:parse(false)
-      if not trees or #trees == 0 then
-        callback(nil)
-        return
-      end
-      callback(trees[1]:root())
-    end
-
-    if vim.in_fast_event() then
-      vim.schedule(fn)
-    else
-      fn()
-    end
-
-    return
-  end
-
-  local fn = function()
-    parser:parse(false, function(err, trees)
-      if err or not trees or #trees == 0 then
-        callback(nil)
-        return
-      end
-      callback(trees[1]:root())
-    end)
-  end
-
-  if vim.in_fast_event() then
-    vim.schedule(fn)
-  else
-    fn()
-  end
-end, 2)
-
 --- Wait for a user input
 M.input = async.wrap(function(opts, callback)
   local fn = function()

@@ -59,8 +59,6 @@ return {
   tools = nil, -- Default tool or array of tools (or groups) to share with LLM (can be specified manually in prompt via @).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
 
-  resource_processing = false, -- Enable intelligent resource processing (skips unnecessary resources to save tokens)
-
   temperature = 0.1, -- Result temperature
   headless = false, -- Do not write to chat buffer and use history (useful for using custom processing)
   callback = nil, -- Function called when full response is received

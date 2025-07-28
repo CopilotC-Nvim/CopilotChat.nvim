@@ -31,16 +31,10 @@
 ---@field description string description of the tool
 ---@field schema table? schema of the tool
 
----@class CopilotChat.client.Embed
----@field index number
----@field embedding table<number>
-
 ---@class CopilotChat.client.Resource
 ---@field name string
 ---@field type string
 ---@field data string
-
----@class CopilotChat.client.EmbeddedResource : CopilotChat.client.Resource, CopilotChat.client.Embed
 
 ---@class CopilotChat.client.Model
 ---@field provider string?
@@ -60,44 +54,6 @@ local class = utils.class
 
 --- Constants
 local RESOURCE_FORMAT = '# %s\n```%s\n%s\n```'
-local LINE_CHARACTERS = 100
-local BIG_EMBED_THRESHOLD = 200 * LINE_CHARACTERS
-
---- Resolve provider function
----@param model string
----@param models table<string, CopilotChat.client.Model>
----@param providers table<string, CopilotChat.config.providers.Provider>
----@return string, function
-local function resolve_provider_function(name, model, models, providers)
-  local model_config = models[model]
-  if not model_config then
-    error('Model not found: ' .. model)
-  end
-
-  local provider_name = model_config.provider
-  if not provider_name then
-    error('Provider not found for model: ' .. model)
-  end
-  local provider = providers[provider_name]
-  if not provider then
-    error('Provider not found: ' .. provider_name)
-  end
-
-  local func = provider[name]
-  if type(func) == 'string' then
-    provider_name = func
-    provider = providers[provider_name]
-    if not provider then
-      error('Provider not found: ' .. provider_name)
-    end
-    func = provider[name]
-  end
-  if not func then
-    error('Function not found: ' .. name)
-  end
-
-  return provider_name, func
-end
 
 --- Generate content block with line numbers, truncating if necessary
 ---@param content string
@@ -200,17 +156,6 @@ local function generate_ask_request(prompt, system_prompt, history, generated_me
   end
 
   return messages
-end
-
---- Generate embedding request
---- @param inputs table<CopilotChat.client.Resource>
---- @param threshold number
---- @return table<string>
-local function generate_embedding_request(inputs, threshold)
-  return vim.tbl_map(function(embedding)
-    local content = generate_content_block(embedding.data, threshold)
-    return string.format(RESOURCE_FORMAT, embedding.name, embedding.type, content)
-  end, inputs)
 end
 
 ---@class CopilotChat.client.Client : Class
@@ -600,87 +545,6 @@ function Client:ask(prompt, opts)
     token_count = token_count,
     token_max_count = max_tokens,
   }
-end
-
---- Generate embeddings for the given inputs
----@param inputs table<CopilotChat.client.Resource>: The inputs to embed
----@param model string
----@return table<CopilotChat.client.EmbeddedResource>
-function Client:embed(inputs, model)
-  if not inputs or #inputs == 0 then
-    ---@diagnostic disable-next-line: return-type-mismatch
-    return inputs
-  end
-
-  local models = self:models()
-  local ok, provider_name, embed = pcall(resolve_provider_function, 'embed', model, models, self.providers)
-  if not ok then
-    ---@diagnostic disable-next-line: return-type-mismatch
-    return inputs
-  end
-
-  notify.publish(notify.STATUS, 'Generating embeddings for ' .. #inputs .. ' inputs')
-
-  -- Initialize essentials
-  local to_process = inputs
-  local results = {}
-  local initial_chunk_size = 10
-
-  -- Process inputs in batches with adaptive chunk size
-  while #to_process > 0 do
-    local chunk_size = initial_chunk_size -- Reset chunk size for each new batch
-    local threshold = BIG_EMBED_THRESHOLD -- Reset threshold for each new batch
-    local last_error = nil
-
-    -- Take next chunk
-    local batch = {}
-    for _ = 1, math.min(chunk_size, #to_process) do
-      table.insert(batch, table.remove(to_process, 1))
-    end
-
-    -- Try to get embeddings for batch
-    local success = false
-    local attempts = 0
-    while not success and attempts < 5 do -- Limit total attempts to 5
-      local ok, data = pcall(embed, generate_embedding_request(batch, threshold), self:authenticate(provider_name))
-
-      if not ok then
-        log.debug('Failed to get embeddings: ', data)
-        last_error = data
-        attempts = attempts + 1
-        -- If we have few items and the request failed, try reducing threshold first
-        if #batch <= 5 then
-          threshold = math.max(5 * LINE_CHARACTERS, math.floor(threshold / 2))
-          log.debug(string.format('Reducing threshold to %d and retrying...', threshold))
-        else
-          -- Otherwise reduce batch size first
-          chunk_size = math.max(1, math.floor(chunk_size / 2))
-          -- Put items back in to_process
-          for i = #batch, 1, -1 do
-            table.insert(to_process, 1, table.remove(batch, i))
-          end
-          -- Take new smaller batch
-          batch = {}
-          for _ = 1, math.min(chunk_size, #to_process) do
-            table.insert(batch, table.remove(to_process, 1))
-          end
-          log.debug(string.format('Reducing batch size to %d and retrying...', chunk_size))
-        end
-      else
-        success = true
-        for _, embedding in ipairs(data) do
-          local result = vim.tbl_extend('force', batch[embedding.index + 1], embedding)
-          table.insert(results, result)
-        end
-      end
-    end
-
-    if not success then
-      error(last_error)
-    end
-  end
-
-  return results
 end
 
 --- Stop the running job
