@@ -926,9 +926,10 @@ function M.ask(prompt, config)
 
       for _, tool in ipairs(resolved_tools) do
         M.chat:add_message({
+          id = tool.id,
           role = 'tool',
           tool_call_id = tool.id,
-          content = tool.result .. '\n',
+          content = '\n' .. tool.result .. '\n',
         })
       end
 

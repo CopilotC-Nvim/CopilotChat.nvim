@@ -397,22 +397,23 @@ end
 
 function Chat:add_message(message, replace)
   local current_message = self.messages[#self.messages]
-  local needs_header = false
+  local is_new = not current_message
+    or current_message.role ~= message.role
+    or (message.id and current_message.id ~= message.id)
 
-  -- Check if we need to add a header (role change or first message)
-  if not current_message or current_message.role ~= message.role then
-    needs_header = true
-  end
-
-  -- Add appropriate header based on role
-  if needs_header then
+  if is_new then
+    -- Add appropriate header based on role and generate a new ID if not provided
     message.id = message.id or utils.uuid()
     local header = self.headers[message.role]
     if current_message then
       header = '\n' .. header
     end
+
+    table.insert(self.messages, message)
     self:append(header .. '(' .. message.id .. ')' .. self.separator .. '\n\n')
+    self:append(message.content)
   elseif replace and current_message then
+    -- Replace the content of the current message
     self:append('')
     self:render()
 
@@ -432,15 +433,9 @@ function Chat:add_message(message, replace)
     end
 
     self:append('')
-    return
-  end
-
-  -- Handle message content combining or creation
-  if current_message and current_message.role == message.role then
-    current_message.content = current_message.content .. message.content
-    self:append(message.content)
   else
-    table.insert(self.messages, message)
+    -- Append to the current message
+    current_message.content = current_message.content .. message.content
     self:append(message.content)
   end
 end
@@ -561,7 +556,7 @@ function Chat:render()
   local current_block = nil
 
   local function parse_header(header, line)
-    return line:match('^' .. vim.pesc(header) .. '%(([%w%-]+)%)' .. vim.pesc(self.separator) .. '$')
+    return line:match('^' .. vim.pesc(header) .. '%(([^)]+)%)' .. vim.pesc(self.separator) .. '$')
   end
 
   for l, line in ipairs(lines) do
