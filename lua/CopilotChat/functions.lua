@@ -166,9 +166,14 @@ function M.enter_input(schema, source)
     if not schema.required or vim.tbl_contains(schema.required, prop_name) then
       if cfg.enum then
         local choices = type(cfg.enum) == 'table' and cfg.enum or cfg.enum(source)
-        local choice = utils.select(choices, {
-          prompt = string.format('Select %s> ', prop_name),
-        })
+        local choice
+        if #choices == 1 then
+          choice = choices[1]
+        else
+          choice = utils.select(choices, {
+            prompt = string.format('Select %s> ', prop_name),
+          })
+        end
 
         table.insert(out, choice or '')
       elseif cfg.type == 'boolean' then
