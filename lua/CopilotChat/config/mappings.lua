@@ -263,18 +263,18 @@ return {
     normal = 'gqa',
     callback = function()
       local items = {}
-      for i, section in ipairs(copilot.chat.sections) do
-        if section.role == 'assistant' then
-          local prev_section = copilot.chat.sections[i - 1]
+      for i, message in ipairs(copilot.chat.messages) do
+        if message.section and message.role == 'assistant' then
+          local prev_message = copilot.chat.messages[i - 1]
           local text = ''
-          if prev_section then
-            text = prev_section.content
+          if prev_message then
+            text = prev_message.content
           end
 
           table.insert(items, {
             bufnr = copilot.chat.bufnr,
-            lnum = section.start_line,
-            end_lnum = section.end_line,
+            lnum = message.section.start_line,
+            end_lnum = message.section.end_line,
             text = text,
           })
         end
@@ -291,32 +291,34 @@ return {
       local selection = copilot.get_selection()
       local items = {}
 
-      for _, section in ipairs(copilot.chat.sections) do
-        for _, block in ipairs(section.blocks) do
-          local header = block.header
+      for _, message in ipairs(copilot.chat.messages) do
+        if message.section then
+          for _, block in ipairs(message.section.blocks) do
+            local header = block.header
 
-          if not header.start_line and selection then
-            header.filename = selection.filename .. ' (selection)'
-            header.start_line = selection.start_line
-            header.end_line = selection.end_line
+            if not header.start_line and selection then
+              header.filename = selection.filename .. ' (selection)'
+              header.start_line = selection.start_line
+              header.end_line = selection.end_line
+            end
+
+            local text = string.format('%s (%s)', header.filename, header.filetype)
+            if header.start_line and header.end_line then
+              text = text .. string.format(' [lines %d-%d]', header.start_line, header.end_line)
+            end
+
+            table.insert(items, {
+              bufnr = copilot.chat.bufnr,
+              lnum = block.start_line,
+              end_lnum = block.end_line,
+              text = text,
+            })
           end
-
-          local text = string.format('%s (%s)', header.filename, header.filetype)
-          if header.start_line and header.end_line then
-            text = text .. string.format(' [lines %d-%d]', header.start_line, header.end_line)
-          end
-
-          table.insert(items, {
-            bufnr = copilot.chat.bufnr,
-            lnum = block.start_line,
-            end_lnum = block.end_line,
-            text = text,
-          })
         end
-      end
 
-      vim.fn.setqflist(items)
-      vim.cmd('copen')
+        vim.fn.setqflist(items)
+        vim.cmd('copen')
+      end
     end,
   },
 
