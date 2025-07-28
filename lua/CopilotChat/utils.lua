@@ -1,6 +1,7 @@
 local async = require('plenary.async')
 local curl = require('plenary.curl')
 local scandir = require('plenary.scandir')
+local log = require('plenary.log')
 
 local M = {}
 M.timers = {}
@@ -102,6 +103,24 @@ function M.ordered_map()
   }
 end
 
+--- Convert arguments to a table
+---@param ... any The arguments
+---@return table
+function M.to_table(...)
+  local result = {}
+  for i = 1, select('#', ...) do
+    local x = select(i, ...)
+    if type(x) == 'table' then
+      for _, v in ipairs(x) do
+        table.insert(result, v)
+      end
+    elseif x ~= nil then
+      table.insert(result, x)
+    end
+  end
+  return result
+end
+
 ---@class StringBuffer
 ---@field add fun(self:StringBuffer, s:string)
 ---@field set fun(self:StringBuffer, s:string)
@@ -149,26 +168,6 @@ function M.temp_file(text)
   return temp_file
 end
 
---- Blend a color with the neovim background
----@param color_name string The color name
----@param blend number The blend percentage
----@return string?
-function M.blend_color(color_name, blend)
-  local color_int = vim.api.nvim_get_hl(0, { name = color_name }).fg
-  local bg_int = vim.api.nvim_get_hl(0, { name = 'Normal' }).bg
-
-  if not color_int or not bg_int then
-    return
-  end
-
-  local color = { (color_int / 65536) % 256, (color_int / 256) % 256, color_int % 256 }
-  local bg = { (bg_int / 65536) % 256, (bg_int / 256) % 256, bg_int % 256 }
-  local r = math.floor((color[1] * blend + bg[1] * (100 - blend)) / 100)
-  local g = math.floor((color[2] * blend + bg[2] * (100 - blend)) / 100)
-  local b = math.floor((color[3] * blend + bg[3] * (100 - blend)) / 100)
-  return string.format('#%02x%02x%02x', r, g, b)
-end
-
 --- Return to normal mode
 function M.return_to_normal_mode()
   local mode = vim.fn.mode():lower()
@@ -179,11 +178,6 @@ function M.return_to_normal_mode()
   end
 end
 
---- Mark a function as deprecated
-function M.deprecate(old, new)
-  vim.deprecate(old, new, '3.0.X', 'CopilotChat.nvim', false)
-end
-
 --- Debounce a function
 function M.debounce(id, fn, delay)
   if M.timers[id] then
@@ -191,21 +185,6 @@ function M.debounce(id, fn, delay)
     M.timers[id] = nil
   end
   M.timers[id] = vim.defer_fn(fn, delay)
-end
-
---- Create key-value list from table
----@param tbl table The table
----@return table
-function M.kv_list(tbl)
-  local result = {}
-  for k, v in pairs(tbl) do
-    table.insert(result, {
-      key = k,
-      value = v,
-    })
-  end
-
-  return result
 end
 
 --- Check if a buffer is valid
@@ -246,18 +225,58 @@ function M.filetype(filename)
   return ft
 end
 
+--- Get the mimetype from filetype
+---@param filetype string?
+---@return string
+function M.filetype_to_mimetype(filetype)
+  if not filetype or filetype == '' then
+    return 'text/plain'
+  end
+  if filetype == 'json' or filetype == 'yaml' then
+    return 'application/' .. filetype
+  end
+  if filetype == 'html' or filetype == 'css' then
+    return 'text/' .. filetype
+  end
+  return 'text/x-' .. filetype
+end
+
+--- Get the filetype from mimetype
+---@param mimetype string?
+---@return string
+function M.mimetype_to_filetype(mimetype)
+  if not mimetype or mimetype == '' then
+    return 'text'
+  end
+
+  local out = mimetype:gsub('^text/x%-', '')
+  out = out:gsub('^text/', '')
+  out = out:gsub('^application/', '')
+  out = out:gsub('^image/', '')
+  out = out:gsub('^video/', '')
+  out = out:gsub('^audio/', '')
+  return out
+end
+
+--- Convert a URI to a file name
+---@param uri string The URI
+---@return string
+function M.uri_to_filename(uri)
+  if not uri or uri == '' then
+    return uri
+  end
+  local ok, fname = pcall(vim.uri_to_fname, uri)
+  if not ok or M.empty(fname) then
+    return uri
+  end
+  return fname
+end
+
 --- Get the file name
 ---@param filepath string The file path
 ---@return string
 function M.filename(filepath)
   return vim.fs.basename(filepath)
-end
-
---- Get the file path
----@param filename string The file name
----@return string
-function M.filepath(filename)
-  return vim.fn.fnamemodify(filename, ':p:.')
 end
 
 --- Generate a UUID
@@ -291,6 +310,13 @@ function M.make_string(...)
       x = vim.inspect(x)
     else
       x = tostring(x)
+      while true do
+        local new_x = x:gsub('^[^:]+:%d+: ', '')
+        if new_x == x then
+          break
+        end
+        x = new_x
+      end
     end
 
     t[#t + 1] = x
@@ -329,8 +355,10 @@ end
 ---@param opts table? The options
 ---@async
 M.curl_get = async.wrap(function(url, opts, callback)
+  log.debug('GET request:', url, opts)
   local args = {
     on_error = function(err)
+      log.debug('GET error:', err)
       callback(nil, err and err.stderr or err)
     end,
   }
@@ -339,6 +367,7 @@ M.curl_get = async.wrap(function(url, opts, callback)
   args = vim.tbl_deep_extend('force', args, opts or {})
 
   args.callback = function(response)
+    log.debug('GET response:', response)
     if response and not vim.startswith(tostring(response.status), '20') then
       callback(response, response.body)
       return
@@ -366,9 +395,10 @@ end, 3)
 ---@param opts table? The options
 ---@async
 M.curl_post = async.wrap(function(url, opts, callback)
+  log.debug('POST request:', url, opts)
   local args = {
-    callback = callback,
     on_error = function(err)
+      log.debug('POST error:', err)
       callback(nil, err and err.stderr or err)
     end,
   }
@@ -376,13 +406,8 @@ M.curl_post = async.wrap(function(url, opts, callback)
   args = vim.tbl_deep_extend('force', M.curl_args, args)
   args = vim.tbl_deep_extend('force', args, opts or {})
 
-  if args.json_response then
-    args.headers = vim.tbl_deep_extend('force', args.headers or {}, {
-      Accept = 'application/json',
-    })
-  end
-
   args.callback = function(response)
+    log.debug('POST response:', url, response)
     if response and not vim.startswith(tostring(response.status), '20') then
       callback(response, response.body)
       return
@@ -402,6 +427,12 @@ M.curl_post = async.wrap(function(url, opts, callback)
     end
   end
 
+  if args.json_response then
+    args.headers = vim.tbl_deep_extend('force', args.headers or {}, {
+      Accept = 'application/json',
+    })
+  end
+
   if args.json_request then
     args.headers = vim.tbl_deep_extend('force', args.headers or {}, {
       ['Content-Type'] = 'application/json',
@@ -413,7 +444,18 @@ M.curl_post = async.wrap(function(url, opts, callback)
   curl.post(url, args)
 end, 3)
 
----@class CopilotChat.utils.scan_dir_opts
+local function filter_files(files, max_count)
+  files = vim.tbl_filter(function(file)
+    return file ~= '' and M.filetype(file) ~= nil
+  end, files)
+  if max_count and max_count > 0 then
+    files = vim.list_slice(files, 1, max_count)
+  end
+
+  return files
+end
+
+---@class CopilotChat.utils.ScanOpts
 ---@field max_count number? The maximum number of files to scan
 ---@field max_depth number? The maximum depth to scan
 ---@field glob? string The glob pattern to match files
@@ -421,30 +463,19 @@ end, 3)
 ---@field no_ignore? boolean Whether to respect or ignore .gitignore
 
 --- Scan a directory
----@param path string The directory path
----@param opts CopilotChat.utils.scan_dir_opts? The options
+---@param path string
+---@param opts CopilotChat.utils.ScanOpts?
 ---@async
-M.scan_dir = async.wrap(function(path, opts, callback)
+M.glob = async.wrap(function(path, opts, callback)
   opts = vim.tbl_deep_extend('force', M.scan_args, opts or {})
-
-  local function filter_files(files)
-    files = vim.tbl_filter(function(file)
-      return file ~= '' and M.filetype(file) ~= nil
-    end, files)
-    if opts.max_count and opts.max_count > 0 then
-      files = vim.list_slice(files, 1, opts.max_count)
-    end
-
-    return files
-  end
 
   -- Use ripgrep if available
   if vim.fn.executable('rg') == 1 then
     local cmd = { 'rg' }
 
-    if opts.glob then
+    if opts.pattern then
       table.insert(cmd, '-g')
-      table.insert(cmd, opts.glob)
+      table.insert(cmd, opts.pattern)
     end
 
     if opts.max_depth then
@@ -466,7 +497,7 @@ M.scan_dir = async.wrap(function(path, opts, callback)
     vim.system(cmd, { text = true }, function(result)
       local files = {}
       if result and result.code == 0 and result.stdout ~= '' then
-        files = filter_files(vim.split(result.stdout, '\n'))
+        files = filter_files(vim.split(result.stdout, '\n'), opts.max_count)
       end
 
       callback(files)
@@ -484,10 +515,69 @@ M.scan_dir = async.wrap(function(path, opts, callback)
       search_pattern = opts.glob and M.glob_to_pattern(opts.glob) or nil,
       respect_gitignore = not opts.no_ignore,
       on_exit = function(files)
-        callback(filter_files(files))
+        callback(filter_files(files, opts.max_count))
       end,
     })
   )
+end, 3)
+
+--- Grep a directory
+---@param path string The path to search
+---@param opts CopilotChat.utils.ScanOpts?
+M.grep = async.wrap(function(path, opts, callback)
+  opts = vim.tbl_deep_extend('force', M.scan_args, opts or {})
+  local cmd = {}
+
+  if vim.fn.executable('rg') == 1 then
+    table.insert(cmd, 'rg')
+
+    if opts.max_depth then
+      table.insert(cmd, '--max-depth')
+      table.insert(cmd, tostring(opts.max_depth))
+    end
+
+    if opts.no_ignore then
+      table.insert(cmd, '--no-ignore')
+    end
+
+    if opts.hidden then
+      table.insert(cmd, '--hidden')
+    end
+
+    table.insert(cmd, '--files-with-matches')
+    table.insert(cmd, '--ignore-case')
+
+    if opts.pattern then
+      table.insert(cmd, '-e')
+      table.insert(cmd, "'" .. opts.pattern .. "'")
+    end
+
+    table.insert(cmd, path)
+  elseif vim.fn.executable('grep') == 1 then
+    table.insert(cmd, 'grep')
+    table.insert(cmd, '-rli')
+
+    if opts.pattern then
+      table.insert(cmd, '-e')
+      table.insert(cmd, "'" .. opts.pattern .. "'")
+    end
+
+    table.insert(cmd, path)
+  end
+
+  if M.empty(cmd) then
+    error('No executable found for grep')
+    return
+  end
+
+  vim.system(cmd, { text = true }, function(result)
+    local files = {}
+    if result and result.code == 0 and result.stdout ~= '' then
+      files = filter_files(vim.split(result.stdout, '\n'), opts.max_count)
+    end
+
+    callback(files)
+  end)
 end, 3)
 
 --- Get last modified time of a file
@@ -586,6 +676,46 @@ M.ts_parse = async.wrap(function(parser, callback)
     fn()
   end
 end, 2)
+
+--- Wait for a user input
+M.input = async.wrap(function(opts, callback)
+  local fn = function()
+    vim.ui.input(opts, function(input)
+      if input == nil or input == '' then
+        callback(nil)
+        return
+      end
+
+      callback(input)
+    end)
+  end
+
+  if vim.in_fast_event() then
+    vim.schedule(fn)
+  else
+    fn()
+  end
+end, 2)
+
+--- Select an item from a list
+M.select = async.wrap(function(choices, opts, callback)
+  local fn = function()
+    vim.ui.select(choices, opts, function(item)
+      if item == nil or item == '' then
+        callback(nil)
+        return
+      end
+
+      callback(item)
+    end)
+  end
+
+  if vim.in_fast_event() then
+    vim.schedule(fn)
+  else
+    fn()
+  end
+end, 3)
 
 --- Get the info for a key.
 ---@param name string
@@ -768,42 +898,6 @@ function M.glob_to_pattern(g)
     end
   end
   return p
-end
-
----@class CopilotChat.Diagnostic
----@field content string
----@field start_line number
----@field end_line number
----@field severity string
-
---- Get diagnostics in a given range
---- @param bufnr number
---- @param start_line number?
---- @param end_line number?
---- @return table<CopilotChat.Diagnostic>|nil
-function M.diagnostics(bufnr, start_line, end_line)
-  local diagnostics = vim.diagnostic.get(bufnr)
-  local range_diagnostics = {}
-  local severity = {
-    [1] = 'ERROR',
-    [2] = 'WARNING',
-    [3] = 'INFORMATION',
-    [4] = 'HINT',
-  }
-
-  for _, diagnostic in ipairs(diagnostics) do
-    local lnum = diagnostic.lnum + 1
-    if (not start_line or lnum >= start_line) and (not end_line or lnum <= end_line) then
-      table.insert(range_diagnostics, {
-        severity = severity[diagnostic.severity],
-        content = diagnostic.message,
-        start_line = lnum,
-        end_line = diagnostic.end_lnum and diagnostic.end_lnum + 1 or lnum,
-      })
-    end
-  end
-
-  return #range_diagnostics > 0 and range_diagnostics or nil
 end
 
 return M

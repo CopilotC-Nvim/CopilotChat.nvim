@@ -1,17 +1,21 @@
 local async = require('plenary.async')
 local log = require('plenary.log')
-local context = require('CopilotChat.context')
+local functions = require('CopilotChat.functions')
+local resources = require('CopilotChat.resources')
 local client = require('CopilotChat.client')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 
 local PLUGIN_NAME = 'CopilotChat'
-local WORD = '([^%s]+)'
-local WORD_INPUT = '([^%s:]+:`[^`]+`)'
+local WORD = '([^%s:]+)'
+local WORD_NO_INPUT = '([^%s]+)'
+local WORD_WITH_INPUT_QUOTED = WORD .. ':`([^`]+)`'
+local WORD_WITH_INPUT_UNQUOTED = WORD .. ':?([^%s`]*)'
+local BLOCK_OUTPUT_FORMAT = '```%s\n%s\n```'
 
 ---@class CopilotChat
----@field config CopilotChat.config
----@field chat CopilotChat.ui.Chat
+---@field config CopilotChat.config.Config
+---@field chat CopilotChat.ui.chat.Chat
 local M = {}
 
 --- @class CopilotChat.source
@@ -21,23 +25,19 @@ local M = {}
 
 --- @class CopilotChat.state
 --- @field source CopilotChat.source?
---- @field last_prompt string?
---- @field last_response string?
---- @field highlights_loaded boolean
+--- @field sticky string[]?
 local state = {
   -- Current state tracking
   source = nil,
 
   -- Last state tracking
-  last_prompt = nil,
-  last_response = nil,
-  highlights_loaded = false,
+  sticky = nil,
 }
 
 --- Insert sticky values from config into prompt
 ---@param prompt string
----@param config CopilotChat.config.shared
-local function insert_sticky(prompt, config, override_sticky)
+---@param config CopilotChat.config.Shared
+local function insert_sticky(prompt, config)
   local lines = vim.split(prompt or '', '\n')
   local stickies = utils.ordered_map()
 
@@ -58,8 +58,10 @@ local function insert_sticky(prompt, config, override_sticky)
     stickies:set('$' .. config.model, true)
   end
 
-  if config.remember_as_sticky and config.agent and config.agent ~= M.config.agent then
-    stickies:set('@' .. config.agent, true)
+  if config.remember_as_sticky and config.tools and not vim.deep_equal(config.tools, M.config.tools) then
+    for _, tool in ipairs(utils.to_table(config.tools)) do
+      stickies:set('@' .. tool, true)
+    end
   end
 
   if
@@ -71,32 +73,18 @@ local function insert_sticky(prompt, config, override_sticky)
     stickies:set('/' .. config.system_prompt, true)
   end
 
-  if config.remember_as_sticky and config.context and not vim.deep_equal(config.context, M.config.context) then
-    if type(config.context) == 'table' then
-      ---@diagnostic disable-next-line: param-type-mismatch
-      for _, context in ipairs(config.context) do
-        stickies:set('#' .. context, true)
-      end
-    else
-      stickies:set('#' .. config.context, true)
-    end
-  end
-
-  if config.sticky and (override_sticky or not vim.deep_equal(config.sticky, M.config.sticky)) then
-    if type(config.sticky) == 'table' then
-      ---@diagnostic disable-next-line: param-type-mismatch
-      for _, sticky in ipairs(config.sticky) do
-        stickies:set(sticky, true)
-      end
-    else
-      stickies:set(config.sticky, true)
+  if config.sticky and not vim.deep_equal(config.sticky, M.config.sticky) then
+    for _, sticky in ipairs(utils.to_table(config.sticky)) do
+      stickies:set(sticky, true)
     end
   end
 
   -- Insert stickies at start of prompt
   local prompt_lines = {}
   for _, sticky in ipairs(stickies:keys()) do
-    table.insert(prompt_lines, '> ' .. sticky)
+    if sticky ~= '' then
+      table.insert(prompt_lines, '> ' .. sticky)
+    end
   end
   if #prompt_lines > 0 then
     table.insert(prompt_lines, '')
@@ -130,67 +118,43 @@ local function update_highlights()
       strict = false,
     })
   end
-
-  if state.highlights_loaded then
-    return
-  end
-
-  async.run(function()
-    local items = M.complete_items()
-    utils.schedule_main()
-
-    for _, item in ipairs(items) do
-      local pattern = vim.fn.escape(item.word, '.-$^*[]')
-      if vim.startswith(item.word, '#') then
-        vim.cmd('syntax match CopilotChatKeyword "' .. pattern .. '\\(:.\\+\\)\\?" containedin=ALL')
-      else
-        vim.cmd('syntax match CopilotChatKeyword "' .. pattern .. '" containedin=ALL')
-      end
-    end
-
-    vim.cmd('syntax match CopilotChatInput ":\\(.\\+\\)" contained containedin=CopilotChatKeyword')
-    state.highlights_loaded = true
-  end)
 end
 
 --- Finish writing to chat buffer.
 ---@param start_of_chat boolean?
 local function finish(start_of_chat)
-  if not start_of_chat then
-    M.chat:append('\n\n')
-  end
-
-  M.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
-
-  -- Insert sticky values from config into prompt
   if start_of_chat then
-    state.last_prompt = insert_sticky(state.last_prompt, M.config, true)
+    local sticky = {}
+    if M.config.sticky then
+      for _, sticky_line in ipairs(utils.to_table(M.config.sticky)) do
+        table.insert(sticky, sticky_line)
+      end
+    end
+    state.sticky = sticky
   end
 
-  -- Reinsert sticky prompts from last prompt and last response
-  local lines = {}
-  if state.last_prompt then
-    lines = vim.split(state.last_prompt, '\n')
-  end
-  if state.last_response then
-    for _, line in ipairs(vim.split(state.last_response, '\n')) do
-      table.insert(lines, line)
+  local prompt_content = ''
+  local last_message = M.chat.messages[#M.chat.messages]
+  local tool_calls = last_message and last_message.tool_calls or {}
+
+  if not utils.empty(state.sticky) then
+    for _, sticky in ipairs(state.sticky) do
+      prompt_content = prompt_content .. '> ' .. sticky .. '\n'
     end
+    prompt_content = prompt_content .. '\n'
   end
-  local has_sticky = false
-  local in_code_block = false
-  for _, line in ipairs(lines) do
-    if line:match('^```') then
-      in_code_block = not in_code_block
+
+  if not utils.empty(tool_calls) then
+    for _, tool_call in ipairs(tool_calls) do
+      prompt_content = prompt_content .. string.format('#%s:%s\n', tool_call.name, tool_call.id)
     end
-    if vim.startswith(line, '> ') and not in_code_block then
-      M.chat:append(line .. '\n')
-      has_sticky = true
-    end
+    prompt_content = prompt_content .. '\n'
   end
-  if has_sticky then
-    M.chat:append('\n')
-  end
+
+  M.chat:add_message({
+    role = 'user',
+    content = prompt_content,
+  })
 
   M.chat:finish()
 end
@@ -199,20 +163,13 @@ end
 ---@param err string|table|nil
 local function show_error(err)
   err = err or 'Unknown error'
+  err = utils.make_string(err)
 
-  if type(err) == 'string' then
-    while true do
-      local new_err = err:gsub('^[^:]+:%d+: ', '')
-      if new_err == err then
-        break
-      end
-      err = new_err
-    end
-  else
-    err = utils.make_string(err)
-  end
+  M.chat:add_message({
+    role = 'assistant',
+    content = '\n' .. string.format(BLOCK_OUTPUT_FORMAT, 'error', err) .. '\n',
+  })
 
-  M.chat:append('\n' .. M.config.error_header .. '\n```error\n' .. err .. '\n```')
   finish()
 end
 
@@ -261,15 +218,171 @@ local function update_source()
   M.set_source(use_prev_window and vim.fn.win_getid(vim.fn.winnr('#')) or vim.api.nvim_get_current_win())
 end
 
+--- Call and resolve function calls from the prompt.
+---@param prompt string?
+---@param config CopilotChat.config.Shared?
+---@return table<CopilotChat.client.Tool>, table<CopilotChat.client.Resource>, table, string
+---@async
+function M.resolve_functions(prompt, config)
+  config, prompt = M.resolve_prompt(prompt, config)
+  local enabled_tools = {}
+  local resolved_resources = {}
+  local resolved_tools = {}
+  local matches = utils.to_table(config.tools)
+  local tool_calls = {}
+  for _, message in ipairs(M.chat.messages) do
+    if message.tool_calls then
+      for _, tool_call in ipairs(message.tool_calls) do
+        table.insert(tool_calls, tool_call)
+      end
+    end
+  end
+
+  -- Check for @tool pattern to find enabled tools
+  prompt = prompt:gsub('@' .. WORD, function(match)
+    for name, tool in pairs(M.config.functions) do
+      if name == match or tool.group == match then
+        table.insert(matches, match)
+        return ''
+      end
+    end
+    return '@' .. match
+  end)
+  for _, match in ipairs(matches) do
+    for name, tool in pairs(M.config.functions) do
+      if name == match or tool.group == match then
+        enabled_tools[name] = tool
+      end
+    end
+  end
+
+  local matches = utils.ordered_map()
+
+  -- Check for #word:`input` pattern
+  for word, input in prompt:gmatch('#' .. WORD_WITH_INPUT_QUOTED) do
+    local pattern = string.format('#%s:`%s`', word, input)
+    matches:set(pattern, {
+      word = word,
+      input = input,
+    })
+  end
+
+  -- Check for #word:input pattern
+  for word, input in prompt:gmatch('#' .. WORD_WITH_INPUT_UNQUOTED) do
+    local pattern = utils.empty(input) and string.format('#%s', word) or string.format('#%s:%s', word, input)
+    matches:set(pattern, {
+      word = word,
+      input = input,
+    })
+  end
+
+  -- Check for ##word:input pattern
+  for word in prompt:gmatch('##' .. WORD_NO_INPUT) do
+    local pattern = string.format('##%s', word)
+    matches:set(pattern, {
+      word = word,
+    })
+  end
+
+  -- Resolve each tool reference
+  local function expand_tool(name, input)
+    notify.publish(notify.STATUS, 'Running function: ' .. name)
+
+    local tool_id = nil
+    if not utils.empty(tool_calls) then
+      for _, tool_call in ipairs(tool_calls) do
+        if tool_call.name == name and vim.trim(tool_call.id) == vim.trim(input) and enabled_tools[name] then
+          input = utils.empty(tool_call.arguments) and {} or utils.json_decode(tool_call.arguments)
+          tool_id = tool_call.id
+          break
+        end
+      end
+    end
+
+    local tool = enabled_tools[name]
+    if not tool then
+      -- Check if input matches uri
+      for tool_name, tool_spec in pairs(M.config.functions) do
+        if tool_spec.uri then
+          local match = functions.match_uri(name, tool_spec.uri)
+          if match then
+            name = tool_name
+            tool = tool_spec
+            input = match
+            break
+          end
+        end
+      end
+    end
+    if not tool and not tool_id then
+      tool = M.config.functions[name]
+    end
+    if not tool then
+      -- If tool is not found, return the original pattern
+      return nil
+    end
+    if not tool_id and not tool.uri then
+      -- If this is a tool that is not resource and was not called by LLM, reject it
+      return nil
+    end
+
+    local result = ''
+    local ok, output = pcall(tool.resolve, functions.parse_input(input, tool.schema), state.source or {}, prompt)
+    if not ok then
+      result = string.format(BLOCK_OUTPUT_FORMAT, 'error', utils.make_string(output))
+    else
+      for _, content in ipairs(output) do
+        if content then
+          local content_out = nil
+          if content.uri then
+            content_out = '##' .. content.uri
+            table.insert(resolved_resources, resources.to_resource(content))
+            if tool_id then
+              table.insert(state.sticky, content_out)
+            end
+          else
+            content_out = string.format(BLOCK_OUTPUT_FORMAT, utils.mimetype_to_filetype(content.mimetype), content.data)
+          end
+
+          if not utils.empty(result) then
+            result = result .. '\n'
+          end
+          result = result .. content_out
+        end
+      end
+    end
+
+    if tool_id then
+      table.insert(resolved_tools, {
+        id = tool_id,
+        result = result,
+      })
+
+      return nil
+    end
+
+    return result
+  end
+
+  -- Resolve and process all tools
+  for _, pattern in ipairs(matches:keys()) do
+    local match = matches:get(pattern)
+    local out = expand_tool(match.word, match.input) or pattern
+    prompt = prompt:gsub(vim.pesc(pattern), out, 1)
+  end
+
+  return functions.parse_tools(enabled_tools), resolved_resources, resolved_tools, prompt
+end
+
 --- Resolve the final prompt and config from prompt template.
 ---@param prompt string?
----@param config CopilotChat.config.shared?
----@return CopilotChat.config.prompt, string
+---@param config CopilotChat.config.Shared?
+---@return CopilotChat.config.prompts.Prompt, string
 function M.resolve_prompt(prompt, config)
   if not prompt then
-    local section = M.chat:get_prompt()
-    if section then
-      prompt = section.content
+    local message = M.chat:get_message('user')
+    if message then
+      prompt = message.content
     end
   end
 
@@ -303,107 +416,20 @@ function M.resolve_prompt(prompt, config)
   if prompts_to_use[config.system_prompt] then
     config.system_prompt = prompts_to_use[config.system_prompt].system_prompt
   end
+
+  if config.system_prompt then
+    config.system_prompt = config.system_prompt:gsub('{OS_NAME}', jit.os)
+    if state.source then
+      config.system_prompt = config.system_prompt:gsub('{DIR}', state.source.cwd())
+    end
+  end
+
   return config, prompt
-end
-
---- Resolve the context embeddings from the prompt.
----@param prompt string?
----@param config CopilotChat.config.shared?
----@return table<CopilotChat.context.embed>, string
----@async
-function M.resolve_context(prompt, config)
-  config, prompt = M.resolve_prompt(prompt, config)
-
-  local contexts = {}
-  local function parse_context(prompt_context)
-    local split = vim.split(prompt_context, ':')
-    local context_name = table.remove(split, 1)
-    local context_input = vim.trim(table.concat(split, ':'))
-    if vim.startswith(context_input, '`') and vim.endswith(context_input, '`') then
-      context_input = context_input:sub(2, -2)
-    end
-
-    if M.config.contexts[context_name] then
-      table.insert(contexts, {
-        name = context_name,
-        input = (context_input ~= '' and context_input or nil),
-      })
-
-      return true
-    end
-
-    return false
-  end
-
-  prompt = prompt:gsub('#' .. WORD_INPUT, function(match)
-    return parse_context(match) and '' or '#' .. match
-  end)
-
-  prompt = prompt:gsub('#' .. WORD, function(match)
-    return parse_context(match) and '' or '#' .. match
-  end)
-
-  if config.context then
-    if type(config.context) == 'table' then
-      ---@diagnostic disable-next-line: param-type-mismatch
-      for _, config_context in ipairs(config.context) do
-        parse_context(config_context)
-      end
-    else
-      parse_context(config.context)
-    end
-  end
-
-  local embeddings = utils.ordered_map()
-  for _, context_data in ipairs(contexts) do
-    local context_value = M.config.contexts[context_data.name]
-    notify.publish(
-      notify.STATUS,
-      'Resolving context: ' .. context_data.name .. (context_data.input and ' with input: ' .. context_data.input or '')
-    )
-
-    local ok, resolved_embeddings = pcall(context_value.resolve, context_data.input, state.source or {}, prompt)
-    if ok then
-      for _, embedding in ipairs(resolved_embeddings) do
-        if embedding then
-          embeddings:set(embedding.filename, embedding)
-        end
-      end
-    else
-      log.error('Failed to resolve context: ' .. context_data.name, resolved_embeddings)
-    end
-  end
-
-  return embeddings:values(), prompt
-end
-
---- Resolve the agent from the prompt.
----@param prompt string?
----@param config CopilotChat.config.shared?
----@return string, string
----@async
-function M.resolve_agent(prompt, config)
-  config, prompt = M.resolve_prompt(prompt, config)
-
-  local agents = vim.tbl_map(function(agent)
-    return agent.id
-  end, client:list_agents())
-
-  local selected_agent = config.agent or ''
-  prompt = prompt:gsub('@' .. WORD, function(match)
-    if vim.tbl_contains(agents, match) then
-      selected_agent = match
-      return ''
-    end
-    return '@' .. match
-  end)
-
-  return selected_agent, prompt
 end
 
 --- Resolve the model from the prompt.
 ---@param prompt string?
----@param config CopilotChat.config.shared?
+---@param config CopilotChat.config.Shared?
 ---@return string, string
 ---@async
 function M.resolve_model(prompt, config)
@@ -457,7 +483,7 @@ function M.set_source(source_winnr)
 end
 
 --- Get the selection from the source buffer.
----@return CopilotChat.select.selection?
+---@return CopilotChat.select.Selection?
 function M.get_selection()
   local config = vim.tbl_deep_extend('force', M.config, M.chat.config)
   local selection = config.selection
@@ -506,8 +532,8 @@ function M.set_selection(bufnr, start_line, end_line, clear)
 end
 
 --- Trigger the completion for the chat window.
----@param without_context boolean?
-function M.trigger_complete(without_context)
+---@param without_input boolean?
+function M.trigger_complete(without_input)
   local info = M.complete_info()
   local bufnr = vim.api.nvim_get_current_buf()
   local line = vim.api.nvim_get_current_line()
@@ -523,23 +549,18 @@ function M.trigger_complete(without_context)
     return
   end
 
-  if not without_context and vim.startswith(prefix, '#') and vim.endswith(prefix, ':') then
-    local found_context = M.config.contexts[prefix:sub(2, -2)]
-    if found_context and found_context.input then
+  if not without_input and vim.startswith(prefix, '#') and vim.endswith(prefix, ':') then
+    local found_tool = M.config.functions[prefix:sub(2, -2)]
+    if found_tool and found_tool.schema then
       async.run(function()
-        found_context.input(function(value)
-          if not value then
-            return
-          end
+        local value = functions.enter_input(found_tool.schema, state.source)
+        if not value then
+          return
+        end
 
-          local value_str = vim.trim(tostring(value))
-          if value_str:find('%s') then
-            value_str = '`' .. value_str .. '`'
-          end
-
-          vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { value_str })
-          vim.api.nvim_win_set_cursor(0, { row, col + #value_str })
-        end, state.source or {})
+        utils.schedule_main()
+        vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { value })
+        vim.api.nvim_win_set_cursor(0, { row, col + #value })
       end)
     end
 
@@ -577,7 +598,6 @@ end
 ---@async
 function M.complete_items()
   local models = client:list_models()
-  local agents = client:list_agents()
   local prompts_to_use = M.prompts()
   local items = {}
 
@@ -616,30 +636,57 @@ function M.complete_items()
     }
   end
 
-  for _, agent in pairs(agents) do
+  local groups = {}
+  for name, tool in pairs(M.config.functions) do
+    if tool.group then
+      groups[tool.group] = groups[tool.group] or {}
+      groups[tool.group][name] = tool
+    end
+  end
+  for name, group in pairs(groups) do
+    local group_tools = vim.tbl_keys(group)
     items[#items + 1] = {
-      word = '@' .. agent.id,
-      abbr = agent.id,
-      kind = agent.provider,
-      info = agent.description,
-      menu = agent.name,
+      word = '@' .. name,
+      abbr = name,
+      kind = 'group',
+      info = table.concat(group_tools, '\n'),
+      menu = string.format('%s tools', #group_tools),
+      icase = 1,
+      dup = 0,
+      empty = 0,
+    }
+  end
+  for name, tool in pairs(M.config.functions) do
+    items[#items + 1] = {
+      word = '@' .. name,
+      abbr = name,
+      kind = 'tool',
+      info = tool.description,
+      menu = tool.group or '',
       icase = 1,
       dup = 0,
       empty = 0,
     }
   end
 
-  for name, value in pairs(M.config.contexts) do
-    items[#items + 1] = {
-      word = '#' .. name,
-      abbr = name,
-      kind = 'context',
-      info = value.description or '',
-      menu = value.input and string.format('#%s:<input>', name) or string.format('#%s', name),
-      icase = 1,
-      dup = 0,
-      empty = 0,
-    }
+  local tools_to_use = functions.parse_tools(M.config.functions)
+  for _, tool in pairs(tools_to_use) do
+    local uri = M.config.functions[tool.name].uri
+    if uri then
+      local info =
+        string.format('%s\n\n%s', tool.description, tool.schema and vim.inspect(tool.schema, { indent = '  ' }) or '')
+
+      items[#items + 1] = {
+        word = '#' .. tool.name,
+        abbr = tool.name,
+        kind = 'resource',
+        info = info,
+        menu = uri,
+        icase = 1,
+        dup = 0,
+        empty = 0,
+      }
+    end
   end
 
   table.sort(items, function(a, b)
@@ -653,7 +700,7 @@ function M.complete_items()
 end
 
 --- Get the prompts to use.
----@return table<string, CopilotChat.config.prompt>
+---@return table<string, CopilotChat.config.prompts.Prompt>
 function M.prompts()
   local prompts_to_use = {}
 
@@ -676,18 +723,22 @@ function M.prompts()
 end
 
 --- Open the chat window.
----@param config CopilotChat.config.shared?
+---@param config CopilotChat.config.Shared?
 function M.open(config)
   config = vim.tbl_deep_extend('force', M.config, config or {})
   utils.return_to_normal_mode()
 
   M.chat:open(config)
 
-  local section = M.chat:get_prompt()
-  if section then
-    local prompt = insert_sticky(section.content, config)
+  local message = M.chat:get_message('user')
+  if message then
+    local prompt = insert_sticky(message.content, config)
     if prompt then
-      M.chat:set_prompt(prompt)
+      M.chat:add_message({
+        role = 'user',
+        content = '\n' .. prompt,
+      }, true)
+      M.chat:finish()
     end
   end
 
@@ -701,19 +752,13 @@ function M.close()
 end
 
 --- Toggle the chat window.
----@param config CopilotChat.config.shared?
+---@param config CopilotChat.config.Shared?
 function M.toggle(config)
   if M.chat:visible() then
     M.close()
   else
     M.open(config)
   end
-end
-
---- Get the last response.
---- @returns string
-function M.response()
-  return state.last_response
 end
 
 --- Select default Copilot GPT model.
@@ -725,6 +770,8 @@ function M.select_model()
         id = model.id,
         name = model.name,
         provider = model.provider,
+        streaming = model.streaming,
+        tools = model.tools,
         selected = model.id == M.config.model,
       }
     end, models)
@@ -733,10 +780,27 @@ function M.select_model()
     vim.ui.select(choices, {
       prompt = 'Select a model> ',
       format_item = function(item)
-        local out = string.format('%s (%s:%s)', item.name, item.provider, item.id)
+        local indicators = {}
+        local out = item.name
+
         if item.selected then
           out = '* ' .. out
         end
+
+        if item.provider then
+          table.insert(indicators, item.provider)
+        end
+        if item.streaming then
+          table.insert(indicators, 'streaming')
+        end
+        if item.tools then
+          table.insert(indicators, 'tools')
+        end
+
+        if #indicators > 0 then
+          out = out .. ' [' .. table.concat(indicators, ', ') .. ']'
+        end
+
         return out
       end,
     }, function(choice)
@@ -747,39 +811,8 @@ function M.select_model()
   end)
 end
 
---- Select default Copilot agent.
-function M.select_agent()
-  async.run(function()
-    local agents = client:list_agents()
-    local choices = vim.tbl_map(function(agent)
-      return {
-        id = agent.id,
-        name = agent.name,
-        provider = agent.provider,
-        selected = agent.id == M.config.agent,
-      }
-    end, agents)
-
-    utils.schedule_main()
-    vim.ui.select(choices, {
-      prompt = 'Select an agent> ',
-      format_item = function(item)
-        local out = string.format('%s (%s:%s)', item.name, item.provider, item.id)
-        if item.selected then
-          out = '* ' .. out
-        end
-        return out
-      end,
-    }, function(choice)
-      if choice then
-        M.config.agent = choice.id
-      end
-    end)
-  end)
-end
-
 --- Select a prompt template to use.
----@param config CopilotChat.config.shared?
+---@param config CopilotChat.config.Shared?
 function M.select_prompt(config)
   local prompts = M.prompts()
   local keys = vim.tbl_keys(prompts)
@@ -813,7 +846,7 @@ end
 
 --- Ask a question to the Copilot model.
 ---@param prompt string?
----@param config CopilotChat.config.shared?
+---@param config CopilotChat.config.Shared?
 function M.ask(prompt, config)
   prompt = prompt or ''
   if prompt == '' then
@@ -836,10 +869,18 @@ function M.ask(prompt, config)
       M.open(config)
     end
 
-    state.last_prompt = prompt
-    M.chat:set_prompt(prompt)
-    M.chat:append('\n\n' .. M.config.answer_header .. M.config.separator .. '\n\n')
-    M.chat:follow()
+    local sticky = {}
+    local in_code_block = false
+    for _, line in ipairs(vim.split(prompt, '\n')) do
+      if line:match('^```') then
+        in_code_block = not in_code_block
+      end
+      if vim.startswith(line, '> ') and not in_code_block then
+        table.insert(sticky, line:sub(3))
+      end
+    end
+
+    state.sticky = sticky
   else
     update_source()
   end
@@ -847,16 +888,6 @@ function M.ask(prompt, config)
   -- Resolve prompt references
   config, prompt = M.resolve_prompt(prompt, config)
   local system_prompt = config.system_prompt or ''
-
-  -- Resolve context name and description
-  local contexts = {}
-  if config.include_contexts_in_prompt then
-    for name, context in pairs(M.config.contexts) do
-      if context.description then
-        contexts[name] = context.description
-      end
-    end
-  end
 
   -- Remove sticky prefix
   prompt = table.concat(
@@ -870,39 +901,55 @@ function M.ask(prompt, config)
   local selection = M.get_selection()
 
   local ok, err = pcall(async.run, function()
-    local selected_agent, prompt = M.resolve_agent(prompt, config)
+    local selected_tools, resolved_resources, resolved_tools, prompt = M.resolve_functions(prompt, config)
     local selected_model, prompt = M.resolve_model(prompt, config)
-    local embeddings, prompt = M.resolve_context(prompt, config)
-
-    local query_ok, filtered_embeddings =
-      pcall(context.filter_embeddings, prompt, selected_model, config.headless, embeddings)
-
-    if not query_ok then
-      utils.schedule_main()
-      log.error(filtered_embeddings)
-      if not config.headless then
-        show_error(filtered_embeddings)
-      end
-      return
+    local query_ok, processed_resources = pcall(resources.process_resources, prompt, selected_model, resolved_resources)
+    if query_ok then
+      resolved_resources = processed_resources
+    else
+      log.warn('Failed to process resources', processed_resources)
     end
 
-    local ask_ok, response, references, token_count, token_max_count = pcall(client.ask, client, prompt, {
+    prompt = vim.trim(prompt)
+
+    if not config.headless then
+      utils.schedule_main()
+
+      if not utils.empty(resolved_tools) then
+        M.chat:remove_message('user')
+      else
+        M.chat:add_message({
+          role = 'user',
+          content = '\n' .. prompt .. '\n',
+        }, true)
+      end
+
+      for _, tool in ipairs(resolved_tools) do
+        M.chat:add_message({
+          role = 'tool',
+          tool_call_id = tool.id,
+          content = tool.result .. '\n',
+        })
+      end
+
+      M.chat:follow()
+    end
+
+    local ask_ok, ask_response = pcall(client.ask, client, prompt, {
       headless = config.headless,
-      contexts = contexts,
+      history = M.chat.messages,
       selection = selection,
-      embeddings = filtered_embeddings,
+      resources = resolved_resources,
+      tools = selected_tools,
       system_prompt = system_prompt,
       model = selected_model,
-      agent = selected_agent,
       temperature = config.temperature,
       on_progress = vim.schedule_wrap(function(token)
-        local out = config.stream and config.stream(token, state.source) or nil
-        if out == nil then
-          out = token
-        end
-        local to_print = not config.headless and out
-        if to_print and to_print ~= '' then
-          M.chat:append(token)
+        if not config.headless then
+          M.chat:add_message({
+            content = token,
+            role = 'assistant',
+          })
         end
       end),
     })
@@ -910,48 +957,44 @@ function M.ask(prompt, config)
     utils.schedule_main()
 
     if not ask_ok then
-      log.error(response)
+      log.error(ask_response)
       if not config.headless then
-        show_error(response)
+        show_error(ask_response)
       end
       return
     end
 
     -- If there was no error and no response, it means job was cancelled
-    if response == nil then
+    if ask_response == nil then
       return
     end
 
-    -- Call the callback function and store to history
-    local out = config.callback and config.callback(response, state.source) or nil
-    if out == nil then
-      out = response
-    end
-    local to_store = not config.headless and out
-    if to_store and to_store ~= '' then
-      table.insert(client.history, {
-        content = prompt,
-        role = 'user',
-      })
-      table.insert(client.history, {
-        content = to_store,
-        role = 'assistant',
-      })
+    local response = ask_response.message
+    local token_count = ask_response.token_count
+    local token_max_count = ask_response.token_max_count
+
+    -- Call the callback function
+    if config.callback then
+      local callback_ok, callback_response = pcall(config.callback, response.content, state.source)
+      if not callback_ok then
+        log.error('Callback error: ' .. callback_response)
+        if not config.headless then
+          show_error(callback_response)
+        end
+        return
+      end
     end
 
     if not config.headless then
-      state.last_response = response
-      M.chat.references = references
+      response.content = vim.trim(response.content)
+      if utils.empty(response.content) then
+        response.content = ''
+      else
+        response.content = '\n' .. response.content .. '\n'
+      end
+      M.chat:add_message(response, true)
       M.chat.token_count = token_count
       M.chat.token_max_count = token_max_count
-
-      if not utils.empty(references) and config.references_display == 'write' then
-        M.chat:append('\n\n**`References`**:')
-        for _, ref in ipairs(references) do
-          M.chat:append(string.format('\n[%s](%s)', ref.name, ref.url))
-        end
-      end
-
       finish()
     end
   end)
@@ -967,26 +1010,19 @@ end
 --- Stop current copilot output and optionally reset the chat ten show the help message.
 ---@param reset boolean?
 function M.stop(reset)
-  local stopped = false
+  local stopped = client:stop()
 
   if reset then
-    client:reset()
     M.chat:clear()
     vim.diagnostic.reset(vim.api.nvim_create_namespace('copilot-chat-diagnostics'))
-    state.last_prompt = nil
-    state.last_response = nil
 
     -- Clear the selection
     if state.source then
       M.set_selection(state.source.bufnr, 0, 0, true)
     end
-
-    stopped = true
-  else
-    stopped = client:stop()
   end
 
-  if stopped then
+  if stopped or reset then
     finish(reset)
   end
 end
@@ -1009,15 +1045,10 @@ function M.save(name, history_path)
     return
   end
 
-  local prompt = M.chat:get_prompt()
-  local history = vim.list_slice(client.history)
-  if prompt then
-    table.insert(history, {
-      content = prompt.content,
-      role = 'user',
-    })
+  local history = vim.deepcopy(M.chat.messages)
+  for _, message in ipairs(history) do
+    message.section = nil
   end
-
   history_path = vim.fs.normalize(history_path)
   vim.fn.mkdir(history_path, 'p')
   history_path = history_path .. '/' .. name .. '.json'
@@ -1059,32 +1090,11 @@ function M.load(name, history_path)
     },
   })
 
-  client:reset()
-  M.chat:clear()
-
-  client.history = history
-  for i, message in ipairs(history) do
-    if message.role == 'user' then
-      if i > 1 then
-        M.chat:append('\n\n')
-      end
-      M.chat:append(M.config.question_header .. M.config.separator .. '\n\n')
-      M.chat:append(message.content)
-    elseif message.role == 'assistant' then
-      M.chat:append('\n\n' .. M.config.answer_header .. M.config.separator .. '\n\n')
-      M.chat:append(message.content)
-    end
-  end
-
   log.info('Loaded history from ' .. history_path)
 
-  if #history > 0 then
-    local last = history[#history]
-    if last and last.role == 'user' then
-      M.chat:append('\n\n')
-      M.chat:finish()
-      return
-    end
+  M.stop(true)
+  for _, message in ipairs(history) do
+    M.chat:add_message(message)
   end
 
   finish(#history == 0)
@@ -1100,11 +1110,20 @@ function M.log_level(level)
     plugin = PLUGIN_NAME,
     level = level,
     outfile = M.config.log_path,
+    fmt_msg = function(is_console, mode_name, src_path, src_line, msg)
+      local nameupper = mode_name:upper()
+      if is_console then
+        return string.format('[%s] %s', nameupper, msg)
+      else
+        local lineinfo = src_path .. ':' .. src_line
+        return string.format('[%-6s%s] %s: %s\n', nameupper, os.date(), lineinfo, msg)
+      end
+    end,
   }, true)
 end
 
 --- Set up the plugin
----@param config CopilotChat.config?
+---@param config CopilotChat.config.Config?
 function M.setup(config)
   M.config = vim.tbl_deep_extend('force', require('CopilotChat.config'), config or {})
   state.highlights_loaded = false
@@ -1130,8 +1149,7 @@ function M.setup(config)
     M.chat:delete()
   end
   M.chat = require('CopilotChat.ui.chat')(
-    M.config.question_header,
-    M.config.answer_header,
+    M.config.headers,
     M.config.separator,
     utils.key_to_info('show_help', M.config.mappings.show_help),
     function(bufnr)

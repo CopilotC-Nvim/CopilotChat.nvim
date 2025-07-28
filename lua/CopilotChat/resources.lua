@@ -1,4 +1,4 @@
----@class CopilotChat.context.symbol
+---@class CopilotChat.resources.Symbol
 ---@field name string?
 ---@field signature string
 ---@field type string
@@ -6,16 +6,6 @@
 ---@field start_col number
 ---@field end_row number
 ---@field end_col number
-
----@class CopilotChat.context.embed
----@field content string
----@field filename string
----@field filetype string
----@field outline string?
----@field diagnostics table<CopilotChat.Diagnostic>?
----@field symbols table<string, CopilotChat.context.symbol>?
----@field embedding table<number>?
----@field score number?
 
 local async = require('plenary.async')
 local log = require('plenary.log')
@@ -94,9 +84,9 @@ local function spatial_distance_cosine(a, b)
 end
 
 --- Rank data by relatedness to the query
----@param query CopilotChat.context.embed
----@param data table<CopilotChat.context.embed>
----@return table<CopilotChat.context.embed>
+---@param query CopilotChat.client.EmbeddedResource
+---@param data table<CopilotChat.client.EmbeddedResource>
+---@return table<CopilotChat.client.EmbeddedResource>
 local function data_ranked_by_relatedness(query, data)
   for _, item in ipairs(data) do
     local score = spatial_distance_cosine(item.embedding, query.embedding)
@@ -189,8 +179,8 @@ end
 
 --- Rank data by symbols and filenames
 ---@param query string
----@param data table<CopilotChat.context.embed>
----@return table<CopilotChat.context.embed>
+---@param data table<CopilotChat.client.Resource>
+---@return table<CopilotChat.client.Resource>
 local function data_ranked_by_symbols(query, data)
   -- Get query trigrams including compound versions
   local query_trigrams = {}
@@ -211,7 +201,7 @@ local function data_ranked_by_symbols(query, data)
   local max_score = 0
 
   for _, entry in ipairs(data) do
-    local basename = utils.filename(entry.filename):gsub('%..*$', '')
+    local basename = utils.filename(entry.name):gsub('%..*$', '')
 
     -- Get trigrams for basename and compound version
     local file_trigrams = get_trigrams(basename)
@@ -327,9 +317,9 @@ end
 --- Build an outline and symbols from a string
 ---@param content string
 ---@param ft string
----@return string?, table<string, CopilotChat.context.symbol>?
+---@return string?, table<string, CopilotChat.resources.Symbol>?
 local function get_outline(content, ft)
-  if not ft or ft == '' or ft == 'text' or ft == 'raw' then
+  if not ft or ft == '' then
     return nil
   end
 
@@ -399,47 +389,36 @@ end
 
 --- Get data for a file
 ---@param filename string
----@param filetype string?
----@return CopilotChat.context.embed?
-function M.get_file(filename, filetype)
+---@return string?, string?
+function M.get_file(filename)
+  local filetype = utils.filetype(filename)
   if not filetype then
     return nil
   end
-
   local modified = utils.file_mtime(filename)
   if not modified then
     return nil
   end
 
-  local cached = file_cache[filename]
-  if cached and cached._modified >= modified then
-    return {
-      content = cached.content,
-      _modified = cached._modified,
-      filename = filename,
-      filetype = filetype,
+  local data = file_cache[filename]
+  if not data or data._modified < modified then
+    local content = utils.read_file(filename)
+    if not content or content == '' then
+      return nil
+    end
+    data = {
+      content = content,
+      _modified = modified,
     }
+    file_cache[filename] = data
   end
 
-  local content = utils.read_file(filename)
-  if not content or content == '' then
-    return nil
-  end
-
-  local out = {
-    content = content,
-    filename = filename,
-    filetype = filetype,
-    _modified = modified,
-  }
-
-  file_cache[filename] = out
-  return out
+  return data.content, utils.filetype_to_mimetype(filetype)
 end
 
 --- Get data for a buffer
 ---@param bufnr number
----@return CopilotChat.context.embed?
+---@return string?, string?
 function M.get_buffer(bufnr)
   if not utils.buf_valid(bufnr) then
     return nil
@@ -450,23 +429,18 @@ function M.get_buffer(bufnr)
     return nil
   end
 
-  return {
-    content = table.concat(content, '\n'),
-    filename = utils.filepath(vim.api.nvim_buf_get_name(bufnr)),
-    filetype = vim.bo[bufnr].filetype,
-    score = 0.1,
-    diagnostics = utils.diagnostics(bufnr),
-  }
+  return table.concat(content, '\n'), utils.filetype_to_mimetype(vim.bo[bufnr].filetype)
 end
 
 --- Get the content of an URL
 ---@param url string
----@return CopilotChat.context.embed?
+---@return string?, string?
 function M.get_url(url)
   if not url or url == '' then
     return nil
   end
 
+  local ft = utils.filetype(url)
   local content = url_cache[url]
   if not content then
     local ok, out = async.util.apcall(utils.system, { 'lynx', '-dump', url })
@@ -504,37 +478,41 @@ function M.get_url(url)
     url_cache[url] = content
   end
 
+  return content, utils.filetype_to_mimetype(ft)
+end
+
+--- Transform a resource into a format suitable for the client
+---@param resource CopilotChat.config.functions.Result
+---@return CopilotChat.client.Resource
+function M.to_resource(resource)
   return {
-    content = content,
-    filename = url,
-    filetype = 'text',
+    name = utils.uri_to_filename(resource.uri),
+    type = utils.mimetype_to_filetype(resource.mimetype),
+    data = resource.data,
   }
 end
 
---- Filter embeddings based on the query
+--- Process resources based on the query
 ---@param prompt string
 ---@param model string
----@param headless boolean
----@param embeddings table<CopilotChat.context.embed>
----@return table<CopilotChat.context.embed>
-function M.filter_embeddings(prompt, model, headless, embeddings)
+---@param resources table<CopilotChat.client.Resource>
+---@return table<CopilotChat.client.Resource>
+function M.process_resources(prompt, model, resources)
   -- If we dont need to embed anything, just return directly
-  if #embeddings < MULTI_FILE_THRESHOLD then
-    return embeddings
+  if #resources < MULTI_FILE_THRESHOLD then
+    return resources
   end
 
   notify.publish(notify.STATUS, 'Preparing embedding outline')
 
-  for _, input in ipairs(embeddings) do
-    -- Precalculate hash and attributes for caching
-    local hash = input.filename .. utils.quick_hash(input.content)
+  -- Get the outlines for each resource
+  for _, input in ipairs(resources) do
+    local hash = input.name .. utils.quick_hash(input.data)
     input._hash = hash
-    input.filename = input.filename or 'unknown'
-    input.filetype = input.filetype or 'text'
 
     local outline = outline_cache[hash]
     if not outline then
-      local outline_text, symbols = get_outline(input.content, input.filetype)
+      local outline_text, symbols = get_outline(input.data, input.type)
       if outline_text then
         outline = {
           outline = outline_text,
@@ -555,32 +533,18 @@ function M.filter_embeddings(prompt, model, headless, embeddings)
 
   -- Build query from history and prompt
   local query = prompt
-  if not headless then
-    query = table.concat(
-      vim
-        .iter(client.history)
-        :filter(function(m)
-          return m.role == 'user'
-        end)
-        :map(function(m)
-          return vim.trim(m.content)
-        end)
-        :totable(),
-      '\n'
-    ) .. '\n' .. prompt
-  end
 
   -- Rank embeddings by symbols
-  embeddings = data_ranked_by_symbols(query, embeddings)
-  log.debug('Ranked data:', #embeddings)
-  for i, item in ipairs(embeddings) do
-    log.debug(string.format('%s: %s - %s', i, item.score, item.filename))
+  resources = data_ranked_by_symbols(query, resources)
+  log.debug('Ranked data:', #resources)
+  for i, item in ipairs(resources) do
+    log.debug(string.format('%s: %s - %s', i, item.score, item.name))
   end
 
   -- Prepare embeddings for processing
   local to_process = {}
   local results = {}
-  for _, input in ipairs(embeddings) do
+  for _, input in ipairs(resources) do
     local hash = input._hash
     local embed = embedding_cache[hash]
     if embed then
@@ -591,14 +555,13 @@ function M.filter_embeddings(prompt, model, headless, embeddings)
     end
   end
   table.insert(to_process, {
-    content = query,
-    filename = 'query',
-    filetype = 'raw',
+    type = 'text',
+    data = query,
   })
 
   -- Embed the data and process the results
   for _, input in ipairs(client:embed(to_process, model)) do
-    if input.filetype ~= 'raw' then
+    if input._hash then
       embedding_cache[input._hash] = input.embedding
     end
     table.insert(results, input)

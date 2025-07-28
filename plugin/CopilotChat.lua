@@ -8,14 +8,29 @@ if vim.fn.has('nvim-' .. min_version) ~= 1 then
   return
 end
 
+local group = vim.api.nvim_create_augroup('CopilotChat', {})
+
 -- Setup highlights
-vim.api.nvim_set_hl(0, 'CopilotChatStatus', { link = 'DiagnosticHint', default = true })
-vim.api.nvim_set_hl(0, 'CopilotChatHelp', { link = 'DiagnosticInfo', default = true })
-vim.api.nvim_set_hl(0, 'CopilotChatKeyword', { link = 'Keyword', default = true })
-vim.api.nvim_set_hl(0, 'CopilotChatInput', { link = 'Special', default = true })
-vim.api.nvim_set_hl(0, 'CopilotChatSelection', { link = 'Visual', default = true })
-vim.api.nvim_set_hl(0, 'CopilotChatHeader', { link = '@markup.heading.2.markdown', default = true })
-vim.api.nvim_set_hl(0, 'CopilotChatSeparator', { link = '@punctuation.special.markdown', default = true })
+local function setup_highlights()
+  vim.api.nvim_set_hl(0, 'CopilotChatHeader', { link = '@markup.heading.2.markdown', default = true })
+  vim.api.nvim_set_hl(0, 'CopilotChatSeparator', { link = '@punctuation.special.markdown', default = true })
+  vim.api.nvim_set_hl(0, 'CopilotChatStatus', { link = 'DiagnosticHint', default = true })
+  vim.api.nvim_set_hl(0, 'CopilotChatHelp', { link = 'DiagnosticInfo', default = true })
+  vim.api.nvim_set_hl(0, 'CopilotChatKeyword', { link = 'Keyword', default = true })
+  vim.api.nvim_set_hl(0, 'CopilotChatSelection', { link = 'Visual', default = true })
+  vim.api.nvim_set_hl(0, 'CopilotChatAnnotation', { link = 'ColorColumn', default = true })
+
+  local fg = vim.api.nvim_get_hl(0, { name = 'CopilotChatStatus', link = false }).fg
+  local bg = vim.api.nvim_get_hl(0, { name = 'CopilotChatAnnotation', link = false }).bg
+  vim.api.nvim_set_hl(0, 'CopilotChatAnnotationHeader', { fg = fg, bg = bg })
+end
+vim.api.nvim_create_autocmd('ColorScheme', {
+  group = group,
+  callback = function()
+    setup_highlights()
+  end,
+})
+setup_highlights()
 
 -- Setup commands
 vim.api.nvim_create_user_command('CopilotChat', function(args)
@@ -38,10 +53,6 @@ end, { force = true, range = true })
 vim.api.nvim_create_user_command('CopilotChatModels', function()
   local chat = require('CopilotChat')
   chat.select_model()
-end, { force = true })
-vim.api.nvim_create_user_command('CopilotChatAgents', function()
-  local chat = require('CopilotChat')
-  chat.select_agent()
 end, { force = true })
 vim.api.nvim_create_user_command('CopilotChatOpen', function()
   local chat = require('CopilotChat')
@@ -90,7 +101,7 @@ end, { nargs = '*', force = true, complete = complete_load })
 -- with "rooter" plugins, LSP and stuff as vim.fn.getcwd() when
 -- i pass window number inside doesnt work
 vim.api.nvim_create_autocmd({ 'VimEnter', 'WinEnter', 'DirChanged' }, {
-  group = vim.api.nvim_create_augroup('CopilotChat', {}),
+  group = group,
   callback = function()
     vim.w.cchat_cwd = vim.fn.getcwd()
   end,
