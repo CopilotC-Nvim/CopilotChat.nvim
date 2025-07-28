@@ -136,8 +136,7 @@ function M.parse_input(input, schema)
   local prop_names = sorted_propnames(schema)
 
   -- Map input parts to schema properties in sorted order
-  local i = 1
-  for _, prop_name in ipairs(prop_names) do
+  for i, prop_name in ipairs(prop_names) do
     local prop_schema = schema.properties[prop_name]
     local value = not utils.empty(parts[i]) and parts[i] or nil
     if value == nil and prop_schema.default ~= nil then
@@ -145,10 +144,6 @@ function M.parse_input(input, schema)
     end
 
     result[prop_name] = value
-    i = i + 1
-    if i > #parts then
-      break
-    end
   end
 
   return result

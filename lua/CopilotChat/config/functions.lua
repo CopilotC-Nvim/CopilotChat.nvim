@@ -258,12 +258,12 @@ return {
 
   diagnostics = {
     group = 'copilot',
-    uri = 'neovim://diagnostics/{scope}',
+    uri = 'neovim://diagnostics/{scope}/{severity}',
     description = 'Collects code diagnostics (errors, warnings, etc.) from specified buffers. Helpful for troubleshooting and fixing code issues.',
 
     schema = {
       type = 'object',
-      required = { 'scope' },
+      required = { 'scope', 'severity' },
       properties = {
         scope = {
           type = 'string',
