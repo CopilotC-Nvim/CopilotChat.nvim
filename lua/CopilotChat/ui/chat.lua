@@ -382,6 +382,21 @@ function Chat:follow()
   vim.api.nvim_win_set_cursor(self.winnr, { last_line + 1, last_column })
 end
 
+--- Prepare the chat window for writing.
+function Chat:start()
+  self:validate()
+
+  if self:focused() then
+    utils.return_to_normal_mode()
+  end
+
+  if self.spinner then
+    self.spinner:start()
+  end
+
+  vim.bo[self.bufnr].modifiable = false
+end
+
 --- Finish writing to the chat window.
 function Chat:finish()
   if not self.spinner then
@@ -414,9 +429,7 @@ function Chat:add_message(message, replace)
     self:append(message.content)
   elseif replace and current_message then
     -- Replace the content of the current message
-    self:append('')
     self:render()
-
     current_message.content = message.content
     local section = current_message.section
 
@@ -430,9 +443,8 @@ function Chat:add_message(message, replace)
         vim.split(message.content, '\n')
       )
       vim.bo[self.bufnr].modifiable = false
+      self:append('')
     end
-
-    self:append('')
   else
     -- Append to the current message
     current_message.content = current_message.content .. message.content
@@ -476,15 +488,6 @@ end
 ---@param str string
 function Chat:append(str)
   self:validate()
-  vim.bo[self.bufnr].modifiable = true
-
-  if self:focused() then
-    utils.return_to_normal_mode()
-  end
-
-  if self.spinner then
-    self.spinner:start()
-  end
 
   -- Decide if we should follow cursor after appending text.
   local should_follow_cursor = self.config.auto_follow_cursor
@@ -496,13 +499,14 @@ function Chat:append(str)
   end
 
   local last_line, last_column, _ = self:last()
+
+  vim.bo[self.bufnr].modifiable = true
   vim.api.nvim_buf_set_text(self.bufnr, last_line, last_column, last_line, last_column, vim.split(str, '\n'))
+  vim.bo[self.bufnr].modifiable = false
 
   if should_follow_cursor then
     self:follow()
   end
-
-  vim.bo[self.bufnr].modifiable = false
 end
 
 --- Clear the chat window.
@@ -548,6 +552,7 @@ end
 --- Render the chat window.
 ---@protected
 function Chat:render()
+  self:validate()
   vim.api.nvim_buf_clear_namespace(self.bufnr, self.header_ns, 0, -1)
   local lines = vim.api.nvim_buf_get_lines(self.bufnr, 0, -1, false)
 
