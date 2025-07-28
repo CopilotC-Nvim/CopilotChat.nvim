@@ -424,6 +424,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/42291930?v=4",
       "profile": "https://github.com/AtifChy",
       "contributions": ["code", "doc"]
+    },
+    {
+      "login": "danilohorta",
+      "name": "Danilo Horta",
+      "avatar_url": "https://avatars.githubusercontent.com/u/214497460?v=4",
+      "profile": "https://github.com/danilohorta",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
