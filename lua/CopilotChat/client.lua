@@ -61,9 +61,7 @@ local class = utils.class
 --- Constants
 local RESOURCE_FORMAT = '# %s\n```%s\n%s\n```'
 local LINE_CHARACTERS = 100
-local BIG_FILE_THRESHOLD = 1000 * LINE_CHARACTERS
 local BIG_EMBED_THRESHOLD = 200 * LINE_CHARACTERS
-local TRUNCATED = '... (truncated)'
 
 --- Resolve provider function
 ---@param model string
@@ -103,16 +101,9 @@ end
 
 --- Generate content block with line numbers, truncating if necessary
 ---@param content string
----@param threshold number: The threshold for truncation
 ---@param start_line number?: The starting line number
 ---@return string
-local function generate_content_block(content, threshold, start_line)
-  local total_chars = #content
-  if total_chars > threshold then
-    content = content:sub(1, threshold)
-    content = content .. '\n' .. TRUNCATED
-  end
-
+local function generate_content_block(content, start_line)
   if start_line ~= nil then
     local lines = vim.split(content, '\n')
     local total_lines = #lines
@@ -144,12 +135,7 @@ local function generate_selection_message(selection)
   if selection.start_line and selection.end_line then
     out = out .. string.format('Excerpt from %s, lines %s to %s:\n', filename, selection.start_line, selection.end_line)
   end
-  out = out
-    .. string.format(
-      '```%s\n%s\n```',
-      filetype,
-      generate_content_block(content, BIG_FILE_THRESHOLD, selection.start_line)
-    )
+  out = out .. string.format('```%s\n%s\n```', filetype, generate_content_block(content, selection.start_line))
 
   return {
     content = out,
@@ -167,7 +153,7 @@ local function generate_resource_messages(resources)
       return resource.data and resource.data ~= ''
     end)
     :map(function(resource)
-      local content = generate_content_block(resource.data, BIG_FILE_THRESHOLD, 1)
+      local content = generate_content_block(resource.data, 1)
 
       return {
         content = string.format(RESOURCE_FORMAT, resource.name, resource.type, content),

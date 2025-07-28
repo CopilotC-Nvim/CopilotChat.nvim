@@ -903,11 +903,15 @@ function M.ask(prompt, config)
   local ok, err = pcall(async.run, function()
     local selected_tools, resolved_resources, resolved_tools, prompt = M.resolve_functions(prompt, config)
     local selected_model, prompt = M.resolve_model(prompt, config)
-    local query_ok, processed_resources = pcall(resources.process_resources, prompt, selected_model, resolved_resources)
-    if query_ok then
-      resolved_resources = processed_resources
-    else
-      log.warn('Failed to process resources', processed_resources)
+
+    if config.resource_processing then
+      local query_ok, processed_resources =
+        pcall(resources.process_resources, prompt, selected_model, resolved_resources)
+      if query_ok then
+        resolved_resources = processed_resources
+      else
+        log.warn('Failed to process resources', processed_resources)
+      end
     end
 
     prompt = vim.trim(prompt)
