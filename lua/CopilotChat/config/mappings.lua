@@ -174,7 +174,8 @@ return {
   toggle_sticky = {
     normal = 'grr',
     callback = function()
-      local section = copilot.chat:get_prompt()
+      local message = copilot.chat:get_message('user')
+      local section = message and message.section
       if not section then
         return
       end
@@ -204,12 +205,13 @@ return {
   clear_stickies = {
     normal = 'grx',
     callback = function()
-      local section = copilot.chat:get_prompt()
+      local message = copilot.chat:get_message('user')
+      local section = message and message.section
       if not section then
         return
       end
 
-      local lines = vim.split(section.content, '\n')
+      local lines = vim.split(message.content, '\n')
       local new_lines = {}
       local changed = false
 
@@ -222,7 +224,8 @@ return {
       end
 
       if changed then
-        copilot.chat:set_prompt(vim.trim(table.concat(new_lines, '\n')))
+        message.content = table.concat(new_lines, '\n')
+        copilot.chat:add_message(message, true)
       end
     end,
   },

@@ -126,7 +126,7 @@ function Chat:get_closest_message(role)
 
   for _, message in ipairs(self.messages) do
     local section = message.section
-    local matches_role = not role or section.role == role
+    local matches_role = not role or message.role == role
     if matches_role and section.start_line <= cursor_line and section.start_line > max_line_below_cursor then
       max_line_below_cursor = section.start_line
       closest_message = message
@@ -162,21 +162,20 @@ function Chat:get_closest_block()
   return closest_block
 end
 
---- Get the prompt in the chat window.
+--- Get last message by role in the chat window.
 ---@return CopilotChat.ui.chat.Message?
-function Chat:get_prompt()
+function Chat:get_message(role)
   if not self:visible() then
     return
   end
 
-  self:render()
-  local message = self.messages[#self.messages]
-  local section = message and message.section
-  if not section or section.role ~= 'user' then
-    return
+  for i = #self.messages, 1, -1 do
+    local message = self.messages[i]
+    local matches_role = not role or message.role == role
+    if matches_role then
+      return message
+    end
   end
-
-  return message
 end
 
 --- Add a sticky line to the prompt in the chat window.
@@ -186,7 +185,7 @@ function Chat:add_sticky(sticky)
     return
   end
 
-  local prompt = self:get_prompt()
+  local prompt = self:get_message('user')
   if not prompt or not prompt.section then
     return
   end

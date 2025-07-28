@@ -1,5 +1,3 @@
-local select = require('CopilotChat.select')
-
 ---@alias CopilotChat.config.Layout 'vertical'|'horizontal'|'float'|'replace'
 
 ---@class CopilotChat.config.Window
@@ -65,7 +63,7 @@ return {
   remember_as_sticky = true, -- Remember model as sticky prompts when asking questions
 
   -- default selection
-  selection = select.visual,
+  selection = require('CopilotChat.select').visual,
 
   -- default window options
   window = {

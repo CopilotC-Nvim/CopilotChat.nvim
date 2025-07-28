@@ -380,9 +380,9 @@ end
 ---@return CopilotChat.config.prompts.Prompt, string
 function M.resolve_prompt(prompt, config)
   if not prompt then
-    local section = M.chat:get_prompt()
-    if section then
-      prompt = section.content
+    local message = M.chat:get_message('user')
+    if message then
+      prompt = message.content
     end
   end
 
@@ -730,9 +730,9 @@ function M.open(config)
 
   M.chat:open(config)
 
-  local section = M.chat:get_prompt()
-  if section then
-    local prompt = insert_sticky(section.content, config)
+  local message = M.chat:get_message('user')
+  if message then
+    local prompt = insert_sticky(message.content, config)
     if prompt then
       M.chat:add_message({
         role = 'user',

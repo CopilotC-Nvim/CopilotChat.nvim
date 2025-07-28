@@ -75,7 +75,7 @@ return {
       { "github/copilot.vim" }, -- or zbirenbaum/copilot.lua
       { "nvim-lua/plenary.nvim", branch = "master" }, -- for curl, log and async functions
     },
-    build = "make tiktoken", -- Only on MacOS or Linux
+    build = "make tiktoken",
     opts = {
       -- See Configuration section for options
     },
@@ -332,6 +332,7 @@ Define your own functions in the configuration with input handling and schema:
   functions = {
     birthday = {
       description = "Retrieves birthday information for a person",
+      uri = "birthday://{name}",
       schema = {
         type = 'object',
         required = { 'name' },
@@ -346,7 +347,8 @@ Define your own functions in the configuration with input handling and schema:
       resolve = function(input)
         return {
           {
-            type = 'text',
+            uri = 'birthday://' .. input.name,
+            mimetype = 'text/plain',
             data = input.name .. ' birthday info',
           }
         }
@@ -441,18 +443,17 @@ Below are all available configuration options with their default values:
   system_prompt = 'COPILOT_INSTRUCTIONS', -- System prompt to use (can be specified manually in prompt via /).
 
   model = 'gpt-4.1', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
-  group = nil, -- Default group of tools or array of groups to use (can be specified manually in prompt via @).
+  tools = nil, -- Default tool or array of tools (or groups) to share with LLM (can be specified manually in prompt via @).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
 
-  temperature = 0.1, -- GPT result temperature
+  temperature = 0.1, -- Result temperature
   headless = false, -- Do not write to chat buffer and use history (useful for using custom processing)
-  stream = nil, -- Function called when receiving stream updates (returned string is appended to the chat buffer)
-  callback = nil, -- Function called when full response is received (retuned string is stored to history)
+  callback = nil, -- Function called when full response is received
   remember_as_sticky = true, -- Remember model as sticky prompts when asking questions
 
   -- default selection
   -- see select.lua for implementation
-  selection = select.visual,
+  selection = require('CopilotChat.select').visual,
 
   -- default window options
   window = {
@@ -470,9 +471,9 @@ Below are all available configuration options with their default values:
   },
 
   show_help = true, -- Shows help message as virtual lines when waiting for user input
+  show_folds = true, -- Shows folds for sections in chat
   highlight_selection = true, -- Highlight selection
   highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
-  references_display = 'virtual', -- 'virtual', 'write', Display references in chat as virtual text or write to buffer
   auto_follow_cursor = true, -- Auto-follow cursor in chat
   auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
   insert_at_end = false, -- Move cursor to end of buffer when inserting text
@@ -490,130 +491,29 @@ Below are all available configuration options with their default values:
   log_path = vim.fn.stdpath('state') .. '/CopilotChat.log', -- Default path to log file
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
 
-  question_header = '# User ', -- Header to use for user questions
-  answer_header = '# Copilot ', -- Header to use for AI answers
-  error_header = '# Error ', -- Header to use for errors
+  headers = {
+    user = '## User ', -- Header to use for user questions
+    assistant = '## Copilot ', -- Header to use for AI answers
+    tool = '## Tool ', -- Header to use for tool calls
+  },
+
   separator = '───', -- Separator to use in chat
 
   -- default providers
   -- see config/providers.lua for implementation
-  providers = {
-    copilot = {
-    },
-    github_models = {
-    },
-    copilot_embeddings = {
-    },
-  },
+  providers = require('CopilotChat.config.providers'),
 
-  -- default tools
-  -- see config/tools.lua for implementation
-  tools = {
-    buffer = {
-    },
-    buffers = {
-    },
-    file = {
-    },
-    glob = {
-    },
-    grep = {
-    },
-    quickfix = {
-    },
-    diagnostics = {
-    },
-    gitdiff = {
-    },
-    gitstatus = {
-    },
-    url = {
-    },
-    register = {
-    },
-  },
+  -- default functions
+  -- see config/functions.lua for implementation
+  functions = require('CopilotChat.config.functions'),
 
   -- default prompts
   -- see config/prompts.lua for implementation
-  prompts = {
-    Explain = {
-      prompt = 'Write an explanation for the selected code as paragraphs of text.',
-      system_prompt = 'COPILOT_EXPLAIN',
-    },
-    Review = {
-      prompt = 'Review the selected code.',
-      system_prompt = 'COPILOT_REVIEW',
-    },
-    Fix = {
-      prompt = 'There is a problem in this code. Identify the issues and rewrite the code with fixes. Explain what was wrong and how your changes address the problems.',
-    },
-    Optimize = {
-      prompt = 'Optimize the selected code to improve performance and readability. Explain your optimization strategy and the benefits of your changes.',
-    },
-    Docs = {
-      prompt = 'Please add documentation comments to the selected code.',
-    },
-    Tests = {
-      prompt = 'Please generate tests for my code.',
-    },
-    Commit = {
-      prompt = 'Write commit message for the change with commitizen convention. Keep the title under 50 characters and wrap message at 72 characters. Format as a gitcommit code block.',
-      sticky = '#git:staged',
-    },
-  },
+  prompts = require('CopilotChat.config.prompts'),
 
   -- default mappings
   -- see config/mappings.lua for implementation
-  mappings = {
-    complete = {
-      insert = '<Tab>',
-    },
-    close = {
-      normal = 'q',
-      insert = '<C-c>',
-    },
-    reset = {
-      normal = '<C-l>',
-      insert = '<C-l>',
-    },
-    submit_prompt = {
-      normal = '<CR>',
-      insert = '<C-s>',
-    },
-    toggle_sticky = {
-      normal = 'grr',
-    },
-    clear_stickies = {
-      normal = 'grx',
-    },
-    accept_diff = {
-      normal = '<C-y>',
-      insert = '<C-y>',
-    },
-    jump_to_diff = {
-      normal = 'gj',
-    },
-    quickfix_answers = {
-      normal = 'gqa',
-    },
-    quickfix_diffs = {
-      normal = 'gqd',
-    },
-    yank_diff = {
-      normal = 'gy',
-      register = '"', -- Default register to use for yanking
-    },
-    show_diff = {
-      normal = 'gd',
-      full_diff = false, -- Show full diff instead of unified diff when showing diff window
-    },
-    show_info = {
-      normal = 'gc',
-    },
-    show_help = {
-      normal = 'gh',
-    },
-  },
+  mappings = require('CopilotChat.config.mappings'),
 }
 ```
 
@@ -709,10 +609,12 @@ local window = require("CopilotChat").chat
 window:visible()             -- Check if chat window is visible
 window:focused()             -- Check if chat window is focused
 
+-- Message Management
+window:get_message(role)                       -- Get last chat message by role (user, assistant, tool)
+window:add_message({ role, content }, replace) -- Add or replace a message in chat
+window:add_sticky(sticky)                      -- Add sticky prompt to chat message
+
 -- Content Management
-window:get_prompt()          -- Get current prompt from chat window
-window:set_prompt(prompt)    -- Set prompt in chat window
-window:add_sticky(sticky)    -- Add sticky prompt to chat window
 window:append(text)          -- Append text to chat window
 window:clear()               -- Clear chat window content
 window:finish()              -- Finish writing to chat window
@@ -722,9 +624,9 @@ window:follow()              -- Move cursor to end of chat content
 window:focus()               -- Focus the chat window
 
 -- Advanced Features
-window:get_closest_message() -- Get message closest to cursor
-window:get_closest_block()   -- Get code block closest to cursor
-window:overlay(opts)         -- Show overlay with specified options
+window:get_closest_message(role) -- Get message closest to cursor
+window:get_closest_block(role)   -- Get code block closest to cursor
+window:overlay(opts)             -- Show overlay with specified options
 ```
 
 ## Example Usage
