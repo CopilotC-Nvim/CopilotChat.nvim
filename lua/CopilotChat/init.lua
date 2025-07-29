@@ -702,7 +702,7 @@ function M.complete_items()
       items[#items + 1] = {
         word = '#' .. tool.name,
         abbr = tool.name,
-        kind = 'resource',
+        kind = M.config.functions[tool.name].group or 'resource',
         info = info,
         menu = uri,
         icase = 1,
