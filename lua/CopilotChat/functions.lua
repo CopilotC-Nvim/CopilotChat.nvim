@@ -129,12 +129,12 @@ end
 ---@param schema table?
 ---@return table
 function M.parse_input(input, schema)
-  if not schema or not schema.properties then
-    return {}
-  end
-
   if type(input) == 'table' then
     return input
+  end
+
+  if not schema or not schema.properties then
+    return {}
   end
 
   local parts = vim.split(input or '', INPUT_SEPARATOR)
