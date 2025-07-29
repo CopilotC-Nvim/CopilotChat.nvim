@@ -729,6 +729,19 @@ function M.open(config)
   utils.return_to_normal_mode()
 
   M.chat:open(config)
+
+  local message = M.chat:get_message('user')
+  if message then
+    local prompt = insert_sticky(message.content, config)
+    if prompt then
+      M.chat:add_message({
+        role = 'user',
+        content = '\n' .. prompt,
+      }, true)
+      M.chat:finish()
+    end
+  end
+
   M.chat:follow()
   M.chat:focus()
 end
