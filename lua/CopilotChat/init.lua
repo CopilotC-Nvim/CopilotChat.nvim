@@ -120,6 +120,26 @@ local function update_highlights()
   end
 end
 
+--- List available models.
+--- @return CopilotChat.client.Model[]
+local function list_models()
+  local models = client:models()
+  local result = vim.tbl_keys(models)
+
+  table.sort(result, function(a, b)
+    a = models[a]
+    b = models[b]
+    if a.provider ~= b.provider then
+      return a.provider < b.provider
+    end
+    return a.id < b.id
+  end)
+
+  return vim.tbl_map(function(id)
+    return models[id]
+  end, result)
+end
+
 --- Finish writing to chat buffer.
 ---@param start_of_chat boolean?
 local function finish(start_of_chat)
@@ -284,8 +304,8 @@ function M.resolve_functions(prompt, config)
     })
   end
 
-  -- Resolve each tool reference
-  local function expand_tool(name, input)
+  -- Resolve each function reference
+  local function expand_function(name, input)
     notify.publish(notify.STATUS, 'Running function: ' .. name)
 
     local tool_id = nil
@@ -368,7 +388,7 @@ function M.resolve_functions(prompt, config)
   for _, pattern in ipairs(matches:keys()) do
     if not utils.empty(pattern) then
       local match = matches:get(pattern)
-      local out = expand_tool(match.word, match.input) or pattern
+      local out = expand_function(match.word, match.input) or pattern
       out = out:gsub('%%', '%%%%') -- Escape percent signs for gsub
       prompt = prompt:gsub(vim.pesc(pattern), out, 1)
     end
@@ -440,7 +460,7 @@ function M.resolve_model(prompt, config)
 
   local models = vim.tbl_map(function(model)
     return model.id
-  end, client:list_models())
+  end, list_models())
 
   local selected_model = config.model or ''
   prompt = prompt:gsub('%$' .. WORD, function(match)
@@ -600,7 +620,7 @@ end
 ---@return table
 ---@async
 function M.complete_items()
-  local models = client:list_models()
+  local models = list_models()
   local prompts_to_use = M.prompts()
   local items = {}
 
@@ -767,7 +787,7 @@ end
 --- Select default Copilot GPT model.
 function M.select_model()
   async.run(function()
-    local models = client:list_models()
+    local models = list_models()
     local choices = vim.tbl_map(function(model)
       return {
         id = model.id,

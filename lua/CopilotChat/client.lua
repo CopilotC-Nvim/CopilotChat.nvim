@@ -216,15 +216,13 @@ end
 ---@class CopilotChat.client.Client : Class
 ---@field private providers table<string, CopilotChat.config.providers.Provider>
 ---@field private provider_cache table<string, table>
----@field private models table<string, CopilotChat.client.Model>?
+---@field private model_cache table<string, CopilotChat.client.Model>?
 ---@field private current_job string?
----@field private headers table<string, string>?
 local Client = class(function(self)
   self.providers = {}
   self.provider_cache = {}
-  self.models = nil
+  self.model_cache = nil
   self.current_job = nil
-  self.headers = nil
 end)
 
 --- Authenticate with GitHub and get the required headers
@@ -246,9 +244,9 @@ end
 
 --- Fetch models from the Copilot API
 ---@return table<string, CopilotChat.client.Model>
-function Client:fetch_models()
-  if self.models then
-    return self.models
+function Client:models()
+  if self.model_cache then
+    return self.model_cache
   end
 
   local models = {}
@@ -282,8 +280,8 @@ function Client:fetch_models()
   end
 
   log.debug('Fetched models:', #vim.tbl_keys(models))
-  self.models = models
-  return self.models
+  self.model_cache = models
+  return self.model_cache
 end
 
 --- Ask a question to Copilot
@@ -299,7 +297,7 @@ function Client:ask(prompt, opts)
   log.debug('Resources:', #opts.resources)
   log.debug('History:', #opts.history)
 
-  local models = self:fetch_models()
+  local models = self:models()
   local model_config = models[opts.model]
   if not model_config then
     error('Model not found: ' .. opts.model)
@@ -573,26 +571,6 @@ function Client:ask(prompt, opts)
   }
 end
 
---- List available models
----@return table<string, table>
-function Client:list_models()
-  local models = self:fetch_models()
-  local result = vim.tbl_keys(models)
-
-  table.sort(result, function(a, b)
-    a = models[a]
-    b = models[b]
-    if a.provider ~= b.provider then
-      return a.provider < b.provider
-    end
-    return a.id < b.id
-  end)
-
-  return vim.tbl_map(function(id)
-    return models[id]
-  end, result)
-end
-
 --- Generate embeddings for the given inputs
 ---@param inputs table<CopilotChat.client.Resource>: The inputs to embed
 ---@param model string
@@ -603,7 +581,7 @@ function Client:embed(inputs, model)
     return inputs
   end
 
-  local models = self:fetch_models()
+  local models = self:models()
   local ok, provider_name, embed = pcall(resolve_provider_function, 'embed', model, models, self.providers)
   if not ok then
     ---@diagnostic disable-next-line: return-type-mismatch
