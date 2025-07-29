@@ -366,9 +366,12 @@ function M.resolve_functions(prompt, config)
 
   -- Resolve and process all tools
   for _, pattern in ipairs(matches:keys()) do
-    local match = matches:get(pattern)
-    local out = expand_tool(match.word, match.input) or pattern
-    prompt = prompt:gsub(vim.pesc(pattern), out, 1)
+    if not utils.empty(pattern) then
+      local match = matches:get(pattern)
+      local out = expand_tool(match.word, match.input) or pattern
+      out = out:gsub('%%', '%%%%') -- Escape percent signs for gsub
+      prompt = prompt:gsub(vim.pesc(pattern), out, 1)
+    end
   end
 
   return functions.parse_tools(enabled_tools), resolved_resources, resolved_tools, prompt
