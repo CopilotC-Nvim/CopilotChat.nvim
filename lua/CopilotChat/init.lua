@@ -1162,7 +1162,8 @@ end
 --- Set up the plugin
 ---@param config CopilotChat.config.Config?
 function M.setup(config)
-  M.config = vim.tbl_deep_extend('force', require('CopilotChat.config'), config or {})
+  local default_config = require('CopilotChat.config')
+  M.config = vim.tbl_deep_extend('force', default_config, config or {})
   state.highlights_loaded = false
 
   -- Save proxy and insecure settings
@@ -1179,6 +1180,13 @@ function M.setup(config)
     M.log_level('debug')
   else
     M.log_level(M.config.log_level)
+  end
+
+  if not M.config.separator or M.config.separator == '' then
+    log.warn(
+      'Empty separator is not allowed, using default separator instead. Set `separator` in config to change this.'
+    )
+    M.config.separator = default_config.separator
   end
 
   if M.chat then

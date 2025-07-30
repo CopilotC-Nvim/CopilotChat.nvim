@@ -86,7 +86,7 @@ return {
   show_help = true, -- Shows help message as virtual lines when waiting for user input
   show_folds = true, -- Shows folds for sections in chat
   highlight_selection = true, -- Highlight selection
-  highlight_headers = true, -- Highlight headers in chat, disable if using markdown renderers (like render-markdown.nvim)
+  highlight_headers = true, -- Highlight headers in chat
   auto_follow_cursor = true, -- Auto-follow cursor in chat
   auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
   insert_at_end = false, -- Move cursor to end of buffer when inserting text
