@@ -245,6 +245,12 @@ end
 ---@async
 function M.resolve_functions(prompt, config)
   config, prompt = M.resolve_prompt(prompt, config)
+
+  local tools = {}
+  for _, tool in ipairs(functions.parse_tools(M.config.functions)) do
+    tools[tool.name] = tool
+  end
+
   local enabled_tools = {}
   local resolved_resources = {}
   local resolved_tools = {}
@@ -271,7 +277,7 @@ function M.resolve_functions(prompt, config)
   for _, match in ipairs(matches) do
     for name, tool in pairs(M.config.functions) do
       if name == match or tool.group == match then
-        enabled_tools[name] = tool
+        enabled_tools[name] = true
       end
     end
   end
@@ -311,7 +317,7 @@ function M.resolve_functions(prompt, config)
     local tool_id = nil
     if not utils.empty(tool_calls) then
       for _, tool_call in ipairs(tool_calls) do
-        if tool_call.name == name and vim.trim(tool_call.id) == vim.trim(input) and enabled_tools[name] then
+        if tool_call.name == name and vim.trim(tool_call.id) == vim.trim(input) then
           input = utils.empty(tool_call.arguments) and {} or utils.json_decode(tool_call.arguments)
           tool_id = tool_call.id
           break
@@ -319,7 +325,7 @@ function M.resolve_functions(prompt, config)
       end
     end
 
-    local tool = enabled_tools[name]
+    local tool = M.config.functions[name]
     if not tool then
       -- Check if input matches uri
       for tool_name, tool_spec in pairs(M.config.functions) do
@@ -334,20 +340,16 @@ function M.resolve_functions(prompt, config)
         end
       end
     end
-    if not tool and not tool_id then
-      tool = M.config.functions[name]
-    end
     if not tool then
-      -- If tool is not found, return the original pattern
       return nil
     end
-    if not tool_id and not tool.uri then
-      -- If this is a tool that is not resource and was not called by LLM, reject it
+    if tool_id and not enabled_tools[name] and not tool.uri then
       return nil
     end
 
+    local schema = tools[name] and tools[name].schema or nil
     local result = ''
-    local ok, output = pcall(tool.resolve, functions.parse_input(input, tool.schema), state.source or {}, prompt)
+    local ok, output = pcall(tool.resolve, functions.parse_input(input, schema), state.source or {}, input)
     if not ok then
       result = string.format(BLOCK_OUTPUT_FORMAT, 'error', utils.make_string(output))
     else
@@ -394,7 +396,12 @@ function M.resolve_functions(prompt, config)
     end
   end
 
-  return functions.parse_tools(enabled_tools), resolved_resources, resolved_tools, prompt
+  return vim.tbl_map(function(name)
+    return tools[name]
+  end, vim.tbl_keys(enabled_tools)),
+    resolved_resources,
+    resolved_tools,
+    prompt
 end
 
 --- Resolve the final prompt and config from prompt template.
@@ -574,9 +581,10 @@ function M.trigger_complete(without_input)
 
   if not without_input and vim.startswith(prefix, '#') and vim.endswith(prefix, ':') then
     local found_tool = M.config.functions[prefix:sub(2, -2)]
-    if found_tool and found_tool.schema then
+    local found_schema = found_tool and functions.parse_schema(found_tool)
+    if found_tool and found_schema then
       async.run(function()
-        local value = functions.enter_input(found_tool.schema, state.source)
+        local value = functions.enter_input(found_schema, state.source)
         if not value then
           return
         end

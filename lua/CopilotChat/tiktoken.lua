@@ -92,7 +92,13 @@ function M.encode(prompt)
   if type(prompt) ~= 'string' then
     error('Prompt must be a string')
   end
-  return tiktoken_core.encode(prompt)
+
+  local ok, result = pcall(tiktoken_core.encode, prompt)
+  if not ok then
+    return nil
+  end
+
+  return result
 end
 
 --- Count the tokens in a prompt
@@ -105,7 +111,7 @@ function M.count(prompt)
 
   local tokens = M.encode(prompt)
   if not tokens then
-    return 0
+    return math.ceil(#prompt * 0.5) -- Fallback to 1/2 character count
   end
   return #tokens
 end
