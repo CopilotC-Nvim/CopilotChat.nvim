@@ -66,7 +66,6 @@ end
 ---@field private layout CopilotChat.config.Layout?
 ---@field private headers table<string, string>
 ---@field private separator string
----@field private header_ns number
 ---@field private spinner CopilotChat.ui.spinner.Spinner
 ---@field private chat_overlay CopilotChat.ui.overlay.Overlay
 local Chat = class(function(self, headers, separator, help, on_buf_create)
@@ -81,7 +80,6 @@ local Chat = class(function(self, headers, separator, help, on_buf_create)
   self.layout = nil
   self.headers = headers or {}
   self.separator = separator
-  self.header_ns = vim.api.nvim_create_namespace('copilot-chat-headers')
 
   self.spinner = Spinner()
   self.chat_overlay = Overlay('copilot-overlay', 'q to close', function(bufnr)
@@ -559,7 +557,10 @@ end
 ---@protected
 function Chat:render()
   self:validate()
-  vim.api.nvim_buf_clear_namespace(self.bufnr, self.header_ns, 0, -1)
+
+  local highlight_ns = vim.api.nvim_create_namespace('copilot-chat-headers')
+  vim.api.nvim_buf_clear_namespace(self.bufnr, highlight_ns, 0, -1)
+
   local lines = vim.api.nvim_buf_get_lines(self.bufnr, 0, -1, false)
 
   local new_messages = {}
@@ -578,7 +579,7 @@ function Chat:render()
         -- Draw the separator as virtual text over the header line, hiding the id and anything after the header
         if self.config.highlight_headers then
           local sep_col = vim.fn.strwidth(header_value)
-          vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, sep_col, {
+          vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, l - 1, sep_col, {
             virt_text = {
               { string.rep(self.separator, vim.go.columns), 'CopilotChatSeparator' },
             },
@@ -586,7 +587,7 @@ function Chat:render()
             priority = 200,
             strict = false,
           })
-          vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, 0, {
+          vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, l - 1, 0, {
             end_col = sep_col,
             hl_group = 'CopilotChatHeader',
             priority = 100,
@@ -647,7 +648,7 @@ function Chat:render()
         if start_line and end_line then
           text = text .. string.format(' lines %d-%d', start_line, end_line)
         end
-        vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l, 0, {
+        vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, l, 0, {
           virt_lines_above = true,
           virt_lines = { { { text, 'CopilotChatAnnotationHeader' } } },
           priority = 100,
@@ -674,9 +675,9 @@ function Chat:render()
     for _, message in ipairs(self.messages) do
       for _, tool_call in ipairs(message.tool_calls or {}) do
         if line:match(string.format('#%s:%s', tool_call.name, vim.pesc(tool_call.id))) then
-          vim.api.nvim_buf_add_highlight(self.bufnr, self.header_ns, 'CopilotChatAnnotationHeader', l - 1, 0, #line)
+          vim.api.nvim_buf_add_highlight(self.bufnr, highlight_ns, 'CopilotChatAnnotationHeader', l - 1, 0, #line)
           if not utils.empty(tool_call.arguments) then
-            vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, l - 1, 0, {
+            vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, l - 1, 0, {
               virt_lines = vim.tbl_map(function(json_line)
                 return { { json_line, 'CopilotChatAnnotation' } }
               end, vim.split(vim.inspect(utils.json_decode(tool_call.arguments)), '\n')),
@@ -686,6 +687,20 @@ function Chat:render()
           end
           break
         end
+      end
+    end
+
+    -- Highlight keywords
+    -- FIXME: This is not optimal, but i cant figure out how to do it better as treesitter keeps overriding it
+    local patterns = {
+      '()#?#[^ ]+()',
+      '()@[^ ]+()',
+      '()%$[^ ]+()',
+      '()/[^ ]+()',
+    }
+    for _, pattern in ipairs(patterns) do
+      for s, e in line:gmatch(pattern) do
+        vim.api.nvim_buf_add_highlight(self.bufnr, highlight_ns, 'CopilotChatKeyword', l - 1, s - 1, e - 1)
       end
     end
   end
@@ -705,7 +720,7 @@ function Chat:render()
             table.insert(virt_lines, { { '    ' .. json_line, 'CopilotChatAnnotation' } })
           end
         end
-        vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, section.end_line - 1, 0, {
+        vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, section.end_line - 1, 0, {
           virt_lines = virt_lines,
           virt_lines_above = true,
           priority = 100,
@@ -720,7 +735,7 @@ function Chat:render()
         local virt_lines = {
           { { 'Tool: ' .. message.tool_call_id, 'CopilotChatAnnotationHeader' } },
         }
-        vim.api.nvim_buf_set_extmark(self.bufnr, self.header_ns, section.start_line, 0, {
+        vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, section.start_line, 0, {
           virt_lines = virt_lines,
           virt_lines_above = true,
           priority = 100,
