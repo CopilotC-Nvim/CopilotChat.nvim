@@ -1,4 +1,4 @@
-*CopilotChat.txt*           For NVIM v0.8.0          Last change: 2025 July 29
+*CopilotChat.txt*           For NVIM v0.8.0          Last change: 2025 July 30
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -52,6 +52,7 @@ capabilities directly into your editor. It provides:
 - Neovim 0.10.0+ <https://neovim.io/> - Older versions are not officially supported
 - curl <https://curl.se/> - Version 8.0.0+ recommended for best compatibility
 - Copilot chat in the IDE <https://github.com/settings/copilot> enabled in GitHub settings
+- plenary.nvim <https://github.com/nvim-lua/plenary.nvim> - Plugin dependency
 
 
   [!WARNING] For Neovim < 0.11.0, add `noinsert` or `noselect` to your
@@ -61,12 +62,16 @@ capabilities directly into your editor. It provides:
 
 OPTIONAL DEPENDENCIES                      *CopilotChat-optional-dependencies*
 
-- tiktoken_core <https://github.com/gptlang/lua-tiktoken> - For accurate token counting
+- copilot.vim <https://github.com/github/copilot.vim> - For `:Copilot setup`
+    authorization, otherwise in-built method i used
+- tiktoken_core <https://github.com/gptlang/lua-tiktoken> - For accurate token
+    counting
     - Arch Linux: Install `luajit-tiktoken-bin` <https://aur.archlinux.org/packages/luajit-tiktoken-bin> or `lua51-tiktoken-bin` <https://aur.archlinux.org/packages/lua51-tiktoken-bin> from AUR
     - Via luarocks: `sudo luarocks install --lua-version 5.1 tiktoken_core`
     - Manual: Download from lua-tiktoken releases <https://github.com/gptlang/lua-tiktoken/releases> and save as `tiktoken_core.so` in your Lua path
 - git <https://git-scm.com/> - For git diff context features
-- ripgrep <https://github.com/BurntSushi/ripgrep> - For improved search performance
+- ripgrep <https://github.com/BurntSushi/ripgrep> - For improved search
+    performance
 - lynx <https://lynx.invisible-island.net/> - For improved URL context features
 
 
@@ -99,7 +104,6 @@ LAZY.NVIM                                              *CopilotChat-lazy.nvim*
       {
         "CopilotC-Nvim/CopilotChat.nvim",
         dependencies = {
-          { "github/copilot.vim" }, -- or zbirenbaum/copilot.lua
           { "nvim-lua/plenary.nvim", branch = "master" }, -- for curl, log and async functions
         },
         build = "make tiktoken",
@@ -121,7 +125,6 @@ Similar to the lazy setup, you can use the following configuration:
 
 >vim
     call plug#begin()
-    Plug 'github/copilot.vim'
     Plug 'nvim-lua/plenary.nvim'
     Plug 'CopilotC-Nvim/CopilotChat.nvim'
     call plug#end()
@@ -142,9 +145,7 @@ MANUAL                                                    *CopilotChat-manual*
     mkdir -p ~/.config/nvim/pack/copilotchat/start
     cd ~/.config/nvim/pack/copilotchat/start
     
-    git clone https://github.com/github/copilot.vim
     git clone https://github.com/nvim-lua/plenary.nvim
-    
     git clone https://github.com/CopilotC-Nvim/CopilotChat.nvim
 <
 
@@ -456,8 +457,8 @@ Providers are modules that implement integration with different AI providers.
 BUILT-IN PROVIDERS ~
 
 - `copilot` - Default GitHub Copilot provider used for chat
-- `github_models` - Provider for GitHub Marketplace models
-- `copilot_embeddings` - Provider for Copilot embeddings, not standalone
+- `github_models` - Provider for GitHub Marketplace models (disabled by default, enable it via `providers.github_models.disabled = false`)
+- `copilot_embeddings` - Provider for Copilot embeddings, not standalone, used by `copilot` and `github_models` providers
 
 
 PROVIDER INTERFACE ~
