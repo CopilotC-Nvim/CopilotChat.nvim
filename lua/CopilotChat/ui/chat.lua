@@ -289,6 +289,7 @@ function Chat:open(config)
     }
 
     self.winnr = vim.api.nvim_open_win(self.bufnr, false, win_opts)
+    vim.wo[self.winnr].winblend = window.blend or 0
   elseif layout == 'vertical' then
     local orig = vim.api.nvim_get_current_win()
     local cmd = 'vsplit'

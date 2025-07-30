@@ -11,6 +11,7 @@
 ---@field title string?
 ---@field footer string?
 ---@field zindex number?
+---@field blend number?
 
 ---@class CopilotChat.config.Shared
 ---@field system_prompt string?
@@ -81,6 +82,7 @@ return {
     title = 'Copilot Chat', -- title of chat window
     footer = nil, -- footer of chat window
     zindex = 1, -- determines if window is on top or below other floating windows
+    blend = 0, -- window blend (transparency), 0-100, 0 is opaque, 100 is fully transparent
   },
 
   show_help = true, -- Shows help message as virtual lines when waiting for user input
