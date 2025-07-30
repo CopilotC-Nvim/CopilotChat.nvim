@@ -37,6 +37,7 @@ return {
     },
 
     resolve = function(input)
+      utils.schedule_main()
       local data, mimetype = resources.get_file(input.path)
       if not data then
         error('File not found: ' .. input.path)
