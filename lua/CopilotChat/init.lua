@@ -349,7 +349,7 @@ function M.resolve_functions(prompt, config)
 
     local schema = tools[name] and tools[name].schema or nil
     local result = ''
-    local ok, output = pcall(tool.resolve, functions.parse_input(input, schema), state.source or {}, input)
+    local ok, output = pcall(tool.resolve, functions.parse_input(input, schema), state.source or {}, prompt)
     if not ok then
       result = string.format(BLOCK_OUTPUT_FORMAT, 'error', utils.make_string(output))
     else
