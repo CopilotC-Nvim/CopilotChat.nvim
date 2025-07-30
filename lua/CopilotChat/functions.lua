@@ -3,6 +3,7 @@ local utils = require('CopilotChat.utils')
 local M = {}
 
 local INPUT_SEPARATOR = ';;'
+local URI_PARAM_PATTERN = '{([^}:*]+)[^}]*}'
 
 local function sorted_propnames(schema)
   local prop_names = vim.tbl_keys(schema.properties)
@@ -63,6 +64,17 @@ local function filter_schema(tbl)
   return result
 end
 
+--- Convert a URI template to a URL by replacing parameters with values from input
+---@param uri_template string The URI template containing parameters in the form {param}
+---@param input table A table containing parameter values, e.g., { path = '/my/file.txt' }
+---@return string The resulting URL with parameters replaced
+function M.uri_to_url(uri_template, input)
+  -- Replace {param} in the template with input[param] or empty string
+  return (uri_template:gsub(URI_PARAM_PATTERN, function(param)
+    return input[param] or ''
+  end))
+end
+
 ---@param uri string The URI to parse
 ---@param pattern string The pattern to match against (e.g., 'file://{path}')
 ---@return table|nil inputs Extracted parameters or nil if no match
@@ -73,7 +85,7 @@ function M.match_uri(uri, pattern)
 
   -- Extract parameter names from the pattern
   local param_names = {}
-  for param in pattern:gmatch('{([^}:*]+)[^}]*}') do
+  for param in pattern:gmatch(URI_PARAM_PATTERN) do
     table.insert(param_names, param)
     -- Replace {param} with a capture group in our Lua pattern
     -- Use non-greedy capture to handle multiple params properly
@@ -102,6 +114,37 @@ function M.match_uri(uri, pattern)
   return result
 end
 
+---@param tool CopilotChat.config.functions.Function
+function M.parse_schema(tool)
+  local schema = tool.schema
+
+  -- If schema is missing but uri is present, generate a default schema from uri
+  if not schema and tool.uri then
+    -- Extract parameter names from the uri pattern, e.g. file://{path}
+    local param_names = {}
+    for param in tool.uri:gmatch(URI_PARAM_PATTERN) do
+      table.insert(param_names, param)
+    end
+    if #param_names > 0 then
+      schema = {
+        type = 'object',
+        properties = {},
+        required = {},
+      }
+      for _, param in ipairs(param_names) do
+        schema.properties[param] = { type = 'string' }
+        table.insert(schema.required, param)
+      end
+    end
+  end
+
+  if schema then
+    schema = filter_schema(schema)
+  end
+
+  return schema
+end
+
 --- Prepare the schema for use
 ---@param tools table<string, CopilotChat.config.functions.Function>
 ---@return table<CopilotChat.client.Tool>
@@ -110,16 +153,11 @@ function M.parse_tools(tools)
   table.sort(tool_names)
   return vim.tbl_map(function(name)
     local tool = tools[name]
-    local schema = tool.schema
-
-    if schema then
-      schema = filter_schema(schema)
-    end
 
     return {
       name = name,
       description = tool.description,
-      schema = schema,
+      schema = M.parse_schema(tool),
     }
   end, tool_names)
 end
