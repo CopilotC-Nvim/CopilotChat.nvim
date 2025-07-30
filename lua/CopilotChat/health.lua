@@ -98,8 +98,8 @@ function M.check()
   if has_copilot or copilot_loaded then
     ok('copilot: ' .. (has_copilot and 'copilot.lua' or 'copilot.vim'))
   else
-    error(
-      'copilot: missing, required for 2 factor authentication. Install "github/copilot.vim" or "zbirenbaum/copilot.lua" plugins.'
+    warn(
+      'copilot: missing, optional for improved auth implementation. Install "github/copilot.vim" or "zbirenbaum/copilot.lua" plugins.'
     )
   end
 
