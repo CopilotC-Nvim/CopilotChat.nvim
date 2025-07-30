@@ -970,8 +970,6 @@ function M.ask(prompt, config)
           content = '\n' .. tool.result .. '\n',
         })
       end
-
-      M.chat:follow()
     end
 
     local ask_ok, ask_response = pcall(client.ask, client, prompt, {

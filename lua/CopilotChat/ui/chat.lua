@@ -501,7 +501,7 @@ function Chat:append(str)
     local current_pos = vim.api.nvim_win_get_cursor(self.winnr)
     local line_count = vim.api.nvim_buf_line_count(self.bufnr)
     -- Follow only if the cursor is currently at the last line.
-    should_follow_cursor = current_pos[1] == line_count
+    should_follow_cursor = current_pos[1] >= line_count - 1
   end
 
   local last_line, last_column, _ = self:last()
