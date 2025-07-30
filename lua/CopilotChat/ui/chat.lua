@@ -1,5 +1,6 @@
 local Overlay = require('CopilotChat.ui.overlay')
 local Spinner = require('CopilotChat.ui.spinner')
+local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local class = utils.class
 
@@ -94,6 +95,11 @@ local Chat = class(function(self, headers, separator, help, on_buf_create)
         self.chat_overlay:restore(self.winnr, self.bufnr)
       end,
     })
+  end)
+
+  notify.listen(notify.MESSAGE, function(msg)
+    utils.schedule_main()
+    self:append('\n' .. msg .. '\n')
   end)
 end, Overlay)
 

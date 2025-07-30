@@ -1,70 +1,160 @@
+local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
+local plenary_utils = require('plenary.async.util')
 
 local EDITOR_VERSION = 'Neovim/' .. vim.version().major .. '.' .. vim.version().minor .. '.' .. vim.version().patch
 
-local cached_github_token = nil
+local token_cache = nil
+local unsaved_token_cache = {}
+local function load_tokens()
+  if token_cache then
+    return token_cache
+  end
 
-local function config_path()
-  local config = vim.fs.normalize('$XDG_CONFIG_HOME')
-  if config and vim.uv.fs_stat(config) then
-    return config
-  end
-  if vim.fn.has('win32') > 0 then
-    config = vim.fs.normalize('$LOCALAPPDATA')
-    if not config or not vim.uv.fs_stat(config) then
-      config = vim.fs.normalize('$HOME/AppData/Local')
-    end
+  local config_path = vim.fs.normalize(vim.fn.stdpath('data') .. '/copilot_chat')
+  local cache_file = config_path .. '/tokens.json'
+  local file = utils.read_file(cache_file)
+  if file then
+    token_cache = vim.json.decode(file)
   else
-    config = vim.fs.normalize('$HOME/.config')
+    token_cache = {}
   end
-  if config and vim.uv.fs_stat(config) then
-    return config
+
+  return token_cache
+end
+
+local function get_token(tag)
+  if unsaved_token_cache[tag] then
+    return unsaved_token_cache[tag]
   end
+
+  local tokens = load_tokens()
+  return tokens[tag]
+end
+
+local function set_token(tag, token, save)
+  if not save then
+    unsaved_token_cache[tag] = token
+    return token
+  end
+
+  local tokens = load_tokens()
+  tokens[tag] = token
+  local config_path = vim.fs.normalize(vim.fn.stdpath('data') .. '/copilot_chat')
+  utils.write_file(config_path .. '/tokens.json', vim.json.encode(tokens))
+  return token
+end
+
+--- Get the github token using device flow
+---@return string
+local function github_device_flow(tag, client_id, scope)
+  local function request_device_code()
+    local res = utils.curl_post('https://github.com/login/device/code', {
+      body = {
+        client_id = client_id,
+        scope = scope,
+      },
+      headers = { ['Accept'] = 'application/json' },
+    })
+
+    local data = vim.json.decode(res.body)
+    return data
+  end
+
+  local function poll_for_token(device_code, interval)
+    while true do
+      plenary_utils.sleep(interval * 1000)
+
+      local res = utils.curl_post('https://github.com/login/oauth/access_token', {
+        body = {
+          client_id = client_id,
+          device_code = device_code,
+          grant_type = 'urn:ietf:params:oauth:grant-type:device_code',
+        },
+        headers = { ['Accept'] = 'application/json' },
+      })
+      local data = vim.json.decode(res.body)
+      if data.access_token then
+        return data.access_token
+      elseif data.error ~= 'authorization_pending' then
+        error('Auth error: ' .. (data.error or 'unknown'))
+      end
+    end
+  end
+
+  local token = get_token(tag)
+  if token then
+    return token
+  end
+
+  local code_data = request_device_code()
+  notify.publish(
+    notify.MESSAGE,
+    '[' .. tag .. '] Visit ' .. code_data.verification_uri .. ' and enter code: ' .. code_data.user_code
+  )
+  notify.publish(notify.STATUS, '[' .. tag .. '] Waiting for GitHub models authorization...')
+  token = poll_for_token(code_data.device_code, code_data.interval)
+  return set_token(tag, token, true)
 end
 
 --- Get the github copilot oauth cached token (gu_ token)
 ---@return string
-local function get_github_token()
-  if cached_github_token then
-    return cached_github_token
+local function get_github_token(tag)
+  local function config_path()
+    local config = vim.fs.normalize('$XDG_CONFIG_HOME')
+    if config and vim.uv.fs_stat(config) then
+      return config
+    end
+    if vim.fn.has('win32') > 0 then
+      config = vim.fs.normalize('$LOCALAPPDATA')
+      if not config or not vim.uv.fs_stat(config) then
+        config = vim.fs.normalize('$HOME/AppData/Local')
+      end
+    else
+      config = vim.fs.normalize('$HOME/.config')
+    end
+    if config and vim.uv.fs_stat(config) then
+      return config
+    end
+  end
+
+  local token = get_token(tag)
+  if token then
+    return token
   end
 
   -- loading token from the environment only in GitHub Codespaces
-  local token = os.getenv('GITHUB_TOKEN')
   local codespaces = os.getenv('CODESPACES')
+  token = os.getenv('GITHUB_TOKEN')
   if token and codespaces then
-    cached_github_token = token
-    return token
+    return set_token(tag, token, false)
   end
 
   -- loading token from the file
   local config_path = config_path()
-  if not config_path then
-    error('Failed to find config path for GitHub token')
-  end
+  if config_path then
+    -- token can be sometimes in apps.json sometimes in hosts.json
+    local file_paths = {
+      config_path .. '/github-copilot/hosts.json',
+      config_path .. '/github-copilot/apps.json',
+    }
 
-  -- token can be sometimes in apps.json sometimes in hosts.json
-  local file_paths = {
-    config_path .. '/github-copilot/hosts.json',
-    config_path .. '/github-copilot/apps.json',
-  }
-
-  for _, file_path in ipairs(file_paths) do
-    local file_data = utils.read_file(file_path)
-    if file_data then
-      local parsed_data = utils.json_decode(file_data)
-      if parsed_data then
-        for key, value in pairs(parsed_data) do
-          if string.find(key, 'github.com') then
-            cached_github_token = value.oauth_token
-            return value.oauth_token
+    for _, file_path in ipairs(file_paths) do
+      local file_data = utils.read_file(file_path)
+      if file_data then
+        local parsed_data = utils.json_decode(file_data)
+        if parsed_data then
+          for key, value in pairs(parsed_data) do
+            if string.find(key, 'github.com') and value and value.oauth_token then
+              return set_token(tag, value.oauth_token, true)
+            end
           end
         end
       end
     end
   end
 
-  error('Failed to find GitHub token')
+  return github_device_flow(tag, 'Iv1.b507a08c87ecfe98', '')
 end
 
 ---@class CopilotChat.config.providers.Options
@@ -97,7 +187,7 @@ M.copilot = {
     local response, err = utils.curl_get('https://api.github.com/copilot_internal/v2/token', {
       json_response = true,
       headers = {
-        ['Authorization'] = 'Token ' .. get_github_token(),
+        ['Authorization'] = 'Token ' .. get_github_token('copilot'),
       },
     })
 
@@ -284,30 +374,19 @@ M.copilot = {
 }
 
 M.github_models = {
+  disabled = true,
   embed = 'copilot_embeddings',
 
   get_headers = function()
     return {
-      ['Authorization'] = 'Bearer ' .. get_github_token(),
-      ['x-ms-useragent'] = EDITOR_VERSION,
-      ['x-ms-user-agent'] = EDITOR_VERSION,
+      ['Authorization'] = 'Bearer ' .. github_device_flow('github_models', 'Ov23liqtJusaUH38tIoK', 'read:user copilot'),
     }
   end,
 
   get_models = function(headers)
-    local response, err = utils.curl_post('https://api.catalog.azureml.ms/asset-gallery/v1.0/models', {
-      headers = headers,
-      json_request = true,
+    local response, err = utils.curl_get('https://models.github.ai/catalog/models', {
       json_response = true,
-      body = {
-        filters = {
-          { field = 'freePlayground', values = { 'true' }, operator = 'eq' },
-          { field = 'labels', values = { 'latest' }, operator = 'eq' },
-        },
-        order = {
-          { field = 'displayName', direction = 'asc' },
-        },
-      },
+      headers = headers,
     })
 
     if err then
@@ -315,26 +394,19 @@ M.github_models = {
     end
 
     return vim
-      .iter(response.body.summaries)
-      :filter(function(model)
-        return vim.tbl_contains(model.inferenceTasks, 'chat-completion')
-      end)
+      .iter(response.body)
       :map(function(model)
-        local context_window = model.modelLimits.textLimits.inputContextWindow
-        local max_output_tokens = model.modelLimits.textLimits.maxOutputTokens
-        local max_input_tokens = context_window - max_output_tokens
-        if max_input_tokens <= 0 then
-          max_output_tokens = 4096
-          max_input_tokens = context_window - max_output_tokens
-        end
-
+        local max_output_tokens = model.limits.max_output_tokens
+        local max_input_tokens = model.limits.max_input_tokens
         return {
-          id = model.name,
-          name = model.displayName,
+          id = model.id,
+          name = model.name,
           tokenizer = 'o200k_base',
           max_input_tokens = max_input_tokens,
           max_output_tokens = max_output_tokens,
-          streaming = true,
+          streaming = vim.tbl_contains(model.capabilities, 'streaming'),
+          tools = vim.tbl_contains(model.capabilities, 'tool-calling'),
+          version = model.version,
         }
       end)
       :totable()
@@ -344,7 +416,7 @@ M.github_models = {
   prepare_output = M.copilot.prepare_output,
 
   get_url = function()
-    return 'https://models.inference.ai.azure.com/chat/completions'
+    return 'https://models.github.ai/inference/chat/completions'
   end,
 }
 

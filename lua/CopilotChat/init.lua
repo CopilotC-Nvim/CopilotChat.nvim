@@ -893,6 +893,7 @@ function M.ask(prompt, config)
     end
 
     M.chat:start()
+    M.chat:append('\n')
 
     local sticky = {}
     local in_code_block = false

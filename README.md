@@ -32,12 +32,15 @@ CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat capabilities
 - [Neovim 0.10.0+](https://neovim.io/) - Older versions are not officially supported
 - [curl](https://curl.se/) - Version 8.0.0+ recommended for best compatibility
 - [Copilot chat in the IDE](https://github.com/settings/copilot) enabled in GitHub settings
+- [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) - Plugin dependency
 
 > [!WARNING]
 > For Neovim < 0.11.0, add `noinsert` or `noselect` to your `completeopt` otherwise chat autocompletion will not work.
 > For best autocompletion experience, also add `popup` to your `completeopt` (even on Neovim 0.11.0+).
 
 ## Optional Dependencies
+
+- [copilot.vim](https://github.com/github/copilot.vim) - For `:Copilot setup` authorization, otherwise in-built method i used
 
 - [tiktoken_core](https://github.com/gptlang/lua-tiktoken) - For accurate token counting
   - Arch Linux: Install [`luajit-tiktoken-bin`](https://aur.archlinux.org/packages/luajit-tiktoken-bin) or [`lua51-tiktoken-bin`](https://aur.archlinux.org/packages/lua51-tiktoken-bin) from AUR
@@ -72,7 +75,6 @@ return {
   {
     "CopilotC-Nvim/CopilotChat.nvim",
     dependencies = {
-      { "github/copilot.vim" }, -- or zbirenbaum/copilot.lua
       { "nvim-lua/plenary.nvim", branch = "master" }, -- for curl, log and async functions
     },
     build = "make tiktoken",
@@ -92,7 +94,6 @@ Similar to the lazy setup, you can use the following configuration:
 
 ```vim
 call plug#begin()
-Plug 'github/copilot.vim'
 Plug 'nvim-lua/plenary.nvim'
 Plug 'CopilotC-Nvim/CopilotChat.nvim'
 call plug#end()
@@ -112,9 +113,7 @@ EOF
 mkdir -p ~/.config/nvim/pack/copilotchat/start
 cd ~/.config/nvim/pack/copilotchat/start
 
-git clone https://github.com/github/copilot.vim
 git clone https://github.com/nvim-lua/plenary.nvim
-
 git clone https://github.com/CopilotC-Nvim/CopilotChat.nvim
 ```
 
@@ -392,8 +391,8 @@ Providers are modules that implement integration with different AI providers.
 ### Built-in Providers
 
 - `copilot` - Default GitHub Copilot provider used for chat
-- `github_models` - Provider for GitHub Marketplace models
-- `copilot_embeddings` - Provider for Copilot embeddings, not standalone
+- `github_models` - Provider for GitHub Marketplace models (disabled by default, enable it via `providers.github_models.disabled = false`)
+- `copilot_embeddings` - Provider for Copilot embeddings, not standalone, used by `copilot` and `github_models` providers
 
 ### Provider Interface
 
