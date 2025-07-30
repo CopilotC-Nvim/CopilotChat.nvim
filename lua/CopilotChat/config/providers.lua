@@ -92,7 +92,7 @@ local function github_device_flow(tag, client_id, scope)
     notify.MESSAGE,
     '[' .. tag .. '] Visit ' .. code_data.verification_uri .. ' and enter code: ' .. code_data.user_code
   )
-  notify.publish(notify.STATUS, '[' .. tag .. '] Waiting for GitHub models authorization...')
+  notify.publish(notify.STATUS, '[' .. tag .. '] Waiting for authorization...')
   token = poll_for_token(code_data.device_code, code_data.interval)
   return set_token(tag, token, true)
 end
@@ -146,7 +146,7 @@ local function get_github_token(tag)
         if parsed_data then
           for key, value in pairs(parsed_data) do
             if string.find(key, 'github.com') and value and value.oauth_token then
-              return set_token(tag, value.oauth_token, true)
+              return set_token(tag, value.oauth_token, false)
             end
           end
         end
@@ -187,7 +187,7 @@ M.copilot = {
     local response, err = utils.curl_get('https://api.github.com/copilot_internal/v2/token', {
       json_response = true,
       headers = {
-        ['Authorization'] = 'Token ' .. get_github_token('copilot'),
+        ['Authorization'] = 'Token ' .. get_github_token('github_copilot'),
       },
     })
 
