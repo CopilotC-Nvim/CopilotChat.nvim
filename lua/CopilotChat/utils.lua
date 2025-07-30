@@ -615,6 +615,29 @@ function M.read_file(path)
   return data
 end
 
+--- Write data to a file
+---@param path string The file path
+---@param data string The data to write
+---@return boolean
+function M.write_file(path, data)
+  M.schedule_main()
+  vim.fn.mkdir(vim.fn.fnamemodify(path, ':p:h'), 'p')
+
+  local err, fd = async.uv.fs_open(path, 'w', 438)
+  if err or not fd then
+    return false
+  end
+
+  local err = async.uv.fs_write(fd, data, 0)
+  if err then
+    async.uv.fs_close(fd)
+    return false
+  end
+
+  async.uv.fs_close(fd)
+  return true
+end
+
 --- Call a system command
 ---@param cmd table The command
 ---@async

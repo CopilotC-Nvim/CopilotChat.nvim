@@ -3,6 +3,7 @@ local log = require('plenary.log')
 local M = {}
 
 M.STATUS = 'status'
+M.MESSAGE = 'message'
 
 M.listeners = {}
 
