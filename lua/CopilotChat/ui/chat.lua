@@ -669,6 +669,22 @@ function Chat:render()
       end
     end
 
+    -- Keywords
+    if current_message and current_message.role == 'user' then
+      -- FIXME: This is not optimal, but i cant figure out how to do it better as treesitter keeps overriding it
+      local patterns = {
+        '()#?#[^ ]+()',
+        '()@[^ ]+()',
+        '()%$[^ ]+()',
+        '()/[^ ]+()',
+      }
+      for _, pattern in ipairs(patterns) do
+        for s, e in line:gmatch(pattern) do
+          vim.api.nvim_buf_add_highlight(self.bufnr, highlight_ns, 'CopilotChatKeyword', l - 1, s - 1, e - 1)
+        end
+      end
+    end
+
     -- If last line, finish last message
     if l == #lines and current_message then
       current_message.section.end_line = l
@@ -693,20 +709,6 @@ function Chat:render()
           end
           break
         end
-      end
-    end
-
-    -- Highlight keywords
-    -- FIXME: This is not optimal, but i cant figure out how to do it better as treesitter keeps overriding it
-    local patterns = {
-      '()#?#[^ ]+()',
-      '()@[^ ]+()',
-      '()%$[^ ]+()',
-      '()/[^ ]+()',
-    }
-    for _, pattern in ipairs(patterns) do
-      for s, e in line:gmatch(pattern) do
-        vim.api.nvim_buf_add_highlight(self.bufnr, highlight_ns, 'CopilotChatKeyword', l - 1, s - 1, e - 1)
       end
     end
   end
