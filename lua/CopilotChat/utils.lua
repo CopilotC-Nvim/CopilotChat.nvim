@@ -398,8 +398,16 @@ M.curl_post = async.wrap(function(url, opts, callback)
   args = vim.tbl_deep_extend('force', M.curl_args, args)
   args = vim.tbl_deep_extend('force', args, opts or {})
 
+  local temp_file_path = nil
+
   args.callback = function(response)
     log.debug('POST response:', url, response)
+    if temp_file_path then
+      local ok, err = pcall(os.remove, temp_file_path)
+      if not ok then
+        log.debug('Failed to remove temp file:', temp_file_path, err)
+      end
+    end
     if response and not vim.startswith(tostring(response.status), '20') then
       callback(response, response.body)
       return
@@ -430,7 +438,8 @@ M.curl_post = async.wrap(function(url, opts, callback)
       ['Content-Type'] = 'application/json',
     })
 
-    args.body = M.temp_file(vim.json.encode(args.body))
+    temp_file_path = M.temp_file(vim.json.encode(args.body))
+    args.body = temp_file_path
   end
 
   curl.post(url, args)
