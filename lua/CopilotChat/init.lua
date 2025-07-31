@@ -498,6 +498,9 @@ function M.set_source(source_winnr)
       bufnr = source_bufnr,
       winnr = source_winnr,
       cwd = function()
+        if not vim.api.nvim_win_is_valid(source_winnr) then
+          return '.'
+        end
         local dir = vim.w[source_winnr].cchat_cwd
         if not dir or dir == '' then
           return '.'
