@@ -439,6 +439,7 @@ function Chat:add_message(message, replace)
     local section = current_message.section
 
     if section then
+      local modifiable = vim.bo[self.bufnr].modifiable
       vim.bo[self.bufnr].modifiable = true
       vim.api.nvim_buf_set_lines(
         self.bufnr,
@@ -447,7 +448,7 @@ function Chat:add_message(message, replace)
         false,
         vim.split(message.content, '\n')
       )
-      vim.bo[self.bufnr].modifiable = false
+      vim.bo[self.bufnr].modifiable = modifiable
       self:append('')
     end
   else
@@ -474,9 +475,10 @@ function Chat:remove_message(role)
   end
 
   -- Remove the section from the buffer
+  local modifiable = vim.bo[self.bufnr].modifiable
   vim.bo[self.bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(self.bufnr, section.start_line - 2, section.end_line + 1, false, {})
-  vim.bo[self.bufnr].modifiable = false
+  vim.bo[self.bufnr].modifiable = modifiable
 
   -- Remove the message from the messages list
   for i, msg in ipairs(self.messages) do
@@ -505,9 +507,10 @@ function Chat:append(str)
 
   local last_line, last_column, _ = self:last()
 
+  local modifiable = vim.bo[self.bufnr].modifiable
   vim.bo[self.bufnr].modifiable = true
   vim.api.nvim_buf_set_text(self.bufnr, last_line, last_column, last_line, last_column, vim.split(str, '\n'))
-  vim.bo[self.bufnr].modifiable = false
+  vim.bo[self.bufnr].modifiable = modifiable
 
   if should_follow_cursor then
     self:follow()
@@ -520,9 +523,11 @@ function Chat:clear()
   self.token_count = nil
   self.token_max_count = nil
   self.messages = {}
+
+  local modifiable = vim.bo[self.bufnr].modifiable
   vim.bo[self.bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, {})
-  vim.bo[self.bufnr].modifiable = false
+  vim.bo[self.bufnr].modifiable = modifiable
 end
 
 --- Create the chat window buffer.
