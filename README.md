@@ -406,6 +406,9 @@ Custom providers can implement these methods:
   -- Optional: Embeddings provider name or function
   embed?: string|function,
 
+  -- Optional: Extra info about the provider displayed in info panel
+  get_info?(): string[]
+
   -- Optional: Get extra request headers with optional expiration time
   get_headers?(): table<string,string>, number?,
 

@@ -284,6 +284,37 @@ function Client:models()
   return self.model_cache
 end
 
+--- Get information about all providers
+---@return table<string, string[]>
+function Client:info()
+  local infos = {}
+  local now = math.floor(os.time())
+  local CACHE_TTL = 300 -- 5 minutes
+
+  for provider_name, provider in pairs(self.providers) do
+    if not provider.disabled and provider.get_info then
+      local cache = self.provider_cache[provider_name]
+      if cache and cache.info and cache.info_expires_at and cache.info_expires_at > now then
+        infos[provider_name] = cache.info
+      else
+        local ok, info = pcall(provider.get_info, self:authenticate(provider_name))
+        if ok then
+          infos[provider_name] = info
+          if cache then
+            cache.info = info
+            cache.info_expires_at = now + CACHE_TTL
+          end
+        else
+          log.warn('Failed to get info for provider ' .. provider_name .. ': ' .. info)
+        end
+      end
+    end
+  end
+
+  log.debug('Fetched provider infos:', #vim.tbl_keys(infos))
+  return infos
+end
+
 --- Ask a question to Copilot
 ---@param prompt string: The prompt to send to Copilot
 ---@param opts CopilotChat.client.AskOptions: Options for the request
