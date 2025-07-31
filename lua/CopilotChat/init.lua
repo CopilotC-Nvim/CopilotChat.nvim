@@ -38,14 +38,24 @@ local state = {
 ---@param prompt string
 ---@param config CopilotChat.config.Shared
 local function insert_sticky(prompt, config)
+  local existing_prompt = M.chat:get_message('user')
+  local combined_prompt = (existing_prompt and existing_prompt.content or '') .. '\n' .. (prompt or '')
   local lines = vim.split(prompt or '', '\n')
   local stickies = utils.ordered_map()
 
   local sticky_indices = {}
+  local in_code_block = false
+  for _, line in ipairs(vim.split(combined_prompt, '\n')) do
+    if line:match('^```') then
+      in_code_block = not in_code_block
+    end
+    if vim.startswith(line, '> ') and not in_code_block then
+      stickies:set(vim.trim(line:sub(3)), true)
+    end
+  end
   for i, line in ipairs(lines) do
     if vim.startswith(line, '> ') then
       table.insert(sticky_indices, i)
-      stickies:set(vim.trim(line:sub(3)), true)
     end
   end
   for i = #sticky_indices, 1, -1 do
@@ -97,6 +107,20 @@ local function insert_sticky(prompt, config)
   end
 
   return table.concat(prompt_lines, '\n')
+end
+
+local function store_sticky(prompt)
+  local sticky = {}
+  local in_code_block = false
+  for _, line in ipairs(vim.split(prompt, '\n')) do
+    if line:match('^```') then
+      in_code_block = not in_code_block
+    end
+    if vim.startswith(line, '> ') and not in_code_block then
+      table.insert(sticky, line:sub(3))
+    end
+  end
+  state.sticky = sticky
 end
 
 --- Update the highlights for chat buffer
@@ -498,11 +522,10 @@ function M.set_source(source_winnr)
       bufnr = source_bufnr,
       winnr = source_winnr,
       cwd = function()
-        if not vim.api.nvim_win_is_valid(source_winnr) then
-          return '.'
-        end
-        local dir = vim.w[source_winnr].cchat_cwd
-        if not dir or dir == '' then
+        local ok, dir = pcall(function()
+          return vim.w[source_winnr].cchat_cwd
+        end)
+        if not ok or not dir or dir == '' then
           return '.'
         end
         return dir
@@ -764,6 +787,7 @@ function M.open(config)
 
   M.chat:open(config)
 
+  -- Add sticky values from provided config when opening the chat
   local message = M.chat:get_message('user')
   if message then
     local prompt = insert_sticky(message.content, config)
@@ -772,7 +796,6 @@ function M.open(config)
         role = 'user',
         content = '\n' .. prompt,
       }, true)
-      M.chat:finish()
     end
   end
 
@@ -889,37 +912,30 @@ function M.ask(prompt, config)
 
   vim.diagnostic.reset(vim.api.nvim_create_namespace('copilot-chat-diagnostics'))
   config = vim.tbl_deep_extend('force', M.config, config or {})
-  prompt = insert_sticky(prompt, config)
-  prompt = vim.trim(prompt)
 
+  -- Stop previous conversation and open window
   if not config.headless then
     if config.clear_chat_on_new_prompt then
       M.stop(true)
     elseif client:stop() then
       finish()
     end
-
     if not M.chat:focused() then
       M.open(config)
     end
-
-    M.chat:start()
-    M.chat:append('\n')
-
-    local sticky = {}
-    local in_code_block = false
-    for _, line in ipairs(vim.split(prompt, '\n')) do
-      if line:match('^```') then
-        in_code_block = not in_code_block
-      end
-      if vim.startswith(line, '> ') and not in_code_block then
-        table.insert(sticky, line:sub(3))
-      end
-    end
-
-    state.sticky = sticky
   else
     update_source()
+  end
+
+  -- Resolve prompt after window is opened
+  prompt = insert_sticky(prompt, config)
+  prompt = vim.trim(prompt)
+
+  -- Prepare chat
+  if not config.headless then
+    store_sticky(prompt)
+    M.chat:start()
+    M.chat:append('\n')
   end
 
   -- Resolve prompt references
