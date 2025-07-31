@@ -1,4 +1,4 @@
-*CopilotChat.txt*           For NVIM v0.8.0          Last change: 2025 July 30
+*CopilotChat.txt*           For NVIM v0.8.0          Last change: 2025 July 31
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -472,6 +472,9 @@ Custom providers can implement these methods:
     
       -- Optional: Embeddings provider name or function
       embed?: string|function,
+    
+      -- Optional: Extra info about the provider displayed in info panel
+      get_info?(): string[]
     
       -- Optional: Get extra request headers with optional expiration time
       get_headers?(): table<string,string>, number?,
