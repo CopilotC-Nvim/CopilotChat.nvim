@@ -1213,8 +1213,7 @@ function M.setup(config)
     M.chat:delete()
   end
   M.chat = require('CopilotChat.ui.chat')(
-    M.config.headers,
-    M.config.separator,
+    M.config,
     utils.key_to_info('show_help', M.config.mappings.show_help),
     function(bufnr)
       for name, _ in pairs(M.config.mappings) do
