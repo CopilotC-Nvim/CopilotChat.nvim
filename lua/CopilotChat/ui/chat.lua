@@ -68,18 +68,18 @@ end
 ---@field private separator string
 ---@field private spinner CopilotChat.ui.spinner.Spinner
 ---@field private chat_overlay CopilotChat.ui.overlay.Overlay
-local Chat = class(function(self, headers, separator, help, on_buf_create)
+local Chat = class(function(self, config, help, on_buf_create)
   Overlay.init(self, 'copilot-chat', help, on_buf_create)
 
   self.winnr = nil
-  self.config = {}
+  self.config = config
   self.token_count = nil
   self.token_max_count = nil
   self.messages = {}
 
   self.layout = nil
-  self.headers = headers or {}
-  self.separator = separator
+  self.headers = config.headers
+  self.separator = config.separator
 
   self.spinner = Spinner()
   self.chat_overlay = Overlay('copilot-overlay', 'q to close', function(bufnr)
@@ -97,7 +97,12 @@ local Chat = class(function(self, headers, separator, help, on_buf_create)
 
   notify.listen(notify.MESSAGE, function(msg)
     utils.schedule_main()
-    self:append('\n' .. msg .. '\n')
+
+    if not self:visible() then
+      self:open(self.config)
+    end
+
+    self:overlay({ text = msg })
   end)
 end, Overlay)
 
