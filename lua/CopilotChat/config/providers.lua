@@ -171,6 +171,7 @@ end
 ---@class CopilotChat.config.providers.Provider
 ---@field disabled nil|boolean
 ---@field get_headers nil|fun():table<string, string>,number?
+---@field get_info nil|fun(headers:table):string[]
 ---@field get_models nil|fun(headers:table):table<CopilotChat.client.Model>
 ---@field embed nil|string|fun(inputs:table<string>, headers:table):table<CopilotChat.client.Embed>
 ---@field prepare_input nil|fun(inputs:table<CopilotChat.client.Message>, opts:CopilotChat.config.providers.Options):table
@@ -202,6 +203,56 @@ M.copilot = {
       ['Copilot-Integration-Id'] = 'vscode-chat',
     },
       response.body.expires_at
+  end,
+
+  get_info = function(headers)
+    local response, err = utils.curl_get('https://api.github.com/copilot_internal/user', {
+      json_response = true,
+      headers = {
+        ['Authorization'] = 'Token ' .. get_github_token('github_copilot'),
+      },
+    })
+
+    if err then
+      error(err)
+    end
+
+    local stats = response.body
+    local lines = {}
+
+    if not stats or not stats.quota_snapshots then
+      return { 'No Copilot stats available.' }
+    end
+
+    local function usage_line(name, snap)
+      if not snap then
+        return
+      end
+
+      table.insert(lines, string.format('  **%s**', name))
+
+      if snap.unlimited then
+        table.insert(lines, '    Usage: Unlimited')
+      else
+        local used = snap.entitlement - snap.remaining
+        local percent = snap.entitlement > 0 and (used / snap.entitlement * 100) or 0
+        table.insert(lines, string.format('   Usage: %d / %d (%.1f%%)', used, snap.entitlement, percent))
+        table.insert(lines, string.format('   Remaining: %d', snap.remaining))
+        if snap.overage_permitted ~= nil then
+          table.insert(lines, '   Overage: ' .. (snap.overage_permitted and 'Permitted' or 'Not Permitted'))
+        end
+      end
+    end
+
+    usage_line('Premium requests', stats.quota_snapshots.premium_interactions)
+    usage_line('Chat', stats.quota_snapshots.chat)
+    usage_line('Completions', stats.quota_snapshots.completions)
+
+    if stats.quota_reset_date then
+      table.insert(lines, string.format(' **Quota** resets on: %s', stats.quota_reset_date))
+    end
+
+    return lines
   end,
 
   get_models = function(headers)

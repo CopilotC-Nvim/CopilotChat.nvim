@@ -1,5 +1,6 @@
 local async = require('plenary.async')
 local copilot = require('CopilotChat')
+local client = require('CopilotChat.client')
 local utils = require('CopilotChat.utils')
 
 ---@class CopilotChat.config.mappings.Diff
@@ -439,6 +440,7 @@ return {
       local system_prompt = config.system_prompt
 
       async.run(function()
+        local infos = client:info()
         local selected_model = copilot.resolve_model(prompt, config)
         local selected_tools, resolved_resources = copilot.resolve_functions(prompt, config)
         selected_tools = vim.tbl_map(function(tool)
@@ -450,6 +452,14 @@ return {
         table.insert(lines, '**History**: `' .. copilot.config.history_path .. '`')
         table.insert(lines, '**Temp Files**: `' .. vim.fn.fnamemodify(os.tmpname(), ':h') .. '`')
         table.insert(lines, '')
+
+        for provider, infolines in pairs(infos) do
+          table.insert(lines, '**Provider**: `' .. provider .. '`')
+          for _, line in ipairs(infolines) do
+            table.insert(lines, line)
+          end
+          table.insert(lines, '')
+        end
 
         if source and utils.buf_valid(source.bufnr) then
           local source_name = vim.api.nvim_buf_get_name(source.bufnr)
