@@ -149,22 +149,22 @@ Commands are used to control the chat interface:
 
 Default mappings in the chat interface:
 
-| Insert  | Normal  | Action                                     |
-| ------- | ------- | ------------------------------------------ |
-| `<Tab>` | -       | Trigger/accept completion menu for tokens  |
-| `<C-c>` | `q`     | Close the chat window                      |
-| `<C-l>` | `<C-l>` | Reset and clear the chat window            |
-| `<C-s>` | `<CR>`  | Submit the current prompt                  |
-| -       | `grr`   | Toggle sticky prompt for line under cursor |
-| -       | `grx`   | Clear all sticky prompts in prompt         |
-| `<C-y>` | `<C-y>` | Accept nearest diff                        |
-| -       | `gj`    | Jump to section of nearest diff            |
-| -       | `gqa`   | Add all answers from chat to quickfix list |
-| -       | `gqd`   | Add all diffs from chat to quickfix list   |
-| -       | `gy`    | Yank nearest diff to register              |
-| -       | `gd`    | Show diff between source and nearest diff  |
-| -       | `gc`    | Show info about current chat               |
-| -       | `gh`    | Show help message                          |
+| Insert      | Normal  | Action                                     |
+| ----------- | ------- | ------------------------------------------ |
+| `<C-Space>` | -       | Trigger/accept completion menu for tokens  |
+| `<C-c>`     | `q`     | Close the chat window                      |
+| `<C-l>`     | `<C-l>` | Reset and clear the chat window            |
+| `<C-s>`     | `<CR>`  | Submit the current prompt                  |
+| -           | `grr`   | Toggle sticky prompt for line under cursor |
+| -           | `grx`   | Clear all sticky prompts in prompt         |
+| `<C-y>`     | `<C-y>` | Accept nearest diff                        |
+| -           | `gj`    | Jump to section of nearest diff            |
+| -           | `gqa`   | Add all answers from chat to quickfix list |
+| -           | `gqd`   | Add all diffs from chat to quickfix list   |
+| -           | `gy`    | Yank nearest diff to register              |
+| -           | `gd`    | Show diff between source and nearest diff  |
+| -           | `gc`    | Show info about current chat               |
+| -           | `gh`    | Show help message                          |
 
 The mappings can be customized by setting the `mappings` table in your configuration. Each mapping can have:
 
