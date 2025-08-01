@@ -214,7 +214,17 @@ end
 ---@param filename string The file name
 ---@return string|nil
 function M.filetype(filename)
-  return vim.filetype.match({ filename = filename })
+  local filetype = require('plenary.filetype')
+
+  local ft = filetype.detect(filename, {
+    fs_access = false,
+  })
+
+  if ft == '' or not ft then
+    return vim.filetype.match({ filename = filename })
+  end
+
+  return ft
 end
 
 --- Get the mimetype from filetype
