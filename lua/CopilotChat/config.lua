@@ -18,6 +18,7 @@
 ---@field model string?
 ---@field tools string|table<string>|nil
 ---@field sticky string|table<string>|nil
+---@field language string?
 ---@field resource_processing boolean?
 ---@field temperature number?
 ---@field headless boolean?
@@ -58,6 +59,7 @@ return {
   model = 'gpt-4.1', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   tools = nil, -- Default tool or array of tools (or groups) to share with LLM (can be specified manually in prompt via @).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
+  language = 'English', -- Default language to use for answers
 
   resource_processing = false, -- Enable intelligent resource processing (skips unnecessary resources to save tokens)
 
