@@ -55,6 +55,25 @@ function M.check()
     error('setup: not called, required for plugin to work. See `:h CopilotChat-installation`.')
   end
 
+  start('CopilotChat.nvim [filesystem]')
+
+  local testfile = os.tmpname()
+  local f = io.open(testfile, 'w')
+  local writable = false
+  if f then
+    f:write('test')
+    f:close()
+    writable = true
+  end
+  if writable then
+    ok('temp dir: writable (' .. testfile .. ')')
+    os.remove(testfile)
+  else
+    local stat = vim.loop.fs_stat(vim.fn.fnamemodify(testfile, ':h'))
+    local perms = stat and string.format('%o', stat.mode % 512) or 'unknown'
+    error('temp dir: not writable. Permissions: ' .. perms .. ' (dir: ' .. vim.fn.fnamemodify(testfile, ':h') .. ')')
+  end
+
   start('CopilotChat.nvim [commands]')
 
   local curl_version = run_command('curl', '--version')

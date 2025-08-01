@@ -450,7 +450,6 @@ return {
         utils.schedule_main()
         table.insert(lines, '**Logs**: `' .. copilot.config.log_path .. '`')
         table.insert(lines, '**History**: `' .. copilot.config.history_path .. '`')
-        table.insert(lines, '**Temp Files**: `' .. vim.fn.fnamemodify(os.tmpname(), ':h') .. '`')
         table.insert(lines, '')
 
         for provider, infolines in pairs(infos) do
