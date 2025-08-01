@@ -286,24 +286,24 @@ For supported models, see:
 
 ## Functions
 
-Functions provide additional information and behaviour to the chat.
-Tools can be organized into groups by setting the `group` property. Tools assigned to a group are not automatically made available to the LLM - they must be explicitly activated.
-To use grouped tools in your prompt, include `@group_name` in your message. This allows the LLM to access and use all tools in that group during the current interaction.
-Add tools using `#tool_name[:input]` syntax:
+Functions provide additional information and behaviour to the chat.  
+Functions can be organized into groups by setting the `group` property.  
+Functions can be made available to the LLM with `@group_name` or `@function_name` syntax. LLM will then be able to use them in responses as tool calls.
+If function has URI, they can also be used directly in prompt with `#function_name[:input]` syntax for providing context as resources.
 
-| Function      | Input Support | Description                                            |
-| ------------- | ------------- | ------------------------------------------------------ |
-| `buffer`      | ✓ (name)      | Retrieves content from a specific buffer               |
-| `buffers`     | ✓ (scope)     | Fetches content from multiple buffers (listed/visible) |
-| `diagnostics` | ✓ (scope)     | Collects code diagnostics (errors, warnings)           |
-| `file`        | ✓ (path)      | Reads content from a specified file path               |
-| `gitdiff`     | ✓ (sha)       | Retrieves git diff information (unstaged/staged/sha)   |
-| `gitstatus`   | -             | Retrieves git status information                       |
-| `glob`        | ✓ (pattern)   | Lists filenames matching a pattern in workspace        |
-| `grep`        | ✓ (pattern)   | Searches for a pattern across files in workspace       |
-| `quickfix`    | -             | Includes content of files in quickfix list             |
-| `register`    | ✓ (register)  | Provides access to specified Vim register              |
-| `url`         | ✓ (url)       | Fetches content from a specified URL                   |
+| Function      | Input Support | URI | Description                                            |
+| ------------- | ------------- | --- | ------------------------------------------------------ |
+| `buffer`      | ✓ (name)      | ✓   | Retrieves content from a specific buffer               |
+| `buffers`     | ✓ (scope)     | ✓   | Fetches content from multiple buffers (listed/visible) |
+| `diagnostics` | ✓ (scope)     | ✓   | Collects code diagnostics (errors, warnings)           |
+| `file`        | ✓ (path)      | ✓   | Reads content from a specified file path               |
+| `gitdiff`     | ✓ (sha)       | ✓   | Retrieves git diff information (unstaged/staged/sha)   |
+| `gitstatus`   | -             | ✓   | Retrieves git status information                       |
+| `glob`        | ✓ (pattern)   | ✓   | Lists filenames matching a pattern in workspace        |
+| `grep`        | ✓ (pattern)   | ✓   | Searches for a pattern across files in workspace       |
+| `quickfix`    | -             | ✓   | Includes content of files in quickfix list             |
+| `register`    | ✓ (register)  | ✓   | Provides access to specified Vim register              |
+| `url`         | ✓ (url)       | ✓   | Fetches content from a specified URL                   |
 
 Examples:
 
@@ -318,6 +318,9 @@ Examples:
 > #quickfix
 > #register:+
 > #url:https://example.com
+> @glob
+> @grep
+> @file
 ```
 
 Define your own functions in the configuration with input handling and schema:
@@ -563,7 +566,7 @@ local chat = require("CopilotChat")
 chat.ask(prompt, config)      -- Ask a question with optional config
 chat.response()               -- Get the last response text
 chat.resolve_prompt()         -- Resolve prompt references
-chat.resolve_tools()          -- Resolve tools that are available for automatic use by LLM
+chat.resolve_functions()      -- Resolve functions that are available for automatic use by LLM (WARN: async, requires plenary.async.run)
 chat.resolve_model()          -- Resolve model from prompt (WARN: async, requires plenary.async.run)
 
 -- Window Management
@@ -619,6 +622,7 @@ window:add_sticky(sticky)                      -- Add sticky prompt to chat mess
 -- Content Management
 window:append(text)          -- Append text to chat window
 window:clear()               -- Clear chat window content
+window:start()               -- Start writing to chat window
 window:finish()              -- Finish writing to chat window
 
 -- Navigation
