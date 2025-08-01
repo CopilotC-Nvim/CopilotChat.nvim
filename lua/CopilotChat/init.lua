@@ -473,6 +473,7 @@ function M.resolve_prompt(prompt, config)
 
   if config.system_prompt then
     config.system_prompt = config.system_prompt:gsub('{OS_NAME}', jit.os)
+    config.system_prompt = config.system_prompt:gsub('{LANGUAGE}', config.language)
     if state.source then
       config.system_prompt = config.system_prompt:gsub('{DIR}', state.source.cwd())
     end
