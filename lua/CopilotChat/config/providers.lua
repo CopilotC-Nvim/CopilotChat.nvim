@@ -99,7 +99,7 @@ end
 
 --- Get the github copilot oauth cached token (gu_ token)
 ---@return string
-local function get_github_token(tag)
+local function get_github_copilot_token(tag)
   local function config_path()
     local config = vim.fs.normalize('$XDG_CONFIG_HOME')
     if config and vim.uv.fs_stat(config) then
@@ -157,6 +157,33 @@ local function get_github_token(tag)
   return github_device_flow(tag, 'Iv1.b507a08c87ecfe98', '')
 end
 
+local function get_github_models_token(tag)
+  local token = get_token(tag)
+  if token then
+    return token
+  end
+
+  -- loading token from the environment only in GitHub Codespaces
+  local codespaces = os.getenv('CODESPACES')
+  token = os.getenv('GITHUB_TOKEN')
+  if token and codespaces then
+    return set_token(tag, token, false)
+  end
+
+  -- loading token from gh cli if available
+  if vim.fn.executable('gh') == 0 then
+    local result = utils.system({ 'gh', 'auth', 'token', '-h', 'github.com' })
+    if result and result.code == 0 and result.stdout then
+      local gh_token = vim.trim(result.stdout)
+      if gh_token ~= '' and not gh_token:find('no oauth token') then
+        return set_token(tag, gh_token, false)
+      end
+    end
+  end
+
+  return github_device_flow(tag, '178c6fc778ccc68e1d6a', 'read:user copilot')
+end
+
 ---@class CopilotChat.config.providers.Options
 ---@field model CopilotChat.client.Model
 ---@field temperature number?
@@ -188,7 +215,7 @@ M.copilot = {
     local response, err = utils.curl_get('https://api.github.com/copilot_internal/v2/token', {
       json_response = true,
       headers = {
-        ['Authorization'] = 'Token ' .. get_github_token('github_copilot'),
+        ['Authorization'] = 'Token ' .. get_github_copilot_token('github_copilot'),
       },
     })
 
@@ -209,7 +236,7 @@ M.copilot = {
     local response, err = utils.curl_get('https://api.github.com/copilot_internal/user', {
       json_response = true,
       headers = {
-        ['Authorization'] = 'Token ' .. get_github_token('github_copilot'),
+        ['Authorization'] = 'Token ' .. get_github_copilot_token('github_copilot'),
       },
     })
 
@@ -430,7 +457,7 @@ M.github_models = {
 
   get_headers = function()
     return {
-      ['Authorization'] = 'Bearer ' .. github_device_flow('github_models', 'Ov23liqtJusaUH38tIoK', 'read:user copilot'),
+      ['Authorization'] = 'Bearer ' .. get_github_models_token('github_models'),
     }
   end,
 
