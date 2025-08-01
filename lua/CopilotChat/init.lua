@@ -991,6 +991,14 @@ function M.ask(prompt, config)
       end
     end
 
+    if utils.empty(prompt) and utils.empty(resolved_tools) then
+      if not config.headless then
+        M.chat:remove_message('user')
+        finish()
+      end
+      return
+    end
+
     local ask_ok, ask_response = pcall(client.ask, client, prompt, {
       headless = config.headless,
       history = M.chat.messages,
