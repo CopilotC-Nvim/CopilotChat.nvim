@@ -55,8 +55,6 @@ function M.check()
     error('setup: not called, required for plugin to work. See `:h CopilotChat-installation`.')
   end
 
-  start('CopilotChat.nvim [filesystem]')
-
   local testfile = os.tmpname()
   local f = io.open(testfile, 'w')
   local writable = false
@@ -104,6 +102,13 @@ function M.check()
     ok('lynx: ' .. lynx_version)
   end
 
+  local gh_version = run_command('gh', '--version')
+  if gh_version == false then
+    warn('gh: missing, optional for improved GitHub authorization. See "https://cli.github.com/".')
+  else
+    ok('gh: ' .. gh_version)
+  end
+
   start('CopilotChat.nvim [dependencies]')
 
   if lualib_installed('plenary') then
@@ -118,7 +123,7 @@ function M.check()
     ok('copilot: ' .. (has_copilot and 'copilot.lua' or 'copilot.vim'))
   else
     warn(
-      'copilot: missing, optional for improved auth implementation. Install "github/copilot.vim" or "zbirenbaum/copilot.lua" plugins.'
+      'copilot: missing, optional for improved Copilot authorization. Install "github/copilot.vim" or "zbirenbaum/copilot.lua" plugins.'
     )
   end
 

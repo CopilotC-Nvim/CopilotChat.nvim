@@ -40,8 +40,6 @@ CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat capabilities
 
 ## Optional Dependencies
 
-- [copilot.vim](https://github.com/github/copilot.vim) - For `:Copilot setup` authorization, otherwise in-built method i used
-
 - [tiktoken_core](https://github.com/gptlang/lua-tiktoken) - For accurate token counting
   - Arch Linux: Install [`luajit-tiktoken-bin`](https://aur.archlinux.org/packages/luajit-tiktoken-bin) or [`lua51-tiktoken-bin`](https://aur.archlinux.org/packages/lua51-tiktoken-bin) from AUR
   - Via luarocks: `sudo luarocks install --lua-version 5.1 tiktoken_core`
