@@ -137,7 +137,7 @@ end
 ---@field show_help CopilotChat.config.mapping|false|nil
 return {
   complete = {
-    insert = '<Tab>',
+    insert = '<C-Space>',
     callback = function()
       copilot.trigger_complete()
     end,
