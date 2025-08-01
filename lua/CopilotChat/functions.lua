@@ -44,12 +44,12 @@ local function sorted_propnames(schema)
   return prop_names
 end
 
-local function filter_schema(tbl)
+local function filter_schema(tbl, root)
   if type(tbl) ~= 'table' then
     return tbl
   end
 
-  if utils.empty(tbl.properties) then
+  if root and utils.empty(tbl.properties) then
     return nil
   end
 
@@ -139,7 +139,7 @@ function M.parse_schema(tool)
   end
 
   if schema then
-    schema = filter_schema(schema)
+    schema = filter_schema(schema, true)
   end
 
   return schema
