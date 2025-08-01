@@ -211,7 +211,9 @@ function M.enter_input(schema, source)
       if cfg.enum then
         local choices = type(cfg.enum) == 'table' and cfg.enum or cfg.enum(source)
         local choice
-        if #choices == 1 then
+        if #choices == 0 then
+          choice = nil
+        elseif #choices == 1 then
           choice = choices[1]
         else
           choice = utils.select(choices, {
