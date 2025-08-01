@@ -440,7 +440,11 @@ function Chat:add_message(message, replace)
   elseif replace and current_message then
     -- Replace the content of the current message
     self:render()
-    current_message.content = message.content
+
+    for k, v in pairs(message) do
+      current_message[k] = v
+    end
+
     local section = current_message.section
 
     if section then
