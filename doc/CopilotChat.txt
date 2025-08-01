@@ -205,14 +205,14 @@ configuration. Each mapping can have:
 - `normal`: Key for normal mode
 - `insert`: Key for insert mode
 
-For example, to change the submit prompt mapping or show_diff full diff option:
+For example, to change the complete mapping to Tab or show_diff full diff
+option:
 
 >lua
     {
         mappings = {
-          submit_prompt = {
-            normal = '<Leader>s',
-            insert = '<C-s>'
+          complete = {
+            insert = '<Tab>'
           }
           show_diff = {
             full_diff = true
@@ -515,6 +515,7 @@ Below are all available configuration options with their default values:
       model = 'gpt-4.1', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
       tools = nil, -- Default tool or array of tools (or groups) to share with LLM (can be specified manually in prompt via @).
       sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
+      language = 'English', -- Default language to use for answers
     
       resource_processing = false, -- Enable intelligent resource processing (skips unnecessary resources to save tokens)
     
