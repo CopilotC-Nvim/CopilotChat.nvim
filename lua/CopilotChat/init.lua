@@ -973,22 +973,39 @@ function M.ask(prompt, config)
     if not config.headless then
       utils.schedule_main()
 
+      -- Remove any tool calls that we did not handle
+      local assistant_message = M.chat:get_message('assistant')
+      if assistant_message and assistant_message.tool_calls then
+        local handled_ids = {}
+        for _, tool in ipairs(resolved_tools) do
+          handled_ids[tool.id] = true
+        end
+
+        assistant_message.tool_calls = vim
+          .iter(assistant_message.tool_calls)
+          :filter(function(tool_call)
+            return handled_ids[tool_call.id]
+          end)
+          :totable()
+      end
+
       if not utils.empty(resolved_tools) then
+        -- If we are handling tools, replace user message with tool results
         M.chat:remove_message('user')
+        for _, tool in ipairs(resolved_tools) do
+          M.chat:add_message({
+            id = tool.id,
+            role = 'tool',
+            tool_call_id = tool.id,
+            content = '\n' .. tool.result .. '\n',
+          })
+        end
       else
+        -- Otherwise just replace the user message with resolved prompt
         M.chat:add_message({
           role = 'user',
           content = '\n' .. prompt .. '\n',
         }, true)
-      end
-
-      for _, tool in ipairs(resolved_tools) do
-        M.chat:add_message({
-          id = tool.id,
-          role = 'tool',
-          tool_call_id = tool.id,
-          content = '\n' .. tool.result .. '\n',
-        })
       end
     end
 
