@@ -118,7 +118,7 @@ return {
 
   buffer = {
     group = 'copilot',
-    uri = 'neovim://buffer/{name}',
+    uri = 'buffer://{name}',
     description = 'Retrieves content from a specific buffer. Useful for discussing or analyzing code from a particular file that is currently loaded.',
 
     schema = {
@@ -162,7 +162,7 @@ return {
       end
       return {
         {
-          uri = 'neovim://buffer/' .. name,
+          uri = 'buffer://' .. name,
           mimetype = mimetype,
           data = data,
         },
@@ -172,7 +172,7 @@ return {
 
   buffers = {
     group = 'copilot',
-    uri = 'neovim://buffers/{scope}',
+    uri = 'buffers://{scope}',
     description = 'Fetches content from multiple buffers. Helps with discussing or analyzing code across multiple files simultaneously.',
 
     schema = {
@@ -204,7 +204,7 @@ return {
             return nil
           end
           return {
-            uri = 'neovim://buffer/' .. name,
+            uri = 'buffer://' .. name,
             mimetype = mimetype,
             data = data,
           }
@@ -229,23 +229,35 @@ return {
         return {}
       end
 
-      local unique_files = {}
+      local file_to_bufnr = {}
       for _, item in ipairs(items) do
         local filename = item.filename or vim.api.nvim_buf_get_name(item.bufnr)
         if filename then
-          unique_files[filename] = true
+          if item.bufnr and utils.buf_valid(item.bufnr) then
+            file_to_bufnr[filename] = item.bufnr
+          else
+            file_to_bufnr[filename] = false
+          end
         end
       end
 
       return vim
-        .iter(vim.tbl_keys(unique_files))
+        .iter(vim.tbl_keys(file_to_bufnr))
         :map(function(file)
-          local data, mimetype = resources.get_file(file)
+          local bufnr = file_to_bufnr[file]
+          local data, mimetype, uri
+          if bufnr and bufnr ~= false then
+            data, mimetype = resources.get_buffer(bufnr)
+            uri = 'buffer://' .. file
+          else
+            data, mimetype = resources.get_file(file)
+            uri = 'file://' .. file
+          end
           if not data then
             return nil
           end
           return {
-            uri = 'file://' .. file,
+            uri = uri,
             mimetype = mimetype,
             data = data,
           }
