@@ -135,7 +135,7 @@ CopilotChat uses a transparent approach to context sharing:
 
 - **Resources** (`#<name>`) - Add specific content (files, git diffs, URLs) to your prompt
 - **Tools** (`@<name>`) - Give LLM access to functions it can call with your approval
-- **Sticky Prompts** (`> <text>`) - Persist context across chat sessions
+- **Sticky Prompts** (`> <text>`) - Persist context across single chat session
 
 ### Examples
 
@@ -186,94 +186,94 @@ Use with `:CopilotChat<PromptName>` or reference with `/PromptName`:
 
 # Configuration
 
-## Default Configuration
+For all available configuration options, see [`lua/CopilotChat/config.lua`](lua/CopilotChat/config.lua).
 
-Below are all available configuration options with their default values:
+## Basic Setup
+
+Most users only need to configure a few options:
 
 ```lua
 {
-
-  -- Shared config starts here (can be passed to functions at runtime and configured via setup function)
-
-  system_prompt = 'COPILOT_INSTRUCTIONS', -- System prompt to use (can be specified manually in prompt via /).
-
-  model = 'gpt-4.1', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
-  tools = nil, -- Default tool or array of tools (or groups) to share with LLM (can be specified manually in prompt via @).
-  sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
-  language = 'English', -- Default language to use for answers
-
-  resource_processing = false, -- Enable intelligent resource processing (skips unnecessary resources to save tokens)
-
-  temperature = 0.1, -- Result temperature
-  headless = false, -- Do not write to chat buffer and use history (useful for using custom processing)
-  callback = nil, -- Function called when full response is received
-  remember_as_sticky = true, -- Remember config as sticky prompts when asking questions
-
-  -- default selection
-  -- see select.lua for implementation
-  selection = require('CopilotChat.select').visual,
-
-  -- default window options
+  -- Basic options
+  model = 'gpt-4.1', -- AI model to use
+  temperature = 0.1, -- Lower = more focused, higher = more creative
+  language = 'English', -- Language for prompts and responses
+  
+  -- Window layout
   window = {
-    layout = 'vertical', -- 'vertical', 'horizontal', 'float', 'replace', or a function that returns the layout
-    width = 0.5, -- fractional width of parent, or absolute width in columns when > 1
-    height = 0.5, -- fractional height of parent, or absolute height in rows when > 1
-    -- Options below only apply to floating windows
-    relative = 'editor', -- 'editor', 'win', 'cursor', 'mouse'
-    border = 'single', -- 'none', single', 'double', 'rounded', 'solid', 'shadow'
-    row = nil, -- row position of the window, default is centered
-    col = nil, -- column position of the window, default is centered
-    title = 'Copilot Chat', -- title of chat window
-    footer = nil, -- footer of chat window
-    zindex = 1, -- determines if window is on top or below other floating windows
-    blend = 0, -- window blend (transparency), 0-100, 0 is opaque, 100 is fully transparent
+    layout = 'vertical', -- 'vertical', 'horizontal', 'float'
+    width = 0.5, -- 50% of screen width
   },
-
-  show_help = true, -- Shows help message as virtual lines when waiting for user input
-  show_folds = true, -- Shows folds for sections in chat
-  highlight_selection = true, -- Highlight selection
-  highlight_headers = true, -- Highlight headers in chat
-  auto_follow_cursor = true, -- Auto-follow cursor in chat
-  auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
-  insert_at_end = false, -- Move cursor to end of buffer when inserting text
-  clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
-
-  -- Static config starts here (can be configured only via setup function)
-
-  debug = false, -- Enable debug logging (same as 'log_level = 'debug')
-  log_level = 'info', -- Log level to use, 'trace', 'debug', 'info', 'warn', 'error', 'fatal'
-  proxy = nil, -- [protocol://]host[:port] Use this proxy
-  allow_insecure = false, -- Allow insecure server connections
-
-  chat_autocomplete = true, -- Enable chat autocompletion (when disabled, requires manual `mappings.complete` trigger)
-
-  log_path = vim.fn.stdpath('state') .. '/CopilotChat.log', -- Default path to log file
-  history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
-
-  headers = {
-    user = '## User ', -- Header to use for user questions
-    assistant = '## Copilot ', -- Header to use for AI answers
-    tool = '## Tool ', -- Header to use for tool calls
-  },
-
-  separator = '───', -- Separator to use in chat
-
-  -- default providers
-  -- see config/providers.lua for implementation
-  providers = require('CopilotChat.config.providers'),
-
-  -- default functions
-  -- see config/functions.lua for implementation
-  functions = require('CopilotChat.config.functions'),
-
-  -- default prompts
-  -- see config/prompts.lua for implementation
-  prompts = require('CopilotChat.config.prompts'),
-
-  -- default mappings
-  -- see config/mappings.lua for implementation
-  mappings = require('CopilotChat.config.mappings'),
+  
+  -- Auto-enter insert mode when opening
+  auto_insert_mode = true,
 }
+```
+
+## Customizing Chat Appearance
+
+### Window Styling
+
+```lua
+{
+  window = {
+    layout = 'float',
+    width = 80, -- Fixed width in columns
+    height = 20, -- Fixed height in rows
+    border = 'rounded', -- 'single', 'double', 'rounded', 'solid'
+    title = '🤖 AI Assistant',
+    zindex = 100, -- Ensure window stays on top
+  },
+}
+```
+
+### Chat Content Styling
+
+```lua
+{
+  headers = {
+    user = '👤 You: ',
+    assistant = '🤖 Copilot: ',
+    tool = '🔧 Tool: ',
+  },
+  separator = '━━',
+  show_folds = false, -- Disable folding for cleaner look
+}
+```
+
+### Custom Highlights
+
+You can customize colors by setting highlight groups in your config:
+
+```lua
+-- In your colorscheme or init.lua
+vim.api.nvim_set_hl(0, 'CopilotChatHeader', { fg = '#7C3AED', bold = true })
+vim.api.nvim_set_hl(0, 'CopilotChatSeparator', { fg = '#374151' })
+vim.api.nvim_set_hl(0, 'CopilotChatKeyword', { fg = '#10B981', italic = true })
+```
+
+Types of copilot highlights:
+
+- `CopilotChatHeader` - Header highlight in chat buffer
+- `CopilotChatSeparator` - Separator highlight in chat buffer
+- `CopilotChatStatus` - Status and spinner in chat buffer
+- `CopilotChatHelp` - Help messages in chat buffer (help, references)
+- `CopilotChatSelection` - Selection highlight in source buffer
+- `CopilotChatKeyword` - Keyword highlight in chat buffer (e.g. prompts, tools)
+- `CopilotChatAnnotation` - Annotation highlight in chat buffer (file headers, tool call headers, tool call body)
+
+### Buffer-specific Options
+
+```lua
+-- Auto-command to customize chat buffer behavior
+vim.api.nvim_create_autocmd('BufEnter', {
+  pattern = 'copilot-*',
+  callback = function()
+    vim.opt_local.relativenumber = false
+    vim.opt_local.number = false
+    vim.opt_local.conceallevel = 0
+  end,
+})
 ```
 
 ## Prompts
@@ -408,43 +408,6 @@ Add custom AI providers:
 - `copilot` - GitHub Copilot (default)
 - `github_models` - GitHub Marketplace models (disabled by default)
 - `copilot_embeddings` - Copilot embeddings provider
-
-### Provider Interface
-
-Custom providers can implement these methods:
-
-## Customizing Buffers
-
-Types of copilot buffers:
-
-- `copilot-chat` - Main chat buffer
-- `copilot-overlay` - Overlay buffers (e.g. help, info, diff)
-
-You can set local options for plugin buffers like this:
-
-```lua
-vim.api.nvim_create_autocmd('BufEnter', {
-    pattern = 'copilot-*',
-    callback = function()
-        -- Set buffer-local options
-        vim.opt_local.relativenumber = false
-        vim.opt_local.number = false
-        vim.opt_local.conceallevel = 0
-    end
-})
-```
-
-## Customizing Highlights
-
-Types of copilot highlights:
-
-- `CopilotChatHeader` - Header highlight in chat buffer
-- `CopilotChatSeparator` - Separator highlight in chat buffer
-- `CopilotChatStatus` - Status and spinner in chat buffer
-- `CopilotChatHelp` - Help messages in chat buffer (help, references)
-- `CopilotChatSelection` - Selection highlight in source buffer
-- `CopilotChatKeyword` - Keyword highlight in chat buffer (e.g. prompts, tools)
-- `CopilotChatAnnotation` - Annotation highlight in chat buffer (file headers, tool call headers, tool call body)
 
 # API Reference
 
