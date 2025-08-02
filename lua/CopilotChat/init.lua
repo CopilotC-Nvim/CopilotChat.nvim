@@ -969,10 +969,17 @@ function M.ask(prompt, config)
     end
 
     prompt = vim.trim(prompt)
+    utils.schedule_main()
+
+    if utils.empty(prompt) and utils.empty(resolved_tools) then
+      if not config.headless then
+        M.chat:remove_message('user')
+        finish()
+      end
+      return
+    end
 
     if not config.headless then
-      utils.schedule_main()
-
       -- Remove any tool calls that we did not handle
       local assistant_message = M.chat:get_message('assistant')
       if assistant_message and assistant_message.tool_calls then
@@ -987,6 +994,10 @@ function M.ask(prompt, config)
             return handled_ids[tool_call.id]
           end)
           :totable()
+
+        if utils.empty(assistant_message.tool_calls) then
+          M.chat:remove_message('assistant')
+        end
       end
 
       if not utils.empty(resolved_tools) then
@@ -1007,14 +1018,6 @@ function M.ask(prompt, config)
           content = '\n' .. prompt .. '\n',
         }, true)
       end
-    end
-
-    if utils.empty(prompt) and utils.empty(resolved_tools) then
-      if not config.headless then
-        M.chat:remove_message('user')
-        finish()
-      end
-      return
     end
 
     local ask_ok, ask_response = pcall(client.ask, client, prompt, {
