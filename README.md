@@ -19,7 +19,6 @@ https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
 CopilotChat.nvim is a Neovim plugin that brings GitHub Copilot Chat capabilities directly into your editor. It provides:
 
 - 🤖 GitHub Copilot Chat integration with official model support (GPT-4o, Claude 3.7 Sonnet, Gemini 2.0 Flash, and more)
-- 💻 Rich workspace context powered by smart embeddings system
 - 🔒 Explicit data sharing - only sends what you specifically request, either as resource or selection (by default visual selection)
 - 🔌 Modular provider architecture supporting both official and custom LLM backends (Ollama, Gemini, Mistral.ai and more)
 - 📝 Interactive chat UI with completion, diffs and quickfix integration
@@ -392,7 +391,6 @@ Providers are modules that implement integration with different AI providers.
 
 - `copilot` - Default GitHub Copilot provider used for chat
 - `github_models` - Provider for GitHub Marketplace models (disabled by default, enable it via `providers.github_models.disabled = false`)
-- `copilot_embeddings` - Provider for Copilot embeddings, not standalone, used by `copilot` and `github_models` providers
 
 ### Provider Interface
 
@@ -402,9 +400,6 @@ Custom providers can implement these methods:
 {
   -- Optional: Disable provider
   disabled?: boolean,
-
-  -- Optional: Embeddings provider name or function
-  embed?: string|function,
 
   -- Optional: Extra info about the provider displayed in info panel
   get_info?(): string[]
@@ -447,8 +442,6 @@ Below are all available configuration options with their default values:
   tools = nil, -- Default tool or array of tools (or groups) to share with LLM (can be specified manually in prompt via @).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
   language = 'English', -- Default language to use for answers
-
-  resource_processing = false, -- Enable intelligent resource processing (skips unnecessary resources to save tokens)
 
   temperature = 0.1, -- Result temperature
   headless = false, -- Do not write to chat buffer and use history (useful for using custom processing)

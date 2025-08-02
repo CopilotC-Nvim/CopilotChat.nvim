@@ -200,7 +200,6 @@ end
 ---@field get_headers nil|fun():table<string, string>,number?
 ---@field get_info nil|fun(headers:table):string[]
 ---@field get_models nil|fun(headers:table):table<CopilotChat.client.Model>
----@field embed nil|string|fun(inputs:table<string>, headers:table):table<CopilotChat.client.Embed>
 ---@field prepare_input nil|fun(inputs:table<CopilotChat.client.Message>, opts:CopilotChat.config.providers.Options):table
 ---@field prepare_output nil|fun(output:table, opts:CopilotChat.config.providers.Options):CopilotChat.config.providers.Output
 ---@field get_url nil|fun(opts:CopilotChat.config.providers.Options):string
@@ -209,8 +208,6 @@ end
 local M = {}
 
 M.copilot = {
-  embed = 'copilot_embeddings',
-
   get_headers = function()
     local response, err = utils.curl_get('https://api.github.com/copilot_internal/v2/token', {
       json_response = true,
@@ -453,7 +450,6 @@ M.copilot = {
 
 M.github_models = {
   disabled = true,
-  embed = 'copilot_embeddings',
 
   get_headers = function()
     return {
@@ -495,29 +491,6 @@ M.github_models = {
 
   get_url = function()
     return 'https://models.github.ai/inference/chat/completions'
-  end,
-}
-
-M.copilot_embeddings = {
-  get_headers = M.copilot.get_headers,
-
-  embed = function(inputs, headers)
-    local response, err = utils.curl_post('https://api.githubcopilot.com/embeddings', {
-      headers = headers,
-      json_request = true,
-      json_response = true,
-      body = {
-        dimensions = 512,
-        input = inputs,
-        model = 'text-embedding-3-small',
-      },
-    })
-
-    if err then
-      error(err)
-    end
-
-    return response.body.data
   end,
 }
 
