@@ -35,7 +35,9 @@ CopilotChat.nvim brings GitHub Copilot Chat capabilities directly into Neovim wi
 - [Copilot chat in the IDE](https://github.com/settings/copilot) enabled in GitHub settings
 - [plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
 
-> **Note**: For Neovim < 0.11.0, add `noinsert` or `noselect` to `completeopt`. For best experience, add `popup` to `completeopt`.
+> [!WARNING]
+> For Neovim < 0.11.0, add `noinsert` or `noselect` to your `completeopt` otherwise chat autocompletion will not work.
+> For best autocompletion experience, also add `popup` to your `completeopt` (even on Neovim 0.11.0+).
 
 ## Optional Dependencies
 
@@ -86,6 +88,33 @@ require("CopilotChat").setup()
 EOF
 ```
 
+# Core Concepts
+
+- **Resources** (`#<name>`) - Add specific content (files, git diffs, URLs) to your prompt
+- **Tools** (`@<name>`) - Give LLM access to functions it can call with your approval
+- **Sticky Prompts** (`> <text>`) - Persist context across single chat session
+- **Models** (`$<model>`) - Specify which AI model to use for the chat
+- **Prompts** (`/PromptName`) - Use predefined prompt templates for common tasks
+
+## Examples
+
+```markdown
+# Add specific file to context
+
+#file:src/main.lua
+
+# Give LLM access to workspace tools
+
+@copilot What files are in this project?
+
+# Sticky prompt that persists
+
+> #buffer:current
+> You are a helpful coding assistant
+```
+
+When you use `@copilot`, the LLM can call functions like `glob`, `file`, `gitdiff` etc. You'll see the proposed function call and can approve/reject it before execution.
+
 # Usage
 
 ## Commands
@@ -122,35 +151,6 @@ EOF
 | -           | `gd`    | Show diff between source and nearest diff  |
 | -           | `gc`    | Show info about current chat               |
 | -           | `gh`    | Show help message                          |
-
-# Core Concepts
-
-## Resources and Tools
-
-CopilotChat uses a transparent approach to context sharing:
-
-- **Resources** (`#<name>`) - Add specific content (files, git diffs, URLs) to your prompt
-- **Tools** (`@<name>`) - Give LLM access to functions it can call with your approval
-- **Sticky Prompts** (`> <text>`) - Persist context across single chat session
-
-## Examples
-
-```markdown
-# Add specific file to context
-
-#file:src/main.lua
-
-# Give LLM access to workspace tools
-
-@copilot What files are in this project?
-
-# Sticky prompt that persists
-
-> #buffer:current
-> You are a helpful coding assistant
-```
-
-When you use `@copilot`, the LLM can call functions like `glob`, `file`, `gitdiff` etc. You'll see the proposed function call and can approve/reject it before execution.
 
 ## Built-in Functions
 
