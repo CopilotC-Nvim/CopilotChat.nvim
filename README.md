@@ -198,13 +198,13 @@ Most users only need to configure a few options:
   model = 'gpt-4.1', -- AI model to use
   temperature = 0.1, -- Lower = more focused, higher = more creative
   language = 'English', -- Language for prompts and responses
-  
+
   -- Window layout
   window = {
     layout = 'vertical', -- 'vertical', 'horizontal', 'float'
     width = 0.5, -- 50% of screen width
   },
-  
+
   -- Auto-enter insert mode when opening
   auto_insert_mode = true,
 }
