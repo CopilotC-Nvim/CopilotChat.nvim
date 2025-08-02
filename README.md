@@ -133,7 +133,7 @@ When you use `@copilot`, the LLM can call functions like `glob`, `file`, `gitdif
 | `:CopilotChatModels`       | View/select available models  |
 | `:CopilotChat<PromptName>` | Use specific prompt template  |
 
-## Key Mappings
+## Chat Key Mappings
 
 | Insert      | Normal  | Action                                     |
 | ----------- | ------- | ------------------------------------------ |
@@ -152,7 +152,7 @@ When you use `@copilot`, the LLM can call functions like `glob`, `file`, `gitdif
 | -           | `gc`    | Show info about current chat               |
 | -           | `gh`    | Show help message                          |
 
-## Built-in Functions
+## Functions
 
 | Function      | Description                                      | Example Usage          |
 | ------------- | ------------------------------------------------ | ---------------------- |
@@ -168,17 +168,17 @@ When you use `@copilot`, the LLM can call functions like `glob`, `file`, `gitdif
 | `register`    | Provides access to specified Vim register        | `#register:+`          |
 | `url`         | Fetches content from a specified URL             | `#url:https://...`     |
 
-## Predefined Prompts
+## Prompts
 
-Use with `:CopilotChat<PromptName>` or reference with `/PromptName`:
-
-- `/Explain` - Explain selected code
-- `/Review` - Code review
-- `/Fix` - Fix bugs
-- `/Optimize` - Performance improvements
-- `/Docs` - Add documentation
-- `/Tests` - Generate tests
-- `/Commit` - Commit message
+| Prompt     | Description                                                            |
+| ---------- | ---------------------------------------------------------------------- |
+| `Explain`  | Write detailed explanation of selected code as paragraphs              |
+| `Review`   | Comprehensive code review with line-specific issue reporting           |
+| `Fix`      | Identify problems and rewrite code with fixes and explanation          |
+| `Optimize` | Improve performance and readability with optimization strategy         |
+| `Docs`     | Add documentation comments to selected code                            |
+| `Tests`    | Generate tests for selected code                                       |
+| `Commit`   | Generate commit message with commitizen convention from staged changes |
 
 # Configuration
 
