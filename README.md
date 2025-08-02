@@ -18,8 +18,6 @@ https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
 
 CopilotChat.nvim brings GitHub Copilot Chat capabilities directly into Neovim with a focus on transparency and user control.
 
-## Key Features
-
 - 🤖 **Multiple AI Models** - GitHub Copilot (GPT-4o, Claude 3.7 Sonnet, Gemini 2.0 Flash) + custom providers (Ollama, Mistral.ai)
 - 🔧 **Tool Calling** - LLM can use workspace functions (file reading, git operations, search) with your explicit approval
 - 🔒 **Explicit Control** - Only shares what you specifically request - no background data collection
@@ -28,7 +26,7 @@ CopilotChat.nvim brings GitHub Copilot Chat capabilities directly into Neovim wi
 - ⚡ **Efficient** - Smart token usage with tiktoken counting and history management
 - 🔌 **Extensible** - [Custom functions](https://github.com/CopilotC-Nvim/CopilotChat.nvim/discussions/categories/functions) and [providers](https://github.com/CopilotC-Nvim/CopilotChat.nvim/discussions/categories/providers), plus integrations like [mcphub.nvim](https://github.com/ravitemer/mcphub.nvim)
 
-# Quick Start
+# Installation
 
 ## Requirements
 
@@ -58,9 +56,7 @@ For various plugin pickers to work correctly, you need to replace `vim.ui.select
 - [snacks.picker](https://github.com/folke/snacks.nvim/blob/main/docs/picker.md#%EF%B8%8F-config) - enable `ui_select` config
 - [mini.pick](https://github.com/echasnovski/mini.pick/blob/main/lua/mini/pick.lua#L1229) - set `vim.ui.select = require('mini.pick').ui_select`
 
-## Installation
-
-### [lazy.nvim](https://github.com/folke/lazy.nvim)
+## [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
 return {
@@ -77,7 +73,7 @@ return {
 }
 ```
 
-### [vim-plug](https://github.com/junegunn/vim-plug)
+## [vim-plug](https://github.com/junegunn/vim-plug)
 
 ```vim
 call plug#begin()
@@ -90,9 +86,9 @@ require("CopilotChat").setup()
 EOF
 ```
 
-## Usage
+# Usage
 
-### Commands
+## Commands
 
 | Command                    | Description                   |
 | -------------------------- | ----------------------------- |
@@ -108,7 +104,7 @@ EOF
 | `:CopilotChatModels`       | View/select available models  |
 | `:CopilotChat<PromptName>` | Use specific prompt template  |
 
-### Key Mappings
+## Key Mappings
 
 | Insert      | Normal  | Action                                     |
 | ----------- | ------- | ------------------------------------------ |
@@ -127,9 +123,9 @@ EOF
 | -           | `gc`    | Show info about current chat               |
 | -           | `gh`    | Show help message                          |
 
-## Core Concepts
+# Core Concepts
 
-### Resources and Tools
+## Resources and Tools
 
 CopilotChat uses a transparent approach to context sharing:
 
@@ -137,7 +133,7 @@ CopilotChat uses a transparent approach to context sharing:
 - **Tools** (`@<name>`) - Give LLM access to functions it can call with your approval
 - **Sticky Prompts** (`> <text>`) - Persist context across single chat session
 
-### Examples
+## Examples
 
 ```markdown
 # Add specific file to context
@@ -156,7 +152,7 @@ CopilotChat uses a transparent approach to context sharing:
 
 When you use `@copilot`, the LLM can call functions like `glob`, `file`, `gitdiff` etc. You'll see the proposed function call and can approve/reject it before execution.
 
-### Built-in Functions
+## Built-in Functions
 
 | Function      | Description                                      | Example Usage          |
 | ------------- | ------------------------------------------------ | ---------------------- |
@@ -172,7 +168,7 @@ When you use `@copilot`, the LLM can call functions like `glob`, `file`, `gitdif
 | `register`    | Provides access to specified Vim register        | `#register:+`          |
 | `url`         | Fetches content from a specified URL             | `#url:https://...`     |
 
-### Predefined Prompts
+## Predefined Prompts
 
 Use with `:CopilotChat<PromptName>` or reference with `/PromptName`:
 
