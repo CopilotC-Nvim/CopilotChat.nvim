@@ -152,7 +152,9 @@ When you use `@copilot`, the LLM can call functions like `glob`, `file`, `gitdif
 | -           | `gc`    | Show info about current chat               |
 | -           | `gh`    | Show help message                          |
 
-## Functions
+## Predefined Functions
+
+All predefined functions belong to the `copilot` group.
 
 | Function      | Description                                      | Example Usage          |
 | ------------- | ------------------------------------------------ | ---------------------- |
@@ -168,7 +170,7 @@ When you use `@copilot`, the LLM can call functions like `glob`, `file`, `gitdif
 | `register`    | Provides access to specified Vim register        | `#register:+`          |
 | `url`         | Fetches content from a specified URL             | `#url:https://...`     |
 
-## Prompts
+## Predefined Prompts
 
 | Prompt     | Description                                                            |
 | ---------- | ---------------------------------------------------------------------- |
