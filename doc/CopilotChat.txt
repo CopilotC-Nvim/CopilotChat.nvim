@@ -373,7 +373,7 @@ Examples:
     > #buffers:visible
     > #diagnostics:current
     > #file:path/to/file.js
-    > #git:staged
+    > #gitdiff:staged
     > #glob:`**/*.lua`
     > #grep:`function setup`
     > #quickfix
