@@ -14,8 +14,8 @@ Table of Contents                              *CopilotChat-table-of-contents*
 3. Usage                                                   |CopilotChat-usage|
   - Commands                                            |CopilotChat-commands|
   - Chat Key Mappings                          |CopilotChat-chat-key-mappings|
-  - Functions                                          |CopilotChat-functions|
-  - Prompts                                              |CopilotChat-prompts|
+  - Predefined Functions                    |CopilotChat-predefined-functions|
+  - Predefined Prompts                        |CopilotChat-predefined-prompts|
 4. Configuration                                   |CopilotChat-configuration|
   - Quick Setup                                      |CopilotChat-quick-setup|
   - Window & Appearance                      |CopilotChat-window-&-appearance|
@@ -191,7 +191,9 @@ CHAT KEY MAPPINGS                              *CopilotChat-chat-key-mappings*
   -           gc       Show info about current chat
   -           gh       Show help message
 
-FUNCTIONS                                              *CopilotChat-functions*
+PREDEFINED FUNCTIONS                        *CopilotChat-predefined-functions*
+
+All predefined functions belong to the `copilot` group.
 
   ------------------------------------------------------------------------------
   Function      Description                               Example Usage
@@ -223,7 +225,7 @@ FUNCTIONS                                              *CopilotChat-functions*
   url           Fetches content from a specified URL      #url:https://...
   ------------------------------------------------------------------------------
 
-PROMPTS                                                  *CopilotChat-prompts*
+PREDEFINED PROMPTS                            *CopilotChat-predefined-prompts*
 
   -------------------------------------------------------------------------
   Prompt     Description
