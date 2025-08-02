@@ -141,12 +141,15 @@ CopilotChat uses a transparent approach to context sharing:
 
 ```markdown
 # Add specific file to context
+
 #file:src/main.lua
 
-# Give LLM access to workspace tools  
+# Give LLM access to workspace tools
+
 @copilot What files are in this project?
 
 # Sticky prompt that persists
+
 > #buffer:current
 > You are a helpful coding assistant
 ```
@@ -155,19 +158,19 @@ When you use `@copilot`, the LLM can call functions like `glob`, `file`, `gitdif
 
 ### Built-in Functions
 
-| Function      | Description                                            | Example Usage          |
-| ------------- | ------------------------------------------------------ | ---------------------- |
-| `buffer`      | Retrieves content from a specific buffer               | `#buffer`              |
-| `buffers`     | Fetches content from multiple buffers                  | `#buffers:visible`     |
-| `diagnostics` | Collects code diagnostics (errors, warnings)           | `#diagnostics:current` |
-| `file`        | Reads content from a specified file path               | `#file:path/to/file`   |
-| `gitdiff`     | Retrieves git diff information                         | `#gitdiff:staged`      |
-| `gitstatus`   | Retrieves git status information                       | `#gitstatus`           |
-| `glob`        | Lists filenames matching a pattern in workspace        | `#glob:**/*.lua`       |
-| `grep`        | Searches for a pattern across files in workspace       | `#grep:TODO`           |
-| `quickfix`    | Includes content of files in quickfix list             | `#quickfix`            |
-| `register`    | Provides access to specified Vim register              | `#register:+`          |
-| `url`         | Fetches content from a specified URL                   | `#url:https://...`     |
+| Function      | Description                                      | Example Usage          |
+| ------------- | ------------------------------------------------ | ---------------------- |
+| `buffer`      | Retrieves content from a specific buffer         | `#buffer`              |
+| `buffers`     | Fetches content from multiple buffers            | `#buffers:visible`     |
+| `diagnostics` | Collects code diagnostics (errors, warnings)     | `#diagnostics:current` |
+| `file`        | Reads content from a specified file path         | `#file:path/to/file`   |
+| `gitdiff`     | Retrieves git diff information                   | `#gitdiff:staged`      |
+| `gitstatus`   | Retrieves git status information                 | `#gitstatus`           |
+| `glob`        | Lists filenames matching a pattern in workspace  | `#glob:**/*.lua`       |
+| `grep`        | Searches for a pattern across files in workspace | `#grep:TODO`           |
+| `quickfix`    | Includes content of files in quickfix list       | `#quickfix`            |
+| `register`    | Provides access to specified Vim register        | `#register:+`          |
+| `url`         | Fetches content from a specified URL             | `#url:https://...`     |
 
 ### Predefined Prompts
 
@@ -339,13 +342,14 @@ Control what content is automatically included:
 {
   -- Use visual selection, fallback to current line
   selection = function(source)
-    return require('CopilotChat.select').visual(source) or 
+    return require('CopilotChat.select').visual(source) or
            require('CopilotChat.select').line(source)
   end,
 }
 ```
 
 **Available selections:**
+
 - `require('CopilotChat.select').visual` - Current visual selection
 - `require('CopilotChat.select').buffer` - Entire buffer content
 - `require('CopilotChat.select').line` - Current line content
@@ -400,6 +404,7 @@ Add custom AI providers:
 ```
 
 **Built-in providers:**
+
 - `copilot` - GitHub Copilot (default)
 - `github_models` - GitHub Marketplace models (disabled by default)
 - `copilot_embeddings` - Copilot embeddings provider
@@ -407,7 +412,6 @@ Add custom AI providers:
 ### Provider Interface
 
 Custom providers can implement these methods:
-
 
 ## Customizing Buffers
 
