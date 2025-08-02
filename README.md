@@ -170,15 +170,15 @@ When you use `@copilot`, the LLM can call functions like `glob`, `file`, `gitdif
 
 ## Prompts
 
-| Prompt    | Description                                                            |
-| --------- | ---------------------------------------------------------------------- |
-| `Explain` | Write detailed explanation of selected code as paragraphs              |
-| `Review`  | Comprehensive code review with line-specific issue reporting           |
-| `Fix`     | Identify problems and rewrite code with fixes and explanation          |
-| `Optimize`| Improve performance and readability with optimization strategy         |
-| `Docs`    | Add documentation comments to selected code                            |
-| `Tests`   | Generate tests for selected code                                       |
-| `Commit`  | Generate commit message with commitizen convention from staged changes |
+| Prompt     | Description                                                            |
+| ---------- | ---------------------------------------------------------------------- |
+| `Explain`  | Write detailed explanation of selected code as paragraphs              |
+| `Review`   | Comprehensive code review with line-specific issue reporting           |
+| `Fix`      | Identify problems and rewrite code with fixes and explanation          |
+| `Optimize` | Improve performance and readability with optimization strategy         |
+| `Docs`     | Add documentation comments to selected code                            |
+| `Tests`    | Generate tests for selected code                                       |
+| `Commit`   | Generate commit message with commitizen convention from staged changes |
 
 # Configuration
 
