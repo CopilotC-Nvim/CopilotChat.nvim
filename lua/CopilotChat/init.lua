@@ -971,16 +971,7 @@ function M.ask(prompt, config)
     prompt = vim.trim(prompt)
     utils.schedule_main()
 
-    if utils.empty(prompt) and utils.empty(resolved_tools) then
-      if not config.headless then
-        M.chat:remove_message('user')
-        finish()
-      end
-      return
-    end
-
     if not config.headless then
-      -- Remove any tool calls that we did not handle
       local assistant_message = M.chat:get_message('assistant')
       if assistant_message and assistant_message.tool_calls then
         local handled_ids = {}
@@ -988,15 +979,15 @@ function M.ask(prompt, config)
           handled_ids[tool.id] = true
         end
 
-        assistant_message.tool_calls = vim
-          .iter(assistant_message.tool_calls)
-          :filter(function(tool_call)
-            return handled_ids[tool_call.id]
-          end)
-          :totable()
-
-        if utils.empty(assistant_message.tool_calls) then
-          M.chat:remove_message('assistant')
+        -- If we skipped any tool calls, send that as result
+        for _, tool_call in ipairs(assistant_message.tool_calls) do
+          if not handled_ids[tool_call.id] then
+            table.insert(resolved_tools, {
+              id = tool_call.id,
+              result = string.format(BLOCK_OUTPUT_FORMAT, 'error', 'User skipped this function call.'),
+            })
+            handled_ids[tool_call.id] = true
+          end
         end
       end
 
@@ -1018,6 +1009,14 @@ function M.ask(prompt, config)
           content = '\n' .. prompt .. '\n',
         }, true)
       end
+    end
+
+    if utils.empty(prompt) and utils.empty(resolved_tools) then
+      if not config.headless then
+        M.chat:remove_message('user')
+        finish()
+      end
+      return
     end
 
     local ask_ok, ask_response = pcall(client.ask, client, prompt, {
