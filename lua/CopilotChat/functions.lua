@@ -114,15 +114,16 @@ function M.match_uri(uri, pattern)
   return result
 end
 
----@param tool CopilotChat.config.functions.Function
-function M.parse_schema(tool)
-  local schema = tool.schema
+--- Parse function schema and return a JSON schema object
+---@param fn CopilotChat.config.functions.Function
+function M.parse_schema(fn)
+  local schema = fn.schema
 
   -- If schema is missing but uri is present, generate a default schema from uri
-  if not schema and tool.uri then
+  if not schema and fn.uri then
     -- Extract parameter names from the uri pattern, e.g. file://{path}
     local param_names = {}
-    for param in tool.uri:gmatch(URI_PARAM_PATTERN) do
+    for param in fn.uri:gmatch(URI_PARAM_PATTERN) do
       table.insert(param_names, param)
     end
     if #param_names > 0 then
@@ -138,26 +139,22 @@ function M.parse_schema(tool)
     end
   end
 
-  if schema then
-    schema = filter_schema(schema, true)
-  end
-
   return schema
 end
 
---- Prepare the schema for use
----@param tools table<string, CopilotChat.config.functions.Function>
+--- Prepare functions for tool use
+---@param functions table<string, CopilotChat.config.functions.Function>
 ---@return table<CopilotChat.client.Tool>
-function M.parse_tools(tools)
-  local tool_names = vim.tbl_keys(tools)
+function M.parse_tools(functions)
+  local tool_names = vim.tbl_keys(functions)
   table.sort(tool_names)
   return vim.tbl_map(function(name)
-    local tool = tools[name]
+    local tool = functions[name]
 
     return {
       name = name,
       description = tool.description,
-      schema = M.parse_schema(tool),
+      schema = filter_schema(M.parse_schema(tool), true),
     }
   end, tool_names)
 end
