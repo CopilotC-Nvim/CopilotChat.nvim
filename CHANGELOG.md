@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.1.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.0.0...v4.1.0) (2025-08-03)
+
+
+### Features
+
+* **ui:** improve keyword highlights accuracy and performance ([#1260](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1260)) ([0d64e26](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/0d64e267a5aef3bd7d580a2c488bcc8b66d374a4))
+
+
+### Bug Fixes
+
+* **functions:** do not filter schema enum when entering input ([#1264](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1264)) ([8510f30](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/8510f30ff8c338482e7c8a2a7d102519cc57315f)), closes [#1263](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1263)
+
 ## [4.0.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v3.12.2...v4.0.0) (2025-08-02)
 
 
