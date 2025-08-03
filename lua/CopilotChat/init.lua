@@ -204,17 +204,32 @@ local function finish(start_of_chat)
 end
 
 --- Show an error in the chat window.
----@param err string|table|nil
-local function show_error(err)
-  err = err or 'Unknown error'
-  err = utils.make_string(err)
+---@param config CopilotChat.config.Shared
+---@param cb function
+---@return any
+local function handle_error(config, cb)
+  return function()
+    local ok, out = pcall(cb)
+    if ok then
+      return out
+    end
 
-  M.chat:add_message({
-    role = 'assistant',
-    content = '\n' .. string.format(BLOCK_OUTPUT_FORMAT, 'error', err) .. '\n',
-  })
+    log.error(out)
+    if config.headless then
+      return
+    end
 
-  finish()
+    utils.schedule_main()
+    out = out or 'Unknown error'
+    out = utils.make_string(out)
+
+    M.chat:add_message({
+      role = 'assistant',
+      content = '\n' .. string.format(BLOCK_OUTPUT_FORMAT, 'error', out) .. '\n',
+    })
+
+    finish()
+  end
 end
 
 --- Map a key to a function.
@@ -954,7 +969,7 @@ function M.ask(prompt, config)
   -- Retrieve the selection
   local selection = M.get_selection()
 
-  local ok, err = pcall(async.run, function()
+  async.run(handle_error(config, function()
     local selected_tools, resolved_resources, resolved_tools, prompt = M.resolve_functions(prompt, config)
     local selected_model, prompt = M.resolve_model(prompt, config)
 
@@ -969,9 +984,9 @@ function M.ask(prompt, config)
     end
 
     prompt = vim.trim(prompt)
-    utils.schedule_main()
 
     if not config.headless then
+      utils.schedule_main()
       local assistant_message = M.chat:get_message('assistant')
       if assistant_message and assistant_message.tool_calls then
         local handled_ids = {}
@@ -1019,7 +1034,7 @@ function M.ask(prompt, config)
       return
     end
 
-    local ask_ok, ask_response = pcall(client.ask, client, prompt, {
+    local ask_response = client.ask(client, prompt, {
       headless = config.headless,
       history = M.chat.messages,
       selection = selection,
@@ -1038,16 +1053,6 @@ function M.ask(prompt, config)
       end),
     })
 
-    utils.schedule_main()
-
-    if not ask_ok then
-      log.error(ask_response)
-      if not config.headless then
-        show_error(ask_response)
-      end
-      return
-    end
-
     -- If there was no error and no response, it means job was cancelled
     if ask_response == nil then
       return
@@ -1059,14 +1064,8 @@ function M.ask(prompt, config)
 
     -- Call the callback function
     if config.callback then
-      local callback_ok, callback_response = pcall(config.callback, response.content, state.source)
-      if not callback_ok then
-        log.error('Callback error: ' .. callback_response)
-        if not config.headless then
-          show_error(callback_response)
-        end
-        return
-      end
+      utils.schedule_main()
+      config.callback(response.content, state.source)
     end
 
     if not config.headless then
@@ -1076,19 +1075,14 @@ function M.ask(prompt, config)
       else
         response.content = '\n' .. response.content .. '\n'
       end
+
+      utils.schedule_main()
       M.chat:add_message(response, true)
       M.chat.token_count = token_count
       M.chat.token_max_count = token_max_count
       finish()
     end
-  end)
-
-  if not ok then
-    log.error(err)
-    if not config.headless then
-      show_error(err)
-    end
-  end
+  end))
 end
 
 --- Stop current copilot output and optionally reset the chat ten show the help message.
