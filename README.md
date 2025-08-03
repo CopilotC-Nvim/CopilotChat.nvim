@@ -255,9 +255,13 @@ Types of copilot highlights:
 - `CopilotChatHeader` - Header highlight in chat buffer
 - `CopilotChatSeparator` - Separator highlight in chat buffer
 - `CopilotChatStatus` - Status and spinner in chat buffer
-- `CopilotChatHelp` - Help messages in chat buffer (help, references)
+- `CopilotChatHelp` - Help text in chat buffer
+- `CopilotChatResource` - Resource highlight in chat buffer (e.g. `#file`, `#gitdiff`)
+- `CopilotChatTool` - Tool call highlight in chat buffer (e.g. `@copilot`)
+- `CopilotChatPrompt` - Prompt highlight in chat buffer (e.g. `/Explain`, `/Review`)
+- `CopilotChatModel` - Model highlight in chat buffer (e.g. `$gpt-4.1`)
+- `CopilotChatUri` - URI highlight in chat buffer (e.g. `##https://...`)
 - `CopilotChatSelection` - Selection highlight in source buffer
-- `CopilotChatKeyword` - Keyword highlight in chat buffer (e.g. prompts, tools)
 - `CopilotChatAnnotation` - Annotation highlight in chat buffer (file headers, tool call headers, tool call body)
 
 ## Prompts

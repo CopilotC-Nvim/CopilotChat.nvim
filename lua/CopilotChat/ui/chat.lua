@@ -340,6 +340,9 @@ function Chat:open(config)
     vim.wo[self.winnr].foldcolumn = '0'
   end
 
+  local ns = vim.api.nvim_create_namespace('copilot-chat-local-hl')
+  vim.api.nvim_set_hl(ns, '@markup.quote.markdown', {})
+  vim.api.nvim_win_set_hl_ns(self.winnr, ns)
   vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
   self:render()
 end
@@ -675,22 +678,6 @@ function Chat:render()
           table.concat(vim.list_slice(lines, current_block.start_line, current_block.end_line), '\n')
         table.insert(current_message.section.blocks, current_block)
         current_block = nil
-      end
-    end
-
-    -- Keywords
-    if current_message and current_message.role == 'user' then
-      -- FIXME: This is not optimal, but i cant figure out how to do it better as treesitter keeps overriding it
-      local patterns = {
-        '()#?#[^ ]+()',
-        '()@[^ ]+()',
-        '()%$[^ ]+()',
-        '()/[^ ]+()',
-      }
-      for _, pattern in ipairs(patterns) do
-        for s, e in line:gmatch(pattern) do
-          vim.api.nvim_buf_add_highlight(self.bufnr, highlight_ns, 'CopilotChatKeyword', l - 1, s - 1, e - 1)
-        end
       end
     end
 
