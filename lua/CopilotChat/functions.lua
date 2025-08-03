@@ -56,9 +56,7 @@ local function filter_schema(tbl, root)
   local result = {}
   for k, v in pairs(tbl) do
     if not utils.empty(v) then
-      if type(v) == 'function' then
-        result[k] = v
-      elseif k ~= 'examples' then
+      if k ~= 'examples' then
         result[k] = type(v) == 'table' and filter_schema(v) or v
       end
     end
