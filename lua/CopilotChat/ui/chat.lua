@@ -341,7 +341,8 @@ function Chat:open(config)
   end
 
   local ns = vim.api.nvim_create_namespace('copilot-chat-local-hl')
-  vim.api.nvim_set_hl(ns, '@markup.quote.markdown', {})
+  vim.api.nvim_set_hl(ns, '@markup.quote.markdown', {}) -- disable quote block overriding chat keywords
+  vim.api.nvim_set_hl(ns, '@markup.italic.markdown_inline', {}) -- disable italic messing up glob patterns
   vim.api.nvim_win_set_hl_ns(self.winnr, ns)
   vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
   self:render()

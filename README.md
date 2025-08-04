@@ -248,7 +248,6 @@ You can customize colors by setting highlight groups in your config:
 -- In your colorscheme or init.lua
 vim.api.nvim_set_hl(0, 'CopilotChatHeader', { fg = '#7C3AED', bold = true })
 vim.api.nvim_set_hl(0, 'CopilotChatSeparator', { fg = '#374151' })
-vim.api.nvim_set_hl(0, 'CopilotChatKeyword', { fg = '#10B981', italic = true })
 ```
 
 Types of copilot highlights:
