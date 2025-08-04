@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.1.0...v4.2.0) (2025-08-03)
+
+
+### Features
+
+* **chat:** improve error handling ([#1265](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1265)) ([5c8b457](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/5c8b457d617dd1e533b826ff9f9b76ddf988756d))
+
 ## [4.1.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.0.0...v4.1.0) (2025-08-03)
 
 
