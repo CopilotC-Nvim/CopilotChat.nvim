@@ -1200,7 +1200,9 @@ function M.setup(config)
 
   -- Load the providers
   client:stop()
-  client:load_providers(M.config.providers)
+  client:add_providers(function()
+    return M.config.providers
+  end)
 
   if M.config.debug then
     M.log_level('debug')

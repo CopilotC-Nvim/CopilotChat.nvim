@@ -54,6 +54,7 @@ local class = utils.class
 
 --- Constants
 local RESOURCE_FORMAT = '# %s\n```%s\n%s\n```'
+local CACHE_TTL = 300 -- 5 minutes
 
 --- Generate content block with line numbers, truncating if necessary
 ---@param content string
@@ -153,22 +154,40 @@ local function generate_ask_request(prompt, system_prompt, history, generated_me
 end
 
 ---@class CopilotChat.client.Client : Class
----@field private providers table<string, CopilotChat.config.providers.Provider>
+---@field private provider_resolver function():table<string, CopilotChat.config.providers.Provider>
 ---@field private provider_cache table<string, table>
 ---@field private model_cache table<string, CopilotChat.client.Model>?
 ---@field private current_job string?
 local Client = class(function(self)
-  self.providers = {}
-  self.provider_cache = {}
+  self.provider_resolver = nil
+  self.provider_cache = vim.defaulttable(function()
+    return {}
+  end)
   self.model_cache = nil
   self.current_job = nil
 end)
+
+--- Get all providers from the client
+---@return table<string, CopilotChat.config.providers.Provider>
+function Client:get_providers()
+  if self.provider_resolver then
+    return self.provider_resolver()
+  end
+  return {}
+end
+
+--- Set a provider resolver on the client
+---@param resolver function: A function that returns a table of providers
+function Client:add_providers(resolver)
+  self.provider_resolver = resolver
+end
 
 --- Authenticate with GitHub and get the required headers
 ---@param provider_name string: The provider to authenticate with
 ---@return table<string, string>
 function Client:authenticate(provider_name)
-  local provider = self.providers[provider_name]
+  local providers = self:get_providers()
+  local provider = providers[provider_name]
   local headers = self.provider_cache[provider_name].headers
   local expires_at = self.provider_cache[provider_name].expires_at
 
@@ -189,10 +208,11 @@ function Client:models()
   end
 
   local models = {}
-  local provider_order = vim.tbl_keys(self.providers)
+  local providers = self:get_providers()
+  local provider_order = vim.tbl_keys(providers)
   table.sort(provider_order)
   for _, provider_name in ipairs(provider_order) do
-    local provider = self.providers[provider_name]
+    local provider = providers[provider_name]
     if not provider.disabled and provider.get_models then
       notify.publish(notify.STATUS, 'Fetching models from ' .. provider_name)
       local ok, headers = pcall(self.authenticate, self, provider_name)
@@ -228,9 +248,9 @@ end
 function Client:info()
   local infos = {}
   local now = math.floor(os.time())
-  local CACHE_TTL = 300 -- 5 minutes
+  local providers = self:get_providers()
 
-  for provider_name, provider in pairs(self.providers) do
+  for provider_name, provider in pairs(providers) do
     if not provider.disabled and provider.get_info then
       local cache = self.provider_cache[provider_name]
       if cache and cache.info and cache.info_expires_at and cache.info_expires_at > now then
@@ -267,6 +287,7 @@ function Client:ask(prompt, opts)
   log.debug('Resources:', #opts.resources)
   log.debug('History:', #opts.history)
 
+  local providers = self:get_providers()
   local models = self:models()
   local model_config = models[opts.model]
   if not model_config then
@@ -277,7 +298,7 @@ function Client:ask(prompt, opts)
   if not provider_name then
     error('Provider not found for model: ' .. opts.model)
   end
-  local provider = self.providers[provider_name]
+  local provider = providers[provider_name]
   if not provider then
     error('Provider not found: ' .. provider_name)
   end
@@ -556,14 +577,6 @@ end
 ---@return boolean
 function Client:running()
   return self.current_job ~= nil
-end
-
---- Load providers to client
-function Client:load_providers(providers)
-  self.providers = providers
-  for provider_name, _ in pairs(providers) do
-    self.provider_cache[provider_name] = {}
-  end
 end
 
 --- @type CopilotChat.client.Client
