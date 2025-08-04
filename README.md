@@ -95,6 +95,7 @@ EOF
 - **Sticky Prompts** (`> <text>`) - Persist context across single chat session
 - **Models** (`$<model>`) - Specify which AI model to use for the chat
 - **Prompts** (`/PromptName`) - Use predefined prompt templates for common tasks
+- **Selection** - Automatically includes current user selection in prompts
 
 ## Examples
 
