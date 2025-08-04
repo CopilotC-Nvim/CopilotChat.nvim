@@ -19,7 +19,6 @@
 ---@field tools string|table<string>|nil
 ---@field sticky string|table<string>|nil
 ---@field language string?
----@field resource_processing boolean?
 ---@field temperature number?
 ---@field headless boolean?
 ---@field callback nil|fun(response: string, source: CopilotChat.source)
@@ -60,8 +59,6 @@ return {
   tools = nil, -- Default tool or array of tools (or groups) to share with LLM (can be specified manually in prompt via @).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
   language = 'English', -- Default language to use for answers
-
-  resource_processing = false, -- Enable intelligent resource processing (skips unnecessary resources to save tokens)
 
   temperature = 0.1, -- Result temperature
   headless = false, -- Do not write to chat buffer and use history (useful for using custom processing)
