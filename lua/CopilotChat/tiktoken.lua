@@ -1,5 +1,6 @@
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
+local class = utils.class
 local current_tokenizer = nil
 
 --- @return string
@@ -13,23 +14,10 @@ local function get_lib_extension()
   return '.so'
 end
 
-package.cpath = package.cpath
-  .. ';'
-  .. debug.getinfo(1).source:match('@?(.*/)')
-  .. '../../build/?'
-  .. get_lib_extension()
-
-local tiktoken_ok, tiktoken_core = pcall(require, 'tiktoken_core')
-if not tiktoken_ok then
-  tiktoken_core = nil
-end
-
 --- Load tiktoken data from cache or download it
 ---@param tokenizer string The tokenizer to load
 ---@async
 local function load_tiktoken_data(tokenizer)
-  utils.schedule_main()
-
   local tiktoken_url = 'https://openaipublic.blob.core.windows.net/encodings/' .. tokenizer .. '.tiktoken'
 
   local cache_dir = vim.fn.stdpath('cache')
@@ -49,20 +37,34 @@ local function load_tiktoken_data(tokenizer)
   return cache_path
 end
 
-local M = {}
+---@class CopilotChat.tiktoken.Tiktoken : Class
+---@field private tiktoken_core table?
+---@field private tokenizer string?
+local Tiktoken = class(function(self)
+  package.cpath = package.cpath
+    .. ';'
+    .. debug.getinfo(1).source:match('@?(.*/)')
+    .. '../../build/?'
+    .. get_lib_extension()
+
+  local tiktoken_ok, tiktoken_core = pcall(require, 'tiktoken_core')
+  self.tiktoken_core = tiktoken_ok and tiktoken_core or nil
+  self.tokenizer = nil
+end)
 
 --- Load the tiktoken module
 ---@param tokenizer string The tokenizer to load
 ---@async
-M.load = function(tokenizer)
-  if not tiktoken_core then
+function Tiktoken:load(tokenizer)
+  if not self.tiktoken_core then
     return
   end
 
-  if tokenizer == current_tokenizer then
+  if tokenizer == self.tokenizer then
     return
   end
 
+  utils.schedule_main()
   local path = load_tiktoken_data(tokenizer)
   local special_tokens = {}
   special_tokens['<|endoftext|>'] = 100257
@@ -74,26 +76,22 @@ M.load = function(tokenizer)
     "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
 
   utils.schedule_main()
-  tiktoken_core.new(path, special_tokens, pat_str)
-  current_tokenizer = tokenizer
+  self.tiktoken_core.new(path, special_tokens, pat_str)
+  self.tokenizer = tokenizer
 end
 
 --- Encode a prompt
 ---@param prompt string The prompt to encode
 ---@return table?
-function M.encode(prompt)
-  if not tiktoken_core then
+function Tiktoken:encode(prompt)
+  if not self.tiktoken_core then
     return nil
   end
-  if not prompt or prompt == '' then
+  if not prompt or prompt == '' or type(prompt) ~= 'string' then
     return nil
-  end
-  -- Check if prompt is a string
-  if type(prompt) ~= 'string' then
-    error('Prompt must be a string')
   end
 
-  local ok, result = pcall(tiktoken_core.encode, prompt)
+  local ok, result = pcall(self.tiktoken_core.encode, prompt)
   if not ok then
     return nil
   end
@@ -104,16 +102,16 @@ end
 --- Count the tokens in a prompt
 ---@param prompt string The prompt to count
 ---@return number
-function M.count(prompt)
-  if not tiktoken_core then
+function Tiktoken:count(prompt)
+  if not self.tiktoken_core then
     return math.ceil(#prompt * 0.5) -- Fallback to 1/2 character count
   end
 
-  local tokens = M.encode(prompt)
+  local tokens = self:encode(prompt)
   if not tokens then
     return math.ceil(#prompt * 0.5) -- Fallback to 1/2 character count
   end
   return #tokens
 end
 
-return M
+return Tiktoken()

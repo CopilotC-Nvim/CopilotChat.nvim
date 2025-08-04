@@ -138,17 +138,11 @@ local function generate_ask_request(prompt, system_prompt, history, generated_me
   end
 
   -- Include generated messages and history
-  for _, message in ipairs(generated_messages) do
-    table.insert(messages, {
-      content = message.content,
-      role = message.role,
-    })
-  end
-  for _, message in ipairs(history) do
-    table.insert(messages, message)
-  end
+  vim.list_extend(messages, generated_messages)
+  vim.list_extend(messages, history)
+
+  -- Include user prompt if we have no history
   if not utils.empty(prompt) and utils.empty(history) then
-    -- Include user prompt if we have no history
     table.insert(messages, {
       content = prompt,
       role = 'user',
@@ -301,7 +295,7 @@ function Client:ask(prompt, opts)
   log.debug('Tokenizer:', tokenizer)
 
   if max_tokens and tokenizer then
-    tiktoken.load(tokenizer)
+    tiktoken:load(tokenizer)
   end
 
   if not opts.headless then
@@ -320,29 +314,29 @@ function Client:ask(prompt, opts)
 
   if max_tokens then
     -- Count required tokens that we cannot reduce
-    local selection_tokens = selection_message and tiktoken.count(selection_message.content) or 0
-    local prompt_tokens = tiktoken.count(prompt)
-    local system_tokens = tiktoken.count(opts.system_prompt)
-    local resource_tokens = #resource_messages > 0 and tiktoken.count(resource_messages[1].content) or 0
+    local selection_tokens = selection_message and tiktoken:count(selection_message.content) or 0
+    local prompt_tokens = tiktoken:count(prompt)
+    local system_tokens = tiktoken:count(opts.system_prompt)
+    local resource_tokens = #resource_messages > 0 and tiktoken:count(resource_messages[1].content) or 0
     local required_tokens = prompt_tokens + system_tokens + selection_tokens + resource_tokens
 
     -- Calculate how many tokens we can use for history
     local history_limit = max_tokens - required_tokens
     local history_tokens = 0
     for _, msg in ipairs(history) do
-      history_tokens = history_tokens + tiktoken.count(msg.content)
+      history_tokens = history_tokens + tiktoken:count(msg.content)
     end
 
     -- Remove history messages until we are under the limit
     while history_tokens > history_limit and #history > 0 do
       local entry = table.remove(history, 1)
-      history_tokens = history_tokens - tiktoken.count(entry.content)
+      history_tokens = history_tokens - tiktoken:count(entry.content)
     end
 
     -- Now add as many files as possible with remaining token budget
     local remaining_tokens = max_tokens - required_tokens - history_tokens
     for _, message in ipairs(resource_messages) do
-      local tokens = tiktoken.count(message.content)
+      local tokens = tiktoken:count(message.content)
       if remaining_tokens - tokens >= 0 then
         remaining_tokens = remaining_tokens - tokens
         table.insert(generated_messages, message)
