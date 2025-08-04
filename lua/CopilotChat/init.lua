@@ -178,8 +178,8 @@ local function finish(start_of_chat)
   end
 
   local prompt_content = ''
-  local last_message = M.chat.messages[#M.chat.messages]
-  local tool_calls = last_message and last_message.tool_calls or {}
+  local assistant_message = M.chat:get_message('assistant')
+  local tool_calls = assistant_message and assistant_message.tool_calls or {}
 
   if not utils.empty(state.sticky) then
     for _, sticky in ipairs(state.sticky) do
@@ -316,7 +316,7 @@ function M.resolve_functions(prompt, config)
   for _, match in ipairs(matches) do
     for name, tool in pairs(M.config.functions) do
       if name == match or tool.group == match then
-        enabled_tools[name] = true
+        table.insert(enabled_tools, tools[name])
       end
     end
   end
@@ -382,7 +382,7 @@ function M.resolve_functions(prompt, config)
     if not tool then
       return nil
     end
-    if tool_id and not enabled_tools[name] and not tool.uri then
+    if not tool_id and not tool.uri then
       return nil
     end
 
@@ -435,12 +435,7 @@ function M.resolve_functions(prompt, config)
     end
   end
 
-  return vim.tbl_map(function(name)
-    return tools[name]
-  end, vim.tbl_keys(enabled_tools)),
-    resolved_resources,
-    resolved_tools,
-    prompt
+  return enabled_tools, resolved_resources, resolved_tools, prompt
 end
 
 --- Resolve the final prompt and config from prompt template.
