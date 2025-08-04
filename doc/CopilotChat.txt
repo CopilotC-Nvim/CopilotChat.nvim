@@ -443,9 +443,6 @@ Add custom AI providers:
       -- Optional: Disable provider
       disabled?: boolean,
     
-      -- Optional: Embeddings provider name or function
-      embed?: string|function,
-    
       -- Optional: Extra info about the provider displayed in info panel
       get_info?(): string[]
     
@@ -470,7 +467,6 @@ Add custom AI providers:
 
 - `copilot` - GitHub Copilot (default)
 - `github_models` - GitHub Marketplace models (disabled by default)
-- `copilot_embeddings` - Copilot embeddings provider
 
 
 ==============================================================================
