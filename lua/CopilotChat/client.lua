@@ -32,9 +32,10 @@
 ---@field schema table? schema of the tool
 
 ---@class CopilotChat.client.Resource
----@field name string
----@field type string
 ---@field data string
+---@field name string?
+---@field mimetype string?
+---@field uri string?
 
 ---@class CopilotChat.client.Model
 ---@field provider string?
@@ -53,49 +54,58 @@ local utils = require('CopilotChat.utils')
 local class = utils.class
 
 --- Constants
-local RESOURCE_FORMAT = '# %s\n```%s\n%s\n```'
+local RESOURCE_SHORT_FORMAT = '# %s\n```%s start_line=% end_line=%s\n%s\n```'
+local RESOURCE_LONG_FORMAT = '# %s\n```%s path=%s start_line=%s end_line=%s\n%s\n```'
 local CACHE_TTL = 300 -- 5 minutes
 
---- Generate content block with line numbers, truncating if necessary
+--- Generate resource block with line numbers, truncating if necessary
 ---@param content string
----@param start_line number?: The starting line number
+---@param start_line number: The starting line number
 ---@return string
-local function generate_content_block(content, start_line)
-  if start_line ~= nil then
-    local lines = vim.split(content, '\n')
-    local total_lines = #lines
-    local max_length = #tostring(total_lines)
-    for i, line in ipairs(lines) do
-      local formatted_line_number = string.format('%' .. max_length .. 'd', i - 1 + (start_line or 1))
-      lines[i] = formatted_line_number .. ': ' .. line
-    end
-
-    return table.concat(lines, '\n')
+local function generate_resource_block(content, mimetype, name, path, start_line, end_line)
+  local lines = vim.split(content, '\n')
+  local total_lines = #lines
+  local max_length = #tostring(total_lines)
+  for i, line in ipairs(lines) do
+    local formatted_line_number = string.format('%' .. max_length .. 'd', i - 1 + (start_line or 1))
+    lines[i] = formatted_line_number .. ': ' .. line
   end
 
-  return content
+  local updated_content = table.concat(lines, '\n')
+  local filetype = utils.mimetype_to_filetype(mimetype or 'text')
+  if not start_line then
+    start_line = 1
+  end
+  if not end_line then
+    end_line = start_line and (start_line + total_lines - 1) or 1
+  end
+
+  if path then
+    return string.format(RESOURCE_LONG_FORMAT, name, filetype, path, start_line, end_line, updated_content)
+  else
+    return string.format(RESOURCE_SHORT_FORMAT, name, filetype, start_line, end_line, updated_content)
+  end
 end
 
 --- Generate messages for the given selection
 --- @param selection CopilotChat.select.Selection
 --- @return CopilotChat.client.Message?
 local function generate_selection_message(selection)
-  local filename = selection.filename or 'unknown'
-  local filetype = selection.filetype or 'text'
   local content = selection.content
 
   if not content or content == '' then
     return nil
   end
 
-  local out = "User's active selection:\n"
-  if selection.start_line and selection.end_line then
-    out = out .. string.format('Excerpt from %s, lines %s to %s:\n', filename, selection.start_line, selection.end_line)
-  end
-  out = out .. string.format('```%s\n%s\n```', filetype, generate_content_block(content, selection.start_line))
-
   return {
-    content = out,
+    content = generate_resource_block(
+      content,
+      selection.filetype,
+      "User's active selection",
+      selection.filename,
+      selection.start_line,
+      selection.end_line
+    ),
     role = 'user',
   }
 end
@@ -110,10 +120,8 @@ local function generate_resource_messages(resources)
       return resource.data and resource.data ~= ''
     end)
     :map(function(resource)
-      local content = generate_content_block(resource.data, 1)
-
       return {
-        content = string.format(RESOURCE_FORMAT, resource.name, resource.type, content),
+        content = generate_resource_block(resource.data, resource.mimetype, resource.uri, resource.name, 1, nil),
         role = 'user',
       }
     end)
