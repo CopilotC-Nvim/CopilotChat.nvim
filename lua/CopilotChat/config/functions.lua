@@ -1,17 +1,12 @@
 local resources = require('CopilotChat.resources')
 local utils = require('CopilotChat.utils')
 
----@class CopilotChat.config.functions.Result
----@field data string
----@field mimetype string?
----@field uri string?
-
 ---@class CopilotChat.config.functions.Function
 ---@field description string?
 ---@field schema table?
 ---@field group string?
 ---@field uri string?
----@field resolve fun(input: table, source: CopilotChat.source, prompt: string):table<CopilotChat.config.functions.Result>
+---@field resolve fun(input: table, source: CopilotChat.source, prompt: string):table<CopilotChat.client.Resource>
 
 ---@type table<string, CopilotChat.config.functions.Function>
 return {
@@ -46,6 +41,7 @@ return {
       return {
         {
           uri = 'file://' .. input.path,
+          name = input.path,
           mimetype = mimetype,
           data = data,
         },
@@ -163,6 +159,7 @@ return {
       return {
         {
           uri = 'buffer://' .. name,
+          name = name,
           mimetype = mimetype,
           data = data,
         },
@@ -205,6 +202,7 @@ return {
           end
           return {
             uri = 'buffer://' .. name,
+            name = name,
             mimetype = mimetype,
             data = data,
           }
@@ -258,6 +256,7 @@ return {
           end
           return {
             uri = uri,
+            name = file,
             mimetype = mimetype,
             data = data,
           }

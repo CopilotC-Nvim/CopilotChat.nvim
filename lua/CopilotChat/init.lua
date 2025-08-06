@@ -397,7 +397,7 @@ function M.resolve_functions(prompt, config)
           local content_out = nil
           if content.uri then
             content_out = '##' .. content.uri
-            table.insert(resolved_resources, resources.to_resource(content))
+            table.insert(resolved_resources, content)
             if tool_id then
               table.insert(state.sticky, content_out)
             end

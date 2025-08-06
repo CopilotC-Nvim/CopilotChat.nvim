@@ -1,12 +1,3 @@
----@class CopilotChat.resources.Symbol
----@field name string?
----@field signature string
----@field type string
----@field start_row number
----@field start_col number
----@field end_row number
----@field end_col number
-
 local async = require('plenary.async')
 local utils = require('CopilotChat.utils')
 local file_cache = {}
@@ -106,17 +97,6 @@ function M.get_url(url)
   end
 
   return content, utils.filetype_to_mimetype(ft)
-end
-
---- Transform a resource into a format suitable for the client
----@param resource CopilotChat.config.functions.Result
----@return CopilotChat.client.Resource
-function M.to_resource(resource)
-  return {
-    name = utils.uri_to_filename(resource.uri),
-    type = utils.mimetype_to_filetype(resource.mimetype),
-    data = resource.data,
-  }
 end
 
 return M

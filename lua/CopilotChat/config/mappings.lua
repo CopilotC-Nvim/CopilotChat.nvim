@@ -33,6 +33,11 @@ local function get_diff(block)
 
   -- If we have header info, use it as source of truth
   if header.start_line and header.end_line then
+    filename = utils.uri_to_filename(header.filename)
+    filetype = header.filetype or utils.filetype(filename)
+    start_line = header.start_line
+    end_line = header.end_line
+
     -- Try to find matching buffer and window
     bufnr = nil
     for _, win in ipairs(vim.api.nvim_list_wins()) do
@@ -42,11 +47,6 @@ local function get_diff(block)
         break
       end
     end
-
-    filename = header.filename
-    filetype = header.filetype or utils.filetype(filename)
-    start_line = header.start_line
-    end_line = header.end_line
 
     -- If we found a valid buffer, get the reference content
     if bufnr and utils.buf_valid(bufnr) then
