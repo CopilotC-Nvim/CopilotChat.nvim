@@ -136,22 +136,33 @@ When you use `@copilot`, the LLM can call functions like `glob`, `file`, `gitdif
 
 ## Chat Key Mappings
 
-| Insert      | Normal  | Action                                     |
-| ----------- | ------- | ------------------------------------------ |
-| `<C-Space>` | -       | Trigger/accept completion menu for tokens  |
-| `<C-c>`     | `q`     | Close the chat window                      |
-| `<C-l>`     | `<C-l>` | Reset and clear the chat window            |
-| `<C-s>`     | `<CR>`  | Submit the current prompt                  |
-| -           | `grr`   | Toggle sticky prompt for line under cursor |
-| -           | `grx`   | Clear all sticky prompts in prompt         |
-| `<C-y>`     | `<C-y>` | Accept nearest diff                        |
-| -           | `gj`    | Jump to section of nearest diff            |
-| -           | `gqa`   | Add all answers from chat to quickfix list |
-| -           | `gqd`   | Add all diffs from chat to quickfix list   |
-| -           | `gy`    | Yank nearest diff to register              |
-| -           | `gd`    | Show diff between source and nearest diff  |
-| -           | `gc`    | Show info about current chat               |
-| -           | `gh`    | Show help message                          |
+| Insert  | Normal  | Action                                     |
+| ------- | ------- | ------------------------------------------ |
+| `<Tab>` | -       | Trigger/accept completion menu for tokens  |
+| `<C-c>` | `q`     | Close the chat window                      |
+| `<C-l>` | `<C-l>` | Reset and clear the chat window            |
+| `<C-s>` | `<CR>`  | Submit the current prompt                  |
+| -       | `grr`   | Toggle sticky prompt for line under cursor |
+| -       | `grx`   | Clear all sticky prompts in prompt         |
+| `<C-y>` | `<C-y>` | Accept nearest diff                        |
+| -       | `gj`    | Jump to section of nearest diff            |
+| -       | `gqa`   | Add all answers from chat to quickfix list |
+| -       | `gqd`   | Add all diffs from chat to quickfix list   |
+| -       | `gy`    | Yank nearest diff to register              |
+| -       | `gd`    | Show diff between source and nearest diff  |
+| -       | `gc`    | Show info about current chat               |
+| -       | `gh`    | Show help message                          |
+
+> [!WARNING]
+> Some plugins (e.g. `copilot.vim`) may also map common keys like `<Tab>` in insert mode.  
+> To avoid conflicts, disable Copilot's default `<Tab>` mapping with:
+>
+> ```lua
+> vim.g.copilot_no_tab_map = true
+> vim.keymap.set('i', '<S-Tab>', 'copilot#Accept("\\<S-Tab>")', { expr = true, replace_keycodes = false })
+> ```
+>
+> You can also customize CopilotChat keymaps in your config.
 
 ## Predefined Functions
 
