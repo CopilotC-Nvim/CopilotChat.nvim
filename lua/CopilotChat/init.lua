@@ -1,7 +1,6 @@
 local async = require('plenary.async')
 local log = require('plenary.log')
 local functions = require('CopilotChat.functions')
-local resources = require('CopilotChat.resources')
 local client = require('CopilotChat.client')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
