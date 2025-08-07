@@ -33,6 +33,52 @@ local state = {
   sticky = nil,
 }
 
+--- Cache for loaded copilot instructions to avoid repeated file reads
+local copilot_instructions_cache = {}
+
+--- Load copilot instructions from .github/copilot-instructions.md
+---@param cwd string The current working directory
+---@return string? The content of the copilot instructions file, or nil if not found
+local function load_copilot_instructions(cwd)
+  local cache_key = cwd
+  
+  -- Check if we already have cached instructions for this directory
+  if copilot_instructions_cache[cache_key] then
+    return copilot_instructions_cache[cache_key]
+  end
+  
+  local file_path = cwd .. '/.github/copilot-instructions.md'
+  
+  -- Check if file exists and is readable
+  local stat = vim.uv.fs_stat(file_path)
+  if not stat or stat.type ~= 'file' then
+    -- Cache the fact that file doesn't exist to avoid repeated checks
+    copilot_instructions_cache[cache_key] = nil
+    return nil
+  end
+  
+  -- Read file content
+  local file = io.open(file_path, 'r')
+  if not file then
+    copilot_instructions_cache[cache_key] = nil
+    return nil
+  end
+  
+  local content = file:read('*a')
+  file:close()
+  
+  if content and vim.trim(content) ~= '' then
+    -- Cache the content
+    copilot_instructions_cache[cache_key] = content
+    log.debug('Loaded copilot instructions from:', file_path)
+    return content
+  end
+  
+  -- Cache that file exists but is empty
+  copilot_instructions_cache[cache_key] = nil
+  return nil
+end
+
 --- Insert sticky values from config into prompt
 ---@param prompt string
 ---@param config CopilotChat.config.Shared
@@ -478,6 +524,16 @@ function M.resolve_prompt(prompt, config)
   config, prompt = resolve(config, prompt or '')
   if prompts_to_use[config.system_prompt] then
     config.system_prompt = prompts_to_use[config.system_prompt].system_prompt
+  end
+
+  -- Load copilot instructions from .github/copilot-instructions.md if no system_prompt is configured
+  if not config.system_prompt or config.system_prompt == '' then
+    if state.source then
+      local copilot_instructions = load_copilot_instructions(state.source.cwd())
+      if copilot_instructions then
+        config.system_prompt = copilot_instructions
+      end
+    end
   end
 
   if config.system_prompt then
