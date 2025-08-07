@@ -1,8 +1,8 @@
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local class = utils.class
-local current_tokenizer = nil
 
+--- Get the library extension based on the operating system
 --- @return string
 local function get_lib_extension()
   if jit.os:lower() == 'mac' or jit.os:lower() == 'osx' then

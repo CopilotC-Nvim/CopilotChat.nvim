@@ -424,6 +424,9 @@ function Chat:finish()
   end
 end
 
+--- Add a message to the chat window.
+---@param message CopilotChat.client.Message
+---@param replace boolean? If true, replaces the last message if it has same role
 function Chat:add_message(message, replace)
   local current_message = self.messages[#self.messages]
   local is_new = not current_message
@@ -471,6 +474,8 @@ function Chat:add_message(message, replace)
   end
 end
 
+--- Remove a message from the chat window by role.
+---@param role string
 function Chat:remove_message(role)
   if not self:visible() then
     return
