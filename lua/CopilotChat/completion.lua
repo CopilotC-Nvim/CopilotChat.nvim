@@ -185,7 +185,6 @@ end
 --- Omnifunc for the chat window completion.
 ---@param findstart integer 0 or 1, decides behavior
 ---@param base integer findstart=0, text to match against
----@param _ any
 ---@return number|table
 function M.omnifunc(findstart, base)
   assert(base)
