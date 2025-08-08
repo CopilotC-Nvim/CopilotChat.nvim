@@ -66,14 +66,15 @@ function M.class(fn, parent)
   return out
 end
 
----@class OrderedMap
+---@class OrderedMap<K, V>
 ---@field set fun(self:OrderedMap, key:any, value:any)
 ---@field get fun(self:OrderedMap, key:any):any
 ---@field keys fun(self:OrderedMap):table
 ---@field values fun(self:OrderedMap):table
 
 --- Create an ordered map
----@return OrderedMap
+---@generic K, V
+---@return OrderedMap<K, V>
 function M.ordered_map()
   return {
     _keys = {},
