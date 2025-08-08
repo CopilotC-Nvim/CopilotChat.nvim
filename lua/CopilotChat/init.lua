@@ -170,6 +170,29 @@ local function list_models()
   end, result)
 end
 
+--- List available prompts.
+---@return table<string, CopilotChat.config.prompts.Prompt>
+local function list_prompts()
+  local prompts_to_use = {}
+
+  for name, prompt in pairs(M.config.prompts) do
+    local val = prompt
+    if type(prompt) == 'string' then
+      val = {
+        prompt = prompt,
+      }
+    end
+
+    if val.system_prompt and M.config.prompts[val.system_prompt] then
+      val.system_prompt = M.config.prompts[val.system_prompt].system_prompt
+    end
+
+    prompts_to_use[name] = val
+  end
+
+  return prompts_to_use
+end
+
 --- Finish writing to chat buffer.
 ---@param start_of_chat boolean?
 local function finish(start_of_chat)
@@ -456,7 +479,7 @@ function M.resolve_prompt(prompt, config)
     end
   end
 
-  local prompts_to_use = M.prompts()
+  local prompts_to_use = list_prompts()
   local depth = 0
   local MAX_DEPTH = 10
 
@@ -604,198 +627,6 @@ function M.set_selection(bufnr, start_line, end_line, clear)
   update_highlights()
 end
 
---- Trigger the completion for the chat window.
----@param without_input boolean?
-function M.trigger_complete(without_input)
-  local info = M.complete_info()
-  local bufnr = vim.api.nvim_get_current_buf()
-  local line = vim.api.nvim_get_current_line()
-  local cursor = vim.api.nvim_win_get_cursor(0)
-  local row = cursor[1]
-  local col = cursor[2]
-  if col == 0 or #line == 0 then
-    return
-  end
-
-  local prefix, cmp_start = unpack(vim.fn.matchstrpos(line:sub(1, col), info.pattern))
-  if not prefix then
-    return
-  end
-
-  if not without_input and vim.startswith(prefix, '#') and vim.endswith(prefix, ':') then
-    local found_tool = M.config.functions[prefix:sub(2, -2)]
-    local found_schema = found_tool and functions.parse_schema(found_tool)
-    if found_tool and found_schema then
-      async.run(function()
-        local value = functions.enter_input(found_schema, state.source)
-        if not value then
-          return
-        end
-
-        utils.schedule_main()
-        vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { value })
-        vim.api.nvim_win_set_cursor(0, { row, col + #value })
-      end)
-    end
-
-    return
-  end
-
-  async.run(function()
-    local items = M.complete_items()
-    utils.schedule_main()
-
-    if vim.fn.mode() ~= 'i' then
-      return
-    end
-
-    vim.fn.complete(
-      cmp_start + 1,
-      vim.tbl_filter(function(item)
-        return vim.startswith(item.word:lower(), prefix:lower())
-      end, items)
-    )
-  end)
-end
-
---- Get the completion info for the chat window, for use with custom completion providers
----@return table
-function M.complete_info()
-  return {
-    triggers = { '@', '/', '#', '$' },
-    pattern = [[\%(@\|/\|#\|\$\)\S*]],
-  }
-end
-
---- Get the completion items for the chat window, for use with custom completion providers
----@return table
----@async
-function M.complete_items()
-  local models = list_models()
-  local prompts_to_use = M.prompts()
-  local items = {}
-
-  for name, prompt in pairs(prompts_to_use) do
-    local kind = ''
-    local info = ''
-    if prompt.prompt then
-      kind = 'user'
-      info = prompt.prompt
-    elseif prompt.system_prompt then
-      kind = 'system'
-      info = prompt.system_prompt
-    end
-
-    items[#items + 1] = {
-      word = '/' .. name,
-      abbr = name,
-      kind = kind,
-      info = info,
-      menu = prompt.description or '',
-      icase = 1,
-      dup = 0,
-      empty = 0,
-    }
-  end
-
-  for _, model in ipairs(models) do
-    items[#items + 1] = {
-      word = '$' .. model.id,
-      abbr = model.id,
-      kind = model.provider,
-      menu = model.name,
-      icase = 1,
-      dup = 0,
-      empty = 0,
-    }
-  end
-
-  local groups = {}
-  for name, tool in pairs(M.config.functions) do
-    if tool.group then
-      groups[tool.group] = groups[tool.group] or {}
-      groups[tool.group][name] = tool
-    end
-  end
-  for name, group in pairs(groups) do
-    local group_tools = vim.tbl_keys(group)
-    items[#items + 1] = {
-      word = '@' .. name,
-      abbr = name,
-      kind = 'group',
-      info = table.concat(group_tools, '\n'),
-      menu = string.format('%s tools', #group_tools),
-      icase = 1,
-      dup = 0,
-      empty = 0,
-    }
-  end
-  for name, tool in pairs(M.config.functions) do
-    items[#items + 1] = {
-      word = '@' .. name,
-      abbr = name,
-      kind = 'tool',
-      info = tool.description,
-      menu = tool.group or '',
-      icase = 1,
-      dup = 0,
-      empty = 0,
-    }
-  end
-
-  local tools_to_use = functions.parse_tools(M.config.functions)
-  for _, tool in pairs(tools_to_use) do
-    local uri = M.config.functions[tool.name].uri
-    if uri then
-      local info =
-        string.format('%s\n\n%s', tool.description, tool.schema and vim.inspect(tool.schema, { indent = '  ' }) or '')
-
-      items[#items + 1] = {
-        word = '#' .. tool.name,
-        abbr = tool.name,
-        kind = M.config.functions[tool.name].group or 'resource',
-        info = info,
-        menu = uri,
-        icase = 1,
-        dup = 0,
-        empty = 0,
-      }
-    end
-  end
-
-  table.sort(items, function(a, b)
-    if a.kind == b.kind then
-      return a.word < b.word
-    end
-    return a.kind < b.kind
-  end)
-
-  return items
-end
-
---- Get the prompts to use.
----@return table<string, CopilotChat.config.prompts.Prompt>
-function M.prompts()
-  local prompts_to_use = {}
-
-  for name, prompt in pairs(M.config.prompts) do
-    local val = prompt
-    if type(prompt) == 'string' then
-      val = {
-        prompt = prompt,
-      }
-    end
-
-    if val.system_prompt and M.config.prompts[val.system_prompt] then
-      val.system_prompt = M.config.prompts[val.system_prompt].system_prompt
-    end
-
-    prompts_to_use[name] = val
-  end
-
-  return prompts_to_use
-end
-
 --- Open the chat window.
 ---@param config CopilotChat.config.Shared?
 function M.open(config)
@@ -888,7 +719,7 @@ end
 --- Select a prompt template to use.
 ---@param config CopilotChat.config.Shared?
 function M.select_prompt(config)
-  local prompts = M.prompts()
+  local prompts = list_prompts()
   local keys = vim.tbl_keys(prompts)
   table.sort(keys)
 
@@ -1236,6 +1067,8 @@ function M.setup(config)
         map_key(name, bufnr)
       end
 
+      require('CopilotChat.completion').enable(bufnr, M.config.chat_autocomplete)
+
       vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
         buffer = bufnr,
         callback = function(ev)
@@ -1258,44 +1091,11 @@ function M.setup(config)
         })
       end
 
-      if M.config.chat_autocomplete then
-        vim.api.nvim_create_autocmd('TextChangedI', {
-          buffer = bufnr,
-          callback = function()
-            local completeopt = vim.opt.completeopt:get()
-            if not vim.tbl_contains(completeopt, 'noinsert') and not vim.tbl_contains(completeopt, 'noselect') then
-              -- Don't trigger completion if completeopt is not set to noinsert or noselect
-              return
-            end
-
-            local line = vim.api.nvim_get_current_line()
-            local cursor = vim.api.nvim_win_get_cursor(0)
-            local col = cursor[2]
-            local char = line:sub(col, col)
-
-            if vim.tbl_contains(M.complete_info().triggers, char) then
-              utils.debounce('complete', function()
-                M.trigger_complete(true)
-              end, 100)
-            end
-          end,
-        })
-
-        -- Add noinsert completeopt if not present
-        if vim.fn.has('nvim-0.11.0') == 1 then
-          local completeopt = vim.opt.completeopt:get()
-          if not vim.tbl_contains(completeopt, 'noinsert') then
-            table.insert(completeopt, 'noinsert')
-            vim.bo[bufnr].completeopt = table.concat(completeopt, ',')
-          end
-        end
-      end
-
       finish(true)
     end
   )
 
-  for name, prompt in pairs(M.prompts()) do
+  for name, prompt in pairs(list_prompts()) do
     if prompt.prompt then
       vim.api.nvim_create_user_command('CopilotChat' .. name, function(args)
         local input = prompt.prompt
