@@ -58,6 +58,22 @@ local RESOURCE_SHORT_FORMAT = '# %s\n```%s start_line=% end_line=%s\n%s\n```'
 local RESOURCE_LONG_FORMAT = '# %s\n```%s path=%s start_line=%s end_line=%s\n%s\n```'
 local CACHE_TTL = 300 -- 5 minutes
 
+--- Get a cached value or fill it if not present
+--- @param cache table: The cache table to use
+--- @param key string: The key to look up in the cache
+--- @param filler function: A function that returns the value to cache if not present
+local function get_cached(cache, key, filler)
+  local now = math.floor(os.time())
+  if cache and cache[key] and cache[key .. '_expires_at'] > now then
+    return cache[key]
+  end
+
+  local value = filler()
+  cache[key] = value
+  cache[key .. '_expires_at'] = now + CACHE_TTL
+  return value
+end
+
 --- Generate resource block with line numbers, truncating if necessary
 ---@param content string
 ---@param start_line number: The starting line number
@@ -174,12 +190,26 @@ local Client = class(function(self)
 end)
 
 --- Get all providers from the client
----@return table<string, CopilotChat.config.providers.Provider>
-function Client:get_providers()
-  if self.provider_resolver then
-    return self.provider_resolver()
+---@param supported_method? string: The method to filter providers by (optional)
+---@return OrderedMap<string, CopilotChat.config.providers.Provider>
+function Client:get_providers(supported_method)
+  local out = utils.ordered_map()
+
+  if not self.provider_resolver then
+    return out
   end
-  return {}
+
+  local providers = self.provider_resolver()
+  local provider_names = vim.tbl_keys(providers)
+  table.sort(provider_names)
+
+  for _, provider_name in ipairs(provider_names) do
+    local provider = providers[provider_name]
+    if provider and not provider.disabled and (not supported_method or provider[supported_method]) then
+      out:set(provider_name, provider)
+    end
+  end
+  return out
 end
 
 --- Set a provider resolver on the client
@@ -192,8 +222,7 @@ end
 ---@param provider_name string: The provider to authenticate with
 ---@return table<string, string>
 function Client:authenticate(provider_name)
-  local providers = self:get_providers()
-  local provider = providers[provider_name]
+  local provider = self:get_providers():get(provider_name)
   local headers = self.provider_cache[provider_name].headers
   local expires_at = self.provider_cache[provider_name].expires_at
 
@@ -209,80 +238,71 @@ end
 --- Fetch models from the Copilot API
 ---@return table<string, CopilotChat.client.Model>
 function Client:models()
-  local models = {}
-  local providers = self:get_providers()
-  local provider_order = vim.tbl_keys(providers)
-  table.sort(provider_order)
-  for _, provider_name in ipairs(provider_order) do
-    local provider = providers[provider_name]
-    if not provider.disabled and provider.get_models then
-      local cache = self.provider_cache[provider_name]
-      local resolved_models = nil
-      if cache and cache.models then
-        resolved_models = cache.models
-      else
+  local out = {}
+  local providers = self:get_providers('get_models')
+
+  for _, provider_name in ipairs(providers:keys()) do
+    local provider = providers:get(provider_name)
+    for _, model in
+      ipairs(get_cached(self.provider_cache[provider_name], 'models', function()
         notify.publish(notify.STATUS, 'Fetching models from ' .. provider_name)
+
         local ok, headers = pcall(self.authenticate, self, provider_name)
         if not ok then
           log.warn('Failed to authenticate with ' .. provider_name .. ': ' .. headers)
-          goto continue
+          return {}
         end
-        local ok, provider_models = pcall(provider.get_models, headers)
+
+        local ok, models = pcall(provider.get_models, headers)
         if not ok then
-          log.warn('Failed to fetch models from ' .. provider_name .. ': ' .. provider_models)
-          goto continue
+          log.warn('Failed to fetch models from ' .. provider_name .. ': ' .. models)
+          return {}
         end
-        resolved_models = provider_models
-        cache.models = resolved_models
-      end
 
-      if resolved_models then
-        for _, model in ipairs(resolved_models) do
-          model.provider = provider_name
-          if models[model.id] then
-            model.id = model.id .. ':' .. provider_name
-          end
-          models[model.id] = model
-        end
+        return models or {}
+      end))
+    do
+      model.provider = provider_name
+      if out[model.id] then
+        model.id = model.id .. ':' .. provider_name
       end
-
-      ::continue::
+      out[model.id] = model
     end
   end
 
-  log.debug('Fetched models:', #vim.tbl_keys(models))
-  return models
+  log.debug('Fetched models:', #vim.tbl_keys(out))
+  return out
 end
 
 --- Get information about all providers
 ---@return table<string, string[]>
 function Client:info()
-  local infos = {}
-  local now = math.floor(os.time())
-  local providers = self:get_providers()
+  local out = {}
+  local providers = self:get_providers('get_info')
 
-  for provider_name, provider in pairs(providers) do
-    if not provider.disabled and provider.get_info then
-      local cache = self.provider_cache[provider_name]
-      if cache and cache.info and cache.info_expires_at and cache.info_expires_at > now then
-        infos[provider_name] = cache.info
-      else
-        local ok, info = pcall(provider.get_info, self:authenticate(provider_name))
-        if ok then
-          infos[provider_name] = info
-          if cache then
-            cache.info = info
-            cache.info_expires_at = now + CACHE_TTL
-          end
-        else
-          log.warn('Failed to get info for provider ' .. provider_name .. ': ' .. info)
-        end
+  for _, provider_name in ipairs(providers:keys()) do
+    local provider = providers:get(provider_name)
+    out[provider_name] = get_cached(self.provider_cache[provider_name], 'infos', function()
+      notify.publish(notify.STATUS, 'Fetching info from ' .. provider_name)
+
+      local ok, headers = pcall(self.authenticate, self, provider_name)
+      if not ok then
+        log.warn('Failed to authenticate with ' .. provider_name .. ': ' .. headers)
+        return {}
       end
-    end
+
+      local ok, infos = pcall(provider.get_info, headers)
+      if not ok then
+        log.warn('Failed to fetch info from ' .. provider_name .. ': ' .. infos)
+        return {}
+      end
+
+      return infos or {}
+    end)
   end
 
-  log.debug('Fetched provider infos:', #vim.tbl_keys(infos))
-  return infos
+  log.debug('Fetched provider infos:', #vim.tbl_keys(out))
+  return out
 end
 
 --- Ask a question to Copilot
@@ -298,7 +318,6 @@ function Client:ask(prompt, opts)
   log.debug('Resources:', #opts.resources)
   log.debug('History:', #opts.history)
 
-  local providers = self:get_providers()
   local models = self:models()
   local model_config = models[opts.model]
   if not model_config then
@@ -309,7 +328,7 @@ function Client:ask(prompt, opts)
   if not provider_name then
     error('Provider not found for model: ' .. opts.model)
   end
-  local provider = providers[provider_name]
+  local provider = self:get_providers():get(provider_name)
   if not provider then
     error('Provider not found: ' .. provider_name)
   end
