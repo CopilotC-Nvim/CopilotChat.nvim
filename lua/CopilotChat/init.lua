@@ -15,7 +15,14 @@ local BLOCK_OUTPUT_FORMAT = '```%s\n%s\n```'
 ---@class CopilotChat
 ---@field config CopilotChat.config.Config
 ---@field chat CopilotChat.ui.chat.Chat
-local M = {}
+local M = setmetatable({}, {
+  __index = function(t, key)
+    if key == 'config' then
+      return require('CopilotChat.config')
+    end
+    return rawget(t, key)
+  end,
+})
 
 --- @class CopilotChat.source
 --- @field bufnr number
@@ -1187,8 +1194,10 @@ end
 --- Set up the plugin
 ---@param config CopilotChat.config.Config?
 function M.setup(config)
-  local default_config = require('CopilotChat.config')
-  M.config = vim.tbl_deep_extend('force', default_config, config or {})
+  -- Little bit of update magic
+  for k, v in pairs(vim.tbl_deep_extend('force', M.config, config or {})) do
+    M.config[k] = v
+  end
 
   -- Save proxy and insecure settings
   utils.curl_store_args({
@@ -1212,7 +1221,7 @@ function M.setup(config)
     log.warn(
       'Empty separator is not allowed, using default separator instead. Set `separator` in config to change this.'
     )
-    M.config.separator = default_config.separator
+    M.config.separator = '---'
   end
 
   if M.chat then
@@ -1310,8 +1319,6 @@ function M.setup(config)
       end
     end
   end
-
-  vim.api.nvim_exec_autocmds('User', { pattern = 'CopilotChatLoaded' })
 end
 
 return M
