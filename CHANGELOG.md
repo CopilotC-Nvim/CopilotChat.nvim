@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.3.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.3.0...v4.3.1) (2025-08-08)
+
+
+### Bug Fixes
+
+* **client:** store models cache per provider ([#1291](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1291)) ([ffb6659](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/ffb665919fdafecbfb8dceaf63243d614b50c497))
+
 ## [4.3.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.2.0...v4.3.0) (2025-08-08)
 
 
