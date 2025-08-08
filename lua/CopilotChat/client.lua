@@ -8,6 +8,7 @@
 ---@field model string
 ---@field temperature number
 ---@field on_progress? fun(response: string):nil
+---@field spinner? CopilotChat.ui.spinner.Spinner
 
 ---@class CopilotChat.client.Message
 ---@field role string
@@ -495,6 +496,12 @@ function Client:ask(prompt, opts)
 
   if not opts.headless then
     notify.publish(notify.STATUS, 'Thinking')
+    
+    -- Set the model name in the spinner if provided
+    if opts.spinner then
+      opts.spinner:set_model(model_config.name or opts.model)
+    end
+    
     self.current_job = job_id
   end
 
@@ -592,3 +599,4 @@ end
 
 --- @type CopilotChat.client.Client
 return Client()
+

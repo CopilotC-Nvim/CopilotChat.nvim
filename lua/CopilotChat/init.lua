@@ -1034,6 +1034,7 @@ function M.ask(prompt, config)
       system_prompt = system_prompt,
       model = selected_model,
       temperature = config.temperature,
+      spinner = M.chat.spinner,
       on_progress = vim.schedule_wrap(function(token)
         if not config.headless then
           M.chat:add_message({
@@ -1322,3 +1323,4 @@ function M.setup(config)
 end
 
 return M
+
