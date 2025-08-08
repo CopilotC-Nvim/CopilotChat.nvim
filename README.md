@@ -458,8 +458,10 @@ window:visible()             -- Check if chat window is visible
 window:focused()             -- Check if chat window is focused
 
 -- Message Management
-window:get_message(role)                       -- Get last chat message by role (user, assistant, tool)
+window:get_message(role, cursor)               -- Get chat message by role, either last or closest to cursor
 window:add_message({ role, content }, replace) -- Add or replace a message in chat
+window:remove_message(role, cursor)            -- Remove chat message by role, either last or closest to cursor
+window:get_block(role, cursor)                 -- Get code block by role, either last or closest to cursor
 window:add_sticky(sticky)                      -- Add sticky prompt to chat message
 
 -- Content Management
@@ -473,9 +475,7 @@ window:follow()              -- Move cursor to end of chat content
 window:focus()               -- Focus the chat window
 
 -- Advanced Features
-window:get_closest_message(role) -- Get message closest to cursor
-window:get_closest_block(role)   -- Get code block closest to cursor
-window:overlay(opts)             -- Show overlay with specified options
+window:overlay(opts)         -- Show overlay with specified options
 ```
 
 ## Example Usage

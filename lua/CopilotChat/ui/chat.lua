@@ -119,35 +119,11 @@ function Chat:focused()
   return self:visible() and vim.api.nvim_get_current_win() == self.winnr
 end
 
---- Get the closest message to the cursor.
----@param role string? If specified, only considers sections of the given role
----@return CopilotChat.ui.chat.Message?
-function Chat:get_closest_message(role)
-  if not self:visible() then
-    return nil
-  end
-
-  self:render()
-  local cursor_pos = vim.api.nvim_win_get_cursor(self.winnr)
-  local cursor_line = cursor_pos[1]
-  local closest_message = nil
-  local max_line_below_cursor = -1
-
-  for _, message in ipairs(self.messages) do
-    local section = message.section
-    local matches_role = not role or message.role == role
-    if matches_role and section.start_line <= cursor_line and section.start_line > max_line_below_cursor then
-      max_line_below_cursor = section.start_line
-      closest_message = message
-    end
-  end
-
-  return closest_message
-end
-
 --- Get the closest code block to the cursor.
+---@param role string? If specified, only considers sections of the given role
+---@param cursor boolean? If true, returns the block closest to the cursor position
 ---@return CopilotChat.ui.chat.Block?
-function Chat:get_closest_block()
+function Chat:get_block(role, cursor)
   if not self:visible() then
     return nil
   end
@@ -172,10 +148,31 @@ function Chat:get_closest_block()
 end
 
 --- Get last message by role in the chat window.
+---@param role string? If specified, only considers sections of the given role
+---@param cursor boolean? If true, returns the message closest to the cursor position
 ---@return CopilotChat.ui.chat.Message?
-function Chat:get_message(role)
-  if not self:visible() then
-    return
+function Chat:get_message(role, cursor)
+  if cursor then
+    if not self:visible() then
+      return nil
+    end
+
+    self:render()
+    local cursor_pos = vim.api.nvim_win_get_cursor(self.winnr)
+    local cursor_line = cursor_pos[1]
+    local closest_message = nil
+    local max_line_below_cursor = -1
+
+    for _, message in ipairs(self.messages) do
+      local section = message.section
+      local matches_role = not role or message.role == role
+      if matches_role and section.start_line <= cursor_line and section.start_line > max_line_below_cursor then
+        max_line_below_cursor = section.start_line
+        closest_message = message
+      end
+    end
+
+    return closest_message
   end
 
   for i = #self.messages, 1, -1 do
@@ -475,14 +472,15 @@ function Chat:add_message(message, replace)
 end
 
 --- Remove a message from the chat window by role.
----@param role string
-function Chat:remove_message(role)
+---@param role string? If specified, only considers sections of the given role
+---@param cursor boolean? If true, removes the message closest to the cursor position
+function Chat:remove_message(role, cursor)
   if not self:visible() then
     return
   end
 
   self:render()
-  local message = self:get_closest_message(role)
+  local message = self:get_message(role, cursor)
   if not message then
     return
   end

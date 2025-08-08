@@ -162,7 +162,7 @@ return {
     normal = '<CR>',
     insert = '<C-s>',
     callback = function()
-      local message = copilot.chat:get_closest_message('user')
+      local message = copilot.chat:get_message('user', true)
       if not message then
         return
       end
@@ -234,7 +234,7 @@ return {
     normal = '<C-y>',
     insert = '<C-y>',
     callback = function(source)
-      local diff = get_diff(copilot.chat:get_closest_block())
+      local diff = get_diff(copilot.chat:get_block('assistant', true))
       diff = prepare_diff_buffer(diff, source)
       if not diff then
         return
@@ -249,7 +249,7 @@ return {
   jump_to_diff = {
     normal = 'gj',
     callback = function(source)
-      local diff = get_diff(copilot.chat:get_closest_block())
+      local diff = get_diff(copilot.chat:get_block('assistant', true))
       diff = prepare_diff_buffer(diff, source)
       if not diff then
         return
@@ -326,7 +326,7 @@ return {
     normal = 'gy',
     register = '"', -- Default register to use for yanking
     callback = function()
-      local block = copilot.chat:get_closest_block()
+      local block = copilot.chat:get_block('assistant', true)
       if not block then
         return
       end
@@ -339,7 +339,7 @@ return {
     normal = 'gd',
     full_diff = false, -- Show full diff instead of unified diff when showing diff window
     callback = function(source)
-      local diff = get_diff(copilot.chat:get_closest_block())
+      local diff = get_diff(copilot.chat:get_block('assistant', true))
       diff = prepare_diff_buffer(diff, source)
       if not diff then
         return
@@ -356,7 +356,7 @@ return {
         -- Apply all diffs from same file
         if #modified > 0 then
           -- Find all diffs from the same file in this section
-          local message = copilot.chat:get_closest_message('assistant')
+          local message = copilot.chat:get_message('assistant', true)
           local section = message and message.section
           local same_file_diffs = {}
           if section then
@@ -429,7 +429,7 @@ return {
   show_info = {
     normal = 'gc',
     callback = function(source)
-      local message = copilot.chat:get_closest_message('user')
+      local message = copilot.chat:get_message('user', true)
       if not message then
         return
       end
