@@ -57,11 +57,11 @@ function Spinner:start()
 
       local frame = spinner_frames[self.index]
       local display_text = ''
-      
+
       if self.status then
         display_text = self.status
       end
-      
+
       if self.model then
         if display_text ~= '' then
           display_text = display_text .. ' (' .. self.model .. ')'
@@ -69,7 +69,7 @@ function Spinner:start()
           display_text = self.model
         end
       end
-      
+
       if display_text ~= '' then
         display_text = display_text .. ' ' .. frame
       else
@@ -102,10 +102,9 @@ function Spinner:finish()
   timer:close()
 
   vim.api.nvim_buf_del_extmark(self.bufnr, self.ns, 1)
-  
+
   -- Clear the model after finishing
   self.model = nil
 end
 
 return Spinner
-
