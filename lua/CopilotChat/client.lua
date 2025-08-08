@@ -164,14 +164,12 @@ end
 ---@class CopilotChat.client.Client : Class
 ---@field private provider_resolver function():table<string, CopilotChat.config.providers.Provider>
 ---@field private provider_cache table<string, table>
----@field private model_cache table<string, CopilotChat.client.Model>?
 ---@field private current_job string?
 local Client = class(function(self)
   self.provider_resolver = nil
   self.provider_cache = vim.defaulttable(function()
     return {}
   end)
-  self.model_cache = nil
   self.current_job = nil
 end)
 
@@ -211,10 +209,6 @@ end
 --- Fetch models from the Copilot API
 ---@return table<string, CopilotChat.client.Model>
 function Client:models()
-  if self.model_cache then
-    return self.model_cache
-  end
-
   local models = {}
   local providers = self:get_providers()
   local provider_order = vim.tbl_keys(providers)
@@ -222,24 +216,34 @@ function Client:models()
   for _, provider_name in ipairs(provider_order) do
     local provider = providers[provider_name]
     if not provider.disabled and provider.get_models then
-      notify.publish(notify.STATUS, 'Fetching models from ' .. provider_name)
-      local ok, headers = pcall(self.authenticate, self, provider_name)
-      if not ok then
-        log.warn('Failed to authenticate with ' .. provider_name .. ': ' .. headers)
-        goto continue
-      end
-      local ok, provider_models = pcall(provider.get_models, headers)
-      if not ok then
-        log.warn('Failed to fetch models from ' .. provider_name .. ': ' .. provider_models)
-        goto continue
+      local cache = self.provider_cache[provider_name]
+      local resolved_models = nil
+      if cache and cache.models then
+        resolved_models = cache.models
+      else
+        notify.publish(notify.STATUS, 'Fetching models from ' .. provider_name)
+        local ok, headers = pcall(self.authenticate, self, provider_name)
+        if not ok then
+          log.warn('Failed to authenticate with ' .. provider_name .. ': ' .. headers)
+          goto continue
+        end
+        local ok, provider_models = pcall(provider.get_models, headers)
+        if not ok then
+          log.warn('Failed to fetch models from ' .. provider_name .. ': ' .. provider_models)
+          goto continue
+        end
+        resolved_models = provider_models
+        cache.models = resolved_models
       end
 
-      for _, model in ipairs(provider_models) do
-        model.provider = provider_name
-        if models[model.id] then
-          model.id = model.id .. ':' .. provider_name
+      if resolved_models then
+        for _, model in ipairs(resolved_models) do
+          model.provider = provider_name
+          if models[model.id] then
+            model.id = model.id .. ':' .. provider_name
+          end
+          models[model.id] = model
         end
-        models[model.id] = model
       end
 
       ::continue::
@@ -247,8 +251,7 @@ function Client:models()
   end
 
   log.debug('Fetched models:', #vim.tbl_keys(models))
-  self.model_cache = models
-  return self.model_cache
+  return models
 end
 
 --- Get information about all providers

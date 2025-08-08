@@ -240,6 +240,9 @@ function M.filetype_to_mimetype(filetype)
   if filetype == 'html' or filetype == 'css' then
     return 'text/' .. filetype
   end
+  if filetype:find('/') then
+    return filetype
+  end
   return 'text/x-' .. filetype
 end
 

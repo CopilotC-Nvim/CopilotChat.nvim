@@ -519,7 +519,7 @@ return {
           end
 
           table.insert(lines, header)
-          table.insert(lines, '```' .. resource.type)
+          table.insert(lines, '```' .. utils.mimetype_to_filetype(resource.mimetype))
           for _, line in ipairs(preview) do
             table.insert(lines, line)
           end
