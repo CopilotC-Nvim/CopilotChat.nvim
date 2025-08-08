@@ -436,16 +436,10 @@ chat.set_selection(bufnr, start_line, end_line, clear) -- Set or clear selection
 -- Prompt & Model Management
 chat.select_prompt(config)    -- Open prompt selector with optional config
 chat.select_model()           -- Open model selector
-chat.prompts()                -- Get all available prompts
-
--- Completion
-chat.trigger_complete()       -- Trigger completion in chat window
-chat.complete_info()          -- Get completion info for custom providers
-chat.complete_items()         -- Get completion items (WARN: async, requires plenary.async.run)
 
 -- History Management
-chat.save(name, history_path) -- Save chat history
 chat.load(name, history_path) -- Load chat history
+chat.save(name, history_path) -- Save chat history
 
 -- Configuration
 chat.setup(config)            -- Update configuration
