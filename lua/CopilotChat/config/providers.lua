@@ -191,6 +191,7 @@ end
 
 ---@class CopilotChat.config.providers.Output
 ---@field content string
+---@field reasoning string?
 ---@field finish_reason string?
 ---@field total_tokens number?
 ---@field tool_calls table<CopilotChat.client.ToolCall>
@@ -429,6 +430,7 @@ M.copilot = {
 
     local message = choice.message or choice.delta
     local content = message and message.content
+    local reasoning = message and (message.reasoning or message.reasoning_content)
     local usage = choice.usage and choice.usage.total_tokens
     if not usage then
       usage = output.usage and output.usage.total_tokens
@@ -437,6 +439,7 @@ M.copilot = {
 
     return {
       content = content,
+      reasoning = reasoning,
       finish_reason = finish_reason,
       total_tokens = usage,
       tool_calls = tool_calls,
@@ -480,6 +483,7 @@ M.github_models = {
           max_output_tokens = max_output_tokens,
           streaming = vim.tbl_contains(model.capabilities, 'streaming'),
           tools = vim.tbl_contains(model.capabilities, 'tool-calling'),
+          reasoning = vim.tbl_contains(model.capabilities, 'reasoning'),
           version = model.version,
         }
       end)

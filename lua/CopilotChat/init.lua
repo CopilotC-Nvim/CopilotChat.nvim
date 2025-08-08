@@ -677,6 +677,7 @@ function M.select_model()
         provider = model.provider,
         streaming = model.streaming,
         tools = model.tools,
+        reasoning = model.reasoning,
         selected = model.id == M.config.model,
       }
     end, models)
@@ -700,6 +701,9 @@ function M.select_model()
         end
         if item.tools then
           table.insert(indicators, 'tools')
+        end
+        if item.reasoning then
+          table.insert(indicators, 'reasoning')
         end
 
         if #indicators > 0 then
@@ -865,12 +869,9 @@ function M.ask(prompt, config)
       system_prompt = system_prompt,
       model = selected_model,
       temperature = config.temperature,
-      on_progress = vim.schedule_wrap(function(token)
+      on_progress = vim.schedule_wrap(function(message)
         if not config.headless then
-          M.chat:add_message({
-            content = token,
-            role = 'assistant',
-          })
+          M.chat:add_message(message)
         end
       end),
     })

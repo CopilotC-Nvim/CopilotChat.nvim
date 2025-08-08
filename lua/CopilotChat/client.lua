@@ -7,11 +7,12 @@
 ---@field system_prompt string
 ---@field model string
 ---@field temperature number
----@field on_progress? fun(response: string):nil
+---@field on_progress fun(response: CopilotChat.client.Message)?
 
 ---@class CopilotChat.client.Message
 ---@field role string
 ---@field content string
+---@field reasoning string?
 ---@field tool_call_id string?
 ---@field tool_calls table<CopilotChat.client.ToolCall>?
 
@@ -46,6 +47,7 @@
 ---@field max_output_tokens number?
 ---@field streaming boolean?
 ---@field tools boolean?
+---@field reasoning boolean?
 
 local log = require('plenary.log')
 local tiktoken = require('CopilotChat.tiktoken')
@@ -402,15 +404,15 @@ function Client:ask(prompt, opts)
     end
   end
 
-  local errored = false
+  local errored = nil
   local finished = false
   local token_count = 0
-  local response_buffer = utils.string_buffer()
+  local response_content_buffer = utils.string_buffer()
+  local response_reasoning_buffer = utils.string_buffer()
 
   local function finish_stream(err, job)
     if err then
-      errored = true
-      response_buffer:set(err)
+      errored = err
     end
 
     log.debug('Finishing stream', err)
@@ -460,10 +462,19 @@ function Client:ask(prompt, opts)
     end
 
     if out.content then
-      response_buffer:add(out.content)
-      if opts.on_progress then
-        opts.on_progress(out.content)
-      end
+      response_content_buffer:add(out.content)
+    end
+
+    if out.reasoning then
+      response_reasoning_buffer:add(out.reasoning)
+    end
+
+    if opts.on_progress then
+      opts.on_progress({
+        role = 'assistant',
+        content = out.content or '',
+        reasoning = out.reasoning or '',
+      })
     end
 
     if out.finish_reason then
@@ -562,11 +573,13 @@ function Client:ask(prompt, opts)
     return
   end
 
-  local response_text = response_buffer:tostring()
   if errored then
-    error(response_text)
+    error(errored)
     return
   end
+
+  local response_text = response_content_buffer:tostring()
+  local response_reasoning = response_reasoning_buffer:tostring()
 
   if response then
     if is_stream then
@@ -578,13 +591,15 @@ function Client:ask(prompt, opts)
     else
       parse_line(response.body)
     end
-    response_text = response_buffer:tostring()
+    response_text = response_content_buffer:tostring()
+    response_reasoning = response_reasoning_buffer:tostring()
   end
 
   return {
     message = {
       role = 'assistant',
       content = response_text,
+      reasoning = response_reasoning,
       tool_calls = #tool_calls:values() > 0 and tool_calls:values() or nil,
     },
     token_count = token_count,
