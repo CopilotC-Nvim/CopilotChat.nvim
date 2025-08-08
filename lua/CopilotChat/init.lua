@@ -1189,7 +1189,6 @@ end
 function M.setup(config)
   local default_config = require('CopilotChat.config')
   M.config = vim.tbl_deep_extend('force', default_config, config or {})
-  state.highlights_loaded = false
 
   -- Save proxy and insecure settings
   utils.curl_store_args({
@@ -1311,6 +1310,8 @@ function M.setup(config)
       end
     end
   end
+
+  vim.api.nvim_exec_autocmds('User', { pattern = 'CopilotChatLoaded' })
 end
 
 return M
