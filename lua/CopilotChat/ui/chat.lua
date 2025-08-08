@@ -716,8 +716,8 @@ function Chat:render()
   -- Replace self.messages with new_messages (preserving tool_calls, etc.)
   self.messages = new_messages
 
-  -- Show tool call details as virt lines
   for _, message in ipairs(self.messages) do
+    -- Show tool call details as virt lines
     if message.tool_calls and #message.tool_calls > 0 then
       local section = message.section
       if section and section.end_line then
@@ -750,6 +750,25 @@ function Chat:render()
           strict = false,
         })
       end
+    end
+
+    -- Show reasoning as virtual text above assistant messages
+    if
+      message.role == 'assistant'
+      and not utils.empty(message.reasoning)
+      and message.section
+      and message.section.start_line
+    then
+      local virt_lines = {}
+      for _, line in ipairs(vim.split(message.reasoning, '\n')) do
+        table.insert(virt_lines, { { 'Reasoning: ' .. line, 'CopilotChatAnnotation' } })
+      end
+      vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, message.section.start_line - 1, 0, {
+        virt_lines = virt_lines,
+        virt_lines_above = true,
+        priority = 100,
+        strict = false,
+      })
     end
   end
 
