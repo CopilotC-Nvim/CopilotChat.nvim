@@ -1,5 +1,33 @@
 # Changelog
 
+## [4.3.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.2.0...v4.3.0) (2025-08-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* **core:** Resource processing and embeddings support have been removed. Any configuration or usage relying on these features will no longer work.
+
+### Features
+
+* **keymap:** switch back to &lt;Tab&gt; for completion, add Copilot conflict note ([#1280](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1280)) ([59f5b43](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/59f5b43cdd3d27ab4e033882179d5cf028cf1302))
+* **setup:** trigger CopilotChatLoaded user autocommand ([#1288](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1288)) ([1189e37](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/1189e376fcad629edf6ffd186aa659f114df0271))
+
+
+### Bug Fixes
+
+* **functions:** do not require tool reference in tool prompt, just tool id ([#1273](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1273)) ([4d11c49](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/4d11c49b7a1afb573a3b09be5e10a78a3d41649d)), closes [#1269](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1269)
+* **ui:** prevent italics from breaking glob pattern highlights ([#1274](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1274)) ([93110a5](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/93110a5f289aaed20adbbc13ec803f94dc6c63c6))
+
+
+### Miscellaneous Chores
+
+* mark next release as 4.3.0 ([#1275](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1275)) ([7576afa](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/7576afad950d4258cc7d455d8d42f7dccac4d19b))
+
+
+### Code Refactoring
+
+* **core:** remove resource processing and embeddings ([#1203](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1203)) ([f38319f](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/f38319fd8f3a7aaa1f75b78027032f9c07abc425))
+
 ## [4.2.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.1.0...v4.2.0) (2025-08-03)
 
 
