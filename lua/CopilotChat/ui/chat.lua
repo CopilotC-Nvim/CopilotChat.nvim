@@ -124,27 +124,40 @@ end
 ---@param cursor boolean? If true, returns the block closest to the cursor position
 ---@return CopilotChat.ui.chat.Block?
 function Chat:get_block(role, cursor)
-  if not self:visible() then
-    return nil
-  end
+  if cursor then
+    if not self:visible() then
+      return nil
+    end
 
-  self:render()
-  local cursor_pos = vim.api.nvim_win_get_cursor(self.winnr)
-  local cursor_line = cursor_pos[1]
-  local closest_block = nil
-  local max_line_below_cursor = -1
+    self:render()
+    local cursor_pos = vim.api.nvim_win_get_cursor(self.winnr)
+    local cursor_line = cursor_pos[1]
+    local closest_block = nil
+    local max_line_below_cursor = -1
 
-  for _, message in pairs(self.messages) do
-    local section = message.section
-    for _, block in ipairs(section.blocks) do
-      if block.start_line <= cursor_line and block.start_line > max_line_below_cursor then
-        max_line_below_cursor = block.start_line
-        closest_block = block
+    for _, message in ipairs(self.messages) do
+      local section = message.section
+      local matches_role = not role or message.role == role
+      if matches_role and section and section.blocks then
+        for _, block in ipairs(section.blocks) do
+          if block.start_line <= cursor_line and block.start_line > max_line_below_cursor then
+            max_line_below_cursor = block.start_line
+            closest_block = block
+          end
+        end
       end
     end
+
+    return closest_block
   end
 
-  return closest_block
+  for i = #self.messages, 1, -1 do
+    local message = self.messages[i]
+    local matches_role = not role or message.role == role
+    if matches_role and message.section and message.section.blocks and #message.section.blocks > 0 then
+      return message.section.blocks[#message.section.blocks]
+    end
+  end
 end
 
 --- Get last message by role in the chat window.
