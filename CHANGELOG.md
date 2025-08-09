@@ -1,5 +1,19 @@
 # Changelog
 
+## [4.4.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.3.1...v4.4.0) (2025-08-09)
+
+
+### Features
+
+* **completion:** add support for omnifunc and move completion logic to separate module ([1b04ddc](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/1b04ddcfe2d04363a3898998a1005ab2f493dff4))
+* **ui:** show assistant reasoning as virtual text ([#1299](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1299)) ([92777fb](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/92777fb98ad4de7496188f1e9de336d16871ac43))
+
+
+### Bug Fixes
+
+* **chat:** correct block selection logic by cursor ([#1301](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1301)) ([7e027df](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/7e027df6e95b622da25282285e84a9fc3806dcf1))
+* **info:** show resource uri instead of name in preview ([#1296](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1296)) ([90c3241](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/90c324177b33aec6d4c2bd5043c26bfc9fbc081f))
+
 ## [4.3.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.3.0...v4.3.1) (2025-08-08)
 
 
