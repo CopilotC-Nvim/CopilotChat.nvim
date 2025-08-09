@@ -50,8 +50,9 @@
 ---@field reasoning boolean?
 
 local log = require('plenary.log')
-local tiktoken = require('CopilotChat.tiktoken')
+local constants = require('CopilotChat.constants')
 local notify = require('CopilotChat.notify')
+local tiktoken = require('CopilotChat.tiktoken')
 local utils = require('CopilotChat.utils')
 local class = utils.class
 
@@ -124,7 +125,7 @@ local function generate_selection_message(selection)
       selection.start_line,
       selection.end_line
     ),
-    role = 'user',
+    role = constants.ROLE.USER,
   }
 end
 
@@ -140,7 +141,7 @@ local function generate_resource_messages(resources)
     :map(function(resource)
       return {
         content = generate_resource_block(resource.data, resource.mimetype, resource.uri, resource.name, 1, nil),
-        role = 'user',
+        role = constants.ROLE.USER,
       }
     end)
     :totable()
@@ -160,7 +161,7 @@ local function generate_ask_request(prompt, system_prompt, history, generated_me
   if not utils.empty(system_prompt) then
     table.insert(messages, {
       content = system_prompt,
-      role = 'system',
+      role = constants.ROLE.SYSTEM,
     })
   end
 
@@ -172,7 +173,7 @@ local function generate_ask_request(prompt, system_prompt, history, generated_me
   if not utils.empty(prompt) and utils.empty(history) then
     table.insert(messages, {
       content = prompt,
-      role = 'user',
+      role = constants.ROLE.USER,
     })
   end
 
@@ -471,7 +472,7 @@ function Client:ask(prompt, opts)
 
     if opts.on_progress then
       opts.on_progress({
-        role = 'assistant',
+        role = constants.ROLE.ASSISTANT,
         content = out.content or '',
         reasoning = out.reasoning or '',
       })
@@ -597,7 +598,7 @@ function Client:ask(prompt, opts)
 
   return {
     message = {
-      role = 'assistant',
+      role = constants.ROLE.ASSISTANT,
       content = response_text,
       reasoning = response_reasoning,
       tool_calls = #tool_calls:values() > 0 and tool_calls:values() or nil,

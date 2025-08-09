@@ -1,5 +1,6 @@
 local async = require('plenary.async')
 local client = require('CopilotChat.client')
+local constants = require('CopilotChat.constants')
 local config = require('CopilotChat.config')
 local functions = require('CopilotChat.functions')
 local utils = require('CopilotChat.utils')
@@ -33,10 +34,10 @@ function M.items()
     local kind = ''
     local info = ''
     if prompt.prompt then
-      kind = 'user'
+      kind = constants.ROLE.USER
       info = prompt.prompt
     elseif prompt.system_prompt then
-      kind = 'system'
+      kind = constants.ROLE.SYSTEM
       info = prompt.system_prompt
     end
 
@@ -88,7 +89,7 @@ function M.items()
     items[#items + 1] = {
       word = '@' .. name,
       abbr = name,
-      kind = 'tool',
+      kind = constants.ROLE.TOOL,
       info = tool.description,
       menu = tool.group or '',
       icase = 1,

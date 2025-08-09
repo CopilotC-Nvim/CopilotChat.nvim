@@ -1,5 +1,6 @@
 local Overlay = require('CopilotChat.ui.overlay')
 local Spinner = require('CopilotChat.ui.spinner')
+local constants = require('CopilotChat.constants')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local class = utils.class
@@ -204,7 +205,7 @@ function Chat:add_sticky(sticky)
     return
   end
 
-  local prompt = self:get_message('user')
+  local prompt = self:get_message(constants.ROLE.USER)
   if not prompt or not prompt.section then
     return
   end
@@ -667,7 +668,7 @@ function Chat:render()
     end
 
     -- Code blocks
-    if current_message and current_message.role == 'assistant' then
+    if current_message and current_message.role == constants.ROLE.ASSISTANT then
       local filetype, filename, start_line, end_line = match_header(line)
       if filetype and filename and not current_block then
         current_block = {
@@ -767,7 +768,7 @@ function Chat:render()
 
     -- Show reasoning as virtual text above assistant messages
     if
-      message.role == 'assistant'
+      message.role == constants.ROLE.ASSISTANT
       and not utils.empty(message.reasoning)
       and message.section
       and message.section.start_line
@@ -787,7 +788,7 @@ function Chat:render()
 
   -- Show help as before, using last user message
   local last_message = self.messages[#self.messages]
-  if last_message and last_message.role == 'user' then
+  if last_message and last_message.role == constants.ROLE.USER then
     local msg = self.config.show_help and self.help or ''
     if self.token_count and self.token_max_count then
       if msg ~= '' then

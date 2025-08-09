@@ -1,6 +1,7 @@
 local async = require('plenary.async')
 local copilot = require('CopilotChat')
 local client = require('CopilotChat.client')
+local constants = require('CopilotChat.constants')
 local utils = require('CopilotChat.utils')
 
 ---@class CopilotChat.config.mappings.Diff
@@ -162,7 +163,7 @@ return {
     normal = '<CR>',
     insert = '<C-s>',
     callback = function()
-      local message = copilot.chat:get_message('user', true)
+      local message = copilot.chat:get_message(constants.ROLE.USER, true)
       if not message then
         return
       end
@@ -174,7 +175,7 @@ return {
   toggle_sticky = {
     normal = 'grr',
     callback = function()
-      local message = copilot.chat:get_message('user')
+      local message = copilot.chat:get_message(constants.ROLE.USER)
       local section = message and message.section
       if not section then
         return
@@ -205,7 +206,7 @@ return {
   clear_stickies = {
     normal = 'grx',
     callback = function()
-      local message = copilot.chat:get_message('user')
+      local message = copilot.chat:get_message(constants.ROLE.USER)
       local section = message and message.section
       if not section then
         return
@@ -234,7 +235,7 @@ return {
     normal = '<C-y>',
     insert = '<C-y>',
     callback = function(source)
-      local diff = get_diff(copilot.chat:get_block('assistant', true))
+      local diff = get_diff(copilot.chat:get_block(constants.ROLE.ASSISTANT, true))
       diff = prepare_diff_buffer(diff, source)
       if not diff then
         return
@@ -249,7 +250,7 @@ return {
   jump_to_diff = {
     normal = 'gj',
     callback = function(source)
-      local diff = get_diff(copilot.chat:get_block('assistant', true))
+      local diff = get_diff(copilot.chat:get_block(constants.ROLE.ASSISTANT, true))
       diff = prepare_diff_buffer(diff, source)
       if not diff then
         return
@@ -264,7 +265,7 @@ return {
     callback = function()
       local items = {}
       for i, message in ipairs(copilot.chat.messages) do
-        if message.section and message.role == 'assistant' then
+        if message.section and message.role == constants.ROLE.ASSISTANT then
           local prev_message = copilot.chat.messages[i - 1]
           local text = ''
           if prev_message then
@@ -326,7 +327,7 @@ return {
     normal = 'gy',
     register = '"', -- Default register to use for yanking
     callback = function()
-      local block = copilot.chat:get_block('assistant', true)
+      local block = copilot.chat:get_block(constants.ROLE.ASSISTANT, true)
       if not block then
         return
       end
@@ -339,7 +340,7 @@ return {
     normal = 'gd',
     full_diff = false, -- Show full diff instead of unified diff when showing diff window
     callback = function(source)
-      local diff = get_diff(copilot.chat:get_block('assistant', true))
+      local diff = get_diff(copilot.chat:get_block(constants.ROLE.ASSISTANT, true))
       diff = prepare_diff_buffer(diff, source)
       if not diff then
         return
@@ -356,7 +357,7 @@ return {
         -- Apply all diffs from same file
         if #modified > 0 then
           -- Find all diffs from the same file in this section
-          local message = copilot.chat:get_message('assistant', true)
+          local message = copilot.chat:get_message(constants.ROLE.ASSISTANT, true)
           local section = message and message.section
           local same_file_diffs = {}
           if section then
@@ -429,7 +430,7 @@ return {
   show_info = {
     normal = 'gc',
     callback = function(source)
-      local message = copilot.chat:get_message('user', true)
+      local message = copilot.chat:get_message(constants.ROLE.USER, true)
       if not message then
         return
       end

@@ -1,3 +1,4 @@
+local constants = require('CopilotChat.constants')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local plenary_utils = require('plenary.async.util')
@@ -342,8 +343,8 @@ M.copilot = {
       }
 
       if is_o1 then
-        if input.role == 'system' then
-          output.role = 'user'
+        if input.role == constants.ROLE.SYSTEM then
+          output.role = constants.ROLE.USER
         end
       end
 
