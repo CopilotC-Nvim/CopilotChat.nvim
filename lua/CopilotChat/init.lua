@@ -1060,41 +1060,37 @@ function M.setup(config)
     M.chat:close(state.source and state.source.bufnr or nil)
     M.chat:delete()
   end
-  M.chat = require('CopilotChat.ui.chat')(
-    M.config,
-    utils.key_to_info('show_help', M.config.mappings.show_help),
-    function(bufnr)
-      for name, _ in pairs(M.config.mappings) do
-        map_key(name, bufnr)
-      end
+  M.chat = require('CopilotChat.ui.chat')(M.config, function(bufnr)
+    for name, _ in pairs(M.config.mappings) do
+      map_key(name, bufnr)
+    end
 
-      require('CopilotChat.completion').enable(bufnr, M.config.chat_autocomplete)
+    require('CopilotChat.completion').enable(bufnr, M.config.chat_autocomplete)
 
-      vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
+    vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
+      buffer = bufnr,
+      callback = function(ev)
+        if ev.event == 'BufEnter' then
+          update_source()
+        end
+
+        vim.schedule(update_highlights)
+      end,
+    })
+
+    if M.config.insert_at_end then
+      vim.api.nvim_create_autocmd({ 'InsertEnter' }, {
         buffer = bufnr,
-        callback = function(ev)
-          if ev.event == 'BufEnter' then
-            update_source()
-          end
-
-          vim.schedule(update_highlights)
+        callback = function()
+          vim.cmd('normal! 0')
+          vim.cmd('normal! G$')
+          vim.v.char = 'x'
         end,
       })
-
-      if M.config.insert_at_end then
-        vim.api.nvim_create_autocmd({ 'InsertEnter' }, {
-          buffer = bufnr,
-          callback = function()
-            vim.cmd('normal! 0')
-            vim.cmd('normal! G$')
-            vim.v.char = 'x'
-          end,
-        })
-      end
-
-      finish(true)
     end
-  )
+
+    finish(true)
+  end)
 
   for name, prompt in pairs(list_prompts()) do
     if prompt.prompt then

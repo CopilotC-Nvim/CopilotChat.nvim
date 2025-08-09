@@ -69,8 +69,8 @@ end
 ---@field private separator string
 ---@field private spinner CopilotChat.ui.spinner.Spinner
 ---@field private chat_overlay CopilotChat.ui.overlay.Overlay
-local Chat = class(function(self, config, help, on_buf_create)
-  Overlay.init(self, 'copilot-chat', help, on_buf_create)
+local Chat = class(function(self, config, on_buf_create)
+  Overlay.init(self, 'copilot-chat', utils.key_to_info('show_help', config.mappings.show_help), on_buf_create)
 
   self.winnr = nil
   self.config = config
@@ -83,18 +83,24 @@ local Chat = class(function(self, config, help, on_buf_create)
   self.separator = config.separator
 
   self.spinner = Spinner()
-  self.chat_overlay = Overlay('copilot-overlay', 'q to close', function(bufnr)
-    vim.keymap.set('n', 'q', function()
-      self.chat_overlay:restore(self.winnr, self.bufnr)
-    end)
-
-    vim.api.nvim_create_autocmd({ 'BufHidden', 'BufDelete' }, {
-      buffer = bufnr,
-      callback = function()
+  self.chat_overlay = Overlay(
+    'copilot-overlay',
+    utils.key_to_info('close', {
+      normal = config.mappings.close.normal,
+    }),
+    function(bufnr)
+      vim.keymap.set('n', config.mappings.close.normal, function()
         self.chat_overlay:restore(self.winnr, self.bufnr)
-      end,
-    })
-  end)
+      end)
+
+      vim.api.nvim_create_autocmd({ 'BufHidden', 'BufDelete' }, {
+        buffer = bufnr,
+        callback = function()
+          self.chat_overlay:restore(self.winnr, self.bufnr)
+        end,
+      })
+    end
+  )
 
   notify.listen(notify.MESSAGE, function(msg)
     utils.schedule_main()
