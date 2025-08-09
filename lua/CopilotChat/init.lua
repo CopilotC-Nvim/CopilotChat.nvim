@@ -2,10 +2,10 @@ local async = require('plenary.async')
 local log = require('plenary.log')
 local functions = require('CopilotChat.functions')
 local client = require('CopilotChat.client')
+local constants = require('CopilotChat.constants')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 
-local PLUGIN_NAME = 'CopilotChat'
 local WORD = '([^%s:]+)'
 local WORD_NO_INPUT = '([^%s]+)'
 local WORD_WITH_INPUT_QUOTED = WORD .. ':`([^`]+)`'
@@ -44,7 +44,7 @@ local state = {
 ---@param prompt string
 ---@param config CopilotChat.config.Shared
 local function insert_sticky(prompt, config)
-  local existing_prompt = M.chat:get_message('user')
+  local existing_prompt = M.chat:get_message(constants.ROLE.USER)
   local combined_prompt = (existing_prompt and existing_prompt.content or '') .. '\n' .. (prompt or '')
   local lines = vim.split(prompt or '', '\n')
   local stickies = utils.ordered_map()
@@ -207,7 +207,7 @@ local function finish(start_of_chat)
   end
 
   local prompt_content = ''
-  local assistant_message = M.chat:get_message('assistant')
+  local assistant_message = M.chat:get_message(constants.ROLE.ASSISTANT)
   local tool_calls = assistant_message and assistant_message.tool_calls or {}
 
   if not utils.empty(state.sticky) then
@@ -225,7 +225,7 @@ local function finish(start_of_chat)
   end
 
   M.chat:add_message({
-    role = 'user',
+    role = constants.ROLE.USER,
     content = prompt_content,
   })
 
@@ -253,7 +253,7 @@ local function handle_error(config, cb)
     out = utils.make_string(out)
 
     M.chat:add_message({
-      role = 'assistant',
+      role = constants.ROLE.ASSISTANT,
       content = '\n' .. string.format(BLOCK_OUTPUT_FORMAT, 'error', out) .. '\n',
     })
 
@@ -282,7 +282,7 @@ local function map_key(name, bufnr, fn)
       'n',
       key.normal,
       fn,
-      { buffer = bufnr, nowait = true, desc = PLUGIN_NAME .. ' ' .. name:gsub('_', ' ') }
+      { buffer = bufnr, nowait = true, desc = constants.PLUGIN_NAME .. ' ' .. name:gsub('_', ' ') }
     )
   end
   if key.insert and key.insert ~= '' then
@@ -296,7 +296,7 @@ local function map_key(name, bufnr, fn)
       else
         fn()
       end
-    end, { buffer = bufnr, desc = PLUGIN_NAME .. ' ' .. name:gsub('_', ' ') })
+    end, { buffer = bufnr, desc = constants.PLUGIN_NAME .. ' ' .. name:gsub('_', ' ') })
   end
 end
 
@@ -473,7 +473,7 @@ end
 ---@return CopilotChat.config.prompts.Prompt, string
 function M.resolve_prompt(prompt, config)
   if not prompt then
-    local message = M.chat:get_message('user')
+    local message = M.chat:get_message(constants.ROLE.USER)
     if message then
       prompt = message.content
     end
@@ -636,12 +636,12 @@ function M.open(config)
   M.chat:open(config)
 
   -- Add sticky values from provided config when opening the chat
-  local message = M.chat:get_message('user')
+  local message = M.chat:get_message(constants.ROLE.USER)
   if message then
     local prompt = insert_sticky(message.content, config)
     if prompt then
       M.chat:add_message({
-        role = 'user',
+        role = constants.ROLE.USER,
         content = '\n' .. prompt,
       }, true)
     end
@@ -813,7 +813,7 @@ function M.ask(prompt, config)
 
     if not config.headless then
       utils.schedule_main()
-      local assistant_message = M.chat:get_message('assistant')
+      local assistant_message = M.chat:get_message(constants.ROLE.ASSISTANT)
       if assistant_message and assistant_message.tool_calls then
         local handled_ids = {}
         for _, tool in ipairs(resolved_tools) do
@@ -834,11 +834,11 @@ function M.ask(prompt, config)
 
       if not utils.empty(resolved_tools) then
         -- If we are handling tools, replace user message with tool results
-        M.chat:remove_message('user')
+        M.chat:remove_message(constants.ROLE.USER)
         for _, tool in ipairs(resolved_tools) do
           M.chat:add_message({
             id = tool.id,
-            role = 'tool',
+            role = constants.ROLE.TOOL,
             tool_call_id = tool.id,
             content = '\n' .. tool.result .. '\n',
           })
@@ -846,7 +846,7 @@ function M.ask(prompt, config)
       else
         -- Otherwise just replace the user message with resolved prompt
         M.chat:add_message({
-          role = 'user',
+          role = constants.ROLE.USER,
           content = '\n' .. prompt .. '\n',
         }, true)
       end
@@ -854,7 +854,7 @@ function M.ask(prompt, config)
 
     if utils.empty(prompt) and utils.empty(resolved_tools) then
       if not config.headless then
-        M.chat:remove_message('user')
+        M.chat:remove_message(constants.ROLE.USER)
         finish()
       end
       return
@@ -1008,7 +1008,7 @@ function M.log_level(level)
   M.config.debug = level == 'debug'
 
   log.new({
-    plugin = PLUGIN_NAME,
+    plugin = constants.PLUGIN_NAME,
     level = level,
     outfile = M.config.log_path,
     fmt_msg = function(is_console, mode_name, src_path, src_line, msg)
@@ -1110,13 +1110,13 @@ function M.setup(config)
         nargs = '*',
         force = true,
         range = true,
-        desc = prompt.description or (PLUGIN_NAME .. ' ' .. name),
+        desc = prompt.description or (constants.PLUGIN_NAME .. ' ' .. name),
       })
 
       if prompt.mapping then
         vim.keymap.set({ 'n', 'v' }, prompt.mapping, function()
           M.ask(prompt.prompt, prompt)
-        end, { desc = prompt.description or (PLUGIN_NAME .. ' ' .. name) })
+        end, { desc = prompt.description or (constants.PLUGIN_NAME .. ' ' .. name) })
       end
     end
   end
