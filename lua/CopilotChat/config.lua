@@ -125,4 +125,3 @@ return {
   -- default mappings
   mappings = require('CopilotChat.config.mappings'),
 }
-
