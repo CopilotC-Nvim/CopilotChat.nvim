@@ -764,6 +764,9 @@ function M.ask(prompt, config)
 
   vim.diagnostic.reset(vim.api.nvim_create_namespace('copilot-chat-diagnostics'))
   config = vim.tbl_deep_extend('force', M.config, config or {})
+  local schedule = function(cb)
+    return cb()
+  end
 
   -- Stop previous conversation and open window
   if not config.headless then
@@ -774,6 +777,7 @@ function M.ask(prompt, config)
     end
     if not M.chat:focused() then
       M.open(config)
+      schedule = vim.schedule
     end
   else
     update_source()
@@ -783,129 +787,132 @@ function M.ask(prompt, config)
   prompt = insert_sticky(prompt, config)
   prompt = vim.trim(prompt)
 
-  -- Prepare chat
-  if not config.headless then
-    store_sticky(prompt)
-    M.chat:start()
-    M.chat:append('\n')
-  end
-
-  -- Resolve prompt references
-  config, prompt = M.resolve_prompt(prompt, config)
-  local system_prompt = config.system_prompt or ''
-
-  -- Remove sticky prefix
-  prompt = table.concat(
-    vim.tbl_map(function(l)
-      return l:gsub('^>%s+', '')
-    end, vim.split(prompt, '\n')),
-    '\n'
-  )
-
-  -- Retrieve the selection
-  local selection = M.get_selection()
-
-  async.run(handle_error(config, function()
-    local selected_tools, resolved_resources, resolved_tools, prompt = M.resolve_functions(prompt, config)
-    local selected_model, prompt = M.resolve_model(prompt, config)
-
-    prompt = vim.trim(prompt)
-
+  -- After opening window we need to schedule to next cycle so everything properly resolves
+  schedule(function()
+    -- Prepare chat
     if not config.headless then
-      utils.schedule_main()
-      local assistant_message = M.chat:get_message(constants.ROLE.ASSISTANT)
-      if assistant_message and assistant_message.tool_calls then
-        local handled_ids = {}
-        for _, tool in ipairs(resolved_tools) do
-          handled_ids[tool.id] = true
-        end
+      store_sticky(prompt)
+      M.chat:start()
+      M.chat:append('\n')
+    end
 
-        -- If we skipped any tool calls, send that as result
-        for _, tool_call in ipairs(assistant_message.tool_calls) do
-          if not handled_ids[tool_call.id] then
-            table.insert(resolved_tools, {
-              id = tool_call.id,
-              result = string.format(BLOCK_OUTPUT_FORMAT, 'error', 'User skipped this function call.'),
-            })
-            handled_ids[tool_call.id] = true
+    -- Resolve prompt references
+    config, prompt = M.resolve_prompt(prompt, config)
+    local system_prompt = config.system_prompt or ''
+
+    -- Remove sticky prefix
+    prompt = table.concat(
+      vim.tbl_map(function(l)
+        return l:gsub('^>%s+', '')
+      end, vim.split(prompt, '\n')),
+      '\n'
+    )
+
+    -- Retrieve the selection
+    local selection = M.get_selection()
+
+    async.run(handle_error(config, function()
+      local selected_tools, resolved_resources, resolved_tools, prompt = M.resolve_functions(prompt, config)
+      local selected_model, prompt = M.resolve_model(prompt, config)
+
+      prompt = vim.trim(prompt)
+
+      if not config.headless then
+        utils.schedule_main()
+        local assistant_message = M.chat:get_message(constants.ROLE.ASSISTANT)
+        if assistant_message and assistant_message.tool_calls then
+          local handled_ids = {}
+          for _, tool in ipairs(resolved_tools) do
+            handled_ids[tool.id] = true
+          end
+
+          -- If we skipped any tool calls, send that as result
+          for _, tool_call in ipairs(assistant_message.tool_calls) do
+            if not handled_ids[tool_call.id] then
+              table.insert(resolved_tools, {
+                id = tool_call.id,
+                result = string.format(BLOCK_OUTPUT_FORMAT, 'error', 'User skipped this function call.'),
+              })
+              handled_ids[tool_call.id] = true
+            end
           end
         end
-      end
 
-      if not utils.empty(resolved_tools) then
-        -- If we are handling tools, replace user message with tool results
-        M.chat:remove_message(constants.ROLE.USER)
-        for _, tool in ipairs(resolved_tools) do
+        if not utils.empty(resolved_tools) then
+          -- If we are handling tools, replace user message with tool results
+          M.chat:remove_message(constants.ROLE.USER)
+          for _, tool in ipairs(resolved_tools) do
+            M.chat:add_message({
+              id = tool.id,
+              role = constants.ROLE.TOOL,
+              tool_call_id = tool.id,
+              content = '\n' .. tool.result .. '\n',
+            })
+          end
+        else
+          -- Otherwise just replace the user message with resolved prompt
           M.chat:add_message({
-            id = tool.id,
-            role = constants.ROLE.TOOL,
-            tool_call_id = tool.id,
-            content = '\n' .. tool.result .. '\n',
-          })
+            role = constants.ROLE.USER,
+            content = '\n' .. prompt .. '\n',
+          }, true)
         end
-      else
-        -- Otherwise just replace the user message with resolved prompt
-        M.chat:add_message({
-          role = constants.ROLE.USER,
-          content = '\n' .. prompt .. '\n',
-        }, true)
       end
-    end
 
-    if utils.empty(prompt) and utils.empty(resolved_tools) then
+      if utils.empty(prompt) and utils.empty(resolved_tools) then
+        if not config.headless then
+          M.chat:remove_message(constants.ROLE.USER)
+          finish()
+        end
+        return
+      end
+
+      local ask_response = client.ask(client, prompt, {
+        headless = config.headless,
+        history = M.chat.messages,
+        selection = selection,
+        resources = resolved_resources,
+        tools = selected_tools,
+        system_prompt = system_prompt,
+        model = selected_model,
+        temperature = config.temperature,
+        on_progress = vim.schedule_wrap(function(message)
+          if not config.headless then
+            M.chat:add_message(message)
+          end
+        end),
+      })
+
+      -- If there was no error and no response, it means job was cancelled
+      if ask_response == nil then
+        return
+      end
+
+      local response = ask_response.message
+      local token_count = ask_response.token_count
+      local token_max_count = ask_response.token_max_count
+
+      -- Call the callback function
+      if config.callback then
+        utils.schedule_main()
+        config.callback(response.content, state.source)
+      end
+
       if not config.headless then
-        M.chat:remove_message(constants.ROLE.USER)
+        response.content = vim.trim(response.content)
+        if utils.empty(response.content) then
+          response.content = ''
+        else
+          response.content = '\n' .. response.content .. '\n'
+        end
+
+        utils.schedule_main()
+        M.chat:add_message(response, true)
+        M.chat.token_count = token_count
+        M.chat.token_max_count = token_max_count
         finish()
       end
-      return
-    end
-
-    local ask_response = client.ask(client, prompt, {
-      headless = config.headless,
-      history = M.chat.messages,
-      selection = selection,
-      resources = resolved_resources,
-      tools = selected_tools,
-      system_prompt = system_prompt,
-      model = selected_model,
-      temperature = config.temperature,
-      on_progress = vim.schedule_wrap(function(message)
-        if not config.headless then
-          M.chat:add_message(message)
-        end
-      end),
-    })
-
-    -- If there was no error and no response, it means job was cancelled
-    if ask_response == nil then
-      return
-    end
-
-    local response = ask_response.message
-    local token_count = ask_response.token_count
-    local token_max_count = ask_response.token_max_count
-
-    -- Call the callback function
-    if config.callback then
-      utils.schedule_main()
-      config.callback(response.content, state.source)
-    end
-
-    if not config.headless then
-      response.content = vim.trim(response.content)
-      if utils.empty(response.content) then
-        response.content = ''
-      else
-        response.content = '\n' .. response.content .. '\n'
-      end
-
-      utils.schedule_main()
-      M.chat:add_message(response, true)
-      M.chat.token_count = token_count
-      M.chat.token_max_count = token_max_count
-      finish()
-    end
-  end))
+    end))
+  end)
 end
 
 --- Stop current copilot output and optionally reset the chat ten show the help message.
