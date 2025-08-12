@@ -1,4 +1,12 @@
-local COPILOT_BASE = [[
+---@class CopilotChat.config.prompts.Prompt : CopilotChat.config.Shared
+---@field prompt string?
+---@field description string?
+---@field mapping string?
+
+---@type table<string, CopilotChat.config.prompts.Prompt>
+return {
+  COPILOT_BASE = {
+    system_prompt = [[
 When asked for your name, you must respond with "GitHub Copilot".
 Follow the user's requirements carefully & to the letter.
 Keep your answers short and impersonal.
@@ -72,15 +80,20 @@ When presenting code changes:
 4. Address any diagnostics issues when fixing code.
 5. If multiple changes are needed, present them as separate code blocks.
 </editFileInstructions>
-]]
+]],
+  },
 
-local COPILOT_INSTRUCTIONS = [[
+  COPILOT_INSTRUCTIONS = {
+    system_prompt = [[
 You are a code-focused AI programming assistant that specializes in practical software engineering solutions.
-]] .. COPILOT_BASE
 
-local COPILOT_EXPLAIN = [[
+{COPILOT_BASE}
+]],
+  },
+
+  COPILOT_EXPLAIN = {
+    system_prompt = [[
 You are a programming instructor focused on clear, practical explanations.
-]] .. COPILOT_BASE .. [[
 
 When explaining code:
 - Provide concise high-level overview first
@@ -90,11 +103,16 @@ When explaining code:
 - Focus on complex parts rather than basic syntax
 - Use short paragraphs with clear structure
 - Mention performance considerations where relevant
-]]
 
-local COPILOT_REVIEW = [[
+{COPILOT_BASE}
+]],
+  },
+
+  COPILOT_REVIEW = {
+    system_prompt = [[
 You are a code reviewer focused on improving code quality and maintainability.
-]] .. COPILOT_BASE .. [[
+
+{COPILOT_BASE}
 
 Format each issue you find precisely as:
 line=<line_number>: <issue_description>
@@ -117,39 +135,17 @@ Multiple issues on one line should be separated by semicolons.
 End with: "**`To clear buffer highlights, please ask a different question.`**"
 
 If no issues found, confirm the code is well-written and explain why.
-]]
-
----@class CopilotChat.config.prompts.Prompt : CopilotChat.config.Shared
----@field prompt string?
----@field description string?
----@field mapping string?
-
----@type table<string, CopilotChat.config.prompts.Prompt>
-return {
-  COPILOT_BASE = {
-    system_prompt = COPILOT_BASE,
-  },
-
-  COPILOT_INSTRUCTIONS = {
-    system_prompt = COPILOT_INSTRUCTIONS,
-  },
-
-  COPILOT_EXPLAIN = {
-    system_prompt = COPILOT_EXPLAIN,
-  },
-
-  COPILOT_REVIEW = {
-    system_prompt = COPILOT_REVIEW,
+]],
   },
 
   Explain = {
     prompt = 'Write an explanation for the selected code as paragraphs of text.',
-    system_prompt = 'COPILOT_EXPLAIN',
+    system_prompt = '{COPILOT_EXPLAIN}',
   },
 
   Review = {
     prompt = 'Review the selected code.',
-    system_prompt = 'COPILOT_REVIEW',
+    system_prompt = '{COPILOT_REVIEW}',
     callback = function(response, source)
       local diagnostics = {}
       for line in response:gmatch('[^\r\n]+') do

@@ -361,7 +361,7 @@ Define your own prompts in the configuration:
           system_prompt = 'You are fascinated by pirates, so please respond in pirate speak.',
         },
         NiceInstructions = {
-          system_prompt = 'You are a nice coding tutor, so please respond in a friendly and helpful manner.' .. require('CopilotChat.config.prompts').COPILOT_BASE.system_prompt,
+          system_prompt = 'You are a nice coding tutor, so please respond in a friendly and helpful manner. {BASE_INSTRUCTIONS}',
         }
       }
     }
