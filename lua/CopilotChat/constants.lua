@@ -7,4 +7,13 @@ return {
     SYSTEM = 'system',
     TOOL = 'tool',
   },
+
+  SYMBOLS = {
+    STICKY = '> ',
+    MODEL = '$',
+    TOOL = '@',
+    RESOURCE = '#',
+    URI = '##',
+    PROMPT = '/',
+  }
 }
