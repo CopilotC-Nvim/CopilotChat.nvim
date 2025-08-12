@@ -183,10 +183,6 @@ local function list_prompts()
       }
     end
 
-    if val.system_prompt and M.config.prompts[val.system_prompt] then
-      val.system_prompt = M.config.prompts[val.system_prompt].system_prompt
-    end
-
     prompts_to_use[name] = val
   end
 
@@ -506,11 +502,14 @@ function M.resolve_prompt(prompt, config)
 
   config = vim.tbl_deep_extend('force', M.config, config or {})
   config, prompt = resolve(config, prompt or '')
-  if prompts_to_use[config.system_prompt] then
-    config.system_prompt = prompts_to_use[config.system_prompt].system_prompt
-  end
 
   if config.system_prompt then
+    for name, prompt in pairs(prompts_to_use) do
+      if prompt.system_prompt then
+        config.system_prompt = config.system_prompt:gsub('{' .. name .. '}', prompt.system_prompt)
+      end
+    end
+
     config.system_prompt = config.system_prompt:gsub('{OS_NAME}', jit.os)
     config.system_prompt = config.system_prompt:gsub('{LANGUAGE}', config.language)
     if state.source then
@@ -894,7 +893,7 @@ function M.ask(prompt, config)
       -- Call the callback function
       if config.callback then
         utils.schedule_main()
-        config.callback(response.content, state.source)
+        config.callback(response, state.source)
       end
 
       if not config.headless then
