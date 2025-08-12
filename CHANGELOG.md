@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.4.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.4.0...v4.4.1) (2025-08-12)
+
+
+### Bug Fixes
+
+* **chat:** schedule chat initialization after window opens ([#1308](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1308)) ([15eebed](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/15eebed57156c3ae6a6bb6f73692dbf0547ba9e4)), closes [#1307](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1307)
+* **prompts:** update tool instructions for system prompt ([#1304](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1304)) ([5e091bf](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/5e091bf1bf11827bec5130edc8d4f87fdd243716))
+
 ## [4.4.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.3.1...v4.4.0) (2025-08-09)
 
 
