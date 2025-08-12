@@ -193,6 +193,27 @@ local function list_prompts()
   return prompts_to_use
 end
 
+--- Resolve system prompt - handle both string and function types
+---@param system_prompt string|function|nil
+---@param source CopilotChat.source?
+---@return string?
+local function resolve_system_prompt(system_prompt, source)
+  if not system_prompt then
+    return nil
+  end
+
+  if type(system_prompt) == 'function' then
+    local ok, result = pcall(system_prompt, source)
+    if not ok then
+      log.warn('Failed to resolve system prompt function: ' .. result)
+      return nil
+    end
+    return result
+  end
+
+  return system_prompt
+end
+
 --- Finish writing to chat buffer.
 ---@param start_of_chat boolean?
 local function finish(start_of_chat)
@@ -509,6 +530,9 @@ function M.resolve_prompt(prompt, config)
   if prompts_to_use[config.system_prompt] then
     config.system_prompt = prompts_to_use[config.system_prompt].system_prompt
   end
+
+  -- Resolve system prompt (handle functions)
+  config.system_prompt = resolve_system_prompt(config.system_prompt, state.source)
 
   if config.system_prompt then
     config.system_prompt = config.system_prompt:gsub('{OS_NAME}', jit.os)
@@ -1126,3 +1150,4 @@ function M.setup(config)
 end
 
 return M
+

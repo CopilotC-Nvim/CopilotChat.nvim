@@ -14,7 +14,7 @@
 ---@field blend number?
 
 ---@class CopilotChat.config.Shared
----@field system_prompt string?
+---@field system_prompt string|fun(source: CopilotChat.source):string|nil
 ---@field model string?
 ---@field tools string|table<string>|nil
 ---@field sticky string|table<string>|nil
@@ -125,3 +125,4 @@ return {
   -- default mappings
   mappings = require('CopilotChat.config.mappings'),
 }
+
