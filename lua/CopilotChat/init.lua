@@ -195,15 +195,14 @@ end
 
 --- Resolve system prompt - handle both string and function types
 ---@param system_prompt string|function|nil
----@param source CopilotChat.source?
 ---@return string?
-local function resolve_system_prompt(system_prompt, source)
+local function resolve_system_prompt(system_prompt)
   if not system_prompt then
     return nil
   end
 
   if type(system_prompt) == 'function' then
-    local ok, result = pcall(system_prompt, source)
+    local ok, result = pcall(system_prompt)
     if not ok then
       log.warn('Failed to resolve system prompt function: ' .. result)
       return nil
