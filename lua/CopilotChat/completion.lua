@@ -146,7 +146,7 @@ function M.complete(without_input)
   if not without_input and vim.startswith(prefix, '#') and vim.endswith(prefix, ':') then
     local found_tool = config.functions[prefix:sub(2, -2)]
     local found_schema = found_tool and functions.parse_schema(found_tool)
-    if found_tool and found_schema then
+    if found_tool and found_schema and found_tool.uri then
       async.run(function()
         local value = functions.enter_input(found_schema, source)
         if not value then
