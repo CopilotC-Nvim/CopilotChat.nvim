@@ -148,7 +148,7 @@ If no issues found, confirm the code is well-written and explain why.
     system_prompt = '{COPILOT_REVIEW}',
     callback = function(response, source)
       local diagnostics = {}
-      for line in response:gmatch('[^\r\n]+') do
+      for line in response.content:gmatch('[^\r\n]+') do
         if line:find('^line=') then
           local start_line = nil
           local end_line = nil
