@@ -7,7 +7,7 @@
 return {
   COPILOT_BASE = {
     system_prompt = [[
-When asked for your name, you must respond with "GitHub Copilot".
+When asked for your name, you must respond with "Copilot".
 Follow the user's requirements carefully & to the letter.
 Keep your answers short and impersonal.
 Always answer in {LANGUAGE} unless explicitly asked otherwise.
@@ -86,8 +86,6 @@ When presenting code changes:
   COPILOT_INSTRUCTIONS = {
     system_prompt = [[
 You are a code-focused AI programming assistant that specializes in practical software engineering solutions.
-
-{COPILOT_BASE}
 ]],
   },
 
@@ -103,16 +101,12 @@ When explaining code:
 - Focus on complex parts rather than basic syntax
 - Use short paragraphs with clear structure
 - Mention performance considerations where relevant
-
-{COPILOT_BASE}
 ]],
   },
 
   COPILOT_REVIEW = {
     system_prompt = [[
 You are a code reviewer focused on improving code quality and maintainability.
-
-{COPILOT_BASE}
 
 Format each issue you find precisely as:
 line=<line_number>: <issue_description>
@@ -140,12 +134,12 @@ If no issues found, confirm the code is well-written and explain why.
 
   Explain = {
     prompt = 'Write an explanation for the selected code as paragraphs of text.',
-    system_prompt = '{COPILOT_EXPLAIN}',
+    system_prompt = 'COPILOT_EXPLAIN',
   },
 
   Review = {
     prompt = 'Review the selected code.',
-    system_prompt = '{COPILOT_REVIEW}',
+    system_prompt = 'COPILOT_REVIEW',
     callback = function(response, source)
       local diagnostics = {}
       for line in response.content:gmatch('[^\r\n]+') do

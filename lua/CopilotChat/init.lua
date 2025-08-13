@@ -189,26 +189,6 @@ local function list_prompts()
   return prompts_to_use
 end
 
---- Resolve system prompt - handle both string and function types
----@param system_prompt string|function|nil
----@return string?
-local function resolve_system_prompt(system_prompt)
-  if not system_prompt then
-    return nil
-  end
-
-  if type(system_prompt) == 'function' then
-    local ok, result = pcall(system_prompt)
-    if not ok then
-      log.warn('Failed to resolve system prompt function: ' .. result)
-      return nil
-    end
-    return result
-  end
-
-  return system_prompt
-end
-
 --- Finish writing to chat buffer.
 ---@param start_of_chat boolean?
 local function finish(start_of_chat)
@@ -520,31 +500,31 @@ function M.resolve_prompt(prompt, config)
     return inner_config, inner_prompt
   end
 
-  local function expand_system_prompt(system_prompt, prompts_to_use)
-    local prev, curr = nil, system_prompt
-    local depth = 0
-    repeat
-      prev = curr
-      curr = curr:gsub('{([%w_]+)}', function(name)
-        local prompt = prompts_to_use[name]
-        if prompt and prompt.system_prompt then
-          return prompt.system_prompt
-        end
-        return '{' .. name .. '}'
-      end)
-      depth = depth + 1
-    until prev == curr or depth >= MAX_DEPTH
-    return curr
+  local function resolve_system_prompt(system_prompt)
+    if type(system_prompt) == 'function' then
+      local ok, result = pcall(system_prompt)
+      if not ok then
+        log.warn('Failed to resolve system prompt function: ' .. result)
+        return nil
+      end
+      return result
+    end
+
+    return system_prompt
   end
 
   config = vim.tbl_deep_extend('force', M.config, config or {})
   config, prompt = resolve(config, prompt or '')
 
-  -- Resolve system prompt (handle functions)
-  config.system_prompt = resolve_system_prompt(config.system_prompt, state.source)
-
   if config.system_prompt then
-    config.system_prompt = expand_system_prompt(config.system_prompt, prompts_to_use)
+    config.system_prompt = resolve_system_prompt(config.system_prompt)
+
+    if M.config.prompts[config.system_prompt] then
+      -- Name references are good for making system prompt auto sticky
+      config.system_prompt = M.config.prompts[config.system_prompt].system_prompt
+    end
+
+    config.system_prompt = config.system_prompt .. '\n' .. M.config.prompts.COPILOT_BASE.system_prompt
     config.system_prompt = config.system_prompt:gsub('{OS_NAME}', jit.os)
     config.system_prompt = config.system_prompt:gsub('{LANGUAGE}', config.language)
     if state.source then
