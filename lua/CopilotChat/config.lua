@@ -53,7 +53,7 @@ return {
 
   -- Shared config starts here (can be passed to functions at runtime and configured via setup function)
 
-  system_prompt = 'COPILOT_INSTRUCTIONS', -- System prompt to use (can be specified manually in prompt via /).
+  system_prompt = '{COPILOT_INSTRUCTIONS}', -- System prompt to use (can be specified manually in prompt via /).
 
   model = 'gpt-4.1', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   tools = nil, -- Default tool or array of tools (or groups) to share with LLM (can be specified manually in prompt via @).

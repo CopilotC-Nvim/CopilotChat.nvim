@@ -520,6 +520,23 @@ function M.resolve_prompt(prompt, config)
     return inner_config, inner_prompt
   end
 
+  local function expand_system_prompt(system_prompt, prompts_to_use)
+    local prev, curr = nil, system_prompt
+    local depth = 0
+    repeat
+      prev = curr
+      curr = curr:gsub('{([%w_]+)}', function(name)
+        local prompt = prompts_to_use[name]
+        if prompt and prompt.system_prompt then
+          return prompt.system_prompt
+        end
+        return '{' .. name .. '}'
+      end)
+      depth = depth + 1
+    until prev == curr or depth >= MAX_DEPTH
+    return curr
+  end
+
   config = vim.tbl_deep_extend('force', M.config, config or {})
   config, prompt = resolve(config, prompt or '')
 
@@ -527,12 +544,7 @@ function M.resolve_prompt(prompt, config)
   config.system_prompt = resolve_system_prompt(config.system_prompt, state.source)
 
   if config.system_prompt then
-    for name, prompt in pairs(prompts_to_use) do
-      if prompt.system_prompt then
-        config.system_prompt = config.system_prompt:gsub('{' .. name .. '}', prompt.system_prompt)
-      end
-    end
-
+    config.system_prompt = expand_system_prompt(config.system_prompt, prompts_to_use)
     config.system_prompt = config.system_prompt:gsub('{OS_NAME}', jit.os)
     config.system_prompt = config.system_prompt:gsub('{LANGUAGE}', config.language)
     if state.source then
