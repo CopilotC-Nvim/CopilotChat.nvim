@@ -51,7 +51,8 @@ local function get_diff(block)
 
     -- If we found a valid buffer, get the reference content
     if bufnr and utils.buf_valid(bufnr) then
-      reference = table.concat(vim.api.nvim_buf_get_lines(bufnr, start_line - 1, end_line, false), '\n')
+      local lines = vim.api.nvim_buf_get_lines(bufnr, start_line - 1, end_line, false)
+      reference = table.concat(lines, '\n')
       filetype = vim.bo[bufnr].filetype
     end
   end
@@ -212,7 +213,7 @@ return {
         return
       end
 
-      local lines = vim.split(message.content, '\n')
+      local lines = utils.split_lines(message.content)
       local new_lines = {}
       local changed = false
 
@@ -241,9 +242,9 @@ return {
         return
       end
 
-      local lines = vim.split(diff.change, '\n', { trimempty = false })
+      local lines = utils.split_lines(diff.change)
       vim.api.nvim_buf_set_lines(diff.bufnr, diff.start_line - 1, diff.end_line, false, lines)
-      copilot.set_selection(diff.bufnr, diff.start_line, diff.start_line + #lines - 1)
+      copilot.set_selection(diff.bufnr, diff.start_line, diff.end_line)
     end,
   },
 
@@ -352,10 +353,9 @@ return {
       }
 
       if copilot.config.mappings.show_diff.full_diff then
-        local modified = utils.buf_valid(diff.bufnr) and vim.api.nvim_buf_get_lines(diff.bufnr, 0, -1, false) or {}
+        local original = utils.buf_valid(diff.bufnr) and vim.api.nvim_buf_get_lines(diff.bufnr, 0, -1, false) or {}
 
-        -- Apply all diffs from same file
-        if #modified > 0 then
+        if #original > 0 then
           -- Find all diffs from the same file in this section
           local message = copilot.chat:get_message(constants.ROLE.ASSISTANT, true)
           local section = message and message.section
@@ -367,30 +367,38 @@ return {
                 table.insert(same_file_diffs, block_diff)
               end
             end
-
-            -- Sort diffs bottom to top to preserve line numbering
-            table.sort(same_file_diffs, function(a, b)
-              return a.start_line > b.start_line
-            end)
           end
 
-          for _, file_diff in ipairs(same_file_diffs) do
-            local start_idx = file_diff.start_line
-            local end_idx = file_diff.end_line
-            for _ = start_idx, end_idx do
-              table.remove(modified, start_idx)
+          -- Ensure we at least apply the current diff
+          if #same_file_diffs == 0 then
+            table.insert(same_file_diffs, diff)
+          end
+
+          -- Sort diffs by start_line in descending order (apply from bottom to top)
+          table.sort(same_file_diffs, function(a, b)
+            return a.start_line > b.start_line
+          end)
+
+          local result = vim.deepcopy(original)
+
+          -- Apply diffs from bottom to top so line numbers remain valid
+          for _, d in ipairs(same_file_diffs) do
+            local change_lines = utils.split_lines(d.change)
+
+            -- Remove original lines (from end to start to avoid index shifting)
+            for i = d.end_line, d.start_line, -1 do
+              if result[i] then
+                table.remove(result, i)
+              end
             end
-            local change_lines = vim.split(file_diff.change, '\n')
-            for i, line in ipairs(change_lines) do
-              table.insert(modified, start_idx + i, line)
+
+            -- Insert replacement lines at start_line
+            for i = #change_lines, 1, -1 do
+              table.insert(result, d.start_line, change_lines[i])
             end
           end
 
-          modified = vim.tbl_filter(function(line)
-            return line ~= nil
-          end, modified)
-
-          opts.text = table.concat(modified, '\n')
+          opts.text = table.concat(result, '\n')
         else
           opts.text = diff.change
         end

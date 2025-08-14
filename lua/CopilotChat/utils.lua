@@ -772,6 +772,17 @@ function M.empty(v)
   return false
 end
 
+--- Split text into lines
+---@param text string The text to split
+---@return string[] A table of lines
+function M.split_lines(text)
+  if not text or text == '' then
+    return {}
+  end
+
+  return vim.split(text, '\r?\n', { trimempty = false })
+end
+
 --- Convert glob pattern to regex pattern
 --- https://github.com/davidm/lua-glob-pattern/blob/master/lua/globtopattern.lua
 ---@param g string The glob pattern
