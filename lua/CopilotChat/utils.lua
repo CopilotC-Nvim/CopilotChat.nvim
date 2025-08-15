@@ -784,13 +784,19 @@ function M.split_lines(text)
 end
 
 --- Convert glob pattern to regex pattern
---- https://github.com/davidm/lua-glob-pattern/blob/master/lua/globtopattern.lua
 ---@param g string The glob pattern
 ---@return string
 function M.glob_to_pattern(g)
+  -- Handle ** patterns by preprocessing them
+  -- Replace ** with a special placeholder to distinguish from single *
+  local DOUBLESTAR_PLACEHOLDER = '\001DOUBLESTAR\001'
+  
+  -- Replace ** with placeholder, but be careful not to replace *** or other patterns
+  g = g:gsub('%*%*', DOUBLESTAR_PLACEHOLDER)
+  
   local p = '^' -- pattern being built
   local i = 0 -- index in g
-  local c -- char at index i in g.
+  local c -- char at index i in g
 
   -- unescape glob char
   local function unescape()
@@ -893,9 +899,9 @@ function M.glob_to_pattern(g)
       p = p .. '$'
       break
     elseif c == '?' then
-      p = p .. '.'
+      p = p .. '[^/]' -- ? matches any single character except directory separator
     elseif c == '*' then
-      p = p .. '.*'
+      p = p .. '[^/]*' -- * matches any characters except directory separator
     elseif c == '[' then
       if not charset() then
         break
@@ -912,7 +918,15 @@ function M.glob_to_pattern(g)
       p = p .. escape(c)
     end
   end
+
+  -- Now handle the ** placeholder - replace with pattern that matches any path
+  -- including directory separators and zero directories
+  p = p:gsub(vim.pesc(DOUBLESTAR_PLACEHOLDER .. '/'), '.-/')  -- **/something -> .-/something
+  p = p:gsub('/' .. vim.pesc(DOUBLESTAR_PLACEHOLDER), '/.-')  -- something/** -> something/.-
+  p = p:gsub(vim.pesc(DOUBLESTAR_PLACEHOLDER), '.-')          -- standalone ** -> .-
+
   return p
 end
 
 return M
+
