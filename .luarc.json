@@ -8,7 +8,7 @@
     "after_each",
     "clear",
     "assert",
-    "print",
+    "print"
   ],
   "diagnostics.disable": ["redefined-local"]
 }
