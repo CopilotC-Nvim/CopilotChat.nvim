@@ -24,7 +24,7 @@ install-pre-commit:
 	pre-commit install
 
 test:
-	nvim --headless --noplugin -u ./scripts/test.lua
+	nvim --headless --clean -u ./scripts/test.lua
 
 all: luajit
 
