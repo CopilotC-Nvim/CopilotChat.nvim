@@ -3,8 +3,12 @@
   "diagnostics.globals": [
     "describe",
     "it",
+    "pending",
     "before_each",
-    "after_each"
+    "after_each",
+    "clear",
+    "assert",
+    "print",
   ],
   "diagnostics.disable": ["redefined-local"]
 }
