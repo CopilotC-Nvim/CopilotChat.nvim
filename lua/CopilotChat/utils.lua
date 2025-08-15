@@ -157,7 +157,7 @@ end
 
 --- Writes text to a temporary file and returns path
 ---@param text string The text to write
----@return string?
+---@return string
 function M.temp_file(text)
   local temp_file = os.tmpname()
   local f = io.open(temp_file, 'w+')
