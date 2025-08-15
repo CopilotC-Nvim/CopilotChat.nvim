@@ -519,7 +519,6 @@ cd CopilotChat.nvim
 2. Install development dependencies:
 
 ```bash
-# Install pre-commit hooks
 make install-pre-commit
 ```
 

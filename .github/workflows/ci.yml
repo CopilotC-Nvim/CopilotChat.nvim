@@ -64,8 +64,4 @@ jobs:
           luarocksVersion: "3.12.2"
 
       - name: run test
-        shell: bash
-        run: |
-          luarocks install luacheck
-          luarocks install vusted
-          vusted ./test
+        run: make test

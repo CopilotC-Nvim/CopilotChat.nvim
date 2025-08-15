@@ -19,28 +19,12 @@ BUILD_DIR := build
 
 .PHONY: help install-cli install-pre-commit install test tiktoken clean
 
-help:
-	@echo "Available commands:"
-	@echo "  install-cli       - Install Lua and Luarocks using Homebrew"
-	@echo "  install-pre-commit - Install pre-commit using pip"
-	@echo "  install           - Install vusted using Luarocks"
-	@echo "  test              - Run tests using vusted"
-	@echo "  tiktoken          - Download tiktoken_core library"
-	@echo "  clean             - Remove build directory"
-
-install-cli:
-	brew install luarocks
-	brew install lua
-
 install-pre-commit:
 	pip install pre-commit
 	pre-commit install
 
-install:
-	luarocks install vusted
-
 test:
-	vusted test
+	nvim --headless --noplugin -u ./scripts/test.lua -c "lua MiniTest.run()"
 
 all: luajit
 
