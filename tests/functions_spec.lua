@@ -37,14 +37,11 @@ describe('CopilotChat.functions', function()
     it('generates schema from uri if missing', function()
       local fn = { uri = 'file://{path}/{id}' }
       local schema = functions.parse_schema(fn)
-      assert.are.same(
-        {
-          type = 'object',
-          properties = { path = { type = 'string' }, id = { type = 'string' } },
-          required = { 'path', 'id' },
-        },
-        schema
-      )
+      assert.are.same({
+        type = 'object',
+        properties = { path = { type = 'string' }, id = { type = 'string' } },
+        required = { 'path', 'id' },
+      }, schema)
     end)
   end)
 
