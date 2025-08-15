@@ -3,7 +3,6 @@
   "diagnostics.globals": [
     "describe",
     "it",
-    "MiniTest",
     "before_each",
     "after_each"
   ],

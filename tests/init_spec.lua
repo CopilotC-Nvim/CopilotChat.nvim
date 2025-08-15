@@ -1,0 +1,7 @@
+describe('CopilotChat module', function()
+  it('should be able to load', function()
+    assert.has_no.errors(function()
+      require('CopilotChat')
+    end)
+  end)
+end)

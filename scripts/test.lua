@@ -2,7 +2,6 @@ vim.opt.runtimepath:append(vim.fn.getcwd())
 
 for name, url in pairs({
   'https://github.com/nvim-lua/plenary.nvim',
-  'https://github.com/echasnovski/mini.test',
 }) do
   local install_path = vim.fn.fnamemodify('.dependencies/' .. name, ':p')
   if vim.fn.isdirectory(install_path) == 0 then
@@ -11,6 +10,4 @@ for name, url in pairs({
   vim.opt.runtimepath:append(install_path)
 end
 
-local minitest = require('mini.test')
-minitest.setup()
-minitest.run()
+require('plenary.test_harness').test_directory('tests')
