@@ -24,7 +24,7 @@ install-pre-commit:
 	pre-commit install
 
 test:
-	nvim --headless --noplugin -u ./scripts/test.lua -c "lua MiniTest.run()"
+	nvim --headless --noplugin -u ./scripts/test.lua
 
 all: luajit
 
