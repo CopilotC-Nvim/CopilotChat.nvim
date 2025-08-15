@@ -1,5 +1,35 @@
 # Changelog
 
+## [4.5.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.4.1...v4.5.0) (2025-08-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **prompts:** callback receives the full response object instead of just content.
+
+### Features
+
+* **prompts:** add support for providing system prompt as function ([#1318](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1318)) ([33e6ffc](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/33e6ffc63b77b0340731f2b50bd962045adf9366))
+
+
+### Bug Fixes
+
+* **completion:** require tool uri for input completion ([#1328](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1328)) ([76cc416](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/76cc41653d63cfdb653f584624b4bf5e721f9514))
+* **config:** correct system_prompt type and callback usage ([#1325](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1325)) ([f99f1cd](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/f99f1cdef151ac1c950850cdcc0dbeefad00603c))
+* **prompt:** recursive system prompt expansion ([#1324](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1324)) ([26f7b4f](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/26f7b4f157ec75b168c05dc826b5fa3106cfc351)), closes [#1323](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1323)
+* **test:** run tests automatically in test script ([#1334](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1334)) ([c5057d3](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/c5057d3bb6d87e9b117b4f37162409d4c2c74e31))
+* **utils:** always exit insert mode in return_to_normal_mode ([#1313](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1313)) ([957e0a8](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/957e0a88c7d7df706380e09412c0b3f24af534ad)), closes [#1307](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1307)
+
+
+### Miscellaneous Chores
+
+* mark next release as 4.5.0 ([#1315](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1315)) ([d12f6df](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/d12f6dff0e1641f933f9941b843d094bf505a82e))
+
+
+### Code Refactoring
+
+* **prompts:** support template substitution in system_prompt ([#1312](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1312)) ([081d4c2](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/081d4c20242140bb185ebee142a65454ad375f7d))
+
 ## [4.4.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.4.0...v4.4.1) (2025-08-12)
 
 
