@@ -790,10 +790,10 @@ function M.glob_to_pattern(g)
   -- Handle ** patterns by preprocessing them
   -- Replace ** with a special placeholder to distinguish from single *
   local DOUBLESTAR_PLACEHOLDER = '\001DOUBLESTAR\001'
-  
+
   -- Replace ** with placeholder, but be careful not to replace *** or other patterns
   g = g:gsub('%*%*', DOUBLESTAR_PLACEHOLDER)
-  
+
   local p = '^' -- pattern being built
   local i = 0 -- index in g
   local c -- char at index i in g
@@ -921,12 +921,11 @@ function M.glob_to_pattern(g)
 
   -- Now handle the ** placeholder - replace with pattern that matches any path
   -- including directory separators and zero directories
-  p = p:gsub(vim.pesc(DOUBLESTAR_PLACEHOLDER .. '/'), '.-/')  -- **/something -> .-/something
-  p = p:gsub('/' .. vim.pesc(DOUBLESTAR_PLACEHOLDER), '/.-')  -- something/** -> something/.-
-  p = p:gsub(vim.pesc(DOUBLESTAR_PLACEHOLDER), '.-')          -- standalone ** -> .-
+  p = p:gsub(vim.pesc(DOUBLESTAR_PLACEHOLDER .. '/'), '.-/') -- **/something -> .-/something
+  p = p:gsub('/' .. vim.pesc(DOUBLESTAR_PLACEHOLDER), '/.-') -- something/** -> something/.-
+  p = p:gsub(vim.pesc(DOUBLESTAR_PLACEHOLDER), '.-') -- standalone ** -> .-
 
   return p
 end
 
 return M
-
