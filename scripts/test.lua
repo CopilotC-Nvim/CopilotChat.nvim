@@ -11,4 +11,6 @@ for name, url in pairs({
   vim.opt.runtimepath:append(install_path)
 end
 
-require('mini.test').setup()
+local minitest = require('mini.test')
+minitest.setup()
+minitest.run()
