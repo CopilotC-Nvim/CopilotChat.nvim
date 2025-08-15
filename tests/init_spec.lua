@@ -4,6 +4,7 @@ describe('CopilotChat module', function()
       require('CopilotChat')
     end)
   end)
+
   it('should be able to set up', function()
     assert.has_no.errors(function()
       require('CopilotChat').setup({})
