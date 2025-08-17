@@ -2,7 +2,30 @@ local utils = require('CopilotChat.utils')
 
 describe('CopilotChat.utils', function()
   local cases = {
-    { glob = 'abc.*', matches = { 'abc.txt', 'abc.' }, not_matches = { 'abc' } },
+    { glob = '', expected = '^$' },
+    { glob = 'abc', expected = '^abc$' },
+    { glob = 'ab#/.', expected = '^ab%#%/%.$' },
+    { glob = '\\\\\\ab\\c\\', expected = '^%\\abc\\$' },
+    { glob = 'abc.*', expected = '^abc%..*$', matches = { 'abc.txt', 'abc.' }, not_matches = { 'abc' } },
+    { glob = 'a[]', expected = '[^]' },
+    { glob = 'a[^]b', expected = '^ab$' },
+    { glob = 'a[!]b', expected = '^ab$' },
+    { glob = 'a[a][b]z', expected = '^a[a][b]z$' },
+    { glob = 'a[a-f]z', expected = '^a[a-f]z$' },
+    { glob = 'a[a-f0-9]z', expected = '^a[a-f0-9]z$' },
+    { glob = 'a[a-f0-]z', expected = '^a[a-f0%-]z$' },
+    { glob = 'a[!a-f]z', expected = '^a[^a-f]z$' },
+    { glob = 'a[^a-f]z', expected = '^a[^a-f]z$' },
+    { glob = 'a[\\!\\^\\-z\\]]z', expected = '^a[%!%^%-z%]]z$' },
+    { glob = 'a[\\a-\\f]z', expected = '^a[a-f]z$' },
+    { glob = 'a[', expected = '[^]' },
+    { glob = 'a[a-', expected = '[^]' },
+    { glob = 'a[a-b', expected = '[^]' },
+    { glob = 'a[!', expected = '[^]' },
+    { glob = 'a[!a', expected = '[^]' },
+    { glob = 'a[!a-', expected = '[^]' },
+    { glob = 'a[!a-b', expected = '[^]' },
+    { glob = 'a[!a-b\\]', expected = '[^]' },
     { glob = 'file.lua', matches = { 'file.lua' }, not_matches = { 'another.lua', 'file/lua' } },
     { glob = '*.lua', matches = { 'file.lua', 'another.lua' }, not_matches = { 'file.txt', 'subdir/file.lua' } },
     { glob = 'src/*.lua', matches = { 'src/main.lua', 'src/test.lua' }, not_matches = { 'src/subdir/main.lua' } },
@@ -36,6 +59,7 @@ describe('CopilotChat.utils', function()
   for _, case in ipairs(cases) do
     it('glob_to_pattern: ' .. case.glob, function()
       local pattern = utils.glob_to_pattern(case.glob)
+      assert.equals(case.expected, pattern)
       if case.matches then
         for _, str in ipairs(case.matches) do
           assert.is_true(str:match(pattern) ~= nil)
