@@ -1,6 +1,5 @@
 local async = require('plenary.async')
 local curl = require('plenary.curl')
-local scandir = require('plenary.scandir')
 local log = require('plenary.log')
 
 local M = {}
@@ -479,7 +478,7 @@ end
 ---@class CopilotChat.utils.ScanOpts
 ---@field max_count number? The maximum number of files to scan
 ---@field max_depth number? The maximum depth to scan
----@field glob? string The glob pattern to match files
+---@field pattern? string The glob pattern to match files
 ---@field hidden? boolean Whether to include hidden files
 ---@field no_ignore? boolean Whether to respect or ignore .gitignore
 
@@ -527,19 +526,69 @@ M.glob = async.wrap(function(path, opts, callback)
     return
   end
 
-  -- Fall back to scandir if rg is not available or fails
-  scandir.scan_dir_async(
-    path,
-    vim.tbl_deep_extend('force', opts, {
-      depth = opts.max_depth,
-      add_dirs = false,
-      search_pattern = opts.glob and M.glob_to_pattern(opts.glob) or nil,
-      respect_gitignore = not opts.no_ignore,
-      on_exit = function(files)
-        callback(filter_files(files, opts.max_count))
-      end,
-    })
-  )
+  -- Fallback to vim.uv.fs_scandir
+  local matchers = {}
+  if opts.pattern then
+    local file_pattern = vim.glob.to_lpeg(opts.pattern)
+    local path_pattern = vim.lpeg.P(path .. '/') * file_pattern
+
+    table.insert(matchers, function(name, dir)
+      return file_pattern:match(name) or path_pattern:match(dir .. '/' .. name)
+    end)
+  end
+
+  if not opts.hidden then
+    table.insert(matchers, function(name)
+      return not name:match('^%.')
+    end)
+  end
+
+  local data = {}
+  local next_dir = { path }
+  local current_depths = { [path] = 1 }
+
+  local function read_dir(err, fd)
+    local current_dir = table.remove(next_dir, 1)
+    local depth = current_depths[current_dir] or 1
+
+    if not err and fd then
+      while true do
+        local name, typ = vim.uv.fs_scandir_next(fd)
+        if name == nil then
+          break
+        end
+
+        local full_path = current_dir .. '/' .. name
+
+        if typ == 'directory' and not name:match('^%.git') then
+          if not opts.max_depth or depth < opts.max_depth then
+            table.insert(next_dir, full_path)
+            current_depths[full_path] = depth + 1
+          end
+        else
+          local match = true
+          for _, matcher in ipairs(matchers) do
+            if not matcher(name, current_dir) then
+              match = false
+              break
+            end
+          end
+
+          if match then
+            table.insert(data, full_path)
+          end
+        end
+      end
+    end
+
+    if #next_dir == 0 then
+      callback(data)
+    else
+      vim.uv.fs_scandir(next_dir[1], read_dir)
+    end
+  end
+
+  vim.uv.fs_scandir(path, read_dir)
 end, 3)
 
 --- Grep a directory
@@ -781,138 +830,6 @@ function M.split_lines(text)
   end
 
   return vim.split(text, '\r?\n', { trimempty = false })
-end
-
---- Convert glob pattern to regex pattern
---- https://github.com/davidm/lua-glob-pattern/blob/master/lua/globtopattern.lua
----@param g string The glob pattern
----@return string
-function M.glob_to_pattern(g)
-  local p = '^' -- pattern being built
-  local i = 0 -- index in g
-  local c -- char at index i in g.
-
-  -- unescape glob char
-  local function unescape()
-    if c == '\\' then
-      i = i + 1
-      c = g:sub(i, i)
-      if c == '' then
-        p = '[^]'
-        return false
-      end
-    end
-    return true
-  end
-
-  -- escape pattern char
-  local function escape(c)
-    return c:match('^%w$') and c or '%' .. c
-  end
-
-  -- Convert tokens at end of charset.
-  local function charset_end()
-    while 1 do
-      if c == '' then
-        p = '[^]'
-        return false
-      elseif c == ']' then
-        p = p .. ']'
-        break
-      else
-        if not unescape() then
-          break
-        end
-        local c1 = c
-        i = i + 1
-        c = g:sub(i, i)
-        if c == '' then
-          p = '[^]'
-          return false
-        elseif c == '-' then
-          i = i + 1
-          c = g:sub(i, i)
-          if c == '' then
-            p = '[^]'
-            return false
-          elseif c == ']' then
-            p = p .. escape(c1) .. '%-]'
-            break
-          else
-            if not unescape() then
-              break
-            end
-            p = p .. escape(c1) .. '-' .. escape(c)
-          end
-        elseif c == ']' then
-          p = p .. escape(c1) .. ']'
-          break
-        else
-          p = p .. escape(c1)
-          i = i - 1 -- put back
-        end
-      end
-      i = i + 1
-      c = g:sub(i, i)
-    end
-    return true
-  end
-
-  -- Convert tokens in charset.
-  local function charset()
-    i = i + 1
-    c = g:sub(i, i)
-    if c == '' or c == ']' then
-      p = '[^]'
-      return false
-    elseif c == '^' or c == '!' then
-      i = i + 1
-      c = g:sub(i, i)
-      if c == ']' then
-        -- ignored
-      else
-        p = p .. '[^'
-        if not charset_end() then
-          return false
-        end
-      end
-    else
-      p = p .. '['
-      if not charset_end() then
-        return false
-      end
-    end
-    return true
-  end
-
-  -- Convert tokens.
-  while 1 do
-    i = i + 1
-    c = g:sub(i, i)
-    if c == '' then
-      p = p .. '$'
-      break
-    elseif c == '?' then
-      p = p .. '.'
-    elseif c == '*' then
-      p = p .. '.*'
-    elseif c == '[' then
-      if not charset() then
-        break
-      end
-    elseif c == '\\' then
-      i = i + 1
-      c = g:sub(i, i)
-      if c == '' then
-        p = p .. '\\$'
-        break
-      end
-      p = p .. escape(c)
-    else
-      p = p .. escape(c)
-    end
-  end
-  return p
 end
 
 return M
