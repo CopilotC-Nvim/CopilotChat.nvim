@@ -1,7 +1,6 @@
 ---@class CopilotChat.client.AskOptions
 ---@field headless boolean
 ---@field history table<CopilotChat.client.Message>
----@field selection CopilotChat.select.Selection?
 ---@field tools table<CopilotChat.client.Tool>?
 ---@field resources table<CopilotChat.client.Resource>?
 ---@field system_prompt string
@@ -32,11 +31,16 @@
 ---@field description string description of the tool
 ---@field schema table? schema of the tool
 
+---@class CopilotChat.client.ResourceAnnotations
+---@field start_line number?
+---@field end_line number?
+
 ---@class CopilotChat.client.Resource
 ---@field data string
 ---@field name string?
 ---@field mimetype string?
 ---@field uri string?
+---@field annotations CopilotChat.client.ResourceAnnotations?
 
 ---@class CopilotChat.client.Model
 ---@field provider string?
@@ -106,29 +110,6 @@ local function generate_resource_block(content, mimetype, name, path, start_line
   end
 end
 
---- Generate messages for the given selection
---- @param selection CopilotChat.select.Selection
---- @return CopilotChat.client.Message?
-local function generate_selection_message(selection)
-  local content = selection.content
-
-  if not content or content == '' then
-    return nil
-  end
-
-  return {
-    content = generate_resource_block(
-      content,
-      selection.filetype,
-      "User's active selection",
-      selection.filename,
-      selection.start_line,
-      selection.end_line
-    ),
-    role = constants.ROLE.USER,
-  }
-end
-
 --- Generate messages for the given resources
 --- @param resources CopilotChat.client.Resource[]
 --- @return table<CopilotChat.client.Message>
@@ -139,8 +120,17 @@ local function generate_resource_messages(resources)
       return resource.data and resource.data ~= ''
     end)
     :map(function(resource)
+      local start_line = resource.annotations and resource.annotations.start_line or 1
+      local end_line = resource.annotations and resource.annotations.end_line or nil
       return {
-        content = generate_resource_block(resource.data, resource.mimetype, resource.uri, resource.name, 1, nil),
+        content = generate_resource_block(
+          resource.data,
+          resource.mimetype,
+          resource.uri,
+          resource.name,
+          start_line,
+          end_line
+        ),
         role = constants.ROLE.USER,
       }
     end)
@@ -359,20 +349,14 @@ function Client:ask(prompt, opts)
   local history = not opts.headless and vim.deepcopy(opts.history) or {}
   local tool_calls = utils.ordered_map()
   local generated_messages = {}
-  local selection_message = opts.selection and generate_selection_message(opts.selection)
   local resource_messages = generate_resource_messages(opts.resources)
-
-  if selection_message then
-    table.insert(generated_messages, selection_message)
-  end
 
   if max_tokens then
     -- Count required tokens that we cannot reduce
-    local selection_tokens = selection_message and tiktoken:count(selection_message.content) or 0
     local prompt_tokens = tiktoken:count(prompt)
     local system_tokens = tiktoken:count(opts.system_prompt)
     local resource_tokens = #resource_messages > 0 and tiktoken:count(resource_messages[1].content) or 0
-    local required_tokens = prompt_tokens + system_tokens + selection_tokens + resource_tokens
+    local required_tokens = prompt_tokens + system_tokens + resource_tokens
 
     -- Calculate how many tokens we can use for history
     local history_limit = max_tokens - required_tokens

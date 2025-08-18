@@ -95,7 +95,6 @@ EOF
 - **Sticky Prompts** (`> <text>`) - Persist context across single chat session
 - **Models** (`$<model>`) - Specify which AI model to use for the chat
 - **Prompts** (`/PromptName`) - Use predefined prompt templates for common tasks
-- **Selection** - Automatically includes current user selection in prompts
 
 ## Examples
 
@@ -266,6 +265,7 @@ Types of copilot highlights:
 
 - `CopilotChatHeader` - Header highlight in chat buffer
 - `CopilotChatSeparator` - Separator highlight in chat buffer
+- `CopilotChatSelection` - Selection highlight in source buffer
 - `CopilotChatStatus` - Status and spinner in chat buffer
 - `CopilotChatHelp` - Help text in chat buffer
 - `CopilotChatResource` - Resource highlight in chat buffer (e.g. `#file`, `#gitdiff`)
@@ -273,7 +273,6 @@ Types of copilot highlights:
 - `CopilotChatPrompt` - Prompt highlight in chat buffer (e.g. `/Explain`, `/Review`)
 - `CopilotChatModel` - Model highlight in chat buffer (e.g. `$gpt-4.1`)
 - `CopilotChatUri` - URI highlight in chat buffer (e.g. `##https://...`)
-- `CopilotChatSelection` - Selection highlight in source buffer
 - `CopilotChatAnnotation` - Annotation highlight in chat buffer (file headers, tool call headers, tool call body)
 
 ## Prompts
@@ -333,27 +332,6 @@ Define your own functions in the configuration with input handling and schema:
   }
 }
 ```
-
-## Selections
-
-Control what content is automatically included:
-
-```lua
-{
-  -- Use visual selection, fallback to current line
-  selection = function(source)
-    return require('CopilotChat.select').visual(source) or
-           require('CopilotChat.select').line(source)
-  end,
-}
-```
-
-**Available selections:**
-
-- `require('CopilotChat.select').visual` - Current visual selection
-- `require('CopilotChat.select').buffer` - Entire buffer content
-- `require('CopilotChat.select').line` - Current line content
-- `require('CopilotChat.select').unnamed` - Unnamed register (last deleted/changed/yanked)
 
 ## Providers
 
@@ -429,10 +407,6 @@ chat.stop()                   -- Stop current output
 -- Source Management
 chat.get_source()             -- Get the current source buffer and window
 chat.set_source(winnr)        -- Set the source window
-
--- Selection Management
-chat.get_selection()                                   -- Get the current selection
-chat.set_selection(bufnr, start_line, end_line, clear) -- Set or clear selection
 
 -- Prompt & Model Management
 chat.select_prompt(config)    -- Open prompt selector with optional config
