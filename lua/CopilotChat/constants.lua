@@ -15,5 +15,5 @@ return {
     RESOURCE = '#',
     URI = '##',
     PROMPT = '/',
-  }
+  },
 }
