@@ -404,6 +404,21 @@ Add custom AI providers:
 - `copilot` - GitHub Copilot (default)
 - `github_models` - GitHub Marketplace models (disabled by default)
 
+## Github Enterprise
+
+If your employer provides access to Copilot via a Github Enterprise instance ("GHEC") you can provide the respective URLs with the following config keys:
+
+```lua
+{
+  -- github instance main address w/o protocol prefix, default: "github.com" (without "https://"). E.g. a github-enterprise address might look like this: "mycorp.ghe.com"
+  github_instance_url = 'mycorp.ghe.com',
+  -- github instance api address w/o protocol prefix, default: "api.github.com" (without "https://"). E.g.: "api.mycorp.ghe.com"
+  github_instance_api_url = 'api.mycorp.ghe.com',
+}
+```
+
+(These keys are used in the default Copilot "provider", this is an alternative to defining a full custom provider)
+
 # API Reference
 
 ## Core

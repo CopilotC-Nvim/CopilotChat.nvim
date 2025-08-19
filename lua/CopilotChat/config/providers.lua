@@ -2,8 +2,21 @@ local constants = require('CopilotChat.constants')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local plenary_utils = require('plenary.async.util')
+local log = require('plenary.log')
 
 local EDITOR_VERSION = 'Neovim/' .. vim.version().major .. '.' .. vim.version().minor .. '.' .. vim.version().patch
+
+---@class CopilotChat
+---@field config CopilotChat.config.Config
+---@field chat CopilotChat.ui.chat.Chat
+local MC = setmetatable({}, {
+  __index = function(t, key)
+    if key == 'config' then
+      return require('CopilotChat.config')
+    end
+    return rawget(t, key)
+  end,
+})
 
 local token_cache = nil
 local unsaved_token_cache = {}
@@ -50,7 +63,7 @@ end
 ---@return string
 local function github_device_flow(tag, client_id, scope)
   local function request_device_code()
-    local res = utils.curl_post('https://github.com/login/device/code', {
+    local res = utils.curl_post('https://' .. MC.config.github_instance_url .. '/login/device/code', {
       body = {
         client_id = client_id,
         scope = scope,
@@ -66,7 +79,7 @@ local function github_device_flow(tag, client_id, scope)
     while true do
       plenary_utils.sleep(interval * 1000)
 
-      local res = utils.curl_post('https://github.com/login/oauth/access_token', {
+      local res = utils.curl_post('https://' .. MC.config.github_instance_url .. '/login/oauth/access_token', {
         body = {
           client_id = client_id,
           device_code = device_code,
@@ -146,7 +159,7 @@ local function get_github_copilot_token(tag)
         local parsed_data = utils.json_decode(file_data)
         if parsed_data then
           for key, value in pairs(parsed_data) do
-            if string.find(key, 'github.com') and value and value.oauth_token then
+            if string.find(key, MC.config.github_instance_url) and value and value.oauth_token then
               return set_token(tag, value.oauth_token, false)
             end
           end
@@ -173,7 +186,7 @@ local function get_github_models_token(tag)
 
   -- loading token from gh cli if available
   if vim.fn.executable('gh') == 0 then
-    local result = utils.system({ 'gh', 'auth', 'token', '-h', 'github.com' })
+    local result = utils.system({ 'gh', 'auth', 'token', '-h', MC.config.github_instance_url })
     if result and result.code == 0 and result.stdout then
       local gh_token = vim.trim(result.stdout)
       if gh_token ~= '' and not gh_token:find('no oauth token') then
@@ -214,10 +227,12 @@ M.copilot = {
   endpoints_api = '',
 
   get_headers = function()
-    local response, err = utils.curl_get('https://api.github.com/copilot_internal/v2/token', {
+    local url = 'https://' .. MC.config.github_instance_api_url .. '/copilot_internal/v2/token'
+    log.debug('get headers - get ' .. url)
+    local response, err = utils.curl_get(url, {
       json_response = true,
       headers = {
-        ['Authorization'] = 'Token ' .. get_github_copilot_token('github_copilot'),
+        ['Authorization'] = 'Token ' .. get_github_copilot_token(MC.config.github_instance_api_url),
       },
     })
 
@@ -249,10 +264,10 @@ M.copilot = {
   end,
 
   get_info = function(headers)
-    local response, err = utils.curl_get('https://api.github.com/copilot_internal/user', {
+    local response, err = utils.curl_get('https://' .. MC.config.github_instance_url .. '/copilot_internal/user', {
       json_response = true,
       headers = {
-        ['Authorization'] = 'Token ' .. get_github_copilot_token('github_copilot'),
+        ['Authorization'] = 'Token ' .. get_github_copilot_token(MC.config.github_instance_url),
       },
     })
 
@@ -299,7 +314,7 @@ M.copilot = {
   end,
 
   get_models = function(headers)
-    local response, err = utils.curl_get('https://api.githubcopilot.com/models', {
+    log.info('getting models .. headers: ' .. utils.to_string(headers))
     local response, err = utils.curl_get(M.endpoints_api .. '/models', {
       json_response = true,
       headers = headers,
