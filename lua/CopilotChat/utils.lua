@@ -219,7 +219,7 @@ function M.filetype(filename)
     fs_access = false,
   })
 
-  if ft == '' or not ft then
+  if ft == '' or not ft and not vim.in_fast_event() then
     return vim.filetype.match({ filename = filename })
   end
 
