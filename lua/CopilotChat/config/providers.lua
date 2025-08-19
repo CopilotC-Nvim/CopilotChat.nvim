@@ -205,11 +205,14 @@ end
 ---@field prepare_input nil|fun(inputs:table<CopilotChat.client.Message>, opts:CopilotChat.config.providers.Options):table
 ---@field prepare_output nil|fun(output:table, opts:CopilotChat.config.providers.Options):CopilotChat.config.providers.Output
 ---@field get_url nil|fun(opts:CopilotChat.config.providers.Options):string
+---@field endpoints_api string?
 
 ---@type table<string, CopilotChat.config.providers.Provider>
 local M = {}
 
 M.copilot = {
+  endpoints_api = '',
+
   get_headers = function()
     local response, err = utils.curl_get('https://api.github.com/copilot_internal/v2/token', {
       json_response = true,
@@ -220,6 +223,20 @@ M.copilot = {
 
     if err then
       error(err)
+    end
+
+    if response.body and response.body.endpoints and response.body.endpoints.api then
+      log.info('get_headers ok, authenticated. Use api endpoint: ' .. response.body.endpoints.api)
+      M.endpoints_api = response.body.endpoints.api
+    else
+      log.error(
+        'get_headers authenticated, but missing key "endpoints.api" in server response. response: '
+          .. utils.to_string(response)
+      )
+      error(
+        'get_headers authenticated, but missing key "endpoints.api" in server response. Check log for details: '
+          .. MC.config.log_path
+      )
     end
 
     return {
@@ -283,6 +300,7 @@ M.copilot = {
 
   get_models = function(headers)
     local response, err = utils.curl_get('https://api.githubcopilot.com/models', {
+    local response, err = utils.curl_get(M.endpoints_api .. '/models', {
       json_response = true,
       headers = headers,
     })
@@ -322,7 +340,7 @@ M.copilot = {
 
     for _, model in ipairs(models) do
       if not model.policy then
-        utils.curl_post('https://api.githubcopilot.com/models/' .. model.id .. '/policy', {
+        utils.curl_post(M.endpoints_api .. '/models/' .. model.id .. '/policy', {
           headers = headers,
           json_request = true,
           body = { state = 'enabled' },
@@ -448,7 +466,7 @@ M.copilot = {
   end,
 
   get_url = function()
-    return 'https://api.githubcopilot.com/chat/completions'
+    return M.endpoints_api .. '/chat/completions'
   end,
 }
 
