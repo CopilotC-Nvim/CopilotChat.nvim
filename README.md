@@ -154,7 +154,7 @@ When you use `@copilot`, the LLM can call functions like `glob`, `file`, `gitdif
 | -       | `gh`    | Show help message                          |
 
 > [!WARNING]
-> Some plugins (e.g. `copilot.vim`) may also map common keys like `<Tab>` in insert mode.  
+> Some plugins (e.g. `copilot.vim`) may also map common keys like `<Tab>` in insert mode.
 > To avoid conflicts, disable Copilot's default `<Tab>` mapping with:
 >
 > ```lua
