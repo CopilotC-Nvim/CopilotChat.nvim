@@ -438,6 +438,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/488088?v=4",
       "profile": "https://mihamina.rktmb.org",
       "contributions": ["doc", "code"]
+    },
+    {
+      "login": "AjmalShajahan",
+      "name": "Ajmal S",
+      "avatar_url": "https://avatars.githubusercontent.com/u/23806715?v=4",
+      "profile": "http://ajmalshajahan.me",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
