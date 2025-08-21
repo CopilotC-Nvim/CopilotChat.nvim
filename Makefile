@@ -10,6 +10,9 @@ else ifeq ($(UNAME), Darwin)
 else ifeq ($(UNAME), Windows_NT)
     OS := windows
     EXT := dll
+else ifneq ($(findstring MSYS_NT,$(UNAME)),)
+    OS := windows
+    EXT := dll
 else
     $(error Unsupported operating system: $(UNAME))
 endif
