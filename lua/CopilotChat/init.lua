@@ -374,6 +374,36 @@ function M.resolve_functions(prompt, config)
     })
   end
 
+  -- Validate file references before processing
+  local missing_files = {}
+  for _, pattern in ipairs(matches:keys()) do
+    if not utils.empty(pattern) then
+      local match = matches:get(pattern)
+      local name = match.word
+      local input = match.input
+
+      -- Check if this is a file function reference
+      local tool = M.config.functions[name]
+      if tool and tool.uri and tool.uri == 'file://{path}' then
+        -- Extract the file path from input
+        local file_path = input
+        if type(input) == 'string' and input ~= '' then
+          -- Validate the file exists
+          local resources = require('CopilotChat.resources')
+          if not resources.validate_file(file_path) then
+            table.insert(missing_files, file_path)
+          end
+        end
+      end
+    end
+  end
+
+  -- If any files are missing, abort with error
+  if #missing_files > 0 then
+    local error_msg = 'Referenced file(s) not found: ' .. table.concat(missing_files, ', ')
+    error(error_msg)
+  end
+
   -- Resolve each function reference
   local function expand_function(name, input)
     notify.publish(notify.STATUS, 'Running function: ' .. name)
