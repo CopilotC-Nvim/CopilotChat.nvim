@@ -31,6 +31,7 @@
 ---@field highlight_headers boolean?
 ---@field auto_follow_cursor boolean?
 ---@field auto_insert_mode boolean?
+---@field auto_fold boolean?
 ---@field insert_at_end boolean?
 ---@field clear_chat_on_new_prompt boolean?
 
@@ -90,6 +91,7 @@ return {
   highlight_headers = true, -- Highlight headers in chat
   auto_follow_cursor = true, -- Auto-follow cursor in chat
   auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
+  auto_fold = false, -- Automatically non-assistant messages in chat
   insert_at_end = false, -- Move cursor to end of buffer when inserting text
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
 
