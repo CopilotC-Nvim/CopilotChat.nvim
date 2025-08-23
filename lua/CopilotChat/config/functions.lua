@@ -280,7 +280,7 @@ return {
         scope = {
           type = 'string',
           description = 'Scope of buffers to use for retrieving diagnostics.',
-          enum = { 'current', 'listed', 'visible' },
+          enum = { 'current', 'listed', 'visible', 'selection' },
           default = 'current',
         },
         severity = {
@@ -299,7 +299,7 @@ return {
       local buffers = {}
 
       -- Get buffers based on scope
-      if scope == 'current' then
+      if scope == 'current' or scope == 'selection' then
         if source and source.bufnr and utils.buf_valid(source.bufnr) then
           buffers = { source.bufnr }
         end
@@ -317,6 +317,19 @@ return {
         end, vim.api.nvim_list_bufs())
       end
 
+      -- By default, collect from the whole buffer
+      local selection_start_line = 1
+      local selection_end_line = vim.api.nvim_buf_line_count(source.bufnr)
+      -- Determine selection range if scope is 'selection'
+      if scope == 'selection' then
+        local select = require('CopilotChat.select')
+        local selection = select.visual(source)
+        if selection then
+          selection_start_line = selection.start_line
+          selection_end_line = selection.end_line
+        end
+      end
+
       -- Collect diagnostics for each buffer
       for _, bufnr in ipairs(buffers) do
         local name = vim.api.nvim_buf_get_name(bufnr)
@@ -329,20 +342,26 @@ return {
         if #diagnostics > 0 then
           local diag_lines = {}
           for _, diag in ipairs(diagnostics) do
-            local severity = vim.diagnostic.severity[diag.severity] or 'UNKNOWN'
-            local line_text = vim.api.nvim_buf_get_lines(bufnr, diag.lnum, diag.lnum + 1, false)[1] or ''
+            -- Diagnostics.lnum are 0-indexed, so add 1 for comparison
+            local diag_lnum = diag.lnum + 1
+            if scope == 'selection' and (diag_lnum < selection_start_line or diag_lnum > selection_end_line) then
+              -- Skip diagnostics outside the selection range
+            else
+              local severity = vim.diagnostic.severity[diag.severity] or 'UNKNOWN'
+              local line_text = vim.api.nvim_buf_get_lines(bufnr, diag.lnum, diag.lnum + 1, false)[1] or ''
 
-            table.insert(
-              diag_lines,
-              string.format(
-                '%s line=%d-%d: %s\n  > %s',
-                severity,
-                diag.lnum + 1,
-                diag.end_lnum and (diag.end_lnum + 1) or (diag.lnum + 1),
-                diag.message,
-                line_text
+              table.insert(
+                diag_lines,
+                string.format(
+                  '%s line=%d-%d: %s\n  > %s',
+                  severity,
+                  diag.lnum + 1,
+                  diag.end_lnum and (diag.end_lnum + 1) or (diag.lnum + 1),
+                  diag.message,
+                  line_text
+                )
               )
-            )
+            end
           end
 
           table.insert(out, {
