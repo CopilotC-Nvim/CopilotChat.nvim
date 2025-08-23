@@ -87,11 +87,11 @@ return {
 
   show_help = true, -- Shows help message as virtual lines when waiting for user input
   show_folds = true, -- Shows folds for sections in chat
+  auto_fold = false, -- Automatically non-assistant messages in chat (requires 'show_folds' to be true)
   highlight_selection = true, -- Highlight selection
   highlight_headers = true, -- Highlight headers in chat
   auto_follow_cursor = true, -- Auto-follow cursor in chat
   auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
-  auto_fold = false, -- Automatically non-assistant messages in chat
   insert_at_end = false, -- Move cursor to end of buffer when inserting text
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
 
