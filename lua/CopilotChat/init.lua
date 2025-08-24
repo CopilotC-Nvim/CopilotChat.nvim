@@ -374,36 +374,6 @@ function M.resolve_functions(prompt, config)
     })
   end
 
-  -- Validate file references before processing
-  local missing_files = {}
-  for _, pattern in ipairs(matches:keys()) do
-    if not utils.empty(pattern) then
-      local match = matches:get(pattern)
-      local name = match.word
-      local input = match.input
-
-      -- Check if this is a file function reference
-      local tool = M.config.functions[name]
-      if tool and tool.uri and tool.uri == 'file://{path}' then
-        -- Extract the file path from input
-        local file_path = input
-        if type(input) == 'string' and input ~= '' then
-          -- Validate the file exists
-          local resources = require('CopilotChat.resources')
-          if not resources.validate_file(file_path) then
-            table.insert(missing_files, file_path)
-          end
-        end
-      end
-    end
-  end
-
-  -- If any files are missing, abort with error
-  if #missing_files > 0 then
-    local error_msg = 'Referenced file(s) not found: ' .. table.concat(missing_files, ', ')
-    error(error_msg)
-  end
-
   -- Resolve each function reference
   local function expand_function(name, input)
     notify.publish(notify.STATUS, 'Running function: ' .. name)
@@ -443,28 +413,24 @@ function M.resolve_functions(prompt, config)
 
     local schema = tools[name] and tools[name].schema or nil
     local result = ''
-    local ok, output = pcall(tool.resolve, functions.parse_input(input, schema), state.source or {}, prompt)
-    if not ok then
-      result = string.format(BLOCK_OUTPUT_FORMAT, 'error', utils.make_string(output))
-    else
-      for _, content in ipairs(output) do
-        if content then
-          local content_out = nil
-          if content.uri then
-            content_out = '##' .. content.uri
-            table.insert(resolved_resources, content)
-            if tool_id then
-              table.insert(state.sticky, content_out)
-            end
-          else
-            content_out = string.format(BLOCK_OUTPUT_FORMAT, utils.mimetype_to_filetype(content.mimetype), content.data)
+    local output = tool.resolve(functions.parse_input(input, schema), state.source or {}, prompt)
+    for _, content in ipairs(output) do
+      if content then
+        local content_out = nil
+        if content.uri then
+          content_out = '##' .. content.uri
+          table.insert(resolved_resources, content)
+          if tool_id then
+            table.insert(state.sticky, content_out)
           end
-
-          if not utils.empty(result) then
-            result = result .. '\n'
-          end
-          result = result .. content_out
+        else
+          content_out = string.format(BLOCK_OUTPUT_FORMAT, utils.mimetype_to_filetype(content.mimetype), content.data)
         end
+
+        if not utils.empty(result) then
+          result = result .. '\n'
+        end
+        result = result .. content_out
       end
     end
 

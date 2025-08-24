@@ -99,16 +99,4 @@ function M.get_url(url)
   return content, utils.filetype_to_mimetype(ft)
 end
 
---- Validate that a file exists and is readable
----@param filename string
----@return boolean
-function M.validate_file(filename)
-  local filetype = utils.filetype(filename)
-  if not filetype then
-    return false
-  end
-  local content = utils.read_file(filename)
-  return content ~= nil and content ~= ''
-end
-
 return M
