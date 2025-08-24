@@ -450,6 +450,18 @@ function Chat:add_message(message, replace)
     or current_message.role ~= message.role
     or (message.id and current_message.id ~= message.id)
 
+  if
+    self.config.auto_fold
+    and current_message
+    and current_message.role ~= constants.ROLE.ASSISTANT
+    and message.role ~= constants.ROLE.USER
+    and self:visible()
+  then
+    vim.api.nvim_win_call(self.winnr, function()
+      vim.cmd('normal! zc')
+    end)
+  end
+
   if is_new then
     -- Add appropriate header based on role and generate a new ID if not provided
     message.id = message.id or utils.uuid()
@@ -488,6 +500,12 @@ function Chat:add_message(message, replace)
     -- Append to the current message
     current_message.content = current_message.content .. message.content
     self:append(message.content)
+  end
+
+  if self.config.auto_fold and message.role == constants.ROLE.ASSISTANT and self:visible() then
+    vim.api.nvim_win_call(self.winnr, function()
+      vim.cmd('normal! zo')
+    end)
   end
 end
 

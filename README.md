@@ -228,12 +228,13 @@ Most users only need to configure a few options:
   },
 
   headers = {
-    user = '👤 You: ',
-    assistant = '🤖 Copilot: ',
-    tool = '🔧 Tool: ',
+    user = '👤 You',
+    assistant = '🤖 Copilot',
+    tool = '🔧 Tool',
   },
+
   separator = '━━',
-  show_folds = false, -- Disable folding for cleaner look
+  auto_fold = true, -- Automatically folds non-assistant messages
 }
 ```
 
