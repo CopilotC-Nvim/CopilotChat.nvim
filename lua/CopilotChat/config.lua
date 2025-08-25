@@ -20,6 +20,7 @@
 ---@field resources string|table<string>|nil
 ---@field sticky string|table<string>|nil
 ---@field language string?
+---@field selection 'visual'|'unnamed'|nil
 ---@field temperature number?
 ---@field headless boolean?
 ---@field callback nil|fun(response: CopilotChat.client.Message, source: CopilotChat.source)
@@ -62,6 +63,7 @@ return {
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
   language = 'English', -- Default language to use for answers
 
+  selection = 'visual', -- Selection source
   temperature = 0.1, -- Result temperature
   headless = false, -- Do not write to chat buffer and use history (useful for using custom processing)
   callback = nil, -- Function called when full response is received
