@@ -230,6 +230,8 @@ All predefined functions belong to the `copilot` group.
 
   register      Provides access to specified Vim register #register:+
 
+  selection     Includes the current visual selection     #selection
+
   url           Fetches content from a specified URL      #url:https://...
   ------------------------------------------------------------------------------
 
