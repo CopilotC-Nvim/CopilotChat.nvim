@@ -250,19 +250,21 @@ function Client:models()
       ipairs(get_cached(self.provider_cache[provider_name], 'models', function()
         notify.publish(notify.STATUS, 'Fetching models from ' .. provider_name)
 
-        local ok, headers = pcall(self.authenticate, self, provider_name)
+        local ok, headers_or_err = pcall(self.authenticate, self, provider_name)
         if not ok then
-          log.warn('Failed to authenticate with ' .. provider_name .. ': ' .. headers)
+          log.error('Failed to authenticate with ' .. provider_name .. ': ' .. headers_or_err)
+          error(headers_or_err)
           return {}
         end
 
-        local ok, models = pcall(provider.get_models, headers)
+        local ok, models_or_err = pcall(provider.get_models, headers_or_err)
         if not ok then
-          log.warn('Failed to fetch models from ' .. provider_name .. ': ' .. models)
+          log.error('Failed to fetch models from ' .. provider_name .. ': ' .. models_or_err)
+          error(models_or_err)
           return {}
         end
 
-        return models or {}
+        return models_or_err or {}
       end))
     do
       model.provider = provider_name
