@@ -412,14 +412,15 @@ function M.resolve_functions(prompt, config)
     end
 
     local schema = tools[name] and tools[name].schema or nil
-    local result = ''
     local ok, output
-    if config.stop_on_tool_failure then
+    if config.stop_on_function_failure then
       output = tool.resolve(functions.parse_input(input, schema), state.source)
       ok = true
     else
       ok, output = pcall(tool.resolve, functions.parse_input(input, schema), state.source)
     end
+
+    local result = ''
     if not ok then
       result = string.format(BLOCK_OUTPUT_FORMAT, 'error', utils.make_string(output))
     else
