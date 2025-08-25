@@ -167,6 +167,10 @@ function M.complete(without_input)
       local items = M.items()
       utils.schedule_main()
 
+      if not vim.api.nvim_win_is_valid(win) then
+        return
+      end
+
       local row_changed = vim.api.nvim_win_get_cursor(win)[1] ~= row
       local mode = vim.api.nvim_get_mode().mode
       if row_changed or not (mode == 'i' or mode == 'ic') then
