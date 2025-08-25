@@ -179,6 +179,7 @@ All predefined functions belong to the `copilot` group.
 | `grep`        | Searches for a pattern across files in workspace | `#grep:TODO`           |
 | `quickfix`    | Includes content of files in quickfix list       | `#quickfix`            |
 | `register`    | Provides access to specified Vim register        | `#register:+`          |
+| `selection`   | Includes the current visual selection            | `#selection`           |
 | `url`         | Fetches content from a specified URL             | `#url:https://...`     |
 
 ## Predefined Prompts
