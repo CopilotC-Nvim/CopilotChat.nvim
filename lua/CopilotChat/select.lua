@@ -8,6 +8,7 @@
 
 local constants = require('CopilotChat.constants')
 local utils = require('CopilotChat.utils')
+local config = require('CopilotChat.config')
 
 local M = {}
 
@@ -33,6 +34,16 @@ end
 function M.unnamed(_)
   vim.deprecate('CopilotChat.select.unnamed', '#selection', '5.0.0', constants.PLUGIN_NAME)
   return nil
+end
+
+--- Get the marks used for selection
+---@return string[]
+function M.marks()
+  local marks = { '<', '>' }
+  if config.selection == 'unnamed' then
+    marks = { '[', ']' }
+  end
+  return marks
 end
 
 --- Highlight selection in target buffer or clear it
@@ -68,8 +79,9 @@ function M.get(bufnr)
     return nil
   end
 
-  local start_line = unpack(vim.api.nvim_buf_get_mark(bufnr, '<'))
-  local finish_line = unpack(vim.api.nvim_buf_get_mark(bufnr, '>'))
+  local marks = M.marks()
+  local start_line = unpack(vim.api.nvim_buf_get_mark(bufnr, marks[1]))
+  local finish_line = unpack(vim.api.nvim_buf_get_mark(bufnr, marks[2]))
   if start_line == 0 or finish_line == 0 then
     return nil
   end
@@ -106,17 +118,17 @@ function M.set(bufnr, winnr, start_line, end_line)
     return
   end
 
+  local marks = M.marks()
+
   if not start_line or not end_line then
-    for _, mark in ipairs({ '<', '>', '[', ']' }) do
+    for _, mark in ipairs(marks) do
       pcall(vim.api.nvim_buf_del_mark, bufnr, mark)
     end
     return
   end
 
-  pcall(vim.api.nvim_buf_set_mark, bufnr, '<', start_line, 0, {})
-  pcall(vim.api.nvim_buf_set_mark, bufnr, '>', end_line, 0, {})
-  pcall(vim.api.nvim_buf_set_mark, bufnr, '[', start_line, 0, {})
-  pcall(vim.api.nvim_buf_set_mark, bufnr, ']', end_line, 0, {})
+  pcall(vim.api.nvim_buf_set_mark, bufnr, marks[1], start_line, 0, {})
+  pcall(vim.api.nvim_buf_set_mark, bufnr, marks[2], end_line, 0, {})
 
   if winnr and vim.api.nvim_win_is_valid(winnr) then
     pcall(vim.api.nvim_win_set_cursor, winnr, { start_line, 0 })
