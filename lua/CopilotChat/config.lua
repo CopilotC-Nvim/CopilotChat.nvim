@@ -20,7 +20,6 @@
 ---@field resources string|table<string>|nil
 ---@field sticky string|table<string>|nil
 ---@field language string?
----@field selection 'visual'|'unnamed'|nil
 ---@field temperature number?
 ---@field headless boolean?
 ---@field callback nil|fun(response: CopilotChat.client.Message, source: CopilotChat.source)
@@ -35,7 +34,7 @@
 ---@field auto_fold boolean?
 ---@field insert_at_end boolean?
 ---@field clear_chat_on_new_prompt boolean?
----@field stop_on_tool_failure boolean?
+---@field stop_on_function_failure boolean?
 
 --- CopilotChat default configuration
 ---@class CopilotChat.config.Config : CopilotChat.config.Shared
@@ -43,6 +42,7 @@
 ---@field log_level 'trace'|'debug'|'info'|'warn'|'error'|'fatal'?
 ---@field proxy string?
 ---@field allow_insecure boolean?
+---@field selection 'visual'|'unnamed'|nil
 ---@field chat_autocomplete boolean?
 ---@field log_path string?
 ---@field history_path string?
@@ -64,7 +64,6 @@ return {
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
   language = 'English', -- Default language to use for answers
 
-  selection = 'visual', -- Selection source
   temperature = 0.1, -- Result temperature
   headless = false, -- Do not write to chat buffer and use history (useful for using custom processing)
   callback = nil, -- Function called when full response is received
@@ -95,7 +94,7 @@ return {
   auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
   insert_at_end = false, -- Move cursor to end of buffer when inserting text
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
-  stop_on_tool_failure = false, -- Stop processing prompt if any tool fails (preserves quota)
+  stop_on_function_failure = false, -- Stop processing prompt if any function fails (preserves quota)
 
   -- Static config starts here (can be configured only via setup function)
 
@@ -104,6 +103,7 @@ return {
   proxy = nil, -- [protocol://]host[:port] Use this proxy
   allow_insecure = false, -- Allow insecure server connections
 
+  selection = 'visual', -- Selection source
   chat_autocomplete = true, -- Enable chat autocompletion (when disabled, requires manual `mappings.complete` trigger)
 
   log_path = vim.fn.stdpath('state') .. '/CopilotChat.log', -- Default path to log file
