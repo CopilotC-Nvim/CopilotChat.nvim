@@ -1,5 +1,6 @@
 local async = require('plenary.async')
 local utils = require('CopilotChat.utils')
+local files = require('CopilotChat.utils.files')
 local file_cache = {}
 local url_cache = {}
 
@@ -9,18 +10,19 @@ local M = {}
 ---@param filename string
 ---@return string?, string?
 function M.get_file(filename)
-  local filetype = utils.filetype(filename)
+  local filetype = files.filetype(filename)
   if not filetype then
     return nil
   end
-  local modified = utils.file_mtime(filename)
-  if not modified then
+  local err, stat = async.uv.fs_stat(filename)
+  if err or not stat then
     return nil
   end
+  local modified = stat.mtime.sec
 
   local data = file_cache[filename]
   if not data or data._modified < modified then
-    local content = utils.read_file(filename)
+    local content = files.read_file(filename)
     if not content or content == '' then
       return nil
     end
@@ -31,7 +33,7 @@ function M.get_file(filename)
     file_cache[filename] = data
   end
 
-  return data.content, utils.filetype_to_mimetype(filetype)
+  return data.content, files.filetype_to_mimetype(filetype)
 end
 
 --- Get data for a buffer
@@ -47,7 +49,7 @@ function M.get_buffer(bufnr)
     return nil
   end
 
-  return table.concat(content, '\n'), utils.filetype_to_mimetype(vim.bo[bufnr].filetype)
+  return table.concat(content, '\n'), files.filetype_to_mimetype(vim.bo[bufnr].filetype)
 end
 
 --- Get the content of an URL
@@ -58,7 +60,7 @@ function M.get_url(url)
     return nil
   end
 
-  local ft = utils.filetype(url)
+  local ft = files.filetype(url)
   local content = url_cache[url]
   if not content then
     local ok, out = async.util.apcall(utils.system, { 'lynx', '-dump', url })
@@ -96,7 +98,7 @@ function M.get_url(url)
     url_cache[url] = content
   end
 
-  return content, utils.filetype_to_mimetype(ft)
+  return content, files.filetype_to_mimetype(ft)
 end
 
 return M

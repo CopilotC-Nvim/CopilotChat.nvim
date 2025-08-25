@@ -1,5 +1,6 @@
 local resources = require('CopilotChat.resources')
 local utils = require('CopilotChat.utils')
+local files = require('CopilotChat.utils.files')
 
 ---@class CopilotChat.config.functions.Function
 ---@field description string?
@@ -23,7 +24,7 @@ return {
           type = 'string',
           description = 'Path to file to include in chat context.',
           enum = function(source)
-            return utils.glob(source.cwd(), {
+            return files.glob(source.cwd(), {
               max_count = 0,
             })
           end,
@@ -67,7 +68,7 @@ return {
     },
 
     resolve = function(input, source)
-      local files = utils.glob(source.cwd(), {
+      local out = files.glob(source.cwd(), {
         pattern = input.pattern,
       })
 
@@ -75,7 +76,7 @@ return {
         {
           uri = 'files://glob/' .. input.pattern,
           mimetype = 'text/plain',
-          data = table.concat(files, '\n'),
+          data = table.concat(out, '\n'),
         },
       }
     end,
@@ -98,7 +99,7 @@ return {
     },
 
     resolve = function(input, source)
-      local files = utils.grep(source.cwd(), {
+      local out = files.grep(source.cwd(), {
         pattern = input.pattern,
       })
 
@@ -106,7 +107,7 @@ return {
         {
           uri = 'files://grep/' .. input.pattern,
           mimetype = 'text/plain',
-          data = table.concat(files, '\n'),
+          data = table.concat(out, '\n'),
         },
       }
     end,
@@ -230,7 +231,7 @@ return {
         {
           uri = 'neovim://selection',
           name = selection.filename,
-          mimetype = utils.mimetype_to_filetype(selection.filetype),
+          mimetype = files.mimetype_to_filetype(selection.filetype),
           data = selection.content,
           annotations = {
             start_line = selection.start_line,

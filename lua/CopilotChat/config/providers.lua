@@ -1,7 +1,8 @@
+local plenary_utils = require('plenary.async.util')
 local constants = require('CopilotChat.constants')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
-local plenary_utils = require('plenary.async.util')
+local files = require('CopilotChat.utils.files')
 
 local EDITOR_VERSION = 'Neovim/' .. vim.version().major .. '.' .. vim.version().minor .. '.' .. vim.version().patch
 
@@ -14,7 +15,7 @@ local function load_tokens()
 
   local config_path = vim.fs.normalize(vim.fn.stdpath('data') .. '/copilot_chat')
   local cache_file = config_path .. '/tokens.json'
-  local file = utils.read_file(cache_file)
+  local file = files.read_file(cache_file)
   if file then
     token_cache = vim.json.decode(file)
   else
@@ -42,7 +43,7 @@ local function set_token(tag, token, save)
   local tokens = load_tokens()
   tokens[tag] = token
   local config_path = vim.fs.normalize(vim.fn.stdpath('data') .. '/copilot_chat')
-  utils.write_file(config_path .. '/tokens.json', vim.json.encode(tokens))
+  files.write_file(config_path .. '/tokens.json', vim.json.encode(tokens))
   return token
 end
 
@@ -141,7 +142,7 @@ local function get_github_copilot_token(tag)
     }
 
     for _, file_path in ipairs(file_paths) do
-      local file_data = utils.read_file(file_path)
+      local file_data = files.read_file(file_path)
       if file_data then
         local parsed_data = utils.json_decode(file_data)
         if parsed_data then
