@@ -58,7 +58,9 @@ local constants = require('CopilotChat.constants')
 local notify = require('CopilotChat.notify')
 local tiktoken = require('CopilotChat.tiktoken')
 local utils = require('CopilotChat.utils')
-local class = utils.class
+local class = require('CopilotChat.utils.class')
+local orderedmap = require('CopilotChat.utils.orderedmap')
+local stringbuffer = require('CopilotChat.utils.stringbuffer')
 
 --- Constants
 local RESOURCE_SHORT_FORMAT = '# %s\n```%s start_line=% end_line=%s\n%s\n```'
@@ -186,7 +188,7 @@ end)
 ---@param supported_method? string: The method to filter providers by (optional)
 ---@return OrderedMap<string, CopilotChat.config.providers.Provider>
 function Client:get_providers(supported_method)
-  local out = utils.ordered_map()
+  local out = orderedmap()
 
   if not self.provider_resolver then
     return out
@@ -347,7 +349,7 @@ function Client:ask(prompt, opts)
   end
 
   local history = not opts.headless and vim.deepcopy(opts.history) or {}
-  local tool_calls = utils.ordered_map()
+  local tool_calls = orderedmap()
   local generated_messages = {}
   local resource_messages = generate_resource_messages(opts.resources)
 
@@ -392,8 +394,8 @@ function Client:ask(prompt, opts)
   local errored = nil
   local finished = false
   local token_count = 0
-  local response_content_buffer = utils.string_buffer()
-  local response_reasoning_buffer = utils.string_buffer()
+  local response_content_buffer = stringbuffer()
+  local response_reasoning_buffer = stringbuffer()
 
   local function finish_stream(err, job)
     if err then
@@ -447,11 +449,11 @@ function Client:ask(prompt, opts)
     end
 
     if out.content then
-      response_content_buffer:add(out.content)
+      response_content_buffer:put(out.content)
     end
 
     if out.reasoning then
-      response_reasoning_buffer:add(out.reasoning)
+      response_reasoning_buffer:put(out.reasoning)
     end
 
     if opts.on_progress then

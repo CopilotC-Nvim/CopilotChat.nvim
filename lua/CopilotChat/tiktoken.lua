@@ -1,6 +1,6 @@
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
-local class = utils.class
+local class = require('CopilotChat.utils.class')
 
 --- Get the library extension based on the operating system
 --- @return string
