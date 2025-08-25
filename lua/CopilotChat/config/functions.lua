@@ -350,10 +350,12 @@ return {
       -- Determine selection range if scope is 'selection'
       if scope == 'selection' then
         local select = require('CopilotChat.select')
-        local selection = select.get(source)
+        local selection = select.get(source.bufnr)
         if selection then
           selection_start_line = selection.start_line
           selection_end_line = selection.end_line
+        else
+          return out
         end
       end
 
@@ -371,7 +373,7 @@ return {
           for _, diag in ipairs(diagnostics) do
             -- Diagnostics.lnum are 0-indexed, so add 1 for comparison
             local diag_lnum = diag.lnum + 1
-            if scope == 'selection' and (diag_lnum < selection_start_line or diag_lnum > selection_end_line) then
+            if diag_lnum < selection_start_line or diag_lnum > selection_end_line then
               -- Skip diagnostics outside the selection range
             else
               local severity = vim.diagnostic.severity[diag.severity] or 'UNKNOWN'
