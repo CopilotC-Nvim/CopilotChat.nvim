@@ -373,9 +373,7 @@ return {
           for _, diag in ipairs(diagnostics) do
             -- Diagnostics.lnum are 0-indexed, so add 1 for comparison
             local diag_lnum = diag.lnum + 1
-            if diag_lnum < selection_start_line or diag_lnum > selection_end_line then
-              -- Skip diagnostics outside the selection range
-            else
+            if diag_lnum >= selection_start_line and diag_lnum <= selection_end_line then
               local severity = vim.diagnostic.severity[diag.severity] or 'UNKNOWN'
               local line_text = vim.api.nvim_buf_get_lines(bufnr, diag.lnum, diag.lnum + 1, false)[1] or ''
 
