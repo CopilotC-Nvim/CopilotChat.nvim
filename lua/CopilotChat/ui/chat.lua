@@ -450,18 +450,6 @@ function Chat:add_message(message, replace)
     or current_message.role ~= message.role
     or (message.id and current_message.id ~= message.id)
 
-  if
-    self.config.auto_fold
-    and current_message
-    and current_message.role ~= constants.ROLE.ASSISTANT
-    and message.role ~= constants.ROLE.USER
-    and self:visible()
-  then
-    vim.api.nvim_win_call(self.winnr, function()
-      vim.cmd('normal! zc')
-    end)
-  end
-
   if is_new then
     -- Add appropriate header based on role and generate a new ID if not provided
     message.id = message.id or utils.uuid()
@@ -500,12 +488,6 @@ function Chat:add_message(message, replace)
     -- Append to the current message
     current_message.content = current_message.content .. message.content
     self:append(message.content)
-  end
-
-  if self.config.auto_fold and message.role == constants.ROLE.ASSISTANT and self:visible() then
-    vim.api.nvim_win_call(self.winnr, function()
-      vim.cmd('normal! zo')
-    end)
   end
 end
 
@@ -754,7 +736,7 @@ function Chat:render()
   -- Replace self.messages with new_messages (preserving tool_calls, etc.)
   self.messages = new_messages
 
-  for _, message in ipairs(self.messages) do
+  for i, message in ipairs(self.messages) do
     -- Show tool call details as virt lines
     if message.tool_calls and #message.tool_calls > 0 then
       local section = message.section
@@ -807,6 +789,16 @@ function Chat:render()
         priority = 100,
         strict = false,
       })
+    end
+
+    if self.config.auto_fold and self:visible() then
+      if message.role ~= constants.ROLE.ASSISTANT and message.section and i < #self.messages then
+        vim.api.nvim_win_call(self.winnr, function()
+          if vim.fn.foldclosed(message.section.start_line) == -1 then
+            vim.api.nvim_cmd({ cmd = 'foldclose', range = { message.section.start_line } }, {})
+          end
+        end)
+      end
     end
   end
 
