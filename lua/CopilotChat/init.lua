@@ -6,6 +6,7 @@ local constants = require('CopilotChat.constants')
 local notify = require('CopilotChat.notify')
 local select = require('CopilotChat.select')
 local utils = require('CopilotChat.utils')
+local orderedmap = require('CopilotChat.utils.orderedmap')
 
 local WORD = '([^%s:]+)'
 local WORD_NO_INPUT = '([^%s]+)'
@@ -52,7 +53,7 @@ local function insert_sticky(prompt, config)
   local existing_prompt = M.chat:get_message(constants.ROLE.USER)
   local combined_prompt = (existing_prompt and existing_prompt.content or '') .. '\n' .. (prompt or '')
   local lines = vim.split(prompt or '', '\n')
-  local stickies = utils.ordered_map()
+  local stickies = orderedmap()
 
   local sticky_indices = {}
   local in_code_block = false
@@ -346,7 +347,7 @@ function M.resolve_functions(prompt, config)
     end
   end
 
-  local matches = utils.ordered_map()
+  local matches = orderedmap()
 
   -- Check for #word:`input` pattern
   for word, input in prompt:gmatch('#' .. WORD_WITH_INPUT_QUOTED) do

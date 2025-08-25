@@ -3,7 +3,7 @@ local Spinner = require('CopilotChat.ui.spinner')
 local constants = require('CopilotChat.constants')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
-local class = utils.class
+local class = require('CopilotChat.utils.class')
 
 function CopilotChatFoldExpr(lnum, separator)
   local to_match = separator .. '$'

@@ -1,5 +1,5 @@
 local utils = require('CopilotChat.utils')
-local class = utils.class
+local class = require('CopilotChat.utils.class')
 
 ---@class CopilotChat.ui.overlay.Overlay : Class
 ---@field bufnr number?
