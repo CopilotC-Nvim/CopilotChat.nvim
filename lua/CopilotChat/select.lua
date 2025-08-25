@@ -8,7 +8,6 @@
 
 local constants = require('CopilotChat.constants')
 local utils = require('CopilotChat.utils')
-local config = require('CopilotChat.config')
 
 local M = {}
 
@@ -39,6 +38,7 @@ end
 --- Get the marks used for selection
 ---@return string[]
 function M.marks()
+  local config = require('CopilotChat.config')
   local marks = { '<', '>' }
   if config.selection == 'unnamed' then
     marks = { '[', ']' }
