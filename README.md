@@ -606,6 +606,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/samiulsami"><img src="https://avatars.githubusercontent.com/u/33352407?v=4?s=100" width="100px;" alt="Samiul Islam"/><br /><sub><b>Samiul Islam</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=samiulsami" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://ruicsh.github.io"><img src="https://avatars.githubusercontent.com/u/8294038?v=4?s=100" width="100px;" alt="Rui Costa"/><br /><sub><b>Rui Costa</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=ruicsh" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
