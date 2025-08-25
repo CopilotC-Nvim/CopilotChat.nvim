@@ -350,7 +350,7 @@ return {
       -- Determine selection range if scope is 'selection'
       if scope == 'selection' then
         local select = require('CopilotChat.select')
-        local selection = select.visual(source)
+        local selection = select.get(source)
         if selection then
           selection_start_line = selection.start_line
           selection_end_line = selection.end_line
