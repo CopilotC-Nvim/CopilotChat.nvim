@@ -199,6 +199,7 @@ end
 
 ---@class CopilotChat.config.providers.Provider
 ---@field disabled nil|boolean
+---@field config table<string, any>?
 ---@field get_headers nil|fun():table<string, string>,number?
 ---@field get_info nil|fun(headers:table):string[]
 ---@field get_models nil|fun(headers:table):table<CopilotChat.client.Model>
@@ -210,6 +211,10 @@ end
 local M = {}
 
 M.copilot = {
+  config = {
+    url = 'https://api.githubcopilot.com',
+  },
+
   get_headers = function()
     local response, err = utils.curl_get('https://api.github.com/copilot_internal/v2/token', {
       json_response = true,
@@ -222,6 +227,12 @@ M.copilot = {
       error(err)
     end
 
+    if response.body.endpoints and response.body.endpoints.api then
+      M.copilot.config.url = response.body.endpoints.api
+    else
+      M.copilot.config.url = 'https://api.githubcopilot.com'
+    end
+
     return {
       ['Authorization'] = 'Bearer ' .. response.body.token,
       ['Editor-Version'] = EDITOR_VERSION,
@@ -231,7 +242,7 @@ M.copilot = {
       response.body.expires_at
   end,
 
-  get_info = function(headers)
+  get_info = function()
     local response, err = utils.curl_get('https://api.github.com/copilot_internal/user', {
       json_response = true,
       headers = {
@@ -282,7 +293,7 @@ M.copilot = {
   end,
 
   get_models = function(headers)
-    local response, err = utils.curl_get('https://api.githubcopilot.com/models', {
+    local response, err = utils.curl_get(M.copilot.config.url .. '/models', {
       json_response = true,
       headers = headers,
     })
@@ -322,7 +333,7 @@ M.copilot = {
 
     for _, model in ipairs(models) do
       if not model.policy then
-        utils.curl_post('https://api.githubcopilot.com/models/' .. model.id .. '/policy', {
+        utils.curl_post(M.copilot.config.url .. '/models/' .. model.id .. '/policy', {
           headers = headers,
           json_request = true,
           body = { state = 'enabled' },
@@ -448,7 +459,7 @@ M.copilot = {
   end,
 
   get_url = function()
-    return 'https://api.githubcopilot.com/chat/completions'
+    return M.copilot.config.url .. '/chat/completions'
   end,
 }
 
