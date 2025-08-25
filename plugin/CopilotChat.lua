@@ -14,6 +14,7 @@ local group = vim.api.nvim_create_augroup('CopilotChat', {})
 local function setup_highlights()
   vim.api.nvim_set_hl(0, 'CopilotChatHeader', { link = '@markup.heading.2.markdown', default = true })
   vim.api.nvim_set_hl(0, 'CopilotChatSeparator', { link = '@punctuation.special.markdown', default = true })
+  vim.api.nvim_set_hl(0, 'CopilotChatSelection', { link = 'Visual', default = true })
   vim.api.nvim_set_hl(0, 'CopilotChatStatus', { link = 'DiagnosticHint', default = true })
   vim.api.nvim_set_hl(0, 'CopilotChatHelp', { link = 'DiagnosticInfo', default = true })
   vim.api.nvim_set_hl(0, 'CopilotChatResource', { link = 'Constant', default = true })
@@ -21,7 +22,6 @@ local function setup_highlights()
   vim.api.nvim_set_hl(0, 'CopilotChatPrompt', { link = 'Statement', default = true })
   vim.api.nvim_set_hl(0, 'CopilotChatModel', { link = 'Type', default = true })
   vim.api.nvim_set_hl(0, 'CopilotChatUri', { link = 'Underlined', default = true })
-  vim.api.nvim_set_hl(0, 'CopilotChatSelection', { link = 'Visual', default = true })
 
   vim.api.nvim_set_hl(0, 'CopilotChatAnnotation', { link = 'ColorColumn', default = true })
   local fg = vim.api.nvim_get_hl(0, { name = 'CopilotChatStatus', link = false }).fg
@@ -35,6 +35,18 @@ vim.api.nvim_create_autocmd('ColorScheme', {
   end,
 })
 setup_highlights()
+
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'copilot-chat',
+  group = group,
+  callback = vim.schedule_wrap(function()
+    vim.cmd.syntax('match CopilotChatResource "#\\S\\+"')
+    vim.cmd.syntax('match CopilotChatTool "@\\S\\+"')
+    vim.cmd.syntax('match CopilotChatPrompt "/\\S\\+"')
+    vim.cmd.syntax('match CopilotChatModel "\\$\\S\\+"')
+    vim.cmd.syntax('match CopilotChatUri "##\\S\\+"')
+  end),
+})
 
 -- Setup commands
 vim.api.nvim_create_user_command('CopilotChat', function(args)
@@ -78,18 +90,6 @@ vim.api.nvim_create_user_command('CopilotChatReset', function()
   local chat = require('CopilotChat')
   chat.reset()
 end, { force = true })
-
-vim.api.nvim_create_autocmd('FileType', {
-  pattern = 'copilot-chat',
-  group = group,
-  callback = vim.schedule_wrap(function()
-    vim.cmd.syntax('match CopilotChatResource "#\\S\\+"')
-    vim.cmd.syntax('match CopilotChatTool "@\\S\\+"')
-    vim.cmd.syntax('match CopilotChatPrompt "/\\S\\+"')
-    vim.cmd.syntax('match CopilotChatModel "\\$\\S\\+"')
-    vim.cmd.syntax('match CopilotChatUri "##\\S\\+"')
-  end),
-})
 
 local function complete_load()
   local chat = require('CopilotChat')

@@ -2,6 +2,7 @@ local async = require('plenary.async')
 local copilot = require('CopilotChat')
 local client = require('CopilotChat.client')
 local constants = require('CopilotChat.constants')
+local select = require('CopilotChat.select')
 local utils = require('CopilotChat.utils')
 
 ---@class CopilotChat.config.mappings.Diff
@@ -14,23 +15,33 @@ local utils = require('CopilotChat.utils')
 ---@field bufnr number?
 
 --- Get diff data from a block
+---@param bufnr number
 ---@param block CopilotChat.ui.chat.Block?
 ---@return CopilotChat.config.mappings.Diff?
-local function get_diff(block)
+local function get_diff(bufnr, block)
   -- If no block found, return nil
   if not block then
     return nil
   end
 
-  -- Initialize variables with selection if available
   local header = block.header
-  local selection = copilot.get_selection()
-  local reference = selection and selection.content
-  local start_line = selection and selection.start_line
-  local end_line = selection and selection.end_line
-  local filename = selection and selection.filename
-  local filetype = selection and selection.filetype
-  local bufnr = selection and selection.bufnr
+  local selection = select.get(bufnr)
+  local filename = nil
+  local filetype = nil
+  local start_line = nil
+  local end_line = nil
+  local reference = nil
+  local bufnr = nil
+
+  if selection then
+    -- If we have a selection, use it as default source of truth
+    filename = selection.filename
+    filetype = selection.filetype
+    start_line = selection.start_line
+    end_line = selection.end_line
+    reference = selection.content
+    bufnr = selection.bufnr
+  end
 
   -- If we have header info, use it as source of truth
   if header.start_line and header.end_line then
@@ -236,7 +247,7 @@ return {
     normal = '<C-y>',
     insert = '<C-y>',
     callback = function(source)
-      local diff = get_diff(copilot.chat:get_block(constants.ROLE.ASSISTANT, true))
+      local diff = get_diff(source.bufnr, copilot.chat:get_block(constants.ROLE.ASSISTANT, true))
       diff = prepare_diff_buffer(diff, source)
       if not diff then
         return
@@ -244,20 +255,22 @@ return {
 
       local lines = utils.split_lines(diff.change)
       vim.api.nvim_buf_set_lines(diff.bufnr, diff.start_line - 1, diff.end_line, false, lines)
-      copilot.set_selection(diff.bufnr, diff.start_line, diff.end_line)
+      select.set(source.bufnr, source.winnr, diff.start_line, diff.start_line + #lines - 1)
+      select.highlight(source.bufnr)
     end,
   },
 
   jump_to_diff = {
     normal = 'gj',
     callback = function(source)
-      local diff = get_diff(copilot.chat:get_block(constants.ROLE.ASSISTANT, true))
+      local diff = get_diff(source.bufnr, copilot.chat:get_block(constants.ROLE.ASSISTANT, true))
       diff = prepare_diff_buffer(diff, source)
       if not diff then
         return
       end
 
-      copilot.set_selection(diff.bufnr, diff.start_line, diff.end_line)
+      select.set(source.bufnr, source.winnr, diff.start_line, diff.end_line)
+      select.highlight(source.bufnr)
     end,
   },
 
@@ -289,32 +302,26 @@ return {
 
   quickfix_diffs = {
     normal = 'gqd',
-    callback = function()
-      local selection = copilot.get_selection()
+    callback = function(source)
       local items = {}
 
       for _, message in ipairs(copilot.chat.messages) do
         if message.section then
           for _, block in ipairs(message.section.blocks) do
-            local header = block.header
+            local diff = get_diff(source.bufnr, block)
+            if diff then
+              local text = string.format('%s (%s)', diff.filename, diff.filetype)
+              if diff.start_line and diff.end_line then
+                text = text .. string.format(' [lines %d-%d]', diff.start_line, diff.end_line)
+              end
 
-            if not header.start_line and selection then
-              header.filename = selection.filename .. ' (selection)'
-              header.start_line = selection.start_line
-              header.end_line = selection.end_line
+              table.insert(items, {
+                bufnr = copilot.chat.bufnr,
+                lnum = block.start_line,
+                end_lnum = block.end_line,
+                text = text,
+              })
             end
-
-            local text = string.format('%s (%s)', header.filename, header.filetype)
-            if header.start_line and header.end_line then
-              text = text .. string.format(' [lines %d-%d]', header.start_line, header.end_line)
-            end
-
-            table.insert(items, {
-              bufnr = copilot.chat.bufnr,
-              lnum = block.start_line,
-              end_lnum = block.end_line,
-              text = text,
-            })
           end
         end
 
@@ -341,7 +348,7 @@ return {
     normal = 'gd',
     full_diff = false, -- Show full diff instead of unified diff when showing diff window
     callback = function(source)
-      local diff = get_diff(copilot.chat:get_block(constants.ROLE.ASSISTANT, true))
+      local diff = get_diff(source.bufnr, copilot.chat:get_block(constants.ROLE.ASSISTANT, true))
       diff = prepare_diff_buffer(diff, source)
       if not diff then
         return
@@ -362,7 +369,7 @@ return {
           local same_file_diffs = {}
           if section then
             for _, block in ipairs(section.blocks) do
-              local block_diff = get_diff(block)
+              local block_diff = get_diff(source.bufnr, block)
               if block_diff and block_diff.bufnr == diff.bufnr then
                 table.insert(same_file_diffs, block_diff)
               end
@@ -497,7 +504,7 @@ return {
           table.insert(lines, '')
         end
 
-        local selection = copilot.get_selection()
+        local selection = select.get(source.bufnr)
         if selection then
           table.insert(lines, '**Selection**')
           table.insert(lines, '')

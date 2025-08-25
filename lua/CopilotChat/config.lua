@@ -17,13 +17,13 @@
 ---@field system_prompt nil|string|fun(source: CopilotChat.source):string
 ---@field model string?
 ---@field tools string|table<string>|nil
+---@field resources string|table<string>|nil
 ---@field sticky string|table<string>|nil
 ---@field language string?
 ---@field temperature number?
 ---@field headless boolean?
 ---@field callback nil|fun(response: CopilotChat.client.Message, source: CopilotChat.source)
 ---@field remember_as_sticky boolean?
----@field selection false|nil|fun(source: CopilotChat.source):CopilotChat.select.Selection?
 ---@field window CopilotChat.config.Window?
 ---@field show_help boolean?
 ---@field show_folds boolean?
@@ -58,6 +58,7 @@ return {
 
   model = 'gpt-4.1', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   tools = nil, -- Default tool or array of tools (or groups) to share with LLM (can be specified manually in prompt via @).
+  resources = 'selection', -- Default resources to share with LLM (can be specified manually in prompt via #).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
   language = 'English', -- Default language to use for answers
 
@@ -65,9 +66,6 @@ return {
   headless = false, -- Do not write to chat buffer and use history (useful for using custom processing)
   callback = nil, -- Function called when full response is received
   remember_as_sticky = true, -- Remember config as sticky prompts when asking questions
-
-  -- default selection
-  selection = require('CopilotChat.select').visual,
 
   -- default window options
   window = {
