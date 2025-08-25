@@ -604,6 +604,9 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://mihamina.rktmb.org"><img src="https://avatars.githubusercontent.com/u/488088?v=4?s=100" width="100px;" alt="Mihamina Rakotomandimby"/><br /><sub><b>Mihamina Rakotomandimby</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=rakotomandimby" title="Documentation">📖</a> <a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=rakotomandimby" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://ajmalshajahan.me"><img src="https://avatars.githubusercontent.com/u/23806715?v=4?s=100" width="100px;" alt="Ajmal S"/><br /><sub><b>Ajmal S</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=AjmalShajahan" title="Code">💻</a></td>
     </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/samiulsami"><img src="https://avatars.githubusercontent.com/u/33352407?v=4?s=100" width="100px;" alt="Samiul Islam"/><br /><sub><b>Samiul Islam</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=samiulsami" title="Code">💻</a></td>
+    </tr>
   </tbody>
 </table>
 
