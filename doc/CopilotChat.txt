@@ -1,4 +1,4 @@
-*CopilotChat.txt*          For NVIM v0.8.0         Last change: 2025 August 23
+*CopilotChat.txt*          For NVIM v0.8.0         Last change: 2025 August 25
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -23,7 +23,6 @@ Table of Contents                              *CopilotChat-table-of-contents*
   - Highlights                                        |CopilotChat-highlights|
   - Prompts                                              |CopilotChat-prompts|
   - Functions                                          |CopilotChat-functions|
-  - Selections                                        |CopilotChat-selections|
   - Providers                                          |CopilotChat-providers|
 5. API Reference                                   |CopilotChat-api-reference|
   - Core                                                    |CopilotChat-core|
@@ -128,7 +127,6 @@ VIM-PLUG                                                *CopilotChat-vim-plug*
 - **Sticky Prompts** (`> <text>`) - Persist context across single chat session
 - **Models** (`$<model>`) - Specify which AI model to use for the chat
 - **Prompts** (`/PromptName`) - Use predefined prompt templates for common tasks
-- **Selection** - Automatically includes current user selection in prompts
 
 
 EXAMPLES                                                *CopilotChat-examples*
@@ -232,6 +230,8 @@ All predefined functions belong to the `copilot` group.
 
   register      Provides access to specified Vim register #register:+
 
+  selection     Includes the current visual selection     #selection
+
   url           Fetches content from a specified URL      #url:https://...
   ------------------------------------------------------------------------------
 
@@ -334,6 +334,7 @@ Types of copilot highlights:
 
 - `CopilotChatHeader` - Header highlight in chat buffer
 - `CopilotChatSeparator` - Separator highlight in chat buffer
+- `CopilotChatSelection` - Selection highlight in source buffer
 - `CopilotChatStatus` - Status and spinner in chat buffer
 - `CopilotChatHelp` - Help text in chat buffer
 - `CopilotChatResource` - Resource highlight in chat buffer (e.g. `#file`, `#gitdiff`)
@@ -341,7 +342,6 @@ Types of copilot highlights:
 - `CopilotChatPrompt` - Prompt highlight in chat buffer (e.g. `/Explain`, `/Review`)
 - `CopilotChatModel` - Model highlight in chat buffer (e.g. `$gpt-4.1`)
 - `CopilotChatUri` - URI highlight in chat buffer (e.g. `##https://...`)
-- `CopilotChatSelection` - Selection highlight in source buffer
 - `CopilotChatAnnotation` - Annotation highlight in chat buffer (file headers, tool call headers, tool call body)
 
 
@@ -403,28 +403,6 @@ Define your own functions in the configuration with input handling and schema:
       }
     }
 <
-
-
-SELECTIONS                                            *CopilotChat-selections*
-
-Control what content is automatically included:
-
->lua
-    {
-      -- Use visual selection, fallback to current line
-      selection = function(source)
-        return require('CopilotChat.select').visual(source) or
-               require('CopilotChat.select').line(source)
-      end,
-    }
-<
-
-**Available selections:**
-
-- `require('CopilotChat.select').visual` - Current visual selection
-- `require('CopilotChat.select').buffer` - Entire buffer content
-- `require('CopilotChat.select').line` - Current line content
-- `require('CopilotChat.select').unnamed` - Unnamed register (last deleted/changed/yanked)
 
 
 PROVIDERS                                              *CopilotChat-providers*
@@ -504,10 +482,6 @@ CORE                                                        *CopilotChat-core*
     -- Source Management
     chat.get_source()             -- Get the current source buffer and window
     chat.set_source(winnr)        -- Set the source window
-    
-    -- Selection Management
-    chat.get_selection()                                   -- Get the current selection
-    chat.set_selection(bufnr, start_line, end_line, clear) -- Set or clear selection
     
     -- Prompt & Model Management
     chat.select_prompt(config)    -- Open prompt selector with optional config
@@ -628,7 +602,7 @@ See CONTRIBUTING.md </CONTRIBUTING.md> for detailed guidelines.
 Thanks goes to these wonderful people (emoji key
 <https://allcontributors.org/docs/en/emoji-key>):
 
-gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻neutrinoA4💻 📖Jack Muratore💻Adriel Velazquez💻 📖Tomas Slusny💻 📖Nisal📖Tobias Gårdhus📖Petr Dlouhý📖Dylan Madisetti💻Aaron Weisberg💻 📖Jose Tlacuilo💻 📖Kevin Traver💻 📖dTry💻Arata Furukawa💻Ling💻Ivan Frolov💻Folke Lemaitre💻 📖GitMurf💻Dmitrii Lipin💻jinzhongjia📖guill💻Sjon-Paul Brown💻Renzo Mondragón💻 📖fjchen7💻Radosław Woźniak💻JakubPecenka💻thomastthai📖Tomáš Janoušek💻Toddneal Stallworth📖Sergey Alexandrov💻Léopold Mebazaa💻JunKi Jin💻abdennourzahaf📖Josiah💻Tony Fischer💻 📖Kohei Wada💻Sebastian Yaghoubi📖johncming💻Rokas Brazdžionis💻Sola📖 💻Mani Chandra💻Nischal Basuti📖Teo Ljungberg💻Joe Price💻Yufan You📖 💻Manish Kumar💻Anton Ždanov📖 💻Fredrik Averpil💻Aaron D Borden💻Md. Iftakhar Awal Chowdhury💻 📖Danilo Horta💻Mihamina Rakotomandimby📖 💻Ajmal S💻This project follows the all-contributors
+gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻neutrinoA4💻 📖Jack Muratore💻Adriel Velazquez💻 📖Tomas Slusny💻 📖Nisal📖Tobias Gårdhus📖Petr Dlouhý📖Dylan Madisetti💻Aaron Weisberg💻 📖Jose Tlacuilo💻 📖Kevin Traver💻 📖dTry💻Arata Furukawa💻Ling💻Ivan Frolov💻Folke Lemaitre💻 📖GitMurf💻Dmitrii Lipin💻jinzhongjia📖guill💻Sjon-Paul Brown💻Renzo Mondragón💻 📖fjchen7💻Radosław Woźniak💻JakubPecenka💻thomastthai📖Tomáš Janoušek💻Toddneal Stallworth📖Sergey Alexandrov💻Léopold Mebazaa💻JunKi Jin💻abdennourzahaf📖Josiah💻Tony Fischer💻 📖Kohei Wada💻Sebastian Yaghoubi📖johncming💻Rokas Brazdžionis💻Sola📖 💻Mani Chandra💻Nischal Basuti📖Teo Ljungberg💻Joe Price💻Yufan You📖 💻Manish Kumar💻Anton Ždanov📖 💻Fredrik Averpil💻Aaron D Borden💻Md. Iftakhar Awal Chowdhury💻 📖Danilo Horta💻Mihamina Rakotomandimby📖 💻Ajmal S💻Samiul Islam💻This project follows the all-contributors
 <https://github.com/all-contributors/all-contributors> specification.
 Contributions of any kind are welcome!
 

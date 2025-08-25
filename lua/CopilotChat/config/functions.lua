@@ -6,7 +6,7 @@ local utils = require('CopilotChat.utils')
 ---@field schema table?
 ---@field group string?
 ---@field uri string?
----@field resolve fun(input: table, source: CopilotChat.source, prompt: string):table<CopilotChat.client.Resource>
+---@field resolve fun(input: table, source: CopilotChat.source):CopilotChat.client.Resource[]
 
 ---@type table<string, CopilotChat.config.functions.Function>
 return {
@@ -211,6 +211,33 @@ return {
           return file_data ~= nil
         end)
         :totable()
+    end,
+  },
+
+  selection = {
+    group = 'copilot',
+    uri = 'neovim://selection',
+    description = 'Includes the content of the current visual selection. Useful for discussing specific code snippets or text blocks.',
+
+    resolve = function(_, source)
+      utils.schedule_main()
+      local selection = require('CopilotChat.select').get(source.bufnr)
+      if not selection then
+        return {}
+      end
+
+      return {
+        {
+          uri = 'neovim://selection',
+          name = selection.filename,
+          mimetype = utils.mimetype_to_filetype(selection.filetype),
+          data = selection.content,
+          annotations = {
+            start_line = selection.start_line,
+            end_line = selection.end_line,
+          },
+        },
+      }
     end,
   },
 

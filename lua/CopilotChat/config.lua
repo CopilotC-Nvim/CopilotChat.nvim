@@ -17,13 +17,13 @@
 ---@field system_prompt nil|string|fun(source: CopilotChat.source):string
 ---@field model string?
 ---@field tools string|table<string>|nil
+---@field resources string|table<string>|nil
 ---@field sticky string|table<string>|nil
 ---@field language string?
 ---@field temperature number?
 ---@field headless boolean?
 ---@field callback nil|fun(response: CopilotChat.client.Message, source: CopilotChat.source)
 ---@field remember_as_sticky boolean?
----@field selection false|nil|fun(source: CopilotChat.source):CopilotChat.select.Selection?
 ---@field window CopilotChat.config.Window?
 ---@field show_help boolean?
 ---@field show_folds boolean?
@@ -34,6 +34,7 @@
 ---@field auto_fold boolean?
 ---@field insert_at_end boolean?
 ---@field clear_chat_on_new_prompt boolean?
+---@field stop_on_function_failure boolean?
 
 --- CopilotChat default configuration
 ---@class CopilotChat.config.Config : CopilotChat.config.Shared
@@ -41,6 +42,7 @@
 ---@field log_level 'trace'|'debug'|'info'|'warn'|'error'|'fatal'?
 ---@field proxy string?
 ---@field allow_insecure boolean?
+---@field selection 'visual'|'unnamed'|nil
 ---@field chat_autocomplete boolean?
 ---@field log_path string?
 ---@field history_path string?
@@ -58,6 +60,7 @@ return {
 
   model = 'gpt-4.1', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
   tools = nil, -- Default tool or array of tools (or groups) to share with LLM (can be specified manually in prompt via @).
+  resources = 'selection', -- Default resources to share with LLM (can be specified manually in prompt via #).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
   language = 'English', -- Default language to use for answers
 
@@ -65,9 +68,6 @@ return {
   headless = false, -- Do not write to chat buffer and use history (useful for using custom processing)
   callback = nil, -- Function called when full response is received
   remember_as_sticky = true, -- Remember config as sticky prompts when asking questions
-
-  -- default selection
-  selection = require('CopilotChat.select').visual,
 
   -- default window options
   window = {
@@ -94,6 +94,7 @@ return {
   auto_insert_mode = false, -- Automatically enter insert mode when opening window and on new prompt
   insert_at_end = false, -- Move cursor to end of buffer when inserting text
   clear_chat_on_new_prompt = false, -- Clears chat on every new prompt
+  stop_on_function_failure = false, -- Stop processing prompt if any function fails (preserves quota)
 
   -- Static config starts here (can be configured only via setup function)
 
@@ -102,6 +103,7 @@ return {
   proxy = nil, -- [protocol://]host[:port] Use this proxy
   allow_insecure = false, -- Allow insecure server connections
 
+  selection = 'visual', -- Selection source
   chat_autocomplete = true, -- Enable chat autocompletion (when disabled, requires manual `mappings.complete` trigger)
 
   log_path = vim.fn.stdpath('state') .. '/CopilotChat.log', -- Default path to log file

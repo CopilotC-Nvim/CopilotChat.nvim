@@ -95,7 +95,6 @@ EOF
 - **Sticky Prompts** (`> <text>`) - Persist context across single chat session
 - **Models** (`$<model>`) - Specify which AI model to use for the chat
 - **Prompts** (`/PromptName`) - Use predefined prompt templates for common tasks
-- **Selection** - Automatically includes current user selection in prompts
 
 ## Examples
 
@@ -180,6 +179,7 @@ All predefined functions belong to the `copilot` group.
 | `grep`        | Searches for a pattern across files in workspace | `#grep:TODO`           |
 | `quickfix`    | Includes content of files in quickfix list       | `#quickfix`            |
 | `register`    | Provides access to specified Vim register        | `#register:+`          |
+| `selection`   | Includes the current visual selection            | `#selection`           |
 | `url`         | Fetches content from a specified URL             | `#url:https://...`     |
 
 ## Predefined Prompts
@@ -266,6 +266,7 @@ Types of copilot highlights:
 
 - `CopilotChatHeader` - Header highlight in chat buffer
 - `CopilotChatSeparator` - Separator highlight in chat buffer
+- `CopilotChatSelection` - Selection highlight in source buffer
 - `CopilotChatStatus` - Status and spinner in chat buffer
 - `CopilotChatHelp` - Help text in chat buffer
 - `CopilotChatResource` - Resource highlight in chat buffer (e.g. `#file`, `#gitdiff`)
@@ -273,7 +274,6 @@ Types of copilot highlights:
 - `CopilotChatPrompt` - Prompt highlight in chat buffer (e.g. `/Explain`, `/Review`)
 - `CopilotChatModel` - Model highlight in chat buffer (e.g. `$gpt-4.1`)
 - `CopilotChatUri` - URI highlight in chat buffer (e.g. `##https://...`)
-- `CopilotChatSelection` - Selection highlight in source buffer
 - `CopilotChatAnnotation` - Annotation highlight in chat buffer (file headers, tool call headers, tool call body)
 
 ## Prompts
@@ -333,27 +333,6 @@ Define your own functions in the configuration with input handling and schema:
   }
 }
 ```
-
-## Selections
-
-Control what content is automatically included:
-
-```lua
-{
-  -- Use visual selection, fallback to current line
-  selection = function(source)
-    return require('CopilotChat.select').visual(source) or
-           require('CopilotChat.select').line(source)
-  end,
-}
-```
-
-**Available selections:**
-
-- `require('CopilotChat.select').visual` - Current visual selection
-- `require('CopilotChat.select').buffer` - Entire buffer content
-- `require('CopilotChat.select').line` - Current line content
-- `require('CopilotChat.select').unnamed` - Unnamed register (last deleted/changed/yanked)
 
 ## Providers
 
@@ -429,10 +408,6 @@ chat.stop()                   -- Stop current output
 -- Source Management
 chat.get_source()             -- Get the current source buffer and window
 chat.set_source(winnr)        -- Set the source window
-
--- Selection Management
-chat.get_selection()                                   -- Get the current selection
-chat.set_selection(bufnr, start_line, end_line, clear) -- Set or clear selection
 
 -- Prompt & Model Management
 chat.select_prompt(config)    -- Open prompt selector with optional config
@@ -628,6 +603,9 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/danilohorta"><img src="https://avatars.githubusercontent.com/u/214497460?v=4?s=100" width="100px;" alt="Danilo Horta"/><br /><sub><b>Danilo Horta</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=danilohorta" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://mihamina.rktmb.org"><img src="https://avatars.githubusercontent.com/u/488088?v=4?s=100" width="100px;" alt="Mihamina Rakotomandimby"/><br /><sub><b>Mihamina Rakotomandimby</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=rakotomandimby" title="Documentation">📖</a> <a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=rakotomandimby" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://ajmalshajahan.me"><img src="https://avatars.githubusercontent.com/u/23806715?v=4?s=100" width="100px;" alt="Ajmal S"/><br /><sub><b>Ajmal S</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=AjmalShajahan" title="Code">💻</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/samiulsami"><img src="https://avatars.githubusercontent.com/u/33352407?v=4?s=100" width="100px;" alt="Samiul Islam"/><br /><sub><b>Samiul Islam</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=samiulsami" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
