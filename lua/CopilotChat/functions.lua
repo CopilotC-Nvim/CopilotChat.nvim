@@ -108,9 +108,12 @@ function M.match_uri(uri, pattern)
   -- Build the result table mapping parameter names to their values
   local result = {}
   for i, param_name in ipairs(param_names) do
-    result[param_name] = matches[i]
+    local value = matches[i]
+    if value and value:sub(1, 2) == './' then
+      value = value:sub(3)
+    end
+    result[param_name] = value
   end
-
   return result
 end
 
