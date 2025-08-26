@@ -58,6 +58,7 @@ local constants = require('CopilotChat.constants')
 local notify = require('CopilotChat.notify')
 local tiktoken = require('CopilotChat.tiktoken')
 local utils = require('CopilotChat.utils')
+local curl = require('CopilotChat.utils.curl')
 local class = require('CopilotChat.utils.class')
 local files = require('CopilotChat.utils.files')
 local orderedmap = require('CopilotChat.utils.orderedmap')
@@ -530,7 +531,7 @@ function Client:ask(prompt, opts)
     args.stream = stream_func
   end
 
-  local response, err = utils.curl_post(provider.get_url(options), args)
+  local response, err = curl.post(provider.get_url(options), args)
 
   if not opts.headless then
     if self.current_job ~= job_id then

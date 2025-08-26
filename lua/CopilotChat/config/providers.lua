@@ -2,6 +2,7 @@ local plenary_utils = require('plenary.async.util')
 local constants = require('CopilotChat.constants')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
+local curl = require('CopilotChat.utils.curl')
 local files = require('CopilotChat.utils.files')
 
 local EDITOR_VERSION = 'Neovim/' .. vim.version().major .. '.' .. vim.version().minor .. '.' .. vim.version().patch
@@ -51,7 +52,7 @@ end
 ---@return string
 local function github_device_flow(tag, client_id, scope)
   local function request_device_code()
-    local res = utils.curl_post('https://github.com/login/device/code', {
+    local res = curl.post('https://github.com/login/device/code', {
       body = {
         client_id = client_id,
         scope = scope,
@@ -67,7 +68,7 @@ local function github_device_flow(tag, client_id, scope)
     while true do
       plenary_utils.sleep(interval * 1000)
 
-      local res = utils.curl_post('https://github.com/login/oauth/access_token', {
+      local res = curl.post('https://github.com/login/oauth/access_token', {
         body = {
           client_id = client_id,
           device_code = device_code,
@@ -212,7 +213,7 @@ local M = {}
 
 M.copilot = {
   get_headers = function()
-    local response, err = utils.curl_get('https://api.github.com/copilot_internal/v2/token', {
+    local response, err = curl.get('https://api.github.com/copilot_internal/v2/token', {
       json_response = true,
       headers = {
         ['Authorization'] = 'Token ' .. get_github_copilot_token('github_copilot'),
@@ -232,8 +233,8 @@ M.copilot = {
       response.body.expires_at
   end,
 
-  get_info = function(headers)
-    local response, err = utils.curl_get('https://api.github.com/copilot_internal/user', {
+  get_info = function()
+    local response, err = curl.get('https://api.github.com/copilot_internal/user', {
       json_response = true,
       headers = {
         ['Authorization'] = 'Token ' .. get_github_copilot_token('github_copilot'),
@@ -283,7 +284,7 @@ M.copilot = {
   end,
 
   get_models = function(headers)
-    local response, err = utils.curl_get('https://api.githubcopilot.com/models', {
+    local response, err = curl.get('https://api.githubcopilot.com/models', {
       json_response = true,
       headers = headers,
     })
@@ -323,7 +324,7 @@ M.copilot = {
 
     for _, model in ipairs(models) do
       if not model.policy then
-        utils.curl_post('https://api.githubcopilot.com/models/' .. model.id .. '/policy', {
+        curl.post('https://api.githubcopilot.com/models/' .. model.id .. '/policy', {
           headers = headers,
           json_request = true,
           body = { state = 'enabled' },
@@ -463,7 +464,7 @@ M.github_models = {
   end,
 
   get_models = function(headers)
-    local response, err = utils.curl_get('https://models.github.ai/catalog/models', {
+    local response, err = curl.get('https://models.github.ai/catalog/models', {
       json_response = true,
       headers = headers,
     })

@@ -6,6 +6,7 @@ local constants = require('CopilotChat.constants')
 local notify = require('CopilotChat.notify')
 local select = require('CopilotChat.select')
 local utils = require('CopilotChat.utils')
+local curl = require('CopilotChat.utils.curl')
 local orderedmap = require('CopilotChat.utils.orderedmap')
 local files = require('CopilotChat.utils.files')
 
@@ -1003,7 +1004,7 @@ function M.setup(config)
   end
 
   -- Save proxy and insecure settings
-  utils.curl_store_args({
+  curl.store_args({
     insecure = M.config.allow_insecure,
     proxy = M.config.proxy,
   })

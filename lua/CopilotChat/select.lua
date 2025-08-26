@@ -6,32 +6,36 @@
 ---@field filetype string
 ---@field bufnr number
 
-local constants = require('CopilotChat.constants')
+local log = require('plenary.log')
 local utils = require('CopilotChat.utils')
 
 local M = {}
 
+--- Use #selection instead
 ---@deprecated
 function M.visual(_)
-  vim.deprecate('CopilotChat.select.visual', '#selection', '5.0.0', constants.PLUGIN_NAME)
+  log.warn('CopilotChat.select.visual is deprecated, use #selection instead')
   return nil
 end
 
----@deprecated
+--- Use #selection instead
+---@deprecated use #selection instead
 function M.buffer(_)
-  vim.deprecate('CopilotChat.select.buffer', '#selection', '5.0.0', constants.PLUGIN_NAME)
+  log.warn('CopilotChat.select.buffer is deprecated, use #selection instead')
   return nil
 end
 
----@deprecated
+--- Use #selection instead
+---@deprecated use #selection instead
 function M.line(_)
-  vim.deprecate('CopilotChat.select.line', '#selection', '5.0.0', constants.PLUGIN_NAME)
+  log.warn('CopilotChat.select.line is deprecated, use #selection instead')
   return nil
 end
 
----@deprecated
+--- Use #selection instead
+---@deprecated use #selection instead
 function M.unnamed(_)
-  vim.deprecate('CopilotChat.select.unnamed', '#selection', '5.0.0', constants.PLUGIN_NAME)
+  log.warn('CopilotChat.select.unnamed is deprecated, use #selection instead')
   return nil
 end
 
