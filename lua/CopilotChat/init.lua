@@ -7,6 +7,7 @@ local notify = require('CopilotChat.notify')
 local select = require('CopilotChat.select')
 local utils = require('CopilotChat.utils')
 local orderedmap = require('CopilotChat.utils.orderedmap')
+local files = require('CopilotChat.utils.files')
 
 local WORD = '([^%s:]+)'
 local WORD_NO_INPUT = '([^%s]+)'
@@ -435,7 +436,7 @@ function M.resolve_functions(prompt, config)
               table.insert(state.sticky, content_out)
             end
           else
-            content_out = string.format(BLOCK_OUTPUT_FORMAT, utils.mimetype_to_filetype(content.mimetype), content.data)
+            content_out = string.format(BLOCK_OUTPUT_FORMAT, files.mimetype_to_filetype(content.mimetype), content.data)
           end
 
           if not utils.empty(result) then

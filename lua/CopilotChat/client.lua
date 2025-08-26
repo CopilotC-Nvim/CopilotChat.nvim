@@ -59,6 +59,7 @@ local notify = require('CopilotChat.notify')
 local tiktoken = require('CopilotChat.tiktoken')
 local utils = require('CopilotChat.utils')
 local class = require('CopilotChat.utils.class')
+local files = require('CopilotChat.utils.files')
 local orderedmap = require('CopilotChat.utils.orderedmap')
 local stringbuffer = require('CopilotChat.utils.stringbuffer')
 
@@ -97,7 +98,7 @@ local function generate_resource_block(content, mimetype, name, path, start_line
   end
 
   local updated_content = table.concat(lines, '\n')
-  local filetype = utils.mimetype_to_filetype(mimetype or 'text')
+  local filetype = files.mimetype_to_filetype(mimetype or 'text')
   if not start_line then
     start_line = 1
   end

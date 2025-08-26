@@ -4,6 +4,7 @@ local client = require('CopilotChat.client')
 local constants = require('CopilotChat.constants')
 local select = require('CopilotChat.select')
 local utils = require('CopilotChat.utils')
+local files = require('CopilotChat.utils.files')
 
 ---@class CopilotChat.config.mappings.Diff
 ---@field change string
@@ -45,8 +46,8 @@ local function get_diff(bufnr, block)
 
   -- If we have header info, use it as source of truth
   if header.start_line and header.end_line then
-    filename = utils.uri_to_filename(header.filename)
-    filetype = header.filetype or utils.filetype(filename)
+    filename = files.uri_to_filename(header.filename)
+    filetype = header.filetype or files.filetype(filename)
     start_line = header.start_line
     end_line = header.end_line
 
@@ -54,7 +55,7 @@ local function get_diff(bufnr, block)
     bufnr = nil
     for _, win in ipairs(vim.api.nvim_list_wins()) do
       local win_buf = vim.api.nvim_win_get_buf(win)
-      if utils.filename_same(vim.api.nvim_buf_get_name(win_buf), header.filename) then
+      if files.filename_same(vim.api.nvim_buf_get_name(win_buf), header.filename) then
         bufnr = win_buf
         break
       end
@@ -99,7 +100,7 @@ local function prepare_diff_buffer(diff, source)
   if not diff_bufnr then
     -- Try to find matching buffer first
     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-      if utils.filename_same(vim.api.nvim_buf_get_name(buf), diff.filename) then
+      if files.filename_same(vim.api.nvim_buf_get_name(buf), diff.filename) then
         diff_bufnr = buf
         break
       end
@@ -534,7 +535,7 @@ return {
           end
 
           table.insert(lines, header)
-          table.insert(lines, '```' .. utils.mimetype_to_filetype(resource.mimetype))
+          table.insert(lines, '```' .. files.mimetype_to_filetype(resource.mimetype))
           for _, line in ipairs(preview) do
             table.insert(lines, line)
           end
