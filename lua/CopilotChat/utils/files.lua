@@ -70,9 +70,8 @@ M.glob = async.wrap(function(path, opts, callback)
     end
 
     table.insert(cmd, '--files')
-    table.insert(cmd, path)
 
-    vim.system(cmd, { text = true }, function(result)
+    vim.system(cmd, { cwd = path, text = true }, function(result)
       local files = {}
       if result and result.code == 0 and result.stdout ~= '' then
         files = filter_files(vim.split(result.stdout, '\n'), opts.max_count)
@@ -179,8 +178,6 @@ M.grep = async.wrap(function(path, opts, callback)
       table.insert(cmd, '-e')
       table.insert(cmd, "'" .. opts.pattern .. "'")
     end
-
-    table.insert(cmd, path)
   elseif vim.fn.executable('grep') == 1 then
     table.insert(cmd, 'grep')
     table.insert(cmd, '-rli')
@@ -189,8 +186,6 @@ M.grep = async.wrap(function(path, opts, callback)
       table.insert(cmd, '-e')
       table.insert(cmd, "'" .. opts.pattern .. "'")
     end
-
-    table.insert(cmd, path)
   end
 
   if M.empty(cmd) then
@@ -198,7 +193,7 @@ M.grep = async.wrap(function(path, opts, callback)
     return
   end
 
-  vim.system(cmd, { text = true }, function(result)
+  vim.system(cmd, { cwd = path, text = true }, function(result)
     local files = {}
     if result and result.code == 0 and result.stdout ~= '' then
       files = filter_files(vim.split(result.stdout, '\n'), opts.max_count)

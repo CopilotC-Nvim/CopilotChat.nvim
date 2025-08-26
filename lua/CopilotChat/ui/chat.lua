@@ -794,7 +794,8 @@ function Chat:render()
     if self.config.auto_fold and self:visible() then
       if message.role ~= constants.ROLE.ASSISTANT and message.section and i < #self.messages then
         vim.api.nvim_win_call(self.winnr, function()
-          if vim.fn.foldclosed(message.section.start_line) == -1 then
+          local fold_level = vim.fn.foldlevel(message.section.start_line)
+          if fold_level > 0 and vim.fn.foldclosed(message.section.start_line) == -1 then
             vim.api.nvim_cmd({ cmd = 'foldclose', range = { message.section.start_line } }, {})
           end
         end)
