@@ -20,8 +20,12 @@ describe('CopilotChat.utils.class', function()
   end)
 
   it('supports inheritance', function()
-    local Parent = class(function(self) self.val = 1 end)
-    local Child = class(function(self) self.val = 2 end, Parent)
+    local Parent = class(function(self)
+      self.val = 1
+    end)
+    local Child = class(function(self)
+      self.val = 2
+    end, Parent)
     local obj = Child()
     assert.equals(2, obj.val)
     assert.equals(Parent, getmetatable(Child).__index)
