@@ -1,5 +1,6 @@
 local async = require('plenary.async')
 local utils = require('CopilotChat.utils')
+local curl = require('CopilotChat.utils.curl')
 local files = require('CopilotChat.utils.files')
 local file_cache = {}
 local url_cache = {}
@@ -69,7 +70,7 @@ function M.get_url(url)
       content = out.stdout
     else
       -- Fallback to curl if lynx fails
-      local response = utils.curl_get(url, { raw = { '-L' } })
+      local response = curl.get(url, { raw = { '-L' } })
       if not response or not response.body then
         return nil
       end

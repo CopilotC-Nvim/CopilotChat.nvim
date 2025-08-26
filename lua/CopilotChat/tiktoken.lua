@@ -1,5 +1,6 @@
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
+local curl = require('CopilotChat.utils.curl')
 local class = require('CopilotChat.utils.class')
 
 --- Get the library extension based on the operating system
@@ -30,7 +31,7 @@ local function load_tiktoken_data(tokenizer)
 
   notify.publish(notify.STATUS, 'Downloading tiktoken data from ' .. tiktoken_url)
 
-  utils.curl_get(tiktoken_url, {
+  curl.get(tiktoken_url, {
     output = cache_path,
   })
 
