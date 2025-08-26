@@ -1,0 +1,23 @@
+local stringbuffer = require('CopilotChat.utils.stringbuffer')
+
+describe('CopilotChat.utils.stringbuffer', function()
+  it('concatenates strings with put', function()
+    local buf = stringbuffer()
+    buf:put('hello')
+    buf:put(' ')
+    buf:put('world')
+    assert.equals('hello world', buf:tostring())
+  end)
+
+  it('sets buffer with set', function()
+    local buf = stringbuffer()
+    buf:put('foo')
+    buf:set('bar')
+    assert.equals('bar', buf:tostring())
+  end)
+
+  it('handles empty buffer', function()
+    local buf = stringbuffer()
+    assert.equals('', buf:tostring())
+  end)
+end)
