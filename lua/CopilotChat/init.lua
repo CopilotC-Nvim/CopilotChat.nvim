@@ -321,7 +321,7 @@ function M.resolve_functions(prompt, config)
   local enabled_tools = {}
   local resolved_resources = {}
   local resolved_tools = {}
-  local matches = utils.to_table(config.tools)
+  local tool_matches = utils.to_table(config.tools)
   local tool_calls = {}
   for _, message in ipairs(M.chat.messages) do
     if message.tool_calls then
@@ -335,13 +335,13 @@ function M.resolve_functions(prompt, config)
   prompt = prompt:gsub('@' .. WORD, function(match)
     for name, tool in pairs(M.config.functions) do
       if name == match or tool.group == match then
-        table.insert(matches, match)
+        table.insert(tool_matches, match)
         return ''
       end
     end
     return '@' .. match
   end)
-  for _, match in ipairs(matches) do
+  for _, match in ipairs(tool_matches) do
     for name, tool in pairs(M.config.functions) do
       if name == match or tool.group == match then
         table.insert(enabled_tools, tools[name])
@@ -349,12 +349,13 @@ function M.resolve_functions(prompt, config)
     end
   end
 
-  local matches = orderedmap()
+  local resource_matches = {}
 
   -- Check for #word:`input` pattern
   for word, input in prompt:gmatch('#' .. WORD_WITH_INPUT_QUOTED) do
     local pattern = string.format('#%s:`%s`', word, input)
-    matches:set(pattern, {
+    table.insert(resource_matches, {
+      pattern = pattern,
       word = word,
       input = input,
     })
@@ -363,7 +364,8 @@ function M.resolve_functions(prompt, config)
   -- Check for #word:input pattern
   for word, input in prompt:gmatch('#' .. WORD_WITH_INPUT_UNQUOTED) do
     local pattern = utils.empty(input) and string.format('#%s', word) or string.format('#%s:%s', word, input)
-    matches:set(pattern, {
+    table.insert(resource_matches, {
+      pattern = pattern,
       word = word,
       input = input,
     })
@@ -372,7 +374,8 @@ function M.resolve_functions(prompt, config)
   -- Check for ##word:input pattern
   for word in prompt:gmatch('##' .. WORD_NO_INPUT) do
     local pattern = string.format('##%s', word)
-    matches:set(pattern, {
+    table.insert(resource_matches, {
+      pattern = pattern,
       word = word,
     })
   end
@@ -431,19 +434,28 @@ function M.resolve_functions(prompt, config)
         if content then
           local content_out = nil
           if content.uri then
-            content_out = '##' .. content.uri
-            table.insert(resolved_resources, content)
+            if
+              not vim.tbl_contains(resolved_resources, function(resource)
+                return resource.uri == content.uri
+              end, { predicate = true })
+            then
+              content_out = '##' .. content.uri
+              table.insert(resolved_resources, content)
+            end
+
             if tool_id then
-              table.insert(state.sticky, content_out)
+              table.insert(state.sticky, '##' .. content.uri)
             end
           else
             content_out = string.format(BLOCK_OUTPUT_FORMAT, files.mimetype_to_filetype(content.mimetype), content.data)
           end
 
-          if not utils.empty(result) then
-            result = result .. '\n'
+          if content_out then
+            if not utils.empty(result) then
+              result = result .. '\n'
+            end
+            result = result .. content_out
           end
-          result = result .. content_out
         end
       end
     end
@@ -454,19 +466,21 @@ function M.resolve_functions(prompt, config)
         result = result,
       })
 
-      return nil
+      return ''
     end
 
     return result
   end
 
   -- Resolve and process all tools
-  for _, pattern in ipairs(matches:keys()) do
-    if not utils.empty(pattern) then
-      local match = matches:get(pattern)
-      local out = expand_function(match.word, match.input) or pattern
+  for _, match in ipairs(resource_matches) do
+    if not utils.empty(match.pattern) then
+      local out = expand_function(match.word, match.input)
+      if out == nil then
+        out = match.pattern
+      end
       out = out:gsub('%%', '%%%%') -- Escape percent signs for gsub
-      prompt = prompt:gsub(vim.pesc(pattern), out, 1)
+      prompt = prompt:gsub(vim.pesc(match.pattern), out, 1)
     end
   end
 
