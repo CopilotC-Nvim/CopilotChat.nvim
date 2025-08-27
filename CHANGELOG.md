@@ -1,5 +1,49 @@
 # Changelog
 
+## [4.5.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.4.1...v4.5.0) (2025-08-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* **select:** remove selection API in favor of resources
+* **prompts:** callback receives the full response object instead of just content.
+
+### Features
+
+* **config:** add back selection source config option ([#1360](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1360)) ([c37ec3c](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/c37ec3cbdb2c29be73d7d0c48057d64306aa185f))
+* **docs:** add selection source to function table ([#1358](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1358)) ([c7d8547](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/c7d85478f775a65ca777cb9b2f685911cbcd8def))
+* **functions:** add configuration parameter to stop on tool failure ([#1364](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1364)) ([8d8f1e7](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/8d8f1e7ea594b2db3368e1fa62dd7d0d128e8860))
+* **functions:** add scope=selection to diagnostics ([#1351](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1351)) ([7b4a56b](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/7b4a56b29ed926b680ea936bd29fc8568b909d97))
+* **functions:** use cwd for file and grep commands ([#1373](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1373)) ([72216c0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/72216c06fa2ce82406c3406d898a83c02db412a7)), closes [#1108](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1108)
+* **prompts:** add support for providing system prompt as function ([#1318](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1318)) ([33e6ffc](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/33e6ffc63b77b0340731f2b50bd962045adf9366))
+* **prompts:** support buffer replacement in commit messages ([#1370](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1370)) ([afafec5](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/afafec51d2657cdde4fa839bac9cc203037ff60b))
+* **ui:** add auto_fold option for chat messages ([#1354](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1354)) ([80a0994](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/80a0994f01096705e0c24dd7ed09032594689e01)), closes [#1300](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1300)
+* **ui:** improve auto folding logic in chat window ([#1356](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1356)) ([a7679e1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/a7679e118af8038046b2fc4c841406db7fe71216))
+
+
+### Bug Fixes
+
+* **completion.lua:** check if window is valid before calling get_cursor ([#1359](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1359)) ([fdac67a](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/fdac67ab62085436b60003f420ae45f104bdf935))
+* **completion:** require tool uri for input completion ([#1328](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1328)) ([76cc416](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/76cc41653d63cfdb653f584624b4bf5e721f9514))
+* **config:** correct system_prompt type and callback usage ([#1325](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1325)) ([f99f1cd](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/f99f1cdef151ac1c950850cdcc0dbeefad00603c))
+* **makefile:** handle MSYS_NT as a valid Windows environment ([#1347](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1347)) ([9769bf9](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/9769bf9a1d215cf0dc22874712d5dcda53a075ee))
+* **prompt:** recursive system prompt expansion ([#1324](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1324)) ([26f7b4f](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/26f7b4f157ec75b168c05dc826b5fa3106cfc351)), closes [#1323](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1323)
+* **select:** move config inside of marks function to prevent import loop ([#1361](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1361)) ([19a38dd](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/19a38dd34e1b61c49349552598e43b2559be2fc7))
+* **test:** run tests automatically in test script ([#1334](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1334)) ([c5057d3](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/c5057d3bb6d87e9b117b4f37162409d4c2c74e31))
+* **utils:** always exit insert mode in return_to_normal_mode ([#1313](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1313)) ([957e0a8](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/957e0a88c7d7df706380e09412c0b3f24af534ad)), closes [#1307](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1307)
+* **utils:** avoid vim.filetype.match in fast event ([#1344](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1344)) ([7993e6d](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/7993e6d2a97cb851b8b3a4087005cfaf8427dbf3))
+
+
+### Miscellaneous Chores
+
+* mark next release as 4.5.0 ([#1315](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1315)) ([d12f6df](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/d12f6dff0e1641f933f9941b843d094bf505a82e))
+
+
+### Code Refactoring
+
+* **prompts:** support template substitution in system_prompt ([#1312](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1312)) ([081d4c2](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/081d4c20242140bb185ebee142a65454ad375f7d))
+* **select:** remove selection API in favor of resources ([a2429ed](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/a2429ed44438f694f1fca60429a7984022d4a9f0))
+
 ## [4.4.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.4.0...v4.4.1) (2025-08-12)
 
 
