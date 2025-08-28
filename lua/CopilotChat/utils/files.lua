@@ -188,7 +188,7 @@ M.grep = async.wrap(function(path, opts, callback)
     end
   end
 
-  if M.empty(cmd) then
+  if vim.tbl_isempty(cmd) then
     error('No executable found for grep')
     return
   end
@@ -321,7 +321,7 @@ function M.uri_to_filename(uri)
     return uri
   end
   local ok, fname = pcall(vim.uri_to_fname, uri)
-  if not ok or M.empty(fname) then
+  if not ok or not fname or fname == '' then
     return uri
   end
   return fname
