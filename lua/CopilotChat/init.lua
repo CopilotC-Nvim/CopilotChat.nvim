@@ -8,7 +8,6 @@ local select = require('CopilotChat.select')
 local utils = require('CopilotChat.utils')
 local curl = require('CopilotChat.utils.curl')
 local orderedmap = require('CopilotChat.utils.orderedmap')
-local files = require('CopilotChat.utils.files')
 
 local WORD = '([^%s:]+)'
 local WORD_NO_INPUT = '([^%s]+)'
@@ -428,7 +427,7 @@ function M.resolve_functions(prompt, config)
 
     local result = ''
     if not ok then
-      result = string.format(BLOCK_OUTPUT_FORMAT, 'error', utils.make_string(output))
+      result = utils.make_string(output)
     else
       for _, content in ipairs(output) do
         if content then
@@ -447,7 +446,7 @@ function M.resolve_functions(prompt, config)
               table.insert(state.sticky, '##' .. content.uri)
             end
           else
-            content_out = string.format(BLOCK_OUTPUT_FORMAT, files.mimetype_to_filetype(content.mimetype), content.data)
+            content_out = content.data
           end
 
           if content_out then
@@ -815,7 +814,7 @@ function M.ask(prompt, config)
             if not handled_ids[tool_call.id] then
               table.insert(resolved_tools, {
                 id = tool_call.id,
-                result = string.format(BLOCK_OUTPUT_FORMAT, 'error', 'User skipped this function call.'),
+                result = 'User skipped this function call.',
               })
               handled_ids[tool_call.id] = true
             end
