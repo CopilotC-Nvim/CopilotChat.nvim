@@ -395,7 +395,7 @@ local chat = require("CopilotChat")
 chat.ask(prompt, config)      -- Ask a question with optional config
 chat.response()               -- Get the last response text
 chat.resolve_prompt()         -- Resolve prompt references
-chat.resolve_functions()      -- Resolve functions that are available for automatic use by LLM (WARN: async, requires plenary.async.run)
+chat.resolve_tools()          -- Resolve tools that are available for automatic use by LLM
 chat.resolve_model()          -- Resolve model from prompt (WARN: async, requires plenary.async.run)
 
 -- Window Management
