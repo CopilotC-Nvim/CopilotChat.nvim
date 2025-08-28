@@ -294,10 +294,46 @@ local function update_source()
   M.set_source(use_prev_window and vim.fn.win_getid(vim.fn.winnr('#')) or vim.api.nvim_get_current_win())
 end
 
+--- Resolve enabled tools from the prompt.
+---@param prompt string?
+---@param config CopilotChat.config.Shared?
+---@return table<CopilotChat.client.Tool>, string
+function M.resolve_tools(prompt, config)
+  config, prompt = M.resolve_prompt(prompt, config)
+
+  local tools = {}
+  for _, tool in ipairs(functions.parse_tools(M.config.functions)) do
+    tools[tool.name] = tool
+  end
+
+  local enabled_tools = {}
+  local tool_matches = utils.to_table(config.tools)
+
+  -- Check for @tool pattern to find enabled tools
+  prompt = prompt:gsub('@' .. WORD, function(match)
+    for name, tool in pairs(M.config.functions) do
+      if name == match or tool.group == match then
+        table.insert(tool_matches, match)
+        return ''
+      end
+    end
+    return '@' .. match
+  end)
+  for _, match in ipairs(tool_matches) do
+    for name, tool in pairs(M.config.functions) do
+      if name == match or tool.group == match then
+        table.insert(enabled_tools, tools[name])
+      end
+    end
+  end
+
+  return enabled_tools, prompt
+end
+
 --- Call and resolve function calls from the prompt.
 ---@param prompt string?
 ---@param config CopilotChat.config.Shared?
----@return table<CopilotChat.client.Tool>, table<CopilotChat.client.Resource>, table, string
+---@return table<CopilotChat.client.Resource>, table, string
 ---@async
 function M.resolve_functions(prompt, config)
   config, prompt = M.resolve_prompt(prompt, config)
@@ -317,33 +353,13 @@ function M.resolve_functions(prompt, config)
     prompt = table.concat(lines, '\n')
   end
 
-  local enabled_tools = {}
   local resolved_resources = {}
   local resolved_tools = {}
-  local tool_matches = utils.to_table(config.tools)
   local tool_calls = {}
   for _, message in ipairs(M.chat.messages) do
     if message.tool_calls then
       for _, tool_call in ipairs(message.tool_calls) do
         table.insert(tool_calls, tool_call)
-      end
-    end
-  end
-
-  -- Check for @tool pattern to find enabled tools
-  prompt = prompt:gsub('@' .. WORD, function(match)
-    for name, tool in pairs(M.config.functions) do
-      if name == match or tool.group == match then
-        table.insert(tool_matches, match)
-        return ''
-      end
-    end
-    return '@' .. match
-  end)
-  for _, match in ipairs(tool_matches) do
-    for name, tool in pairs(M.config.functions) do
-      if name == match or tool.group == match then
-        table.insert(enabled_tools, tools[name])
       end
     end
   end
@@ -483,7 +499,7 @@ function M.resolve_functions(prompt, config)
     end
   end
 
-  return enabled_tools, resolved_resources, resolved_tools, prompt
+  return resolved_resources, resolved_tools, prompt
 end
 
 --- Resolve the final prompt and config from prompt template.
@@ -795,7 +811,8 @@ function M.ask(prompt, config)
     )
 
     async.run(handle_error(config, function()
-      local selected_tools, resolved_resources, resolved_tools, prompt = M.resolve_functions(prompt, config)
+      local selected_tools, prompt = M.resolve_tools(prompt, config)
+      local resolved_resources, resolved_tools, prompt = M.resolve_functions(prompt, config)
       local selected_model, prompt = M.resolve_model(prompt, config)
 
       prompt = vim.trim(prompt)

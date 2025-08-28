@@ -457,8 +457,10 @@ return {
 
       async.run(function()
         local infos = client:info()
+        local selected_tools = copilot.resolve_tools(prompt, config)
         local selected_model = copilot.resolve_model(prompt, config)
-        local selected_tools, resolved_resources = copilot.resolve_functions(prompt, config)
+        local resolved_resources = copilot.resolve_functions(prompt, config)
+
         selected_tools = vim.tbl_map(function(tool)
           return tool.name
         end, selected_tools)
