@@ -1,3 +1,4 @@
+local log = require('plenary.log')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local curl = require('CopilotChat.utils.curl')
@@ -105,12 +106,12 @@ end
 ---@return number
 function Tiktoken:count(prompt)
   if not self.tiktoken_core then
-    return math.ceil(#prompt * 0.5) -- Fallback to 1/2 character count
+    return math.ceil(#prompt / 4)
   end
 
   local tokens = self:encode(prompt)
   if not tokens then
-    return math.ceil(#prompt * 0.5) -- Fallback to 1/2 character count
+    return math.ceil(#prompt / 4)
   end
   return #tokens
 end
