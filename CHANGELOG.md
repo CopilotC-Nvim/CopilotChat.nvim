@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.5.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.5.0...v4.5.1) (2025-08-28)
+
+
+### Bug Fixes
+
+* **files:** generate absolute paths in code blocks ([#1378](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1378)) ([0f42bfc](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/0f42bfc44202ac4daa0b0f32e30ee4040f69bf35)), closes [#1377](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1377)
+
 ## [4.5.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.4.1...v4.5.0) (2025-08-27)
 
 
