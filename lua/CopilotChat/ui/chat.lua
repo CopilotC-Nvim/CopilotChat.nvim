@@ -620,19 +620,19 @@ function Chat:render()
       if id then
         -- Draw the separator as virtual text over the header line, hiding the id and anything after the header
         if self.config.highlight_headers then
-          local sep_col = vim.fn.strwidth(header_value)
-          vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, l - 1, sep_col, {
+          local header_width = vim.fn.strwidth(header_value)
+          vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, l - 1, 0, {
+            end_col = #header_value,
+            hl_group = 'CopilotChatHeader',
+            priority = 100,
+            strict = false,
+          })
+          vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, l - 1, #header_value, {
             virt_text = {
               { string.rep(self.separator, vim.go.columns), 'CopilotChatSeparator' },
             },
-            virt_text_win_col = sep_col,
+            virt_text_win_col = header_width,
             priority = 200,
-            strict = false,
-          })
-          vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, l - 1, 0, {
-            end_col = sep_col,
-            hl_group = 'CopilotChatHeader',
-            priority = 100,
             strict = false,
           })
         end
