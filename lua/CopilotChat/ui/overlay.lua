@@ -81,6 +81,7 @@ function Overlay:create()
   local bufnr = vim.api.nvim_create_buf(false, true)
   vim.bo[bufnr].filetype = self.name
   vim.bo[bufnr].modifiable = false
+  vim.bo[bufnr].undolevels = 10
   vim.api.nvim_buf_set_name(bufnr, self.name)
   return bufnr
 end
