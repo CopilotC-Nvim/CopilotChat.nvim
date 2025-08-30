@@ -1,3 +1,4 @@
+local async = require('plenary.async')
 local Overlay = require('CopilotChat.ui.overlay')
 local Spinner = require('CopilotChat.ui.spinner')
 local constants = require('CopilotChat.constants')
@@ -34,6 +35,28 @@ local function match_header(header)
     elseif type then
       return type, 'block'
     end
+  end
+end
+
+local function find_header(lines, line, header_patterns, direction)
+  if direction == 'backward' then
+    for l = line, 1, -1 do
+      for _, pattern in ipairs(header_patterns) do
+        if lines[l] and lines[l]:match('^' .. pattern) then
+          return l
+        end
+      end
+    end
+    return 1
+  else -- "forward"
+    for l = line, #lines do
+      for _, pattern in ipairs(header_patterns) do
+        if lines[l] and lines[l]:match('^' .. pattern) then
+          return l
+        end
+      end
+    end
+    return #lines
   end
 end
 
@@ -113,6 +136,12 @@ local Chat = class(function(self, config, on_buf_create)
   end)
 end, Overlay)
 
+function Chat:wait()
+  async.util.wait(function()
+    return not self._pending_range
+  end)
+end
+
 --- Returns whether the chat window is visible.
 ---@return boolean
 function Chat:visible()
@@ -136,7 +165,6 @@ function Chat:get_block(role, cursor)
       return nil
     end
 
-    self:render()
     local cursor_pos = vim.api.nvim_win_get_cursor(self.winnr)
     local cursor_line = cursor_pos[1]
     local closest_block = nil
@@ -177,7 +205,6 @@ function Chat:get_message(role, cursor)
       return nil
     end
 
-    self:render()
     local cursor_pos = vim.api.nvim_win_get_cursor(self.winnr)
     local cursor_line = cursor_pos[1]
     local closest_message = nil
@@ -362,7 +389,6 @@ function Chat:open(config)
   vim.api.nvim_set_hl(ns, '@markup.italic.markdown_inline', {}) -- disable italic messing up glob patterns
   vim.api.nvim_win_set_hl_ns(self.winnr, ns)
   vim.api.nvim_win_set_buf(self.winnr, self.bufnr)
-  self:render()
 end
 
 --- Close the chat window.
@@ -463,8 +489,6 @@ function Chat:add_message(message, replace)
     self:append(message.content)
   elseif replace and current_message then
     -- Replace the content of the current message
-    self:render()
-
     for k, v in pairs(message) do
       current_message[k] = v
     end
@@ -499,7 +523,6 @@ function Chat:remove_message(role, cursor)
     return
   end
 
-  self:render()
   local message = self:get_message(role, cursor)
   if not message then
     return
@@ -523,8 +546,6 @@ function Chat:remove_message(role, cursor)
       break
     end
   end
-
-  self:render()
 end
 
 --- Append text to the chat window.
@@ -573,17 +594,32 @@ function Chat:create()
   vim.bo[bufnr].syntax = 'markdown'
   vim.bo[bufnr].textwidth = 0
 
-  vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertLeave' }, {
-    buffer = bufnr,
-    callback = function()
-      utils.debounce(self.name, function()
-        self:render()
-      end, 100)
+  vim.api.nvim_buf_attach(bufnr, false, {
+    on_lines = function(_, _, _, first, last, new_last, _)
+      vim.print('on_lines', first, last, new_last)
+      self:on_lines_changed(first + 1, new_last)
     end,
   })
 
   self.spinner.bufnr = bufnr
   return bufnr
+end
+
+function Chat:on_lines_changed(start_line, end_line)
+  vim.print(self._pending_range, start_line, end_line)
+  if not self._pending_range then
+    self._pending_range = { start_line = start_line, end_line = end_line }
+  else
+    self._pending_range.start_line = math.min(self._pending_range.start_line, start_line)
+    self._pending_range.end_line = math.max(self._pending_range.end_line, end_line)
+  end
+
+  utils.debounce('copilot-chat-incremental', function()
+    if self._pending_range then
+      self:render(self._pending_range.start_line, self._pending_range.end_line)
+      self._pending_range = nil
+    end
+  end, 30)
 end
 
 --- Validate the chat window.
@@ -595,15 +631,23 @@ function Chat:validate()
   end
 end
 
---- Render the chat window.
+--- Render the chat window incrementally.
+--- @param start_line number? The starting line of the region to re-render (1-based)
+--- @param end_line number? The ending line of the region to re-render (1-based, inclusive)
 ---@protected
-function Chat:render()
+function Chat:render(start_line, end_line)
   self:validate()
+  self._rendering = true
 
   local highlight_ns = vim.api.nvim_create_namespace('copilot-chat-headers')
-  vim.api.nvim_buf_clear_namespace(self.bufnr, highlight_ns, 0, -1)
-
   local lines = vim.api.nvim_buf_get_lines(self.bufnr, 0, -1, false)
+  local header_patterns = vim.tbl_values(self.headers)
+
+  -- Find the region to re-render
+  local region_start = find_header(lines, start_line or 1, header_patterns, 'backward')
+  local region_end = find_header(lines, end_line or #lines, header_patterns, 'forward')
+
+  vim.api.nvim_buf_clear_namespace(self.bufnr, highlight_ns, region_start, region_end)
 
   local new_messages = {}
   local current_message = nil
@@ -613,12 +657,12 @@ function Chat:render()
     return line:match('^' .. vim.pesc(header) .. '%(([^)]+)%)' .. vim.pesc(self.separator) .. '$')
   end
 
-  for l, line in ipairs(lines) do
+  for l = region_start, region_end do
+    local line = lines[l]
     -- Detect section header with ID
     for header_name, header_value in pairs(self.headers) do
       local id = parse_header(header_value, line)
       if id then
-        -- Draw the separator as virtual text over the header line, hiding the id and anything after the header
         if self.config.highlight_headers then
           local header_width = vim.fn.strwidth(header_value)
           vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, l - 1, 0, {
@@ -637,7 +681,6 @@ function Chat:render()
           })
         end
 
-        -- Finish previous message
         if current_message then
           current_message.section.end_line = l - 1
           current_message.content = vim.trim(
@@ -648,7 +691,6 @@ function Chat:render()
           )
         end
 
-        -- Find existing message by id or create new
         local old_msg = nil
         for _, msg in ipairs(self.messages) do
           if msg.id == id then
@@ -660,7 +702,6 @@ function Chat:render()
           old_msg = { id = id, role = header_name }
         end
 
-        -- Attach section info
         old_msg.section = {
           role = header_name,
           start_line = l + 1,
@@ -706,7 +747,7 @@ function Chat:render()
     end
 
     -- If last line, finish last message
-    if l == #lines and current_message then
+    if l == region_end and current_message then
       current_message.section.end_line = l
       current_message.content = vim.trim(
         table.concat(vim.list_slice(lines, current_message.section.start_line, current_message.section.end_line), '\n')
@@ -734,77 +775,92 @@ function Chat:render()
   end
 
   -- Replace self.messages with new_messages (preserving tool_calls, etc.)
-  self.messages = new_messages
+  -- Only update messages in the affected region
+  for i, msg in ipairs(new_messages) do
+    self.messages[i] = msg
+  end
 
   for i, message in ipairs(self.messages) do
-    -- Show tool call details as virt lines
-    if message.tool_calls and #message.tool_calls > 0 then
-      local section = message.section
-      if section and section.end_line then
-        local virt_lines = { { { 'Tool calls:', 'CopilotChatAnnotationHeader' } } }
-        for _, tc in ipairs(message.tool_calls) do
-          table.insert(virt_lines, { { string.format('  %s:%s', tc.name, tostring(tc.id)), 'CopilotChatAnnotation' } })
-          for _, json_line in ipairs(vim.split(vim.inspect(utils.json_decode(tc.arguments)), '\n')) do
-            table.insert(virt_lines, { { '    ' .. json_line, 'CopilotChatAnnotation' } })
+    if message.section and message.section.start_line >= region_start and message.section.end_line <= region_end then
+      -- Show tool call details as virt lines
+      if message.tool_calls and #message.tool_calls > 0 then
+        local section = message.section
+        if section and section.end_line then
+          local virt_lines = { { { 'Tool calls:', 'CopilotChatAnnotationHeader' } } }
+          for _, tc in ipairs(message.tool_calls) do
+            table.insert(
+              virt_lines,
+              { { string.format('  %s:%s', tc.name, tostring(tc.id)), 'CopilotChatAnnotation' } }
+            )
+            for _, json_line in ipairs(vim.split(vim.inspect(utils.json_decode(tc.arguments)), '\n')) do
+              table.insert(virt_lines, { { '    ' .. json_line, 'CopilotChatAnnotation' } })
+            end
           end
+          vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, section.end_line - 1, 0, {
+            virt_lines = virt_lines,
+            virt_lines_above = true,
+            priority = 100,
+            strict = false,
+          })
         end
-        vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, section.end_line - 1, 0, {
+      end
+
+      if message.tool_call_id then
+        local section = message.section
+        if section and section.start_line then
+          local virt_lines = {
+            { { 'Tool: ' .. message.tool_call_id, 'CopilotChatAnnotationHeader' } },
+          }
+          vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, section.start_line, 0, {
+            virt_lines = virt_lines,
+            virt_lines_above = true,
+            priority = 100,
+            strict = false,
+          })
+        end
+      end
+
+      -- Show reasoning as virtual text above assistant messages
+      if
+        message.role == constants.ROLE.ASSISTANT
+        and not utils.empty(message.reasoning)
+        and message.section
+        and message.section.start_line
+      then
+        local virt_lines = {}
+        for _, line in ipairs(vim.split(message.reasoning, '\n')) do
+          table.insert(virt_lines, { { 'Reasoning: ' .. line, 'CopilotChatAnnotation' } })
+        end
+        vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, message.section.start_line - 1, 0, {
           virt_lines = virt_lines,
           virt_lines_above = true,
           priority = 100,
           strict = false,
         })
       end
-    end
 
-    if message.tool_call_id then
-      local section = message.section
-      if section and section.start_line then
-        local virt_lines = {
-          { { 'Tool: ' .. message.tool_call_id, 'CopilotChatAnnotationHeader' } },
-        }
-        vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, section.start_line, 0, {
-          virt_lines = virt_lines,
-          virt_lines_above = true,
-          priority = 100,
-          strict = false,
-        })
-      end
-    end
-
-    -- Show reasoning as virtual text above assistant messages
-    if
-      message.role == constants.ROLE.ASSISTANT
-      and not utils.empty(message.reasoning)
-      and message.section
-      and message.section.start_line
-    then
-      local virt_lines = {}
-      for _, line in ipairs(vim.split(message.reasoning, '\n')) do
-        table.insert(virt_lines, { { 'Reasoning: ' .. line, 'CopilotChatAnnotation' } })
-      end
-      vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, message.section.start_line - 1, 0, {
-        virt_lines = virt_lines,
-        virt_lines_above = true,
-        priority = 100,
-        strict = false,
-      })
-    end
-
-    if self.config.auto_fold and self:visible() then
-      if message.role ~= constants.ROLE.ASSISTANT and message.section and i < #self.messages then
-        vim.api.nvim_win_call(self.winnr, function()
-          local fold_level = vim.fn.foldlevel(message.section.start_line)
-          if fold_level > 0 and vim.fn.foldclosed(message.section.start_line) == -1 then
-            vim.api.nvim_cmd({ cmd = 'foldclose', range = { message.section.start_line } }, {})
-          end
-        end)
+      if self.config.auto_fold and self:visible() then
+        if message.role ~= constants.ROLE.ASSISTANT and message.section and i < #self.messages then
+          vim.api.nvim_win_call(self.winnr, function()
+            local fold_level = vim.fn.foldlevel(message.section.start_line)
+            if fold_level > 0 and vim.fn.foldclosed(message.section.start_line) == -1 then
+              vim.api.nvim_cmd({ cmd = 'foldclose', range = { message.section.start_line } }, {})
+            end
+          end)
+        end
       end
     end
   end
 
-  -- Show help as before, using last user message
-  local last_message = self.messages[#self.messages]
+  -- Show help as before, using last user message in region
+  local last_message
+  for i = #self.messages, 1, -1 do
+    local msg = self.messages[i]
+    if msg.section and msg.section.start_line >= region_start and msg.section.end_line <= region_end then
+      last_message = msg
+      break
+    end
+  end
   if last_message and last_message.role == constants.ROLE.USER then
     local msg = self.config.show_help and self.help or ''
     if self.token_count and self.token_max_count then
@@ -817,6 +873,8 @@ function Chat:render()
   else
     self:show_help()
   end
+
+  self._rendering = false
 end
 
 --- Get the last line and column of the chat window.
