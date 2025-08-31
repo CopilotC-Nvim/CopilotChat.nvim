@@ -1,5 +1,19 @@
 # Changelog
 
+## [4.6.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.5.1...v4.6.0) (2025-08-31)
+
+
+### Features
+
+* **tiktoken:** improve token counting accuracy ([#1382](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1382)) ([a657694](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/a6576949e821e7abf9d0135e87576a51ec0e2e68))
+
+
+### Bug Fixes
+
+* **auth:** improve token saving and polling logic ([#1389](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1389)) ([b7728f4](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/b7728f450bfc95c7c749a322b3f130a16f80e35c)), closes [#1388](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1388)
+* **chat:** correct header highlighting for multi-byte characters ([#1385](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1385)) ([f844a68](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/f844a684bd9e59b4bfc8882b4beb9be81cccfe23)), closes [#1384](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1384)
+* **utils:** use proper empty check ([#1380](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1380)) ([c4b2e03](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/c4b2e03cd315c3fd9736dcf796cb20f6a4b9f801))
+
 ## [4.5.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.5.0...v4.5.1) (2025-08-28)
 
 
