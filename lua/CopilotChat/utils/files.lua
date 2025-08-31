@@ -231,9 +231,6 @@ end
 ---@param data string The data to write
 ---@return boolean
 function M.write_file(path, data)
-  M.schedule_main()
-  vim.fn.mkdir(vim.fn.fnamemodify(path, ':p:h'), 'p')
-
   local err, fd = async.uv.fs_open(path, 'w', 438)
   if err or not fd then
     return false

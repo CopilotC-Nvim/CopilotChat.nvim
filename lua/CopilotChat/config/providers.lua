@@ -1,3 +1,4 @@
+local log = require('plenary.log')
 local plenary_utils = require('plenary.async.util')
 local constants = require('CopilotChat.constants')
 local notify = require('CopilotChat.notify')
@@ -41,10 +42,14 @@ local function set_token(tag, token, save)
     return token
   end
 
+  utils.schedule_main()
   local tokens = load_tokens()
   tokens[tag] = token
   local config_path = vim.fs.normalize(vim.fn.stdpath('data') .. '/copilot_chat')
-  files.write_file(config_path .. '/tokens.json', vim.json.encode(tokens))
+  local file_path = config_path .. '/tokens.json'
+  vim.fn.mkdir(vim.fn.fnamemodify(file_path, ':p:h'), 'p')
+  files.write_file(file_path, vim.json.encode(tokens))
+  log.info('Token for ' .. tag .. ' saved to ' .. file_path)
   return token
 end
 
@@ -65,23 +70,25 @@ local function github_device_flow(tag, client_id, scope)
   end
 
   local function poll_for_token(device_code, interval)
-    while true do
-      plenary_utils.sleep(interval * 1000)
+    plenary_utils.sleep(interval * 1000)
 
-      local res = curl.post('https://github.com/login/oauth/access_token', {
-        body = {
-          client_id = client_id,
-          device_code = device_code,
-          grant_type = 'urn:ietf:params:oauth:grant-type:device_code',
-        },
-        headers = { ['Accept'] = 'application/json' },
-      })
-      local data = vim.json.decode(res.body)
-      if data.access_token then
-        return data.access_token
-      elseif data.error ~= 'authorization_pending' then
-        error('Auth error: ' .. (data.error or 'unknown'))
-      end
+    local res = curl.post('https://github.com/login/oauth/access_token', {
+      json_response = true,
+      body = {
+        client_id = client_id,
+        device_code = device_code,
+        grant_type = 'urn:ietf:params:oauth:grant-type:device_code',
+      },
+      headers = { ['Accept'] = 'application/json' },
+    })
+
+    local data = res.body
+    if data.access_token then
+      return data.access_token
+    elseif data.error ~= 'authorization_pending' then
+      error('Auth error: ' .. (data.error or 'unknown'))
+    else
+      return poll_for_token(device_code, interval)
     end
   end
 
@@ -97,6 +104,8 @@ local function github_device_flow(tag, client_id, scope)
   )
   notify.publish(notify.STATUS, '[' .. tag .. '] Waiting for authorization...')
   token = poll_for_token(code_data.device_code, code_data.interval)
+  notify.publish(notify.MESSAGE, '')
+  notify.publish(notify.STATUS, '')
   return set_token(tag, token, true)
 end
 
