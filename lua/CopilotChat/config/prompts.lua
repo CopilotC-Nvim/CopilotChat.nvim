@@ -30,7 +30,7 @@ Context is provided to you in several ways:
 - Resources: Contextual data shared via "# <uri>" headers and referenced via "##<uri>" links
 - Code blocks with file path labels and line numbers (e.g., ```lua path=/file.lua start_line=1 end_line=10```)
 - Visual selections: Text selected in visual mode that can be shared as context
-- Diffs: Changes shown in unified diff format with line prefixes (+, -, etc.)
+- Diffs: Changes shown in unified diff format (+, -, etc.)
 - Conversation history
 When resources (like buffers, files, or diffs) change, their content in the chat history is replaced with the latest version rather than appended as new data.
 </contextInstructions>
@@ -52,44 +52,43 @@ If tools are available for a requested action (such as file edit, read, search, 
 - If you don't have explicit tool definitions in your system prompt, clearly state this limitation when asked. NEVER pretend to have tool capabilities you don't possess.
 </toolUseInstructions>
 <editFileInstructions>
-Use these instructions when editing files via code blocks. Your goal is to produce clear, minimal, and precise file edits.
+Return edits similar to unified diffs that `diff -U0` would produce.
+Output the edits in markdown code blocks with diff syntax highlighting.
 
-Steps for presenting code changes:
-1. For each change, use the following markdown code block format with triple backticks:
-   ```<filetype> path=<file_name> start_line=<start_line> end_line=<end_line>
-   <content>
-   ```
+Make sure you include the first 2 lines with the file paths, example:
+```
+--- {DIR}/file.ext
++++ {DIR}/file.ext
+```
 
-2. Examples:
-   ```lua path={DIR}/lua/CopilotChat/init.lua start_line=40 end_line=50
-   local function example()
-     print("This is an example function.")
-   end
-   ```
+Don't include timestamps with the file paths.
 
-   ```python path={DIR}/scripts/example.py start_line=10 end_line=15
-   def example_function():
-       print("This is an example function.")
-   ```
+Start each hunk of changes with a `@@ ... @@` line.
+Don't include line numbers like `diff -U0` does.
+The user's patch tool doesn't need them.
 
-   ```json path={DIR}/config/settings.json start_line=5 end_line=8
-   {
-     "setting": "value",
-     "enabled": true
-   }
-   ```
+The user's patch tool needs CORRECT patches that apply cleanly against the current contents of the file!
+Think carefully and make sure you include and mark all lines that need to be removed or changed as `-` lines.
+Make sure you mark all new or modified lines with `+`.
+Don't leave out any lines or the diff patch won't apply correctly.
 
-3. Requirements for code content:
-   - Always use the absolute file path in the code block header. If the path is not already absolute, convert it to an absolute path prefixed by {DIR}.
-   - Keep changes minimal and focused to produce short diffs
-   - Include complete replacement code for the specified line range
-   - Proper indentation matching the source
-   - All necessary lines (no eliding with comments)
-   - **Never include line number prefixes in your output code blocks. Only output valid code, exactly as it should appear in the file. Line numbers are only allowed in the code block header.**
-   - Address any diagnostics issues when fixing code
+Indentation matters in the diffs!
 
-4. If multiple changes are needed, present them as separate code blocks.
+Start a new hunk for each section of the file that needs changes.
 
+Only output hunks that specify changes with `+` or `-` lines.
+Skip any hunks that are entirely unchanging ` ` lines.
+
+Output hunks in whatever order makes the most sense.
+Hunks don't need to be in any particular order.
+
+When editing a function, method, loop, etc use a hunk to replace the *entire* code block.
+Delete the entire existing version with `-` lines and then add a new, updated version with `+` lines.
+This will help you generate correct code and correct diffs.
+
+To move code within a file, use 2 hunks: 1 to delete it from its current location, 1 to insert it in the new location.
+
+To make a new file, show a diff from `--- /dev/null` to `+++ path/to/new/file.ext`.
 </editFileInstructions>
 ]],
   },
@@ -205,10 +204,9 @@ If no issues found, confirm the code is well-written and explain why.
   },
 
   Commit = {
-    prompt = 'Write commit message for the change with commitizen convention. Keep the title under 50 characters and wrap message at 72 characters. Format as a gitcommit code block. If user has COMMIT_EDITMSG opened, generate replacement block for whole buffer.',
+    prompt = 'Write commit message for the change with commitizen convention. Keep the title under 50 characters and wrap message at 72 characters. Format as a gitcommit code block.',
     resources = {
       'gitdiff:staged',
-      'buffer',
     },
   },
 }

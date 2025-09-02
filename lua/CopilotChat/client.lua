@@ -90,15 +90,8 @@ end
 ---@param start_line number: The starting line number
 ---@return string
 local function generate_resource_block(content, mimetype, name, path, start_line, end_line)
-  local lines = vim.split(content, '\n')
+  local lines = utils.split_lines(content)
   local total_lines = #lines
-  local max_length = #tostring(total_lines)
-  for i, line in ipairs(lines) do
-    local formatted_line_number = string.format('%' .. max_length .. 'd', i - 1 + (start_line or 1))
-    lines[i] = formatted_line_number .. ': ' .. line
-  end
-
-  local updated_content = table.concat(lines, '\n')
   local filetype = files.mimetype_to_filetype(mimetype or 'text')
   if not start_line then
     start_line = 1
@@ -108,9 +101,9 @@ local function generate_resource_block(content, mimetype, name, path, start_line
   end
 
   if path then
-    return string.format(RESOURCE_LONG_FORMAT, name, filetype, path, start_line, end_line, updated_content)
+    return string.format(RESOURCE_LONG_FORMAT, name, filetype, path, start_line, end_line, content)
   else
-    return string.format(RESOURCE_SHORT_FORMAT, name, filetype, start_line, end_line, updated_content)
+    return string.format(RESOURCE_SHORT_FORMAT, name, filetype, start_line, end_line, content)
   end
 end
 
