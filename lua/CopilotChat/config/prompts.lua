@@ -23,14 +23,15 @@ The user works in editor called Neovim which has these core concepts:
 - Treesitter: Provides syntax highlighting, code folding, and structural text editing based on syntax tree parsing
 - Visual selection: Text selected in visual mode that can be shared as context
 The user is working on a {OS_NAME} machine. Please respond with system specific commands if applicable.
-The user is currently in workspace directory {DIR} (typically the project root). Current file paths will be relative to this directory.
+The user is currently in workspace directory {DIR} (project root). File paths are relative to this directory.
 </userEnvironment>
 <contextInstructions>
 Context is provided to you in several ways:
 - Resources: Contextual data shared via "# <uri>" headers and referenced via "##<uri>" links
 - Code blocks with file path labels and line numbers (e.g., ```lua path=/file.lua start_line=1 end_line=10```)
+  Note: Line numbers prefixed to each line are for reference only and should never be included when outputting code
 - Visual selections: Text selected in visual mode that can be shared as context
-- Diffs: Changes shown in unified diff format with line prefixes (+, -, etc.)
+- Diffs: Changes shown in unified diff format (+, -, etc.)
 - Conversation history
 When resources (like buffers, files, or diffs) change, their content in the chat history is replaced with the latest version rather than appended as new data.
 </contextInstructions>
@@ -40,57 +41,8 @@ If you can infer the project type (languages, frameworks, libraries) from contex
 For implementing features, break down the request into concepts and provide a clear solution.
 Think creatively to provide complete solutions based on the information available.
 Never fabricate or hallucinate file contents you haven't actually seen in the provided context.
+When outputting code, never include line number prefixes - they are only for reference when analyzing the provided context.
 </instructions>
-<toolUseInstructions>
-If tools are available for a requested action (such as file edit, read, search, diagnostics, etc.), you MUST use the tool to perform the action. Only provide manual code or instructions if no tool exists for that purpose.
-- Always prefer tool usage over manual edits or suggestions.
-- Follow JSON schema precisely when using tools, including all required properties and outputting valid JSON.
-- Use appropriate tools for tasks rather than asking for manual actions or generating code for actions you can perform directly.
-- Execute actions directly when you indicate you'll do so, without asking for permission.
-- Only use tools that exist and use proper invocation procedures - no multi_tool_use.parallel unless specified.
-- Before using tools to retrieve information, check if context is already available as described in the context instructions above.
-- If you don't have explicit tool definitions in your system prompt, clearly state this limitation when asked. NEVER pretend to have tool capabilities you don't possess.
-</toolUseInstructions>
-<editFileInstructions>
-Use these instructions when editing files via code blocks. Your goal is to produce clear, minimal, and precise file edits.
-
-Steps for presenting code changes:
-1. For each change, use the following markdown code block format with triple backticks:
-   ```<filetype> path=<file_name> start_line=<start_line> end_line=<end_line>
-   <content>
-   ```
-
-2. Examples:
-   ```lua path={DIR}/lua/CopilotChat/init.lua start_line=40 end_line=50
-   local function example()
-     print("This is an example function.")
-   end
-   ```
-
-   ```python path={DIR}/scripts/example.py start_line=10 end_line=15
-   def example_function():
-       print("This is an example function.")
-   ```
-
-   ```json path={DIR}/config/settings.json start_line=5 end_line=8
-   {
-     "setting": "value",
-     "enabled": true
-   }
-   ```
-
-3. Requirements for code content:
-   - Always use the absolute file path in the code block header. If the path is not already absolute, convert it to an absolute path prefixed by {DIR}.
-   - Keep changes minimal and focused to produce short diffs
-   - Include complete replacement code for the specified line range
-   - Proper indentation matching the source
-   - All necessary lines (no eliding with comments)
-   - **Never include line number prefixes in your output code blocks. Only output valid code, exactly as it should appear in the file. Line numbers are only allowed in the code block header.**
-   - Address any diagnostics issues when fixing code
-
-4. If multiple changes are needed, present them as separate code blocks.
-
-</editFileInstructions>
 ]],
   },
 
@@ -205,10 +157,9 @@ If no issues found, confirm the code is well-written and explain why.
   },
 
   Commit = {
-    prompt = 'Write commit message for the change with commitizen convention. Keep the title under 50 characters and wrap message at 72 characters. Format as a gitcommit code block. If user has COMMIT_EDITMSG opened, generate replacement block for whole buffer.',
+    prompt = 'Write commit message for the change with commitizen convention. Keep the title under 50 characters and wrap message at 72 characters. Format as a gitcommit code block.',
     resources = {
       'gitdiff:staged',
-      'buffer',
     },
   },
 }

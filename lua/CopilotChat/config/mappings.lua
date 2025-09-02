@@ -4,103 +4,25 @@ local client = require('CopilotChat.client')
 local constants = require('CopilotChat.constants')
 local select = require('CopilotChat.select')
 local utils = require('CopilotChat.utils')
+local diff = require('CopilotChat.utils.diff')
 local files = require('CopilotChat.utils.files')
 
----@class CopilotChat.config.mappings.Diff
----@field change string
----@field reference string
----@field filename string
----@field filetype string
----@field start_line number
----@field end_line number
----@field bufnr number?
-
---- Get diff data from a block
----@param bufnr number
----@param block CopilotChat.ui.chat.Block?
----@return CopilotChat.config.mappings.Diff?
-local function get_diff(bufnr, block)
-  -- If no block found, return nil
-  if not block then
-    return nil
-  end
-
-  local header = block.header
-  local selection = select.get(bufnr)
-  local filename = nil
-  local filetype = nil
-  local start_line = nil
-  local end_line = nil
-  local reference = nil
-  local bufnr = nil
-
-  if selection then
-    -- If we have a selection, use it as default source of truth
-    filename = selection.filename
-    filetype = selection.filetype
-    start_line = selection.start_line
-    end_line = selection.end_line
-    reference = selection.content
-    bufnr = selection.bufnr
-  end
-
-  -- If we have header info, use it as source of truth
-  if header.start_line and header.end_line then
-    filename = files.uri_to_filename(header.filename)
-    filetype = header.filetype or files.filetype(filename)
-    start_line = header.start_line
-    end_line = header.end_line
-
-    -- Try to find matching buffer and window
-    bufnr = nil
-    for _, win in ipairs(vim.api.nvim_list_wins()) do
-      local win_buf = vim.api.nvim_win_get_buf(win)
-      if files.filename_same(vim.api.nvim_buf_get_name(win_buf), header.filename) then
-        bufnr = win_buf
-        break
-      end
-    end
-
-    -- If we found a valid buffer, get the reference content
-    if bufnr and utils.buf_valid(bufnr) then
-      local lines = vim.api.nvim_buf_get_lines(bufnr, start_line - 1, end_line, false)
-      reference = table.concat(lines, '\n')
-      filetype = vim.bo[bufnr].filetype
-    end
-  end
-
-  -- If we are missing info, there is no diff to be made
-  if not start_line or not end_line or not filename then
-    return nil
-  end
-
-  return {
-    change = block.content,
-    reference = reference or '',
-    filetype = filetype or '',
-    filename = filename,
-    start_line = start_line,
-    end_line = end_line,
-    bufnr = bufnr,
-  }
-end
-
 --- Prepare a buffer for applying a diff
----@param diff CopilotChat.config.mappings.Diff?
----@param source CopilotChat.source?
----@return CopilotChat.config.mappings.Diff?
-local function prepare_diff_buffer(diff, source)
-  if not diff then
-    return diff
+---@param filename string?
+---@param source CopilotChat.source
+---@return integer
+local function prepare_diff_buffer(filename, source)
+  if not filename then
+    filename = vim.api.nvim_buf_get_name(source.bufnr)
   end
 
-  local diff_bufnr = diff.bufnr
+  local diff_bufnr = nil
 
   -- If buffer is not found, try to load it
   if not diff_bufnr then
     -- Try to find matching buffer first
     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-      if files.filename_same(vim.api.nvim_buf_get_name(buf), diff.filename) then
+      if files.filename_same(vim.api.nvim_buf_get_name(buf), filename) then
         diff_bufnr = buf
         break
       end
@@ -108,11 +30,9 @@ local function prepare_diff_buffer(diff, source)
 
     -- If still not found, create a new buffer
     if not diff_bufnr then
-      diff_bufnr = vim.fn.bufadd(diff.filename)
+      diff_bufnr = vim.fn.bufadd(filename)
       vim.fn.bufload(diff_bufnr)
     end
-
-    diff.bufnr = diff_bufnr
   end
 
   -- If source exists, update it to point to the diff buffer
@@ -121,7 +41,7 @@ local function prepare_diff_buffer(diff, source)
     vim.api.nvim_win_set_buf(source.winnr, diff_bufnr)
   end
 
-  return diff
+  return diff_bufnr
 end
 
 ---@class CopilotChat.config.mapping
@@ -131,9 +51,6 @@ end
 
 ---@class CopilotChat.config.mapping.yank_diff : CopilotChat.config.mapping
 ---@field register string?
-
----@class CopilotChat.config.mapping.show_diff : CopilotChat.config.mapping
----@field full_diff boolean?
 
 ---@class CopilotChat.config.mappings
 ---@field complete CopilotChat.config.mapping|false|nil
@@ -145,7 +62,7 @@ end
 ---@field jump_to_diff CopilotChat.config.mapping|false|nil
 ---@field quickfix_diffs CopilotChat.config.mapping|false|nil
 ---@field yank_diff CopilotChat.config.mapping.yank_diff|false|nil
----@field show_diff CopilotChat.config.mapping.show_diff|false|nil
+---@field show_diff CopilotChat.config.mapping|false|nil
 ---@field show_info CopilotChat.config.mapping|false|nil
 ---@field show_help CopilotChat.config.mapping|false|nil
 return {
@@ -248,87 +165,41 @@ return {
     normal = '<C-y>',
     insert = '<C-y>',
     callback = function(source)
-      local diff = get_diff(source.bufnr, copilot.chat:get_block(constants.ROLE.ASSISTANT, true))
-      diff = prepare_diff_buffer(diff, source)
-      if not diff then
+      local block = copilot.chat:get_block(constants.ROLE.ASSISTANT, true)
+      if not block then
         return
       end
 
-      local lines = utils.split_lines(diff.change)
-      vim.api.nvim_buf_set_lines(diff.bufnr, diff.start_line - 1, diff.end_line, false, lines)
-      select.set(source.bufnr, source.winnr, diff.start_line, diff.start_line + #lines - 1)
-      select.highlight(source.bufnr)
+      local path = block.header.filename
+      local bufnr = prepare_diff_buffer(path, source)
+      local new_lines, applied = diff.apply_diff(block, bufnr)
+      if not applied then
+        new_lines = utils.split_lines(block.content)
+      end
+
+      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, new_lines)
+      local first, last = diff.get_diff_region(block, bufnr)
+      if first and last then
+        select.set(bufnr, source.winnr, first, last)
+        select.highlight(bufnr)
+      end
     end,
   },
 
   jump_to_diff = {
     normal = 'gj',
     callback = function(source)
-      local diff = get_diff(source.bufnr, copilot.chat:get_block(constants.ROLE.ASSISTANT, true))
-      diff = prepare_diff_buffer(diff, source)
-      if not diff then
+      local block = copilot.chat:get_block(constants.ROLE.ASSISTANT, true)
+      if not block then
         return
       end
 
-      select.set(source.bufnr, source.winnr, diff.start_line, diff.end_line)
-      select.highlight(source.bufnr)
-    end,
-  },
-
-  quickfix_answers = {
-    normal = 'gqa',
-    callback = function()
-      local items = {}
-      local messages = copilot.chat:get_messages()
-      for i, message in ipairs(messages) do
-        if message.section and message.role == constants.ROLE.ASSISTANT then
-          local prev_message = messages[i - 1]
-          local text = ''
-          if prev_message then
-            text = prev_message.content
-          end
-
-          table.insert(items, {
-            bufnr = copilot.chat.bufnr,
-            lnum = message.section.start_line,
-            end_lnum = message.section.end_line,
-            text = text,
-          })
-        end
-      end
-
-      vim.fn.setqflist(items)
-      vim.cmd('copen')
-    end,
-  },
-
-  quickfix_diffs = {
-    normal = 'gqd',
-    callback = function(source)
-      local items = {}
-      local messages = copilot.chat:get_messages()
-      for _, message in ipairs(messages) do
-        if message.section then
-          for _, block in ipairs(message.section.blocks) do
-            local diff = get_diff(source.bufnr, block)
-            if diff then
-              local text = string.format('%s (%s)', diff.filename, diff.filetype)
-              if diff.start_line and diff.end_line then
-                text = text .. string.format(' [lines %d-%d]', diff.start_line, diff.end_line)
-              end
-
-              table.insert(items, {
-                bufnr = copilot.chat.bufnr,
-                lnum = block.start_line,
-                end_lnum = block.end_line,
-                text = text,
-              })
-            end
-          end
-        end
-
-        vim.fn.setqflist(items)
-        vim.cmd('copen')
+      local path = block.header.filename
+      local bufnr = prepare_diff_buffer(path, source)
+      local first, last = diff.get_diff_region(block, bufnr)
+      if first and last and bufnr then
+        select.set(bufnr, source.winnr, first, last)
+        select.highlight(bufnr)
       end
     end,
   },
@@ -348,99 +219,96 @@ return {
 
   show_diff = {
     normal = 'gd',
-    full_diff = false, -- Show full diff instead of unified diff when showing diff window
     callback = function(source)
-      local diff = get_diff(source.bufnr, copilot.chat:get_block(constants.ROLE.ASSISTANT, true))
-      diff = prepare_diff_buffer(diff, source)
-      if not diff then
+      local block = copilot.chat:get_block(constants.ROLE.ASSISTANT, true)
+      if not block then
         return
       end
 
+      local path = block.header.filename
+      local bufnr = prepare_diff_buffer(path, source)
+      local new_lines, applied = diff.apply_diff(block, bufnr)
+      if not applied then
+        new_lines = utils.split_lines(block.content)
+      end
+      local original_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+
       local opts = {
-        filetype = diff.filetype,
-        syntax = 'diff',
+        filetype = vim.bo[bufnr].filetype,
+        text = applied and table.concat(new_lines, '\n') or table.concat(original_lines, '\n'),
       }
 
-      if copilot.config.mappings.show_diff.full_diff then
-        local original = utils.buf_valid(diff.bufnr) and vim.api.nvim_buf_get_lines(diff.bufnr, 0, -1, false) or {}
+      opts.on_show = function()
+        vim.api.nvim_win_call(source.winnr, function()
+          vim.cmd('diffthis')
+        end)
 
-        if #original > 0 then
-          -- Find all diffs from the same file in this section
-          local message = copilot.chat:get_message(constants.ROLE.ASSISTANT, true)
-          local section = message and message.section
-          local same_file_diffs = {}
-          if section then
-            for _, block in ipairs(section.blocks) do
-              local block_diff = get_diff(source.bufnr, block)
-              if block_diff and block_diff.bufnr == diff.bufnr then
-                table.insert(same_file_diffs, block_diff)
-              end
-            end
-          end
+        vim.api.nvim_win_call(copilot.chat.winnr, function()
+          vim.cmd('diffthis')
+        end)
+      end
 
-          -- Ensure we at least apply the current diff
-          if #same_file_diffs == 0 then
-            table.insert(same_file_diffs, diff)
-          end
-
-          -- Sort diffs by start_line in descending order (apply from bottom to top)
-          table.sort(same_file_diffs, function(a, b)
-            return a.start_line > b.start_line
-          end)
-
-          local result = vim.deepcopy(original)
-
-          -- Apply diffs from bottom to top so line numbers remain valid
-          for _, d in ipairs(same_file_diffs) do
-            local change_lines = utils.split_lines(d.change)
-
-            -- Remove original lines (from end to start to avoid index shifting)
-            for i = d.end_line, d.start_line, -1 do
-              if result[i] then
-                table.remove(result, i)
-              end
-            end
-
-            -- Insert replacement lines at start_line
-            for i = #change_lines, 1, -1 do
-              table.insert(result, d.start_line, change_lines[i])
-            end
-          end
-
-          opts.text = table.concat(result, '\n')
-        else
-          opts.text = diff.change
-        end
-
-        opts.on_show = function()
-          vim.api.nvim_win_call(vim.fn.bufwinid(diff.bufnr), function()
-            vim.cmd('diffthis')
-          end)
-
-          vim.api.nvim_win_call(copilot.chat.winnr, function()
-            vim.cmd('diffthis')
-          end)
-        end
-
-        opts.on_hide = function()
-          vim.api.nvim_win_call(copilot.chat.winnr, function()
-            vim.cmd('diffoff')
-          end)
-        end
-      else
-        opts.text = tostring(vim.diff(diff.reference, diff.change, {
-          result_type = 'unified',
-          ignore_blank_lines = true,
-          ignore_whitespace = true,
-          ignore_whitespace_change = true,
-          ignore_whitespace_change_at_eol = true,
-          ignore_cr_at_eol = true,
-          algorithm = 'myers',
-          ctxlen = #diff.reference,
-        }))
+      opts.on_hide = function()
+        vim.api.nvim_win_call(copilot.chat.winnr, function()
+          vim.cmd('diffoff')
+        end)
       end
 
       copilot.chat:overlay(opts)
+    end,
+  },
+
+  quickfix_diffs = {
+    normal = 'gqd',
+    callback = function()
+      local items = {}
+      local messages = copilot.chat:get_messages()
+      for _, message in ipairs(messages) do
+        if message.section then
+          for _, block in ipairs(message.section.blocks) do
+            local text = string.format('%s (%s)', block.header.filename, block.header.filetype)
+            if block.header.start_line and block.header.end_line then
+              text = text .. string.format(' [lines %d-%d]', block.header.start_line, block.header.end_line)
+            end
+
+            table.insert(items, {
+              bufnr = copilot.chat.bufnr,
+              lnum = block.start_line,
+              end_lnum = block.end_line,
+              text = text,
+            })
+          end
+        end
+
+        vim.fn.setqflist(items)
+        vim.cmd('copen')
+      end
+    end,
+  },
+
+  quickfix_answers = {
+    normal = 'gqa',
+    callback = function()
+      local items = {}
+      for i, message in ipairs(copilot.chat.messages) do
+        if message.section and message.role == constants.ROLE.ASSISTANT then
+          local prev_message = copilot.chat.messages[i - 1]
+          local text = ''
+          if prev_message then
+            text = prev_message.content
+          end
+
+          table.insert(items, {
+            bufnr = copilot.chat.bufnr,
+            lnum = message.section.start_line,
+            end_lnum = message.section.end_line,
+            text = text,
+          })
+        end
+      end
+
+      vim.fn.setqflist(items)
+      vim.cmd('copen')
     end,
   },
 

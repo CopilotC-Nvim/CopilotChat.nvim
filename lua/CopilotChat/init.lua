@@ -563,7 +563,21 @@ function M.resolve_prompt(prompt, config)
       config.system_prompt = M.config.prompts[config.system_prompt].system_prompt
     end
 
-    config.system_prompt = config.system_prompt .. '\n' .. M.config.prompts.COPILOT_BASE.system_prompt
+    config.system_prompt = vim.trim(config.system_prompt) .. '\n' .. M.config.prompts.COPILOT_BASE.system_prompt
+    config.system_prompt = vim.trim(config.system_prompt)
+      .. '\n'
+      .. vim.trim(require('CopilotChat.instructions.tool_use'))
+
+    if config.diff == 'unified' then
+      config.system_prompt = vim.trim(config.system_prompt)
+        .. '\n'
+        .. vim.trim(require('CopilotChat.instructions.edit_file_unified'))
+    else
+      config.system_prompt = vim.trim(config.system_prompt)
+        .. '\n'
+        .. vim.trim(require('CopilotChat.instructions.edit_file_block'))
+    end
+
     config.system_prompt = config.system_prompt:gsub('{OS_NAME}', jit.os)
     config.system_prompt = config.system_prompt:gsub('{LANGUAGE}', config.language)
     config.system_prompt = config.system_prompt:gsub('{DIR}', state.source.cwd())
