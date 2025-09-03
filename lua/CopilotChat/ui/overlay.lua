@@ -41,7 +41,7 @@ function Overlay:show(text, winnr, filetype, syntax, on_show, on_hide)
   vim.bo[self.bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, vim.split(text, '\n'))
   vim.bo[self.bufnr].modifiable = false
-  self:show_help(self.help, -1)
+  self:show_help(self.help, vim.api.nvim_buf_line_count(self.bufnr))
   vim.api.nvim_win_set_cursor(winnr, { 1, 0 })
 
   filetype = filetype or 'markdown'
@@ -130,17 +130,16 @@ end
 
 --- Show help message in the overlay
 ---@param msg string?
----@param offset number?
+---@param pos number
 ---@protected
-function Overlay:show_help(msg, offset)
+function Overlay:show_help(msg, pos)
   if not msg or msg == '' then
     vim.api.nvim_buf_del_extmark(self.bufnr, self.help_ns, 1)
     return
   end
 
   self:validate()
-  local line = vim.api.nvim_buf_line_count(self.bufnr) + (offset or 0)
-  vim.api.nvim_buf_set_extmark(self.bufnr, self.help_ns, math.max(0, line - 1), 0, {
+  vim.api.nvim_buf_set_extmark(self.bufnr, self.help_ns, math.max(0, pos - 1), 0, {
     id = 1,
     hl_mode = 'combine',
     priority = 100,
