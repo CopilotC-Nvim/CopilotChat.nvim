@@ -584,4 +584,13 @@ return {
       })
     end,
   },
+
+  show_messages = {
+    normal = 'gm',
+    callback = function()
+      copilot.chat:overlay({
+        text = '```lua' .. vim.inspect(copilot.chat.messages) .. '```',
+      })
+    end,
+  },
 }
