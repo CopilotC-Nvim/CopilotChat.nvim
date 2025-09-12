@@ -16,11 +16,6 @@ function CopilotChatFoldExpr(lnum, separator)
   return '='
 end
 
-local HEADER_PATTERNS = {
-  '^(%w+)%s+path=(%S+)%s+start_line=(%d+)%s+end_line=(%d+)$',
-  '^(%w+)$',
-}
-
 ---@param headers table<string, string>?
 ---@return string?, string?
 local function match_section_header(headers, separator, line)
@@ -43,12 +38,34 @@ local function match_block_header(header)
     return
   end
 
-  for _, pattern in ipairs(HEADER_PATTERNS) do
+  local patterns = {
+    '^(%w+)%s+path=(%S+)%s+start_line=(%d+)%s+end_line=(%d+)$',
+    '^(%w+)$',
+  }
+
+  for _, pattern in ipairs(patterns) do
     local type, path, start_line, end_line = header:match(pattern)
     if path then
       return type, path, tonumber(start_line) or 1, tonumber(end_line) or tonumber(start_line) or 1
     elseif type then
       return type, 'block'
+    end
+  end
+end
+
+---@param header? CopilotChat.ui.chat.Header
+---@param content? string
+---@return string?
+local function match_block_content(header, content)
+  if not header or header.filetype ~= 'diff' or not content then
+    return
+  end
+
+  local lines = vim.split(content, '\n')
+  for _, line in ipairs(lines) do
+    local diff_filename = line:match('^%+%+%+%s+(.*)')
+    if diff_filename then
+      return vim.trim(diff_filename)
     end
   end
 end
@@ -69,10 +86,10 @@ local function last(bufnr)
 end
 
 ---@class CopilotChat.ui.chat.Header
----@field filename string
----@field start_line number
----@field end_line number
 ---@field filetype string
+---@field filename string
+---@field start_line number?
+---@field end_line number?
 
 ---@class CopilotChat.ui.chat.Block
 ---@field header CopilotChat.ui.chat.Header
@@ -694,6 +711,7 @@ function Chat:parse()
       if name == 'block_header' then
         local header_text = vim.treesitter.get_node_text(node, self.bufnr)
         local filetype, filename, start_line, end_line = match_block_header(header_text)
+
         if filetype then
           current_block = {
             header = {
@@ -710,6 +728,12 @@ function Chat:parse()
       elseif name == 'block_content' then
         local content = vim.treesitter.get_node_text(node, self.bufnr)
         current_block.end_line = end_row
+
+        local filename = match_block_content(current_block.header, content)
+        if filename then
+          current_block.header.filename = filename
+        end
+
         table.insert(current_block.content, content)
       end
     end
