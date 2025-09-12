@@ -48,7 +48,7 @@ local function match_block_header(header)
     if path then
       return type, path, tonumber(start_line) or 1, tonumber(end_line) or tonumber(start_line) or 1
     elseif type then
-      return type, 'block'
+      return type, nil
     end
   end
 end
@@ -801,7 +801,7 @@ function Chat:render()
         local header = block.header
         local filetype = header.filetype
         local filename = header.filename
-        local text = string.format('[%s] %s', filetype, filename)
+        local text = string.format('[%s] %s', filetype, filename or 'block')
         if header.start_line and header.end_line then
           text = text .. string.format(' lines %d-%d', header.start_line, header.end_line)
         end
