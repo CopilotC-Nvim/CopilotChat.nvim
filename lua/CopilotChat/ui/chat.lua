@@ -52,6 +52,21 @@ local function match_block_header(header)
   end
 end
 
+--- Get the last line and column of the chat window.
+---@param bufnr number
+---@return number, number
+---@protected
+local function last(bufnr)
+  local line_count = vim.api.nvim_buf_line_count(bufnr)
+  if line_count == 0 then
+    return 0, 0
+  end
+  local last_line = line_count - 1
+  local last_line_content = vim.api.nvim_buf_get_lines(bufnr, last_line, last_line + 1, false)
+  local last_column = last_line_content[1] and #last_line_content[1] or 0
+  return last_line, last_column
+end
+
 ---@class CopilotChat.ui.chat.Header
 ---@field filename string
 ---@field start_line number
@@ -426,11 +441,7 @@ function Chat:follow()
     return
   end
 
-  local last_line, last_column, line_count = self:last()
-  if line_count == 0 then
-    return
-  end
-
+  local last_line, last_column = last(self.bufnr)
   vim.api.nvim_win_set_cursor(self.winnr, { last_line + 1, last_column })
 end
 
@@ -557,7 +568,7 @@ function Chat:append(str)
     should_follow_cursor = current_pos[1] >= line_count - 1
   end
 
-  local last_line, last_column, _ = self:last()
+  local last_line, last_column, _ = last(self.bufnr)
 
   local modifiable = vim.bo[self.bufnr].modifiable
   vim.bo[self.bufnr].modifiable = true
@@ -882,24 +893,6 @@ function Chat:render()
       end
     end
   end
-end
-
---- Get the last line and column of the chat window.
----@return number, number, number
----@protected
-function Chat:last()
-  self:validate()
-  local line_count = vim.api.nvim_buf_line_count(self.bufnr)
-  local last_line = line_count - 1
-  if last_line < 0 then
-    return 0, 0, line_count
-  end
-  local last_line_content = vim.api.nvim_buf_get_lines(self.bufnr, -2, -1, false)
-  if not last_line_content or #last_line_content == 0 then
-    return last_line, 0, line_count
-  end
-  local last_column = #last_line_content[1]
-  return last_line, last_column, line_count
 end
 
 return Chat
