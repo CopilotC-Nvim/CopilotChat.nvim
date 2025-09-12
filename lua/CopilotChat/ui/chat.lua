@@ -4,6 +4,7 @@ local constants = require('CopilotChat.constants')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local class = require('CopilotChat.utils.class')
+local orderedmap = require('CopilotChat.utils.orderedmap')
 
 function CopilotChatFoldExpr(lnum, separator)
   local to_match = separator .. '$'
@@ -93,7 +94,7 @@ end
 ---@field config CopilotChat.config.Shared
 ---@field token_count number?
 ---@field token_max_count number?
----@field messages table<CopilotChat.client.Message>
+---@field private messages OrderedMap<string, CopilotChat.client.Message>
 ---@field private layout CopilotChat.config.Layout?
 ---@field private headers table<string, string>
 ---@field private separator string
@@ -106,7 +107,7 @@ local Chat = class(function(self, config, on_buf_create)
   self.config = config
   self.token_count = nil
   self.token_max_count = nil
-  self.messages = {}
+  self.messages = orderedmap()
 
   self.layout = nil
   self.headers = {}
@@ -168,6 +169,9 @@ end
 ---@param cursor boolean? If true, returns the block closest to the cursor position
 ---@return CopilotChat.ui.chat.Block?
 function Chat:get_block(role, cursor)
+  self:parse()
+  local messages = self:get_messages()
+
   if cursor then
     if not self:visible() then
       return nil
@@ -178,7 +182,7 @@ function Chat:get_block(role, cursor)
     local closest_block = nil
     local max_line_below_cursor = -1
 
-    for _, message in ipairs(self.messages) do
+    for _, message in ipairs(messages) do
       local section = message.section
       local matches_role = not role or message.role == role
       if matches_role and section and section.blocks then
@@ -194,13 +198,19 @@ function Chat:get_block(role, cursor)
     return closest_block
   end
 
-  for i = #self.messages, 1, -1 do
-    local message = self.messages[i]
+  for i = #messages, 1, -1 do
+    local message = messages[i]
     local matches_role = not role or message.role == role
     if matches_role and message.section and message.section.blocks and #message.section.blocks > 0 then
       return message.section.blocks[#message.section.blocks]
     end
   end
+end
+
+--- Get list of all chat messages
+---@return table<CopilotChat.ui.chat.Message>
+function Chat:get_messages()
+  return self.messages:values()
 end
 
 --- Get last message by role in the chat window.
@@ -209,6 +219,7 @@ end
 ---@return CopilotChat.ui.chat.Message?
 function Chat:get_message(role, cursor)
   self:parse()
+  local messages = self:get_messages()
 
   if cursor then
     if not self:visible() then
@@ -220,7 +231,7 @@ function Chat:get_message(role, cursor)
     local closest_message = nil
     local max_line_below_cursor = -1
 
-    for _, message in ipairs(self.messages) do
+    for _, message in ipairs(messages) do
       local section = message.section
       local matches_role = not role or message.role == role
       if matches_role and section.start_line <= cursor_line and section.start_line > max_line_below_cursor then
@@ -232,8 +243,8 @@ function Chat:get_message(role, cursor)
     return closest_message
   end
 
-  for i = #self.messages, 1, -1 do
-    local message = self.messages[i]
+  for i = #messages, 1, -1 do
+    local message = messages[i]
     local matches_role = not role or message.role == role
     if matches_role then
       return message
@@ -479,7 +490,8 @@ end
 function Chat:add_message(message, replace)
   self:parse()
 
-  local current_message = self.messages[#self.messages]
+  local messages = self:get_messages()
+  local current_message = messages[#messages]
   local is_new = not current_message
     or current_message.role ~= message.role
     or (message.id and current_message.id ~= message.id)
@@ -488,7 +500,7 @@ function Chat:add_message(message, replace)
     -- Add appropriate header based on role and generate a new ID if not provided
     message.id = message.id or utils.uuid()
     local header = self.headers[message.role]
-    table.insert(self.messages, message)
+    self.messages:set(message.id, message)
 
     if current_message then
       self:append('\n')
@@ -546,12 +558,7 @@ function Chat:remove_message(role, cursor)
   vim.bo[self.bufnr].modifiable = modifiable
 
   -- Remove the message from the messages list
-  for i, msg in ipairs(self.messages) do
-    if msg.id == message.id then
-      table.remove(self.messages, i)
-      break
-    end
-  end
+  self.messages:remove(message.id)
 end
 
 --- Append text to the chat window.
@@ -585,7 +592,7 @@ function Chat:clear()
   self:validate()
   self.token_count = nil
   self.token_max_count = nil
-  self.messages = {}
+  self.messages = orderedmap()
 
   local modifiable = vim.bo[self.bufnr].modifiable
   vim.bo[self.bufnr].modifiable = true
@@ -718,15 +725,8 @@ function Chat:parse()
   -- Finish last message
   current_message.section.end_line = vim.api.nvim_buf_line_count(self.bufnr)
 
-  -- Build lookup table for previous messages by id
-  local old_messages_by_id = {}
-  for _, msg in ipairs(self.messages or {}) do
-    if msg.id then
-      old_messages_by_id[msg.id] = msg
-    end
-  end
-
   -- Format new messages and preserve extra fields from old messages
+  local messages = orderedmap()
   for _, message in ipairs(new_messages) do
     message.content = vim.trim(table.concat(message.content, '\n'))
     if message.section then
@@ -735,7 +735,7 @@ function Chat:parse()
       end
     end
 
-    local old = old_messages_by_id[message.id]
+    local old = self.messages:get(message.id)
     if old then
       for k, v in pairs(old) do
         if message[k] == nil then
@@ -743,9 +743,12 @@ function Chat:parse()
         end
       end
     end
+
+    messages:set(message.id, message)
   end
 
-  self.messages = new_messages
+  -- Update messages
+  self.messages = messages
 end
 
 --- Render the chat window.
@@ -757,7 +760,9 @@ function Chat:render()
   vim.api.nvim_buf_clear_namespace(self.bufnr, highlight_ns, 0, -1) -- Clear previous highlights
   self:show_help() -- Clear previous help
 
-  for i, message in ipairs(self.messages) do
+  local messages = self:get_messages()
+
+  for i, message in ipairs(messages) do
     if self.config.highlight_headers then
       -- Overlay section header with nice display
       local header_value = self.headers[message.role]
@@ -847,7 +852,7 @@ function Chat:render()
       end
     end
 
-    if i == #self.messages and message.role == constants.ROLE.USER then
+    if i == #messages and message.role == constants.ROLE.USER then
       -- Highlight tools in the last user message
       local assistant_msg = self:get_message(constants.ROLE.ASSISTANT)
       if assistant_msg and assistant_msg.tool_calls and #assistant_msg.tool_calls > 0 then
@@ -883,7 +888,7 @@ function Chat:render()
 
     -- Auto fold non-assistant messages if enabled
     if self.config.auto_fold and self:visible() then
-      if message.role ~= constants.ROLE.ASSISTANT and message.section and i < #self.messages then
+      if message.role ~= constants.ROLE.ASSISTANT and message.section and i < #messages then
         vim.api.nvim_win_call(self.winnr, function()
           local fold_level = vim.fn.foldlevel(message.section.start_line)
           if fold_level > 0 and vim.fn.foldclosed(message.section.start_line) == -1 then
