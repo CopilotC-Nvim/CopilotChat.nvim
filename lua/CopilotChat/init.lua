@@ -564,9 +564,6 @@ function M.resolve_prompt(prompt, config)
     end
 
     config.system_prompt = vim.trim(config.system_prompt) .. '\n' .. M.config.prompts.COPILOT_BASE.system_prompt
-    config.system_prompt = vim.trim(config.system_prompt)
-      .. '\n'
-      .. vim.trim(require('CopilotChat.instructions.tool_use'))
 
     if config.diff == 'unified' then
       config.system_prompt = vim.trim(config.system_prompt)
@@ -828,6 +825,9 @@ function M.ask(prompt, config)
       local selected_tools, prompt = M.resolve_tools(prompt, config)
       local resolved_resources, resolved_tools, prompt = M.resolve_functions(prompt, config)
       local selected_model, prompt = M.resolve_model(prompt, config)
+      if not utils.empty(selected_tools) then
+        config.system_prompt = config.system_prompt .. '\n' .. require('CopilotChat.instructions.tool_use')
+      end
 
       prompt = vim.trim(prompt)
 
