@@ -130,7 +130,7 @@ end
 
 --- Show help message in the overlay
 ---@param msg string?
----@param pos number
+---@param pos number?
 ---@protected
 function Overlay:show_help(msg, pos)
   if not msg or msg == '' then
