@@ -464,19 +464,12 @@ function Chat:start()
     utils.return_to_normal_mode()
   end
 
-  if self.spinner then
-    self.spinner:start()
-  end
-
+  self.spinner:start()
   vim.bo[self.bufnr].modifiable = false
 end
 
 --- Finish writing to the chat window.
 function Chat:finish()
-  if not self.spinner then
-    return
-  end
-
   self.spinner:finish()
   vim.bo[self.bufnr].modifiable = true
   if self.config.auto_insert_mode and self:focused() then
