@@ -516,11 +516,8 @@ end
 ---@param role string? If specified, only considers sections of the given role
 ---@param cursor boolean? If true, removes the message closest to the cursor position
 function Chat:remove_message(role, cursor)
-  if not self:visible() then
-    return
-  end
-
   self:parse()
+
   local message = self:get_message(role, cursor)
   if not message then
     return
@@ -615,6 +612,8 @@ function Chat:validate()
   end
 end
 
+--- Parse the chat window buffer into structured messages.
+---@protected
 function Chat:parse()
   self:validate()
 
