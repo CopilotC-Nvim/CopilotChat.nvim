@@ -618,6 +618,7 @@ end
 function Chat:parse()
   self:validate()
 
+  -- Skip parsing if buffer hasn't changed
   local changedtick = vim.api.nvim_buf_get_changedtick(self.bufnr)
   if self._last_changedtick == changedtick then
     return false
@@ -707,11 +708,29 @@ function Chat:parse()
   -- Finish last message
   current_message.section.end_line = vim.api.nvim_buf_line_count(self.bufnr)
 
+  -- Build lookup table for previous messages by id
+  local old_messages_by_id = {}
+  for _, msg in ipairs(self.messages or {}) do
+    if msg.id then
+      old_messages_by_id[msg.id] = msg
+    end
+  end
+
+  -- Format new messages and preserve extra fields from old messages
   for _, message in ipairs(new_messages) do
     message.content = vim.trim(table.concat(message.content, '\n'))
     if message.section then
       for _, block in ipairs(message.section.blocks) do
         block.content = vim.trim(table.concat(block.content, '\n'))
+      end
+    end
+
+    local old = old_messages_by_id[message.id]
+    if old then
+      for k, v in pairs(old) do
+        if message[k] == nil then
+          message[k] = v
+        end
       end
     end
   end
@@ -825,10 +844,10 @@ function Chat:render()
         for i, line in ipairs(utils.split_lines(message.content)) do
           for _, tool_call in ipairs(assistant_msg.tool_calls) do
             if line:match(string.format('#%s:%s', tool_call.name, vim.pesc(tool_call.id))) then
-              local l = message.section.start_line - 1 + i
+              local l = message.section.start_line + i
               vim.api.nvim_buf_add_highlight(self.bufnr, highlight_ns, 'CopilotChatAnnotationHeader', l, 0, #line)
               if not utils.empty(tool_call.arguments) then
-                vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, l - 1, 0, {
+                vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, l, 0, {
                   virt_lines = vim.tbl_map(function(json_line)
                     return { { json_line, 'CopilotChatAnnotation' } }
                   end, vim.split(vim.inspect(utils.json_decode(tool_call.arguments)), '\n')),
