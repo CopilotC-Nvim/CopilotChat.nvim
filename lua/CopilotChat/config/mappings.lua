@@ -279,9 +279,10 @@ return {
     normal = 'gqa',
     callback = function()
       local items = {}
-      for i, message in ipairs(copilot.chat.messages) do
+      local messages = copilot.chat:get_messages()
+      for i, message in ipairs(messages) do
         if message.section and message.role == constants.ROLE.ASSISTANT then
-          local prev_message = copilot.chat.messages[i - 1]
+          local prev_message = messages[i - 1]
           local text = ''
           if prev_message then
             text = prev_message.content
@@ -305,8 +306,8 @@ return {
     normal = 'gqd',
     callback = function(source)
       local items = {}
-
-      for _, message in ipairs(copilot.chat.messages) do
+      local messages = copilot.chat:get_messages()
+      for _, message in ipairs(messages) do
         if message.section then
           for _, block in ipairs(message.section.blocks) do
             local diff = get_diff(source.bufnr, block)

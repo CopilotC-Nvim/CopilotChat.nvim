@@ -356,7 +356,7 @@ function M.resolve_functions(prompt, config)
   local resolved_resources = {}
   local resolved_tools = {}
   local tool_calls = {}
-  for _, message in ipairs(M.chat.messages) do
+  for _, message in ipairs(M.chat:get_messages()) do
     if message.tool_calls then
       for _, tool_call in ipairs(message.tool_calls) do
         table.insert(tool_calls, tool_call)
@@ -868,7 +868,7 @@ function M.ask(prompt, config)
 
       local ask_response = client.ask(client, prompt, {
         headless = config.headless,
-        history = M.chat.messages,
+        history = M.chat:get_messages(),
         resources = resolved_resources,
         tools = selected_tools,
         system_prompt = system_prompt,
@@ -948,7 +948,7 @@ function M.save(name, history_path)
     return
   end
 
-  local history = vim.deepcopy(M.chat.messages)
+  local history = vim.deepcopy(M.chat:get_messages())
   for _, message in ipairs(history) do
     message.section = nil
   end

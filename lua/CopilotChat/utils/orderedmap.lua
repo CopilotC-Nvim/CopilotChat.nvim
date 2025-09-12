@@ -1,6 +1,7 @@
 ---@class OrderedMap<K, V>
 ---@field set fun(self:OrderedMap, key:any, value:any)
 ---@field get fun(self:OrderedMap, key:any):any
+---@field remove fun(self:OrderedMap, key:any)
 ---@field keys fun(self:OrderedMap):table
 ---@field values fun(self:OrderedMap):table
 
@@ -20,6 +21,18 @@ local function orderedmap()
 
     get = function(self, key)
       return self._data[key]
+    end,
+
+    remove = function(self, key)
+      if self._data[key] then
+        self._data[key] = nil
+        for i, k in ipairs(self._keys) do
+          if k == key then
+            table.remove(self._keys, i)
+            break
+          end
+        end
+      end
     end,
 
     keys = function(self)
