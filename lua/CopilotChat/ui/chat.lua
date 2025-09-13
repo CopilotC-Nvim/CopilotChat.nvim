@@ -621,7 +621,9 @@ function Chat:create()
   self.spinner.bufnr = bufnr
 
   vim.schedule(function()
-    pcall(vim.treesitter.start, bufnr)
+    if not vim.treesitter.get_parser(bufnr, 'markdown', {}) then
+      pcall(vim.treesitter.start, bufnr)
+    end
   end)
 
   vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertLeave' }, {
@@ -906,7 +908,7 @@ function Chat:render()
         end
         msg = msg .. self.token_count .. '/' .. self.token_max_count .. ' tokens used'
       end
-      self:show_help(msg, message.section.start_line - 1)
+      self:show_help(msg, message.section.start_line)
     end
 
     -- Auto fold non-assistant messages if enabled
