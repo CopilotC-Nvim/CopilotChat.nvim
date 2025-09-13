@@ -1,3 +1,5 @@
+local log = require('plenary.log')
+
 local M = {}
 
 --- Parse unified diff hunks from diff text
@@ -173,7 +175,7 @@ function M.apply_diff(block, bufnr)
   local diff, content = M.get_diff(block, bufnr)
   local new_lines, applied, _, _ = M.apply_unified_diff(diff, content)
   if not applied then
-    vim.notify('Diff for ' .. block.header.filename .. ' failed to apply cleanly for:\n' .. diff, vim.log.levels.WARN)
+    log.debug('Diff for ' .. block.header.filename .. ' failed to apply cleanly for:\n' .. diff)
   end
 
   return new_lines
