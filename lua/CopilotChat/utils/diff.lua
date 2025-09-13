@@ -120,8 +120,8 @@ function M.apply_unified_diff(diff_text, original_content)
     new_content = patched
     applied = applied or ok
   end
-  local original_lines = vim.split(original_content, '\n')
-  local new_lines = vim.split(new_content, '\n')
+  local original_lines = vim.split(original_content, '\n', { trimempty = true })
+  local new_lines = vim.split(new_content, '\n', { trimempty = true })
   local first, last
   local max_len = math.max(#original_lines, #new_lines)
   for i = 1, max_len do
@@ -137,10 +137,9 @@ end
 
 --- Get diff from block content and buffer lines
 ---@param block CopilotChat.ui.chat.Block Block containing diff info
----@param bufnr integer Buffer number
+---@param lines table table of lines
 ---@return string diff, string content
-function M.get_diff(block, bufnr)
-  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+function M.get_diff(block, lines)
   local content = table.concat(lines, '\n')
   if block.header.filetype == 'diff' then
     return block.content, content
@@ -161,7 +160,7 @@ function M.get_diff(block, bufnr)
     vim.diff(
       table.concat(original_lines, '\n'),
       table.concat(patched_lines, '\n'),
-      { algorithm = 'myers', ctxlen = 20, interhunkctxlen = 50, ignore_whitespace_change = true }
+      { algorithm = 'myers', ctxlen = 10, interhunkctxlen = 10, ignore_whitespace_change = true }
     )
   ),
     content
@@ -169,10 +168,10 @@ end
 
 --- Apply a diff (unified or indices) to buffer lines
 ---@param block CopilotChat.ui.chat.Block Block containing diff info
----@param bufnr integer Buffer number
+---@param lines table table of lines
 ---@return table new_lines
-function M.apply_diff(block, bufnr)
-  local diff, content = M.get_diff(block, bufnr)
+function M.apply_diff(block, lines)
+  local diff, content = M.get_diff(block, lines)
   local new_lines, applied, _, _ = M.apply_unified_diff(diff, content)
   if not applied then
     log.debug('Diff for ' .. block.header.filename .. ' failed to apply cleanly for:\n' .. diff)
@@ -183,10 +182,10 @@ end
 
 --- Get changed region for diff (unified or indices)
 ---@param block CopilotChat.ui.chat.Block Block containing diff info
----@param bufnr integer Buffer number
+---@param lines table table of lines
 ---@return number? first, number? last
-function M.get_diff_region(block, bufnr)
-  local diff, content = M.get_diff(block, bufnr)
+function M.get_diff_region(block, lines)
+  local diff, content = M.get_diff(block, lines)
   local _, _, first, last = M.apply_unified_diff(diff, content)
   return first, last
 end

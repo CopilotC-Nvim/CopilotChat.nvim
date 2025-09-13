@@ -172,9 +172,10 @@ return {
 
       local path = block.header.filename
       local bufnr = prepare_diff_buffer(path, source)
-      local new_lines = diff.apply_diff(block, bufnr)
+      local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+      local new_lines = diff.apply_diff(block, lines)
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, new_lines)
-      local first, last = diff.get_diff_region(block, bufnr)
+      local first, last = diff.get_diff_region(block, lines)
       if first and last then
         select.set(bufnr, source.winnr, first, last)
         select.highlight(bufnr)
@@ -192,7 +193,8 @@ return {
 
       local path = block.header.filename
       local bufnr = prepare_diff_buffer(path, source)
-      local first, last = diff.get_diff_region(block, bufnr)
+      local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+      local first, last = diff.get_diff_region(block, lines)
       if first and last and bufnr then
         select.set(bufnr, source.winnr, first, last)
         select.highlight(bufnr)
@@ -223,7 +225,25 @@ return {
 
       local path = block.header.filename
       local bufnr = prepare_diff_buffer(path, source)
-      local new_lines = diff.apply_diff(block, bufnr)
+
+      -- Collect all blocks for the same filename
+      local message = copilot.chat:get_message(constants.ROLE.ASSISTANT, true)
+      local blocks = {}
+      if message and message.section and message.section.blocks then
+        for _, b in ipairs(message.section.blocks) do
+          if b.header.filename == path then
+            table.insert(blocks, b)
+          end
+        end
+      else
+        blocks = { block }
+      end
+
+      -- Apply all diffs for the filename
+      local new_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+      for i = #blocks, 1, -1 do
+        new_lines = diff.apply_diff(blocks[i], new_lines)
+      end
 
       local opts = {
         filetype = vim.bo[bufnr].filetype,
