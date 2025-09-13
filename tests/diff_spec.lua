@@ -179,7 +179,7 @@ describe('CopilotChat.utils.diff', function()
     local original_content = table.concat(original, '\n')
     local result, applied = diff.apply_unified_diff(diff_text, original_content)
     assert.is_true(applied)
-    assert.are.same({ '' }, result)
+    assert.are.same({}, result)
   end)
 
   it('applies unified diff with all lines added to empty file', function()
