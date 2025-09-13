@@ -143,6 +143,7 @@ function Overlay:show_help(msg, pos)
     id = 1,
     hl_mode = 'combine',
     priority = 100,
+    virt_lines_above = true,
     virt_lines = vim.tbl_map(function(t)
       return { { t, 'CopilotChatHelp' } }
     end, vim.split(msg, '\n')),
