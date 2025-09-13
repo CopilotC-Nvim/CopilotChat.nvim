@@ -172,11 +172,7 @@ return {
 
       local path = block.header.filename
       local bufnr = prepare_diff_buffer(path, source)
-      local new_lines, applied = diff.apply_diff(block, bufnr)
-      if not applied then
-        new_lines = utils.split_lines(block.content)
-      end
-
+      local new_lines = diff.apply_diff(block, bufnr)
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, new_lines)
       local first, last = diff.get_diff_region(block, bufnr)
       if first and last then
@@ -227,15 +223,11 @@ return {
 
       local path = block.header.filename
       local bufnr = prepare_diff_buffer(path, source)
-      local new_lines, applied = diff.apply_diff(block, bufnr)
-      if not applied then
-        new_lines = utils.split_lines(block.content)
-      end
-      local original_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+      local new_lines = diff.apply_diff(block, bufnr)
 
       local opts = {
         filetype = vim.bo[bufnr].filetype,
-        text = applied and table.concat(new_lines, '\n') or table.concat(original_lines, '\n'),
+        text = table.concat(new_lines, '\n'),
       }
 
       opts.on_show = function()
