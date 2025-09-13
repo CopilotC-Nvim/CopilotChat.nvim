@@ -211,7 +211,7 @@ end
 
 --- Set a provider resolver on the client
 ---@param resolver function: A function that returns a table of providers
-function Client:add_providers(resolver)
+function Client:set_providers(resolver)
   self.provider_resolver = resolver
 end
 

@@ -1,4 +1,3 @@
-local log = require('plenary.log')
 local notify = require('CopilotChat.notify')
 local utils = require('CopilotChat.utils')
 local curl = require('CopilotChat.utils.curl')
