@@ -514,6 +514,14 @@ make test
 
 See [CONTRIBUTING.md](/CONTRIBUTING.md) for detailed guidelines.
 
+# Acknowledgments
+
+## diff-match-patch
+
+CopilotChat.nvim includes [diff-match-patch (Lua port)](https://github.com/google/diff-match-patch) for diffing and patching functionality.  
+Copyright 2018 The diff-match-patch Authors.  
+Licensed under the Apache License 2.0.
+
 # Contributors
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):

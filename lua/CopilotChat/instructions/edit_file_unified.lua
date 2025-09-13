@@ -2,67 +2,33 @@ return [[
 <editFileInstructions>
 Return edits similar to unified diffs that `diff -U0` would produce.
 
-- Always include the first 2 lines with the file paths (no timestamps).
-- Start each hunk of changes with a `@@ ... @@` line.
-- Do not include line numbers in the hunk header.
-- The user's patch tool needs CORRECT patches that apply cleanly against the current contents of the file.
-- Indentation matters in the diffs!
+Make sure you include the first 2 lines with the file paths.
+Don't include timestamps with the file paths.
+Do not use any file path prefixes, just use --- path/to/file and +++ path/to/file.
 
-Context lines:
-- For each hunk that contains changes, you MUST always include 2-3 context lines before the change.
-- ALWAYS prefix every context line with a single space character.
-- Context lines MUST ONLY appear BEFORE changes, NEVER after changes.
-- MISSING CONTEXT LINES WILL CAUSE PATCH FAILURES - they are mandatory, not optional.
-- MISSING SPACE PREFIXES WILL CAUSE PATCH FAILURES - they are mandatory, not optional.
+Start each hunk of changes with a `@@` line.
 
-Change lines:
-- Mark all lines to be removed or changed with `-`.
-- Mark all new or modified lines with `+`.
-- Only output hunks that specify changes with `+` or `-` lines.
+The user's patch tool needs CORRECT patches that apply cleanly against the current contents of the file!
+Code can start with line number prefixes for reference (e.g., `1: def example():`), but your output MUST NOT include these line number prefixes.
+Think carefully and make sure you include and mark all lines that need to be removed or changed as `-` lines.
+Make sure you mark all new or modified lines with `+`.
+Don't leave out any lines or the diff patch won't apply correctly.
 
-Other instructions:
-- Start a new hunk for each section of the file that needs changes.
-- When editing a function, method, loop, etc., replace the entire code block: delete the entire existing version with `-` lines, then add the new, updated version with `+` lines.
-- To move code within a file, use 2 hunks: one to delete it from its current location, one to insert it in the new location.
-- To make a new file, show a diff from `--- /dev/null` to `+++ path/to/new/file.ext`.
+Indentation matters in the diffs!
 
-Example:
+Start a new hunk for each section of the file that needs changes.
 
-```diff
---- mathweb/flask/app.py
-+++ mathweb/flask/app.py
-@@ ... @@
--class MathWeb:
-+import sympy
-+
-+class MathWeb:
-@@ ... @@
--def is_prime(x):
--    if x < 2:
--        return False
--    for i in range(2, int(math.sqrt(x)) + 1):
--        if x % i == 0:
--            return False
--    return True
-@@ ... @@
--@app.route('/prime/<int:n>')
--def nth_prime(n):
--    count = 0
--    num = 1
--    while count < n:
--        num += 1
--        if is_prime(num):
--            count += 1
--    return str(num)
-+@app.route('/prime/<int:n>')
-+def nth_prime(n):
-+    count = 0
-+    num = 1
-+    while count < n:
-+        num += 1
-+        if sympy.isprime(num):
-+            count += 1
-+    return str(num)
-```
+Only output hunks that specify changes with `+` or `-` lines.
+
+Output hunks in whatever order makes the most sense.
+Hunks don't need to be in any particular order.
+
+When editing a function, method, loop, etc use a hunk to replace the *entire* code block.
+Delete the entire existing version with `-` lines and then add a new, updated version with `+` lines.
+This will help you generate correct code and correct diffs.
+
+To move code within a file, use 2 hunks: 1 to delete it from its current location, 1 to insert it in the new location.
+
+To make a new file, show a diff from `--- /dev/null` to `+++ path/to/new/file.ext`.
 </editFileInstructions>
 ]]

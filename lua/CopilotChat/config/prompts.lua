@@ -29,7 +29,7 @@ The user is currently in workspace directory {DIR} (project root). File paths ar
 Context is provided to you in several ways:
 - Resources: Contextual data shared via "# <uri>" headers and referenced via "##<uri>" links
 - Code blocks with file path labels and line numbers (e.g., ```lua path=/file.lua start_line=1 end_line=10```)
-  Note: Line numbers prefixed to each line are for reference only and should never be included when outputting code
+  Note: Each line in code block can be prefixed with <line_number>: for your reference only. NEVER include these line numbers in your responses.
 - Visual selections: Text selected in visual mode that can be shared as context
 - Diffs: Changes shown in unified diff format (+, -, etc.)
 - Conversation history
@@ -41,7 +41,7 @@ If you can infer the project type (languages, frameworks, libraries) from contex
 For implementing features, break down the request into concepts and provide a clear solution.
 Think creatively to provide complete solutions based on the information available.
 Never fabricate or hallucinate file contents you haven't actually seen in the provided context.
-When outputting code, never include line number prefixes - they are only for reference when analyzing the provided context.
+When outputting code or diffs, NEVER include line number prefixes - they are only for reference when analyzing the provided context.
 </instructions>
 ]],
   },
