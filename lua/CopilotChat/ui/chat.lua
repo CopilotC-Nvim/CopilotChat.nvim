@@ -117,6 +117,7 @@ end
 ---@field private separator string
 ---@field private spinner CopilotChat.ui.spinner.Spinner
 ---@field private chat_overlay CopilotChat.ui.overlay.Overlay
+---@field private last_changedtick number?
 local Chat = class(function(self, config, on_buf_create)
   Overlay.init(self, 'copilot-chat', utils.key_to_info('show_help', config.mappings.show_help), on_buf_create)
 
@@ -616,6 +617,12 @@ function Chat:create()
   local bufnr = Overlay.create(self)
   vim.bo[bufnr].syntax = 'markdown'
   vim.bo[bufnr].textwidth = 0
+  vim.bo[bufnr].undolevels = 10
+  self.spinner.bufnr = bufnr
+
+  vim.schedule(function()
+    pcall(vim.treesitter.start, bufnr)
+  end)
 
   vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertLeave' }, {
     buffer = bufnr,
@@ -627,7 +634,6 @@ function Chat:create()
     end,
   })
 
-  self.spinner.bufnr = bufnr
   return bufnr
 end
 
@@ -647,10 +653,10 @@ function Chat:parse()
 
   -- Skip parsing if buffer hasn't changed
   local changedtick = vim.api.nvim_buf_get_changedtick(self.bufnr)
-  if self._last_changedtick == changedtick then
+  if self.last_changedtick == changedtick then
     return false
   end
-  self._last_changedtick = changedtick
+  self.last_changedtick = changedtick
 
   local parser = vim.treesitter.get_parser(self.bufnr, 'markdown')
   if not parser then
