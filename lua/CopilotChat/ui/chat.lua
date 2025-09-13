@@ -187,7 +187,6 @@ end
 ---@param cursor boolean? If true, returns the block closest to the cursor position
 ---@return CopilotChat.ui.chat.Block?
 function Chat:get_block(role, cursor)
-  self:parse()
   local messages = self:get_messages()
 
   if cursor then
@@ -228,6 +227,7 @@ end
 --- Get list of all chat messages
 ---@return table<CopilotChat.ui.chat.Message>
 function Chat:get_messages()
+  self:parse()
   return self.messages:values()
 end
 
@@ -236,7 +236,6 @@ end
 ---@param cursor boolean? If true, returns the message closest to the cursor position
 ---@return CopilotChat.ui.chat.Message?
 function Chat:get_message(role, cursor)
-  self:parse()
   local messages = self:get_messages()
 
   if cursor then
@@ -499,10 +498,7 @@ end
 ---@param message CopilotChat.ui.chat.Message
 ---@param replace boolean? If true, replaces the last message if it has same role
 function Chat:add_message(message, replace)
-  self:parse()
-
-  local messages = self:get_messages()
-  local current_message = messages[#messages]
+  local current_message = self:get_message()
   local is_new = not current_message
     or current_message.role ~= message.role
     or (message.id and current_message.id ~= message.id)
@@ -550,8 +546,6 @@ end
 ---@param role string? If specified, only considers sections of the given role
 ---@param cursor boolean? If true, removes the message closest to the cursor position
 function Chat:remove_message(role, cursor)
-  self:parse()
-
   local message = self:get_message(role, cursor)
   if not message then
     return
