@@ -57,11 +57,11 @@ function M.check()
     error('nvim: unsupported, please upgrade to 0.10.0 or later. See "https://neovim.io/".')
   end
 
-  local setup_called = require('CopilotChat').config ~= nil
-  if setup_called then
-    ok('setup: called')
+  local initialized = require('CopilotChat').initialized
+  if initialized then
+    ok('initialized: true')
   else
-    error('setup: not called, required for plugin to work. See `:h CopilotChat-installation`.')
+    error('initialized: false, something went wrong. See `:h CopilotChat-installation`.')
   end
 
   local testfile = os.tmpname()
