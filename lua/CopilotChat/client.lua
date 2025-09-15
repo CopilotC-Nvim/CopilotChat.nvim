@@ -142,11 +142,10 @@ local function generate_resource_messages(resources)
 end
 
 --- Generate ask request
---- @param prompt string
 --- @param system_prompt string
 --- @param history table<CopilotChat.client.Message>
 --- @param generated_messages table<CopilotChat.client.Message>
-local function generate_ask_request(prompt, system_prompt, history, generated_messages)
+local function generate_ask_request(system_prompt, history, generated_messages)
   local messages = {}
 
   system_prompt = vim.trim(system_prompt)
@@ -162,15 +161,6 @@ local function generate_ask_request(prompt, system_prompt, history, generated_me
   -- Include generated messages and history
   vim.list_extend(messages, generated_messages)
   vim.list_extend(messages, history)
-
-  -- Include user prompt if we have no history
-  if not utils.empty(prompt) and utils.empty(history) then
-    table.insert(messages, {
-      content = prompt,
-      role = constants.ROLE.USER,
-    })
-  end
-
   return messages
 end
 
@@ -303,10 +293,9 @@ function Client:info()
 end
 
 --- Ask a question to Copilot
----@param prompt string: The prompt to send to Copilot
 ---@param opts CopilotChat.client.AskOptions: Options for the request
 ---@return CopilotChat.client.AskResponse?
-function Client:ask(prompt, opts)
+function Client:ask(opts)
   opts = opts or {}
   local job_id = utils.uuid()
 
@@ -350,20 +339,20 @@ function Client:ask(prompt, opts)
     notify.publish(notify.STATUS, 'Generating request')
   end
 
-  local history = not opts.headless and vim.deepcopy(opts.history) or {}
+  local history = vim.deepcopy(opts.history)
   local tool_calls = orderedmap()
   local generated_messages = {}
   local resource_messages = generate_resource_messages(opts.resources)
 
   if max_tokens then
     -- Count required tokens that we cannot reduce
-    local prompt_tokens = tiktoken:count(prompt)
     local system_tokens = tiktoken:count(opts.system_prompt)
+    local prompt_tokens = #history > 0 and tiktoken:count(history[#history].content) or 0
     local resource_tokens = #resource_messages > 0 and tiktoken:count(resource_messages[1].content) or 0
     local required_tokens = prompt_tokens + system_tokens + resource_tokens
 
-    log.debug('Prompt tokens:', prompt_tokens)
     log.debug('System tokens:', system_tokens)
+    log.debug('Prompt tokens:', prompt_tokens)
     log.debug('Resource tokens:', resource_tokens)
 
     -- Calculate how many tokens we can use for history
@@ -373,8 +362,8 @@ function Client:ask(prompt, opts)
       history_tokens = history_tokens + tiktoken:count(msg.content)
     end
 
-    -- Remove history messages until we are under the limit
-    while history_tokens > history_limit and #history > 0 do
+    -- Remove history messages except prompt until we are under the limit
+    while history_tokens > history_limit and #history > 1 do
       local entry = table.remove(history, 1)
       history_tokens = history_tokens - tiktoken:count(entry.content)
     end
@@ -522,8 +511,7 @@ function Client:ask(prompt, opts)
   end
 
   local headers = self:authenticate(provider_name)
-  local request =
-    provider.prepare_input(generate_ask_request(prompt, opts.system_prompt, history, generated_messages), options)
+  local request = provider.prepare_input(generate_ask_request(opts.system_prompt, history, generated_messages), options)
   local is_stream = request.stream
 
   local args = {
