@@ -888,9 +888,20 @@ function M.ask(prompt, config)
         return
       end
 
-      local ask_response = client.ask(client, prompt, {
+      -- Build history, when in headless mode its just current prompt
+      local history
+      if not config.headless then
+        history = M.chat:get_messages()
+      else
+        history = {
+          content = prompt,
+          role = constants.ROLE.USER,
+        }
+      end
+
+      local ask_response = client:ask({
         headless = config.headless,
-        history = M.chat:get_messages(),
+        history = history,
         resources = resolved_resources,
         tools = selected_tools,
         system_prompt = system_prompt,
