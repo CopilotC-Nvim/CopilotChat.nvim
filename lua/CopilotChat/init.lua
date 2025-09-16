@@ -894,8 +894,10 @@ function M.ask(prompt, config)
         history = M.chat:get_messages()
       else
         history = {
-          content = prompt,
-          role = constants.ROLE.USER,
+          {
+            content = prompt,
+            role = constants.ROLE.USER,
+          },
         }
       end
 
