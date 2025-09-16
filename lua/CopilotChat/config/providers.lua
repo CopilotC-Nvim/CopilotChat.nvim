@@ -333,7 +333,7 @@ M.copilot = {
 
     for _, model in ipairs(models) do
       if not model.policy then
-        curl.post('https://api.githubcopilot.com/models/' .. model.id .. '/policy', {
+        pcall(curl.post, 'https://api.githubcopilot.com/models/' .. model.id .. '/policy', {
           headers = headers,
           json_request = true,
           body = { state = 'enabled' },
