@@ -1,5 +1,33 @@
 # Changelog
 
+## [4.7.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.6.0...v4.7.0) (2025-09-16)
+
+
+### Features
+
+* **chat:** switch to treesitter based chat parsing ([#1394](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1394)) ([ba364fe](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/ba364fe04b36121a594435c3f54261c7a8e450a6))
+* **diff:** add experimental unified diff support, refactor handling ([#1392](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1392)) ([9fdf895](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/9fdf8951efff6ab4f46e06945e5d6425bdbf4f80))
+* **diff:** apply all code blocks for a file at once when showing diff ([#1409](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1409)) ([a88874e](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/a88874ef3663aea6bc09eb09c1df4a46ae8577f5))
+* **diff:** use diff-match-patch for better diff handling ([#1407](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1407)) ([35ad8ff](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/35ad8ff61f47c5546c036b9b7310ce0dd87e8d20))
+* **health:** require markdown parser and copilotchat query ([#1401](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1401)) ([f49df19](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/f49df19d5a8925d295ac6472c30b36584bd10d93))
+
+
+### Bug Fixes
+
+* **chat:** automatically start treesitter if not started ([#1410](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1410)) ([00d0fb3](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/00d0fb310ad364e76e306a6626a40b85fc5bbd98))
+* **client:** correct history handling for headless ask ([#1416](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1416)) ([d5ea51d](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/d5ea51d3f55dc1941c13cf0c44440de0a7f8019f)), closes [#1415](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1415)
+* **provider:** safely call curl.post for model policy ([#1419](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1419)) ([2279dbe](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/2279dbe42702397c969aeaa5aebae475a16bcaa9))
+* **ui:** handle missing filename in chat block header ([#1406](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1406)) ([5c3a558](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/5c3a558f2d740df740735fbb3ea0be822004136d))
+* **ui:** improve help rendering and treesitter usage ([#1411](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1411)) ([559e754](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/559e75423774b3a291a58d33a1144c94444e52ac))
+* **ui:** preserve extra fields in chat messages ([#1399](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1399)) ([f2f523f](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/f2f523fe3fdb855da1b3dcabf4f2981cdc3b2c2d))
+
+
+### Performance Improvements
+
+* **chat:** optimize message storage and access ([#1403](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1403)) ([1041ad0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/1041ad0034e65e4a63859172d31e7045c8975d87))
+* **chat:** simplify last line/column calculation ([#1402](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1402)) ([4a45e69](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/4a45e69de8ad2b72ef62ede5a554c68c9632e718))
+* **core:** do not require calling setup(), add lazy initialization ([#1413](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1413)) ([c15f65e](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/c15f65e5dc5151230c97f9fd4d386e513fc47c63))
+
 ## [4.6.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.5.1...v4.6.0) (2025-08-31)
 
 
