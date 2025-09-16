@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.7.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.7.0...v4.7.1) (2025-09-16)
+
+
+### Bug Fixes
+
+* **chat:** ensure user prompt is wrapped in a list ([#1427](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1427)) ([92dceb4](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/92dceb4ece955deea39fd1d7a57c26e66d5ce38d)), closes [#1426](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1426)
+* **ui:** increase separator virt_text priority ([#1424](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1424)) ([9a63e83](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/9a63e83b9fade8e7fa50deb414d58b703352b13a))
+
 ## [4.7.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.6.0...v4.7.0) (2025-09-16)
 
 
