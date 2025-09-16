@@ -112,9 +112,9 @@ return {
   history_path = vim.fn.stdpath('data') .. '/copilotchat_history', -- Default path to stored history
 
   headers = {
-    user = '## User ', -- Header to use for user questions
-    assistant = '## Copilot ', -- Header to use for AI answers
-    tool = '## Tool ', -- Header to use for tool calls
+    user = 'User', -- Header to use for user questions
+    assistant = 'Copilot', -- Header to use for AI answers
+    tool = 'Tool', -- Header to use for tool calls
   },
 
   separator = '───', -- Separator to use in chat
