@@ -28,7 +28,7 @@ local M = setmetatable({}, {
     local initialized = rawget(t, 'initialized')
     if not initialized then
       rawset(t, 'initialized', true)
-      rawget(t, 'init')()
+      rawget(t, 'setup')()
     end
 
     return rawget(t, key)
@@ -1061,64 +1061,6 @@ function M.log_level(level)
   end
 end
 
---- Initialize the plugin if not already initialized.
-function M.init()
-  -- Set log level
-  if M.config.debug then
-    M.log_level('debug')
-  else
-    M.log_level(M.config.log_level)
-  end
-
-  -- Save proxy and insecure settings
-  curl.store_args({
-    insecure = M.config.allow_insecure,
-    proxy = M.config.proxy,
-  })
-
-  -- Load the providers
-  client:set_providers(function()
-    return M.config.providers
-  end)
-
-  -- Initialize chat
-  if not M.chat then
-    M.chat = require('CopilotChat.ui.chat')(M.config, function(bufnr)
-      for name, _ in pairs(M.config.mappings) do
-        map_key(name, bufnr)
-      end
-
-      require('CopilotChat.completion').enable(bufnr, M.config.chat_autocomplete)
-
-      vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
-        buffer = bufnr,
-        callback = function(ev)
-          if ev.event == 'BufEnter' then
-            update_source()
-          end
-
-          vim.schedule(function()
-            select.highlight(state.source.bufnr, not (M.config.highlight_selection and M.chat:focused()))
-          end)
-        end,
-      })
-
-      if M.config.insert_at_end then
-        vim.api.nvim_create_autocmd({ 'InsertEnter' }, {
-          buffer = bufnr,
-          callback = function()
-            vim.cmd('normal! 0')
-            vim.cmd('normal! G$')
-            vim.v.char = 'x'
-          end,
-        })
-      end
-
-      finish(true)
-    end)
-  end
-end
-
 --- Set up the plugin
 ---@param config CopilotChat.config.Config?
 function M.setup(config)
@@ -1133,14 +1075,64 @@ function M.setup(config)
     M.config.separator = '---'
   end
 
-  if M.chat then
-    client:stop()
-    M.chat:close(state.source.bufnr)
-    M.chat:delete()
-    M.chat = nil
+  -- Set log level
+  if M.config.debug then
+    M.log_level('debug')
+  else
+    M.log_level(M.config.log_level)
   end
 
-  M.init()
+  -- Save proxy and insecure settings
+  curl.store_args({
+    insecure = M.config.allow_insecure,
+    proxy = M.config.proxy,
+  })
+
+  -- Load the providers
+  client:stop()
+  client:set_providers(function()
+    return M.config.providers
+  end)
+
+  -- Initialize chat
+  if M.chat then
+    M.chat:close(state.source.bufnr)
+    M.chat:delete()
+  end
+
+  M.chat = require('CopilotChat.ui.chat')(M.config, function(bufnr)
+    for name, _ in pairs(M.config.mappings) do
+      map_key(name, bufnr)
+    end
+
+    require('CopilotChat.completion').enable(bufnr, M.config.chat_autocomplete)
+
+    vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
+      buffer = bufnr,
+      callback = function(ev)
+        if ev.event == 'BufEnter' then
+          update_source()
+        end
+
+        vim.schedule(function()
+          select.highlight(state.source.bufnr, not (M.config.highlight_selection and M.chat:focused()))
+        end)
+      end,
+    })
+
+    if M.config.insert_at_end then
+      vim.api.nvim_create_autocmd({ 'InsertEnter' }, {
+        buffer = bufnr,
+        callback = function()
+          vim.cmd('normal! 0')
+          vim.cmd('normal! G$')
+          vim.v.char = 'x'
+        end,
+      })
+    end
+
+    finish(true)
+  end)
 
   for name, prompt in pairs(list_prompts()) do
     if prompt.prompt then
