@@ -794,7 +794,7 @@ function Chat:render()
           { string.rep(self.separator, vim.go.columns - #header_value - 1), 'CopilotChatSeparator' },
         },
         virt_text_pos = 'overlay',
-        priority = 300,
+        priority = 2000, -- High priority to override other plugins if enabled
         strict = false,
       })
 
