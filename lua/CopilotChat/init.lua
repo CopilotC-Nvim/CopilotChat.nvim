@@ -1100,41 +1100,41 @@ function M.setup(config)
   if M.chat then
     M.chat:close(state.source.bufnr)
     M.chat:delete()
-  end
+  else
+    M.chat = require('CopilotChat.ui.chat')(M.config, function(bufnr)
+      for name, _ in pairs(M.config.mappings) do
+        map_key(name, bufnr)
+      end
 
-  M.chat = require('CopilotChat.ui.chat')(M.config, function(bufnr)
-    for name, _ in pairs(M.config.mappings) do
-      map_key(name, bufnr)
-    end
+      require('CopilotChat.completion').enable(bufnr, M.config.chat_autocomplete)
 
-    require('CopilotChat.completion').enable(bufnr, M.config.chat_autocomplete)
-
-    vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
-      buffer = bufnr,
-      callback = function(ev)
-        if ev.event == 'BufEnter' then
-          update_source()
-        end
-
-        vim.schedule(function()
-          select.highlight(state.source.bufnr, not (M.config.highlight_selection and M.chat:focused()))
-        end)
-      end,
-    })
-
-    if M.config.insert_at_end then
-      vim.api.nvim_create_autocmd({ 'InsertEnter' }, {
+      vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
         buffer = bufnr,
-        callback = function()
-          vim.cmd('normal! 0')
-          vim.cmd('normal! G$')
-          vim.v.char = 'x'
+        callback = function(ev)
+          if ev.event == 'BufEnter' then
+            update_source()
+          end
+
+          vim.schedule(function()
+            select.highlight(state.source.bufnr, not (M.config.highlight_selection and M.chat:focused()))
+          end)
         end,
       })
-    end
 
-    finish(true)
-  end)
+      if M.config.insert_at_end then
+        vim.api.nvim_create_autocmd({ 'InsertEnter' }, {
+          buffer = bufnr,
+          callback = function()
+            vim.cmd('normal! 0')
+            vim.cmd('normal! G$')
+            vim.v.char = 'x'
+          end,
+        })
+      end
+
+      finish(true)
+    end)
+  end
 
   for name, prompt in pairs(list_prompts()) do
     if prompt.prompt then
