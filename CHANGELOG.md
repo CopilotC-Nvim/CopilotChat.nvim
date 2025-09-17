@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.7.2](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.7.1...v4.7.2) (2025-09-17)
+
+
+### Bug Fixes
+
+* **chat:** do not create multiple chat isntances ([#1432](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1432)) ([74611b5](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/74611b56e813f50e905122387b92fb832ac9616c))
+
 ## [4.7.1](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.7.0...v4.7.1) (2025-09-16)
 
 
