@@ -164,7 +164,7 @@ local Chat = class(function(self, config, on_buf_create)
     if not msg or msg == '' then
       self.chat_overlay:restore(self.winnr, self.bufnr)
     else
-      self:overlay({ text = msg })
+      self.chat_overlay:show(msg, self.winnr)
     end
   end)
 end, Overlay)
