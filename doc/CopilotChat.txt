@@ -41,11 +41,12 @@ CopilotChat.nvim brings GitHub Copilot Chat capabilities directly into Neovim
 with a focus on transparency and user control.
 
 - 🤖 **Multiple AI Models** - GitHub Copilot (including GPT-4o, Gemini 2.5 Pro, Claude 4 Sonnet, Claude 3.7 Sonnet, Claude 3.5 Sonnet, o3-mini, o4-mini) + custom providers (Ollama, Mistral.ai). The exact list of available models depends on your GitHub Copilot settings <https://github.com/settings/copilot/features> and the models provided by GitHub’s API.
-- 🔧 **Tool Calling** - LLM can use workspace functions (file reading, git operations, search) with your explicit approval
-- 🔒 **Explicit Control** - Only shares what you specifically request - no background data collection
-- 📝 **Interactive Chat** - Rich UI with completion, diffs, and quickfix integration
+- 🔧 **Tool Calling** - LLM can call workspace functions (file reading, git operations, search) with your explicit approval
+- 🔒 **Privacy First** - Only shares what you explicitly request - no background data collection
+- 📝 **Interactive Chat** - Interactive UI with completion, diffs, and quickfix integration
 - 🎯 **Smart Prompts** - Composable templates and sticky prompts for consistent context
-- ⚡ **Efficient** - Smart token usage with tiktoken counting and history management
+- ⚡ **Token Efficient** - Resource replacement prevents duplicate context, history management via tiktoken counting
+- 🔗 **Scriptable** - Comprehensive Lua API for automation and headless mode operation
 - 🔌 **Extensible** - Custom functions <https://github.com/CopilotC-Nvim/CopilotChat.nvim/discussions/categories/functions> and providers <https://github.com/CopilotC-Nvim/CopilotChat.nvim/discussions/categories/providers>, plus integrations like mcphub.nvim <https://github.com/ravitemer/mcphub.nvim>
 
 
