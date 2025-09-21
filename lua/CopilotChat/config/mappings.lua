@@ -337,10 +337,10 @@ return {
       local system_prompt = config.system_prompt
 
       async.run(function()
-        local infos = client:info()
+        local resolved_resources = copilot.resolve_functions(prompt, config)
         local selected_tools = copilot.resolve_tools(prompt, config)
         local selected_model = copilot.resolve_model(prompt, config)
-        local resolved_resources = copilot.resolve_functions(prompt, config)
+        local infos = client:info()
 
         selected_tools = vim.tbl_map(function(tool)
           return tool.name
