@@ -515,7 +515,7 @@ end
 ---@param config CopilotChat.config.Shared?
 ---@return CopilotChat.config.prompts.Prompt, string
 function M.resolve_prompt(prompt, config)
-  if not prompt then
+  if prompt == nil then
     local message = M.chat:get_message(constants.ROLE.USER)
     if message then
       prompt = message.content
