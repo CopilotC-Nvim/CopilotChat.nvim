@@ -6,13 +6,14 @@ local class = require('CopilotChat.utils.class')
 --- Get the library extension based on the operating system
 --- @return string
 local function get_lib_extension()
-  if jit.os:lower() == 'mac' or jit.os:lower() == 'osx' then
+  local os_name = vim.uv.os_uname().sysname:lower()
+  if os_name:find('darwin') then
     return '.dylib'
-  end
-  if jit.os:lower() == 'windows' then
+  elseif os_name:find('windows') then
     return '.dll'
+  else
+    return '.so'
   end
-  return '.so'
 end
 
 --- Load tiktoken data from cache or download it

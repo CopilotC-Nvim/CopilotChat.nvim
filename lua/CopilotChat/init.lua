@@ -586,7 +586,7 @@ function M.resolve_prompt(prompt, config)
         .. vim.trim(require('CopilotChat.instructions.edit_file_block'))
     end
 
-    config.system_prompt = config.system_prompt:gsub('{OS_NAME}', jit.os)
+    config.system_prompt = config.system_prompt:gsub('{OS_NAME}', vim.uv.os_uname().sysname)
     config.system_prompt = config.system_prompt:gsub('{LANGUAGE}', config.language)
     config.system_prompt = config.system_prompt:gsub('{DIR}', state.source.cwd())
   end
