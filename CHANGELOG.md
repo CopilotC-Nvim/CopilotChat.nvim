@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.7.3](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.7.2...v4.7.3) (2025-09-28)
+
+
+### Bug Fixes
+
+* **mappings:** make sure function resolution is not ran in fast context ([#1436](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1436)) ([16aa924](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/16aa92419d48957319a3f6b06c9d74ebdcead80c))
+* **os:** use vim.uv.os_uname for OS detection ([#1449](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1449)) ([df8efe9](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/df8efe9d2368c876d607b513bb384eaa8daf1d12))
+
 ## [4.7.2](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.7.1...v4.7.2) (2025-09-17)
 
 
