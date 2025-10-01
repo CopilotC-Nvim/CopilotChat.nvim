@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.7.4](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.7.3...v4.7.4) (2025-10-01)
+
+
+### Bug Fixes
+
+* **url:** ensure main thread scheduling before fetching ([#1453](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1453)) ([7a8e238](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/7a8e238e36ea9e1df9d6309434a37bcdc15a9fae))
+
 ## [4.7.3](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.7.2...v4.7.3) (2025-09-28)
 
 
