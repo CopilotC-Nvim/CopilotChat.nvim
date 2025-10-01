@@ -545,6 +545,7 @@ return {
         input.url = 'https://' .. input.url
       end
 
+      utils.schedule_main()
       local data, mimetype = resources.get_url(input.url)
       if not data then
         error('URL not found: ' .. input.url)
