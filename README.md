@@ -167,20 +167,21 @@ When you use `@copilot`, the LLM can call functions like `bash`, `edit`, `file`,
 
 All predefined functions belong to the `copilot` group.
 
-| Function    | Type     | Description                                             | Example Usage         |
-| ----------- | -------- | ------------------------------------------------------- | --------------------- |
-| `bash`      | Tool     | Executes a bash command and returns output              | `@copilot` only       |
-| `buffer`    | Resource | Retrieves content from buffer(s) with diagnostics       | `#buffer:active`      |
-| `clipboard` | Resource | Provides access to system clipboard content             | `#clipboard`          |
-| `edit`      | Tool     | Applies a unified diff to a file                        | `@copilot` only       |
-| `file`      | Resource | Reads content from a specified file path                | `#file:path/to/file`  |
-| `gitdiff`   | Resource | Retrieves git diff information                          | `#gitdiff:staged`     |
-| `glob`      | Resource | Lists filenames matching a pattern in workspace         | `#glob:**/*.lua`      |
-| `grep`      | Resource | Searches for a pattern across files in workspace        | `#grep:TODO`          |
-| `selection` | Resource | Includes the current visual selection with diagnostics  | `#selection`          |
-| `url`       | Resource | Fetches content from a specified URL                    | `#url:https://...`    |
+| Function    | Type     | Description                                            | Example Usage        |
+| ----------- | -------- | ------------------------------------------------------ | -------------------- |
+| `bash`      | Tool     | Executes a bash command and returns output             | `@copilot` only      |
+| `buffer`    | Resource | Retrieves content from buffer(s) with diagnostics      | `#buffer:active`     |
+| `clipboard` | Resource | Provides access to system clipboard content            | `#clipboard`         |
+| `edit`      | Tool     | Applies a unified diff to a file                       | `@copilot` only      |
+| `file`      | Resource | Reads content from a specified file path               | `#file:path/to/file` |
+| `gitdiff`   | Resource | Retrieves git diff information                         | `#gitdiff:staged`    |
+| `glob`      | Resource | Lists filenames matching a pattern in workspace        | `#glob:**/*.lua`     |
+| `grep`      | Resource | Searches for a pattern across files in workspace       | `#grep:TODO`         |
+| `selection` | Resource | Includes the current visual selection with diagnostics | `#selection`         |
+| `url`       | Resource | Fetches content from a specified URL                   | `#url:https://...`   |
 
 **Type Legend:**
+
 - **Resource**: Can be used manually via `#function` syntax
 - **Tool**: Can only be called by LLM via `@copilot` (for safety/complexity reasons)
 
