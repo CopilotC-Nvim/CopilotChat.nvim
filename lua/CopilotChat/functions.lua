@@ -57,7 +57,14 @@ local function filter_schema(tbl, root)
   for k, v in pairs(tbl) do
     if not utils.empty(v) then
       if type(v) ~= 'function' and k ~= 'examples' then
-        result[k] = type(v) == 'table' and filter_schema(v) or v
+        if k == 'enum' and type(v) == 'table' and type(v[1]) == 'table' and v[1].value then
+          -- If enum contains objects with value/display, extract just the values
+          result[k] = vim.tbl_map(function(item)
+            return item.value
+          end, v)
+        else
+          result[k] = type(v) == 'table' and filter_schema(v) or v
+        end
       end
     end
   end
@@ -211,11 +218,30 @@ function M.enter_input(schema, source)
         if #choices == 0 then
           choice = nil
         elseif #choices == 1 then
-          choice = choices[1]
+          -- Handle both string and table choices
+          choice = type(choices[1]) == 'table' and choices[1].value or choices[1]
         else
-          choice = utils.select(choices, {
-            prompt = string.format('Select %s> ', prop_name),
-          })
+          -- Check if choices are objects with display/value
+          local has_display = type(choices[1]) == 'table' and choices[1].display ~= nil
+          local selected
+
+          if has_display then
+            -- Use format_item to display the display field
+            selected = utils.select(choices, {
+              prompt = string.format('Select %s> ', prop_name),
+              format_item = function(item)
+                return item.display
+              end,
+            })
+            -- Extract the value from the selected item
+            choice = selected and selected.value or nil
+          else
+            -- Regular string choices
+            selected = utils.select(choices, {
+              prompt = string.format('Select %s> ', prop_name),
+            })
+            choice = selected
+          end
         end
 
         table.insert(out, choice or '')
