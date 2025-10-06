@@ -110,11 +110,11 @@ EOF
 
 # Sticky prompt that persists
 
-> #buffer:current
+> #buffer:active
 > You are a helpful coding assistant
 ```
 
-When you use `@copilot`, the LLM can call functions like `glob`, `file`, `gitdiff` etc. You'll see the proposed function call and can approve/reject it before execution.
+When you use `@copilot`, the LLM can call functions like `bash`, `edit`, `file`, `glob`, `grep`, `gitdiff` etc. You'll see the proposed function call and can approve/reject it before execution.
 
 # Usage
 
@@ -143,7 +143,6 @@ When you use `@copilot`, the LLM can call functions like `glob`, `file`, `gitdif
 | `<C-l>` | `<C-l>` | Reset and clear the chat window            |
 | `<C-s>` | `<CR>`  | Submit the current prompt                  |
 | -       | `grr`   | Toggle sticky prompt for line under cursor |
-| -       | `grx`   | Clear all sticky prompts in prompt         |
 | `<C-y>` | `<C-y>` | Accept nearest diff                        |
 | -       | `gj`    | Jump to section of nearest diff            |
 | -       | `gqa`   | Add all answers from chat to quickfix list |
@@ -168,20 +167,23 @@ When you use `@copilot`, the LLM can call functions like `glob`, `file`, `gitdif
 
 All predefined functions belong to the `copilot` group.
 
-| Function      | Description                                      | Example Usage          |
-| ------------- | ------------------------------------------------ | ---------------------- |
-| `buffer`      | Retrieves content from a specific buffer         | `#buffer`              |
-| `buffers`     | Fetches content from multiple buffers            | `#buffers:visible`     |
-| `diagnostics` | Collects code diagnostics (errors, warnings)     | `#diagnostics:current` |
-| `file`        | Reads content from a specified file path         | `#file:path/to/file`   |
-| `gitdiff`     | Retrieves git diff information                   | `#gitdiff:staged`      |
-| `gitstatus`   | Retrieves git status information                 | `#gitstatus`           |
-| `glob`        | Lists filenames matching a pattern in workspace  | `#glob:**/*.lua`       |
-| `grep`        | Searches for a pattern across files in workspace | `#grep:TODO`           |
-| `quickfix`    | Includes content of files in quickfix list       | `#quickfix`            |
-| `register`    | Provides access to specified Vim register        | `#register:+`          |
-| `selection`   | Includes the current visual selection            | `#selection`           |
-| `url`         | Fetches content from a specified URL             | `#url:https://...`     |
+| Function    | Type     | Description                                            | Example Usage        |
+| ----------- | -------- | ------------------------------------------------------ | -------------------- |
+| `bash`      | Tool     | Executes a bash command and returns output             | `@copilot` only      |
+| `buffer`    | Resource | Retrieves content from buffer(s) with diagnostics      | `#buffer:active`     |
+| `clipboard` | Resource | Provides access to system clipboard content            | `#clipboard`         |
+| `edit`      | Tool     | Applies a unified diff to a file                       | `@copilot` only      |
+| `file`      | Resource | Reads content from a specified file path               | `#file:path/to/file` |
+| `gitdiff`   | Resource | Retrieves git diff information                         | `#gitdiff:staged`    |
+| `glob`      | Resource | Lists filenames matching a pattern in workspace        | `#glob:**/*.lua`     |
+| `grep`      | Resource | Searches for a pattern across files in workspace       | `#grep:TODO`         |
+| `selection` | Resource | Includes the current visual selection with diagnostics | `#selection`         |
+| `url`       | Resource | Fetches content from a specified URL                   | `#url:https://...`   |
+
+**Type Legend:**
+
+- **Resource**: Can be used manually via `#function` syntax
+- **Tool**: Can only be called by LLM via `@copilot` (for safety/complexity reasons)
 
 ## Predefined Prompts
 

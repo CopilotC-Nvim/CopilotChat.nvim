@@ -61,6 +61,7 @@ end
 ---@field accept_diff CopilotChat.config.mapping|false|nil
 ---@field jump_to_diff CopilotChat.config.mapping|false|nil
 ---@field quickfix_diffs CopilotChat.config.mapping|false|nil
+---@field quickfix_answers CopilotChat.config.mapping|false|nil
 ---@field yank_diff CopilotChat.config.mapping.yank_diff|false|nil
 ---@field show_diff CopilotChat.config.mapping|false|nil
 ---@field show_info CopilotChat.config.mapping|false|nil
@@ -130,34 +131,6 @@ return {
 
       copilot.chat:add_sticky(current_line)
       vim.api.nvim_win_set_cursor(copilot.chat.winnr, cursor)
-    end,
-  },
-
-  clear_stickies = {
-    normal = 'grx',
-    callback = function()
-      local message = copilot.chat:get_message(constants.ROLE.USER)
-      local section = message and message.section
-      if not section then
-        return
-      end
-
-      local lines = utils.split_lines(message.content)
-      local new_lines = {}
-      local changed = false
-
-      for _, line in ipairs(lines) do
-        if not vim.startswith(vim.trim(line), '> ') then
-          table.insert(new_lines, line)
-        else
-          changed = true
-        end
-      end
-
-      if changed then
-        message.content = table.concat(new_lines, '\n')
-        copilot.chat:add_message(message, true)
-      end
     end,
   },
 
