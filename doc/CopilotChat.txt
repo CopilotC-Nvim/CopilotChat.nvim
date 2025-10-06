@@ -1,4 +1,4 @@
-*CopilotChat.txt*         For NVIM v0.8.0         Last change: 2025 October 01
+*CopilotChat.txt*         For NVIM v0.8.0         Last change: 2025 October 06
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -145,13 +145,13 @@ EXAMPLES                                                *CopilotChat-examples*
     
     # Sticky prompt that persists
     
-    > #buffer:current
+    > #buffer:active
     > You are a helpful coding assistant
 <
 
-When you use `@copilot`, the LLM can call functions like `glob`, `file`,
-`gitdiff` etc. You’ll see the proposed function call and can approve/reject
-it before execution.
+When you use `@copilot`, the LLM can call functions like `bash`, `edit`,
+`file`, `glob`, `grep`, `gitdiff` etc. You’ll see the proposed function call
+and can approve/reject it before execution.
 
 
 ==============================================================================
@@ -183,7 +183,6 @@ CHAT KEY MAPPINGS                              *CopilotChat-chat-key-mappings*
   <C-l>    <C-l>    Reset and clear the chat window
   <C-s>    <CR>     Submit the current prompt
   -        grr      Toggle sticky prompt for line under cursor
-  -        grx      Clear all sticky prompts in prompt
   <C-y>    <C-y>    Accept nearest diff
   -        gj       Jump to section of nearest diff
   -        gqa      Add all answers from chat to quickfix list
@@ -206,37 +205,40 @@ PREDEFINED FUNCTIONS                        *CopilotChat-predefined-functions*
 
 All predefined functions belong to the `copilot` group.
 
-  ------------------------------------------------------------------------------
-  Function      Description                               Example Usage
-  ------------- ----------------------------------------- ----------------------
-  buffer        Retrieves content from a specific buffer  #buffer
+  -------------------------------------------------------------------------------------
+  Function    Type       Description                               Example Usage
+  ----------- ---------- ----------------------------------------- --------------------
+  bash        Tool       Executes a bash command and returns       @copilot only
+                         output                                    
 
-  buffers       Fetches content from multiple buffers     #buffers:visible
+  buffer      Resource   Retrieves content from buffer(s) with     #buffer:active
+                         diagnostics                               
 
-  diagnostics   Collects code diagnostics (errors,        #diagnostics:current
-                warnings)                                 
+  clipboard   Resource   Provides access to system clipboard       #clipboard
+                         content                                   
 
-  file          Reads content from a specified file path  #file:path/to/file
+  edit        Tool       Applies a unified diff to a file          @copilot only
 
-  gitdiff       Retrieves git diff information            #gitdiff:staged
+  file        Resource   Reads content from a specified file path  #file:path/to/file
 
-  gitstatus     Retrieves git status information          #gitstatus
+  gitdiff     Resource   Retrieves git diff information            #gitdiff:staged
 
-  glob          Lists filenames matching a pattern in     #glob:**/*.lua
-                workspace                                 
+  glob        Resource   Lists filenames matching a pattern in     #glob:**/*.lua
+                         workspace                                 
 
-  grep          Searches for a pattern across files in    #grep:TODO
-                workspace                                 
+  grep        Resource   Searches for a pattern across files in    #grep:TODO
+                         workspace                                 
 
-  quickfix      Includes content of files in quickfix     #quickfix
-                list                                      
+  selection   Resource   Includes the current visual selection     #selection
+                         with diagnostics                          
 
-  register      Provides access to specified Vim register #register:+
+  url         Resource   Fetches content from a specified URL      #url:https://...
+  -------------------------------------------------------------------------------------
+**Type Legend:**
 
-  selection     Includes the current visual selection     #selection
+- **Resource**: Can be used manually via `#function` syntax
+- **Tool**: Can only be called by LLM via `@copilot` (for safety/complexity reasons)
 
-  url           Fetches content from a specified URL      #url:https://...
-  ------------------------------------------------------------------------------
 
 PREDEFINED PROMPTS                            *CopilotChat-predefined-prompts*
 
