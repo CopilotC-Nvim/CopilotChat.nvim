@@ -408,7 +408,7 @@ return {
 
     resolve = function(input, source)
       local cmd = { 'bash', '-c', input.command }
-      local out = utils.system(cmd, { cwd = source.cwd() })
+      local out = utils.system(cmd, source.cwd())
 
       return {
         {

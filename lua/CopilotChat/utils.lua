@@ -125,9 +125,9 @@ end
 --- Call a system command
 ---@param cmd table The command
 ---@async
-M.system = async.wrap(function(cmd, callback)
-  vim.system(cmd, { text = true }, callback)
-end, 2)
+M.system = async.wrap(function(cmd, cwd, callback)
+  vim.system(cmd, { cwd = cwd, text = true }, callback)
+end, 3)
 
 --- Schedule a function only when needed (not on main thread)
 ---@param callback function The callback
