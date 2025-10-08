@@ -385,7 +385,7 @@ return {
         for _, resource in ipairs(resolved_resources) do
           local resource_lines = vim.split(resource.data, '\n')
           local preview = vim.list_slice(resource_lines, 1, math.min(10, #resource_lines))
-          local header = string.format('**%s** (%s lines)', resource.uri, #resource_lines)
+          local header = string.format('**%s** (%s lines)', resource.name or resource.uri, #resource_lines)
           if #resource_lines > 10 then
             header = header .. ' (truncated)'
           end
