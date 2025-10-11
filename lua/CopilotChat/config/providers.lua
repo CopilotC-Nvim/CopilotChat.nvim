@@ -308,6 +308,10 @@ M.copilot = {
         return model.capabilities.type == 'chat' and model.model_picker_enabled
       end)
       :map(function(model)
+        local supported_endpoints = model.supported_endpoints
+        local responses_only = supported_endpoints
+          and #supported_endpoints == 1
+          and supported_endpoints[1] == '/responses'
         return {
           id = model.id,
           name = model.name,
@@ -318,6 +322,8 @@ M.copilot = {
           tools = model.capabilities.supports.tool_calls,
           policy = not model['policy'] or model['policy']['state'] == 'enabled',
           version = model.version,
+          supported_endpoints = supported_endpoints,
+          responses_only = responses_only,
         }
       end)
       :totable()
@@ -346,6 +352,66 @@ M.copilot = {
 
   prepare_input = function(inputs, opts)
     local is_o1 = vim.startswith(opts.model.id, 'o1')
+
+    -- Handle OpenAI /responses style models
+    if opts.model.responses_only then
+      local system_prompt = nil
+      for _, m in ipairs(inputs) do
+        if m.role == constants.ROLE.SYSTEM and not utils.empty(m.content) then
+          system_prompt = m.content
+          break
+        end
+      end
+
+      local function is_resource_msg(m)
+        if m.role ~= constants.ROLE.USER or not m.content then
+          return false
+        end
+        return vim.startswith(m.content, '# ') or m.content:find('```', 1, true) ~= nil
+      end
+
+      -- Collect context resources
+      local context_blocks = {}
+      for _, m in ipairs(inputs) do
+        if is_resource_msg(m) then
+          table.insert(context_blocks, m.content)
+        end
+      end
+
+      -- Build a single-turn input from conversation history (excluding resource blocks)
+      local lines = {}
+      if #context_blocks > 0 then
+        table.insert(lines, '# Context:')
+        table.insert(lines, table.concat(context_blocks, '\n\n'))
+        table.insert(lines, '')
+      end
+
+      local i = 1
+      while i <= #inputs do
+        local msg = inputs[i]
+        if msg.role == constants.ROLE.USER and not is_resource_msg(msg) then
+          local next_msg = inputs[i + 1]
+          if next_msg and next_msg.role == constants.ROLE.ASSISTANT then
+            table.insert(lines, '## I asked :\n' .. (msg.content or '') .. '\n')
+            table.insert(lines, '## The answer was :\n' .. (next_msg.content or '') .. '\n')
+            i = i + 2
+          else
+            -- Last user question
+            table.insert(lines, '# I ask:\n' .. (msg.content or '') .. '\n')
+            i = i + 1
+          end
+        else
+          i = i + 1
+        end
+      end
+
+      return {
+        model = opts.model.id,
+        stream = opts.model.streaming or false,
+        instructions = system_prompt,
+        input = table.concat(lines, '\n'),
+      }
+    end
 
     inputs = vim.tbl_map(function(input)
       local output = {
@@ -414,6 +480,52 @@ M.copilot = {
   prepare_output = function(output)
     local tool_calls = {}
 
+    -- Handle OpenAI /responses streaming and non-streaming
+    if type(output) == 'table' and output.type and vim.startswith(output.type, 'response.') then
+      local t = output.type
+      local content = nil
+      local reasoning = nil
+      local finish_reason = nil
+      local usage = nil
+
+      if t:find('response.output_text.delta', 1, true) then
+        local delta = output.delta or (output.data and output.data.delta) or output.text
+        if type(delta) == 'table' then
+          delta = delta.text or delta.content or delta[1]
+        end
+        content = delta
+      elseif t == 'response.completed' then
+        local resp = output.response or {}
+        -- accumulate all output_text segments
+        if resp.output then
+          local parts = {}
+          for _, msg in ipairs(resp.output) do
+            if msg.content then
+              for _, c in ipairs(msg.content) do
+                if c.type == 'output_text' and c.text then
+                  table.insert(parts, c.text)
+                end
+              end
+            end
+          end
+          content = table.concat(parts, '')
+        end
+        usage = resp.usage and resp.usage.total_tokens or output.usage and output.usage.total_tokens
+        finish_reason = 'stop'
+      elseif t == 'response.error' then
+        finish_reason = 'error'
+      end
+
+      return {
+        content = content,
+        reasoning = reasoning,
+        finish_reason = finish_reason,
+        total_tokens = usage,
+        tool_calls = tool_calls,
+      }
+    end
+
+    -- Fallback to Chat Completions style
     local choice
     if output.choices and #output.choices > 0 then
       for _, choice in ipairs(output.choices) do
@@ -458,7 +570,10 @@ M.copilot = {
     }
   end,
 
-  get_url = function()
+  get_url = function(opts)
+    if opts and opts.model and opts.model.responses_only then
+      return 'https://api.githubcopilot.com/responses'
+    end
     return 'https://api.githubcopilot.com/chat/completions'
   end,
 }

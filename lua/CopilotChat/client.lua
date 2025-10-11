@@ -52,6 +52,8 @@
 ---@field streaming boolean?
 ---@field tools boolean?
 ---@field reasoning boolean?
+---@field supported_endpoints string[]?
+---@field responses_only boolean?
 
 local log = require('plenary.log')
 local constants = require('CopilotChat.constants')
