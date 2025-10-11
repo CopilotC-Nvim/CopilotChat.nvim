@@ -196,17 +196,306 @@ local function get_github_models_token(tag)
   return github_device_flow(tag, '178c6fc778ccc68e1d6a', 'read:user copilot')
 end
 
+local function encode_arguments(arguments)
+  if arguments == nil then
+    return ''
+  end
+  if type(arguments) == 'string' then
+    return arguments
+  end
+  local ok, encoded = pcall(vim.json.encode, arguments)
+  if ok then
+    return encoded
+  end
+  return ''
+end
+
+local function push_tool_call(buffer, tool)
+  if not tool or not tool.name then
+    return
+  end
+  local index = #buffer + 1
+  buffer[index] = {
+    id = tool.id or ('tooluse_' .. index),
+    index = tool.index or index,
+    name = tool.name,
+    arguments = encode_arguments(tool.arguments),
+  }
+end
+
+local function summarize_response_output(response)
+  local text_parts = {}
+  local reasoning_parts = {}
+  local tool_calls = {}
+
+  local function handle_content(content)
+    if type(content) ~= 'table' then
+      return
+    end
+    local ctype = content.type
+    if (ctype == 'output_text' or ctype == 'text') and type(content.text) == 'string' then
+      table.insert(text_parts, content.text)
+    elseif ctype == 'reasoning' and type(content.text) == 'string' then
+      table.insert(reasoning_parts, content.text)
+    elseif ctype == 'tool_use' or ctype == 'tool_call' then
+      push_tool_call(tool_calls, content)
+    end
+  end
+
+  if type(response.output) == 'table' then
+    for _, item in ipairs(response.output) do
+      if type(item) == 'table' then
+        if type(item.content) == 'table' then
+          for _, content in ipairs(item.content) do
+            handle_content(content)
+          end
+        else
+          handle_content(item)
+        end
+      end
+    end
+  end
+
+  if type(response.required_action) == 'table' then
+    local submit = response.required_action.submit_tool_outputs
+    if submit and type(submit.tool_calls) == 'table' then
+      for _, tool in ipairs(submit.tool_calls) do
+        push_tool_call(tool_calls, tool)
+      end
+    end
+  end
+
+  local text = table.concat(text_parts, '')
+  local reasoning = table.concat(reasoning_parts, '\n')
+
+  if text == '' then
+    text = nil
+  end
+  if reasoning == '' then
+    reasoning = nil
+  end
+  if #tool_calls == 0 then
+    tool_calls = nil
+  end
+
+  return {
+    content = text,
+    reasoning = reasoning,
+    tool_calls = tool_calls,
+  }
+end
+
+local function responses_finish_reason(response)
+  local status = response and response.status or nil
+  if status == 'completed' then
+    return 'stop'
+  elseif status == 'requires_action' then
+    return 'tool_calls'
+  elseif status == 'failed' or status == 'errored' or status == 'error' then
+    return 'error'
+  elseif status == 'canceled' or status == 'cancelled' then
+    return 'canceled'
+  end
+  return nil
+end
+
+local function build_responses_body(inputs, opts)
+  local instructions = {}
+  local conversation = {}
+
+  for _, message in ipairs(inputs) do
+    local role = message.role or ''
+    local content = vim.trim(message.content or '')
+    if role == constants.ROLE.SYSTEM then
+      if content ~= '' then
+        table.insert(instructions, content)
+      end
+    else
+      local label = role
+      if role == constants.ROLE.TOOL then
+        label = 'tool'
+      end
+      table.insert(conversation, string.format('%s:\n%s', label:upper(), content))
+    end
+  end
+
+  local body = {
+    model = opts.model.id,
+    stream = opts.model.streaming or false,
+  }
+
+  if not utils.empty(instructions) then
+    body.instructions = table.concat(instructions, '\n\n')
+  end
+
+  body.input = utils.empty(conversation) and '' or table.concat(conversation, '\n\n')
+
+  if opts.tools and opts.model.tools then
+    body.tools = vim.tbl_map(function(tool)
+      return {
+        type = 'function',
+        ['function'] = {
+          name = tool.name,
+          description = tool.description,
+          parameters = tool.schema,
+        },
+      }
+    end, opts.tools)
+  end
+
+  if opts.model.max_output_tokens then
+    body.max_output_tokens = opts.model.max_output_tokens
+  end
+
+  if opts.temperature ~= nil then
+    body.temperature = opts.temperature
+  end
+
+  body.top_p = opts.top_p or 1
+
+  return body
+end
+
+local function parse_responses_event(event)
+  local event_type = event.type
+  if not event_type then
+    return {}
+  end
+
+  if event_type == 'response.error' then
+    local message = ''
+    if type(event.error) == 'table' and type(event.error.message) == 'string' then
+      message = event.error.message
+    elseif type(event.error) == 'string' then
+      message = event.error
+    end
+    return {
+      content = message,
+      content_overwrite = message ~= '',
+      finish_reason = 'error',
+      skip_progress = true,
+    }
+  end
+
+  if event_type == 'response.canceled' or event_type == 'response.cancelled' then
+    return {
+      finish_reason = 'canceled',
+      skip_progress = true,
+    }
+  end
+
+  if event_type == 'response.failed' then
+    return {
+      finish_reason = 'failed',
+      skip_progress = true,
+    }
+  end
+
+  local delta = event.delta
+  if not delta and type(event.response) == 'table' then
+    delta = event.response.delta
+  end
+
+  local function extract_delta_text(value)
+    if not value then
+      return ''
+    end
+    if type(value) == 'string' then
+      return value
+    end
+    if type(value) ~= 'table' then
+      return ''
+    end
+
+    local pieces = {}
+
+    if type(value.text) == 'string' then
+      table.insert(pieces, value.text)
+    end
+
+    if type(value.content) == 'table' then
+      for _, entry in ipairs(value.content) do
+        if type(entry) == 'table' and type(entry.text) == 'string' then
+          table.insert(pieces, entry.text)
+        end
+      end
+    end
+
+    return table.concat(pieces, '')
+  end
+
+  local chunk = extract_delta_text(delta)
+  if chunk ~= '' then
+    if event_type:find('reasoning', 1, true) then
+      return {
+        reasoning = chunk,
+      }
+    else
+      return {
+        content = chunk,
+      }
+    end
+  end
+
+  if type(event.response) == 'table' then
+    local summary = summarize_response_output(event.response)
+    local finish_reason = responses_finish_reason(event.response)
+
+    local result = {
+      finish_reason = finish_reason,
+      total_tokens = event.response.usage and event.response.usage.total_tokens or nil,
+      tool_calls = summary.tool_calls,
+      skip_progress = true,
+    }
+
+    if summary.content then
+      result.content = summary.content
+      result.content_overwrite = true
+    end
+
+    if summary.reasoning then
+      result.reasoning = summary.reasoning
+      result.reasoning_overwrite = true
+    end
+
+    return result
+  end
+
+  return {}
+end
+
+local function parse_responses_response(response)
+  if type(response) ~= 'table' then
+    return {}
+  end
+  local summary = summarize_response_output(response)
+  local finish_reason = responses_finish_reason(response) or 'stop'
+
+  return {
+    content = summary.content or '',
+    reasoning = summary.reasoning,
+    tool_calls = summary.tool_calls,
+    total_tokens = response.usage and response.usage.total_tokens or nil,
+    finish_reason = finish_reason,
+  }
+end
+
 ---@class CopilotChat.config.providers.Options
 ---@field model CopilotChat.client.Model
 ---@field temperature number?
 ---@field tools table<CopilotChat.client.Tool>?
+---@field use_responses_api boolean?
+---@field top_p number?
 
 ---@class CopilotChat.config.providers.Output
----@field content string
+---@field content string?
 ---@field reasoning string?
 ---@field finish_reason string?
 ---@field total_tokens number?
----@field tool_calls table<CopilotChat.client.ToolCall>
+---@field tool_calls table<CopilotChat.client.ToolCall>?
+---@field content_overwrite boolean?
+---@field reasoning_overwrite boolean?
+---@field skip_progress boolean?
 
 ---@class CopilotChat.config.providers.Provider
 ---@field disabled nil|boolean
@@ -308,10 +597,6 @@ M.copilot = {
         return model.capabilities.type == 'chat' and model.model_picker_enabled
       end)
       :map(function(model)
-        local supported_endpoints = model.supported_endpoints
-        local responses_only = supported_endpoints
-          and #supported_endpoints == 1
-          and supported_endpoints[1] == '/responses'
         return {
           id = model.id,
           name = model.name,
@@ -322,8 +607,7 @@ M.copilot = {
           tools = model.capabilities.supports.tool_calls,
           policy = not model['policy'] or model['policy']['state'] == 'enabled',
           version = model.version,
-          supported_endpoints = supported_endpoints,
-          responses_only = responses_only,
+          supported_endpoints = model.supported_endpoints,
         }
       end)
       :totable()
@@ -351,67 +635,12 @@ M.copilot = {
   end,
 
   prepare_input = function(inputs, opts)
-    local is_o1 = vim.startswith(opts.model.id, 'o1')
-
-    -- Handle OpenAI /responses style models
-    if opts.model.responses_only then
-      local system_prompt = nil
-      for _, m in ipairs(inputs) do
-        if m.role == constants.ROLE.SYSTEM and not utils.empty(m.content) then
-          system_prompt = m.content
-          break
-        end
-      end
-
-      local function is_resource_msg(m)
-        if m.role ~= constants.ROLE.USER or not m.content then
-          return false
-        end
-        return vim.startswith(m.content, '# ') or m.content:find('```', 1, true) ~= nil
-      end
-
-      -- Collect context resources
-      local context_blocks = {}
-      for _, m in ipairs(inputs) do
-        if is_resource_msg(m) then
-          table.insert(context_blocks, m.content)
-        end
-      end
-
-      -- Build a single-turn input from conversation history (excluding resource blocks)
-      local lines = {}
-      if #context_blocks > 0 then
-        table.insert(lines, '# Context:')
-        table.insert(lines, table.concat(context_blocks, '\n\n'))
-        table.insert(lines, '')
-      end
-
-      local i = 1
-      while i <= #inputs do
-        local msg = inputs[i]
-        if msg.role == constants.ROLE.USER and not is_resource_msg(msg) then
-          local next_msg = inputs[i + 1]
-          if next_msg and next_msg.role == constants.ROLE.ASSISTANT then
-            table.insert(lines, '## I asked :\n' .. (msg.content or '') .. '\n')
-            table.insert(lines, '## The answer was :\n' .. (next_msg.content or '') .. '\n')
-            i = i + 2
-          else
-            -- Last user question
-            table.insert(lines, '# I ask:\n' .. (msg.content or '') .. '\n')
-            i = i + 1
-          end
-        else
-          i = i + 1
-        end
-      end
-
-      return {
-        model = opts.model.id,
-        stream = opts.model.streaming or false,
-        instructions = system_prompt,
-        input = table.concat(lines, '\n'),
-      }
+    opts = opts or {}
+    if opts.use_responses_api then
+      return build_responses_body(inputs, opts)
     end
+
+    local is_o1 = vim.startswith(opts.model.id, 'o1')
 
     inputs = vim.tbl_map(function(input)
       local output = {
@@ -466,7 +695,7 @@ M.copilot = {
 
     if not is_o1 then
       out.n = 1
-      out.top_p = 1
+      out.top_p = opts.top_p or 1
       out.temperature = opts.temperature
     end
 
@@ -477,59 +706,21 @@ M.copilot = {
     return out
   end,
 
-  prepare_output = function(output)
-    local tool_calls = {}
-
-    -- Handle OpenAI /responses streaming and non-streaming
-    if type(output) == 'table' and output.type and vim.startswith(output.type, 'response.') then
-      local t = output.type
-      local content = nil
-      local reasoning = nil
-      local finish_reason = nil
-      local usage = nil
-
-      if t:find('response.output_text.delta', 1, true) then
-        local delta = output.delta or (output.data and output.data.delta) or output.text
-        if type(delta) == 'table' then
-          delta = delta.text or delta.content or delta[1]
-        end
-        content = delta
-      elseif t == 'response.completed' then
-        local resp = output.response or {}
-        -- accumulate all output_text segments
-        if resp.output then
-          local parts = {}
-          for _, msg in ipairs(resp.output) do
-            if msg.content then
-              for _, c in ipairs(msg.content) do
-                if c.type == 'output_text' and c.text then
-                  table.insert(parts, c.text)
-                end
-              end
-            end
-          end
-          content = table.concat(parts, '')
-        end
-        usage = resp.usage and resp.usage.total_tokens or output.usage and output.usage.total_tokens
-        finish_reason = 'stop'
-      elseif t == 'response.error' then
-        finish_reason = 'error'
+  prepare_output = function(output, opts)
+    opts = opts or {}
+    if opts.use_responses_api then
+      if output.type then
+        return parse_responses_event(output)
       end
-
-      return {
-        content = content,
-        reasoning = reasoning,
-        finish_reason = finish_reason,
-        total_tokens = usage,
-        tool_calls = tool_calls,
-      }
+      return parse_responses_response(output)
     end
 
-    -- Fallback to Chat Completions style
+    local tool_calls = {}
+
     local choice
     if output.choices and #output.choices > 0 then
-      for _, choice in ipairs(output.choices) do
-        local message = choice.message or choice.delta
+      for _, choice_entry in ipairs(output.choices) do
+        local message = choice_entry.message or choice_entry.delta
         if message and message.tool_calls then
           for i, tool_call in ipairs(message.tool_calls) do
             local fn = tool_call['function']
@@ -571,7 +762,7 @@ M.copilot = {
   end,
 
   get_url = function(opts)
-    if opts and opts.model and opts.model.responses_only then
+    if opts and opts.use_responses_api then
       return 'https://api.githubcopilot.com/responses'
     end
     return 'https://api.githubcopilot.com/chat/completions'
@@ -612,6 +803,7 @@ M.github_models = {
           tools = vim.tbl_contains(model.capabilities, 'tool-calling'),
           reasoning = vim.tbl_contains(model.capabilities, 'reasoning'),
           version = model.version,
+          supported_endpoints = model.supported_endpoints,
         }
       end)
       :totable()
@@ -620,7 +812,10 @@ M.github_models = {
   prepare_input = M.copilot.prepare_input,
   prepare_output = M.copilot.prepare_output,
 
-  get_url = function()
+  get_url = function(opts)
+    if opts and opts.use_responses_api then
+      return 'https://models.github.ai/inference/responses'
+    end
     return 'https://models.github.ai/inference/chat/completions'
   end,
 }

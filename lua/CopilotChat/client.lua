@@ -21,8 +21,8 @@
 ---@field token_max_count number
 
 ---@class CopilotChat.client.ToolCall
----@field id number
----@field index number
+---@field id number|string
+---@field index number|string
 ---@field name string
 ---@field arguments string
 
@@ -53,7 +53,6 @@
 ---@field tools boolean?
 ---@field reasoning boolean?
 ---@field supported_endpoints string[]?
----@field responses_only boolean?
 
 local log = require('plenary.log')
 local constants = require('CopilotChat.constants')
@@ -67,7 +66,7 @@ local orderedmap = require('CopilotChat.utils.orderedmap')
 local stringbuffer = require('CopilotChat.utils.stringbuffer')
 
 --- Constants
-local RESOURCE_SHORT_FORMAT = '# %s\n```%s start_line=% end_line=%s\n%s\n```'
+local RESOURCE_SHORT_FORMAT = '# %s\n```%s start_line=%s end_line=%s\n%s\n```'
 local RESOURCE_LONG_FORMAT = '# %s\n```%s path=%s start_line=%s end_line=%s\n%s\n```'
 local CACHE_TTL = 300 -- 5 minutes
 
@@ -89,7 +88,11 @@ end
 
 --- Generate resource block with line numbers, truncating if necessary
 ---@param content string
----@param start_line number: The starting line number
+---@param mimetype string?
+---@param name string?
+---@param path string?
+---@param start_line number? The starting line number
+---@param end_line number? The ending line number
 ---@return string
 local function generate_resource_block(content, mimetype, name, path, start_line, end_line)
   local lines = vim.split(content, '\n')
@@ -321,12 +324,27 @@ function Client:ask(opts)
     error('Provider not found: ' .. provider_name)
   end
 
+  local supported_endpoints = {}
+  if type(model_config.supported_endpoints) == 'table' then
+    supported_endpoints = model_config.supported_endpoints
+  end
+  local use_responses_api = false
+  for _, endpoint in ipairs(supported_endpoints) do
+    if endpoint == '/responses' then
+      use_responses_api = true
+      break
+    end
+  end
+  log.debug('Responses API:', use_responses_api)
+
   local options = {
     model = vim.tbl_extend('force', model_config, {
       id = opts.model:gsub(':' .. provider_name .. '$', ''),
     }),
     temperature = opts.temperature,
     tools = opts.tools,
+    use_responses_api = use_responses_api,
+    top_p = 1,
   }
 
   local max_tokens = model_config.max_input_tokens
@@ -436,29 +454,63 @@ function Client:ask(opts)
 
     if out.tool_calls then
       for _, tool_call in ipairs(out.tool_calls) do
-        local val = tool_calls:get(tool_call.index)
-        if not val then
-          tool_calls:set(tool_call.index, tool_call)
+        local key = tool_call.index or tool_call.id
+        if key == nil then
+          key = #tool_calls:keys() + 1
+          tool_call.index = key
+        end
+        local arguments = tool_call.arguments or ''
+        local existing = tool_calls:get(key)
+        if not existing then
+          tool_calls:set(key, {
+            id = tool_call.id,
+            index = tool_call.index,
+            name = tool_call.name,
+            arguments = arguments,
+          })
         else
-          val.arguments = val.arguments .. tool_call.arguments
+          if tool_call.name then
+            existing.name = tool_call.name
+          end
+          if tool_call.id then
+            existing.id = tool_call.id
+          end
+          existing.arguments = (existing.arguments or '') .. arguments
         end
       end
     end
 
     if out.content then
-      response_content_buffer:put(out.content)
+      if out.content_overwrite then
+        response_content_buffer:set(out.content)
+      else
+        response_content_buffer:put(out.content)
+      end
     end
 
     if out.reasoning then
-      response_reasoning_buffer:put(out.reasoning)
+      if out.reasoning_overwrite then
+        response_reasoning_buffer:set(out.reasoning)
+      else
+        response_reasoning_buffer:put(out.reasoning)
+      end
     end
 
-    if opts.on_progress then
-      opts.on_progress({
-        role = constants.ROLE.ASSISTANT,
-        content = out.content or '',
-        reasoning = out.reasoning or '',
-      })
+    local skip_progress = out.skip_progress
+    if not skip_progress and (out.content_overwrite or out.reasoning_overwrite) then
+      skip_progress = true
+    end
+
+    if opts.on_progress and not skip_progress then
+      local progress_content = out.content or ''
+      local progress_reasoning = out.reasoning or ''
+      if not utils.empty(progress_content) or not utils.empty(progress_reasoning) then
+        opts.on_progress({
+          role = constants.ROLE.ASSISTANT,
+          content = progress_content,
+          reasoning = progress_reasoning,
+        })
+      end
     end
 
     if out.finish_reason then
