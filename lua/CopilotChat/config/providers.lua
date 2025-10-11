@@ -347,10 +347,6 @@ local function build_responses_body(inputs, opts)
     body.max_output_tokens = opts.model.max_output_tokens
   end
 
-  if opts.temperature ~= nil then
-    body.temperature = opts.temperature
-  end
-
   body.top_p = opts.top_p or 1
 
   return body
