@@ -196,6 +196,36 @@ local function get_github_models_token(tag)
   return github_device_flow(tag, '178c6fc778ccc68e1d6a', 'read:user copilot')
 end
 
+--- Helper function to extract text content from Responses API output parts
+---@param parts table Array of content parts from Responses API
+---@return string The concatenated text content
+local function extract_text_from_parts(parts)
+  local content = ''
+  if not parts or type(parts) ~= 'table' then
+    return content
+  end
+
+  for _, part in ipairs(parts) do
+    if type(part) == 'table' then
+      -- Handle different content types from Responses API
+      if part.type == 'output_text' or part.type == 'text' then
+        content = content .. (part.text or '')
+      elseif part.output_text then
+        -- Handle nested output_text
+        if type(part.output_text) == 'string' then
+          content = content .. part.output_text
+        elseif type(part.output_text) == 'table' and part.output_text.text then
+          content = content .. part.output_text.text
+        end
+      end
+    elseif type(part) == 'string' then
+      content = content .. part
+    end
+  end
+
+  return content
+end
+
 ---@class CopilotChat.config.providers.Options
 ---@field model CopilotChat.client.Model
 ---@field temperature number?
@@ -308,6 +338,7 @@ M.copilot = {
         return model.capabilities.type == 'chat' and model.model_picker_enabled
       end)
       :map(function(model)
+        local supported_endpoints = model.supported_endpoints
         return {
           id = model.id,
           name = model.name,
@@ -318,6 +349,7 @@ M.copilot = {
           tools = model.capabilities.supports.tool_calls,
           policy = not model['policy'] or model['policy']['state'] == 'enabled',
           version = model.version,
+          supported_endpoints = supported_endpoints,
         }
       end)
       :totable()
@@ -347,6 +379,52 @@ M.copilot = {
   prepare_input = function(inputs, opts)
     local is_o1 = vim.startswith(opts.model.id, 'o1')
 
+    -- Check if this model supports only the /responses endpoint
+    local use_responses_api = opts.model.supported_endpoints
+      and #opts.model.supported_endpoints == 1
+      and opts.model.supported_endpoints[1] == '/responses'
+
+    if use_responses_api then
+      -- Prepare input for Responses API
+      local instructions = nil
+      local input_messages = {}
+
+      for _, msg in ipairs(inputs) do
+        if msg.role == constants.ROLE.SYSTEM then
+          -- Combine system messages as instructions
+          if instructions then
+            instructions = instructions .. '\n\n' .. msg.content
+          else
+            instructions = msg.content
+          end
+        else
+          -- Include the message in the input array
+          table.insert(input_messages, {
+            role = msg.role,
+            content = msg.content,
+          })
+        end
+      end
+
+      -- The Responses API expects the input field to be an array of message objects
+      local out = {
+        model = opts.model.id,
+        -- Always request streaming for Responses API (honor model.streaming or default to true)
+        stream = opts.model.streaming ~= false,
+        input = input_messages,
+      }
+
+      -- Add instructions if we have any system messages
+      if instructions then
+        out.instructions = instructions
+      end
+
+      -- Note: temperature is not supported by Responses API, so we don't include it
+
+      return out
+    end
+
+    -- Original Chat Completion API logic
     inputs = vim.tbl_map(function(input)
       local output = {
         role = input.role,
@@ -411,7 +489,152 @@ M.copilot = {
     return out
   end,
 
-  prepare_output = function(output)
+  prepare_output = function(output, opts)
+    -- Check if this is a Responses API response
+    local use_responses_api = opts
+      and opts.model
+      and opts.model.supported_endpoints
+      and #opts.model.supported_endpoints == 1
+      and opts.model.supported_endpoints[1] == '/responses'
+
+    if use_responses_api then
+      -- Handle Responses API output format
+      local content = ''
+      local reasoning = ''
+      local finish_reason = nil
+      local total_tokens = 0
+
+      -- Check for error in response
+      if output.error then
+        -- Surface the error as a finish reason to stop processing
+        local error_msg = output.error
+        if type(error_msg) == 'table' then
+          error_msg = error_msg.message or vim.inspect(error_msg)
+        end
+        return {
+          content = '',
+          reasoning = '',
+          finish_reason = 'error: ' .. tostring(error_msg),
+          total_tokens = nil,
+          tool_calls = {},
+        }
+      end
+
+      if output.type then
+        -- This is a streaming response from Responses API
+        if output.type == 'response.created' or output.type == 'response.in_progress' then
+          -- In-progress events, we don't have content yet
+          return {
+            content = '',
+            reasoning = '',
+            finish_reason = nil,
+            total_tokens = nil,
+            tool_calls = {},
+          }
+        elseif output.type == 'response.completed' then
+          -- Completed response
+          local response = output.response
+          if response then
+            -- Extract content from the output array
+            if response.output and #response.output > 0 then
+              for _, msg in ipairs(response.output) do
+                if msg.content and #msg.content > 0 then
+                  content = content .. extract_text_from_parts(msg.content)
+                end
+              end
+            end
+
+            -- Extract reasoning if available
+            if response.reasoning and response.reasoning.summary then
+              reasoning = response.reasoning.summary
+            end
+
+            -- Extract usage information
+            if response.usage then
+              total_tokens = response.usage.total_tokens
+            end
+
+            finish_reason = 'stop'
+          end
+        elseif output.type == 'response.content.delta' or output.type == 'response.output_text.delta' then
+          -- Streaming content delta
+          if output.delta then
+            if type(output.delta) == 'string' then
+              content = output.delta
+            elseif type(output.delta) == 'table' then
+              if output.delta.content then
+                content = output.delta.content
+              elseif output.delta.output_text then
+                content = extract_text_from_parts({ output.delta.output_text })
+              elseif output.delta.text then
+                content = output.delta.text
+              end
+            end
+          end
+        elseif output.type == 'response.delta' then
+          -- Handle response.delta with nested output_text
+          if output.delta and output.delta.output_text then
+            content = extract_text_from_parts({ output.delta.output_text })
+          end
+        elseif output.type == 'response.content.done' or output.type == 'response.output_text.done' then
+          -- Terminal content event; keep streaming open until response.completed provides usage info
+          finish_reason = nil
+        elseif output.type == 'response.error' then
+          -- Handle error event
+          local error_msg = output.error
+          if type(error_msg) == 'table' then
+            error_msg = error_msg.message or vim.inspect(error_msg)
+          end
+          finish_reason = 'error: ' .. tostring(error_msg)
+        end
+      elseif output.response then
+        -- Non-streaming response or final response
+        local response = output.response
+
+        -- Check for error in the response object
+        if response.error then
+          local error_msg = response.error
+          if type(error_msg) == 'table' then
+            error_msg = error_msg.message or vim.inspect(error_msg)
+          end
+          return {
+            content = '',
+            reasoning = '',
+            finish_reason = 'error: ' .. tostring(error_msg),
+            total_tokens = nil,
+            tool_calls = {},
+          }
+        end
+
+        if response.output and #response.output > 0 then
+          for _, msg in ipairs(response.output) do
+            if msg.content and #msg.content > 0 then
+              content = content + extract_text_from_parts(msg.content)
+            end
+          end
+        end
+
+        if response.reasoning and response.reasoning.summary then
+          reasoning = response.reasoning.summary
+        end
+
+        if response.usage then
+          total_tokens = response.usage.total_tokens
+        end
+
+        finish_reason = response.status == 'completed' and 'stop' or nil
+      end
+
+      return {
+        content = content,
+        reasoning = reasoning,
+        finish_reason = finish_reason,
+        total_tokens = total_tokens,
+        tool_calls = {}, -- Responses API doesn't support tools yet
+      }
+    end
+
+    -- Original Chat Completion API logic
     local tool_calls = {}
 
     local choice
@@ -458,7 +681,19 @@ M.copilot = {
     }
   end,
 
-  get_url = function()
+  get_url = function(opts)
+    -- Check if this model supports only the /responses endpoint
+    local use_responses_api = opts
+      and opts.model
+      and opts.model.supported_endpoints
+      and #opts.model.supported_endpoints == 1
+      and opts.model.supported_endpoints[1] == '/responses'
+
+    if use_responses_api then
+      return 'https://api.githubcopilot.com/responses'
+    end
+
+    -- Default to Chat Completion API
     return 'https://api.githubcopilot.com/chat/completions'
   end,
 }

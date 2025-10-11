@@ -52,6 +52,7 @@
 ---@field streaming boolean?
 ---@field tools boolean?
 ---@field reasoning boolean?
+---@field supported_endpoints table<string>?
 
 local log = require('plenary.log')
 local constants = require('CopilotChat.constants')
