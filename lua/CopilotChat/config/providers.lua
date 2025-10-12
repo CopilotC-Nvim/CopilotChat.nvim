@@ -338,7 +338,10 @@ M.copilot = {
         return model.capabilities.type == 'chat' and model.model_picker_enabled
       end)
       :map(function(model)
-        local supported_endpoints = model.supported_endpoints
+        local supported_endpoints = model.supported_endpoints or {}
+        -- Pre-compute whether this model uses the Responses API
+        local use_responses = vim.tbl_contains(supported_endpoints, '/responses')
+
         return {
           id = model.id,
           name = model.name,
@@ -349,7 +352,7 @@ M.copilot = {
           tools = model.capabilities.supports.tool_calls,
           policy = not model['policy'] or model['policy']['state'] == 'enabled',
           version = model.version,
-          supported_endpoints = supported_endpoints,
+          use_responses = use_responses,
         }
       end)
       :totable()
@@ -379,12 +382,8 @@ M.copilot = {
   prepare_input = function(inputs, opts)
     local is_o1 = vim.startswith(opts.model.id, 'o1')
 
-    -- Check if this model supports only the /responses endpoint
-    local use_responses_api = opts.model.supported_endpoints
-      and #opts.model.supported_endpoints == 1
-      and opts.model.supported_endpoints[1] == '/responses'
-
-    if use_responses_api then
+    -- Check if this model uses the Responses API
+    if opts.model.use_responses then
       -- Prepare input for Responses API
       local instructions = nil
       local input_messages = {}
@@ -490,14 +489,8 @@ M.copilot = {
   end,
 
   prepare_output = function(output, opts)
-    -- Check if this is a Responses API response
-    local use_responses_api = opts
-      and opts.model
-      and opts.model.supported_endpoints
-      and #opts.model.supported_endpoints == 1
-      and opts.model.supported_endpoints[1] == '/responses'
-
-    if use_responses_api then
+    -- Check if this model uses the Responses API
+    if opts and opts.model and opts.model.use_responses then
       -- Handle Responses API output format
       local content = ''
       local reasoning = ''
@@ -609,7 +602,7 @@ M.copilot = {
         if response.output and #response.output > 0 then
           for _, msg in ipairs(response.output) do
             if msg.content and #msg.content > 0 then
-              content = content + extract_text_from_parts(msg.content)
+              content = content .. extract_text_from_parts(msg.content)
             end
           end
         end
@@ -682,14 +675,8 @@ M.copilot = {
   end,
 
   get_url = function(opts)
-    -- Check if this model supports only the /responses endpoint
-    local use_responses_api = opts
-      and opts.model
-      and opts.model.supported_endpoints
-      and #opts.model.supported_endpoints == 1
-      and opts.model.supported_endpoints[1] == '/responses'
-
-    if use_responses_api then
+    -- Check if this model uses the Responses API
+    if opts and opts.model and opts.model.use_responses then
       return 'https://api.githubcopilot.com/responses'
     end
 
@@ -732,6 +719,7 @@ M.github_models = {
           tools = vim.tbl_contains(model.capabilities, 'tool-calling'),
           reasoning = vim.tbl_contains(model.capabilities, 'reasoning'),
           version = model.version,
+          use_responses = false, -- GitHub Models don't use Responses API
         }
       end)
       :totable()
@@ -746,3 +734,4 @@ M.github_models = {
 }
 
 return M
+
