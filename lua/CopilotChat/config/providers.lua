@@ -418,6 +418,19 @@ M.copilot = {
         out.instructions = instructions
       end
 
+      -- Add tools for Responses API if available
+      if opts.tools and opts.model.tools then
+        out.tools = vim.tbl_map(function(tool)
+          return {
+            type = 'function',
+            name = tool.name,
+            description = tool.description,
+            parameters = tool.schema,
+            strict = true,
+          }
+        end, opts.tools)
+      end
+
       -- Note: temperature is not supported by Responses API, so we don't include it
 
       return out
@@ -496,6 +509,7 @@ M.copilot = {
       local reasoning = ''
       local finish_reason = nil
       local total_tokens = 0
+      local tool_calls = {}
 
       -- Check for error in response
       if output.error then
@@ -574,6 +588,31 @@ M.copilot = {
             error_msg = error_msg.message or vim.inspect(error_msg)
           end
           finish_reason = 'error: ' .. tostring(error_msg)
+        elseif output.type == 'response.tool_call.delta' then
+          -- Handle tool call delta events
+          if output.delta and output.delta.tool_calls then
+            for _, tool_call in ipairs(output.delta.tool_calls) do
+              local id = tool_call.id or ('tooluse_' .. (tool_call.index or 1))
+              local existing_call = nil
+              for _, tc in ipairs(tool_calls) do
+                if tc.id == id then
+                  existing_call = tc
+                  break
+                end
+              end
+              if not existing_call then
+                table.insert(tool_calls, {
+                  id = id,
+                  index = tool_call.index or #tool_calls + 1,
+                  name = tool_call.name or '',
+                  arguments = tool_call.arguments or '',
+                })
+              else
+                -- Append arguments
+                existing_call.arguments = existing_call.arguments .. (tool_call.arguments or '')
+              end
+            end
+          end
         end
       elseif output.response then
         -- Non-streaming response or final response
@@ -599,6 +638,18 @@ M.copilot = {
             if msg.content and #msg.content > 0 then
               content = content .. extract_text_from_parts(msg.content)
             end
+            -- Extract tool calls from output messages
+            if msg.tool_calls then
+              for i, tool_call in ipairs(msg.tool_calls) do
+                local id = tool_call.id or ('tooluse_' .. i)
+                table.insert(tool_calls, {
+                  id = id,
+                  index = tool_call.index or i,
+                  name = tool_call.name or '',
+                  arguments = tool_call.arguments or '',
+                })
+              end
+            end
           end
         end
 
@@ -618,7 +669,7 @@ M.copilot = {
         reasoning = reasoning,
         finish_reason = finish_reason,
         total_tokens = total_tokens,
-        tool_calls = {}, -- Responses API doesn't support tools yet
+        tool_calls = tool_calls,
       }
     end
 
