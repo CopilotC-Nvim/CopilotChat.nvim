@@ -525,30 +525,25 @@ M.copilot = {
             tool_calls = {},
           }
         elseif output.type == 'response.completed' then
-          -- Completed response
+          -- Completed response: do NOT resend content here to avoid duplication.
+          -- Only signal finish and capture usage/reasoning.
           local response = output.response
           if response then
-            -- Extract content from the output array
-            if response.output and #response.output > 0 then
-              for _, msg in ipairs(response.output) do
-                if msg.content and #msg.content > 0 then
-                  content = content .. extract_text_from_parts(msg.content)
-                end
-              end
-            end
-
-            -- Extract reasoning if available
             if response.reasoning and response.reasoning.summary then
               reasoning = response.reasoning.summary
             end
-
-            -- Extract usage information
             if response.usage then
               total_tokens = response.usage.total_tokens
             end
-
             finish_reason = 'stop'
           end
+          return {
+            content = '',
+            reasoning = reasoning,
+            finish_reason = finish_reason,
+            total_tokens = total_tokens,
+            tool_calls = {},
+          }
         elseif output.type == 'response.content.delta' or output.type == 'response.output_text.delta' then
           -- Streaming content delta
           if output.delta then
