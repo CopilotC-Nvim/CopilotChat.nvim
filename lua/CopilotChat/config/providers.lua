@@ -719,7 +719,6 @@ M.github_models = {
           tools = vim.tbl_contains(model.capabilities, 'tool-calling'),
           reasoning = vim.tbl_contains(model.capabilities, 'reasoning'),
           version = model.version,
-          use_responses = false, -- GitHub Models don't use Responses API
         }
       end)
       :totable()
