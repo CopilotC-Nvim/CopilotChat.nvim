@@ -1,5 +1,23 @@
 # Changelog
 
+## [5.0.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.7.4...v5.0.0) (2025-10-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* **functions:** Removes `buffers`, `diagnostics`, `register`, and `quickfix` resources. Use `buffer`, `selection`, or `clipboard` instead.
+
+### Bug Fixes
+
+* **mappings:** use get_messages for quickfix answers ([#1466](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1466)) ([db4b51e](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/db4b51e1bb6a96b94496a6050f300f67258be872)), closes [#1465](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1465)
+* **mappings:** use resource name if available in preview header ([#1459](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1459)) ([5801bfe](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/5801bfeaae4146f3127cb6c0bcbac721a172b85d))
+* **utils:** properly pass cwd as argument to system wrapper ([#1458](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1458)) ([92f2699](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/92f269971c33a6e2f405da8b14f01cd109b9a3a3))
+
+
+### Code Refactoring
+
+* **functions:** unify buffer/selection/diagnostics resources ([#1456](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1456)) ([cf4f7a5](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/cf4f7a58a0e65be6ccbdbc83142e189f96cd9fb5))
+
 ## [4.7.4](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.7.3...v4.7.4) (2025-10-01)
 
 
