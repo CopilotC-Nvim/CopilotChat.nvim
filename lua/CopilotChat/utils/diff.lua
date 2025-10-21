@@ -54,7 +54,7 @@ local function apply_hunk(hunk, content)
     return patched, true
   end
 
-  -- Fallback: try smaller context window
+  -- Fallback: direct replacement
   local lines = vim.split(content, '\n')
   local insert_idx = hunk.start_old or 1
   if not hunk.start_old then
@@ -83,24 +83,8 @@ local function apply_hunk(hunk, content)
     end
   end
 
-  -- Define context window around insert point
-  local context_size = 10
   local start_idx = insert_idx
   local end_idx = insert_idx + #hunk.old_snippet
-  local context_start = math.max(1, start_idx - context_size)
-  local context_end = math.min(#lines, end_idx + context_size)
-  local context_window = table.concat(vim.list_slice(lines, context_start, context_end), '\n')
-
-  local patched_window, window_results = dmp.patch_apply(patch, context_window)
-  if not vim.tbl_contains(window_results, false) then
-    -- Patch succeeded in window, splice back
-    local new_lines = vim.list_slice(lines, 1, context_start - 1)
-    vim.list_extend(new_lines, vim.split(patched_window, '\n'))
-    vim.list_extend(new_lines, lines, context_end + 1, #lines)
-    return table.concat(new_lines, '\n'), true
-  end
-
-  -- Fallback: direct replacement
   local new_lines = vim.list_slice(lines, 1, start_idx - 1)
   vim.list_extend(new_lines, hunk.new_snippet)
   vim.list_extend(new_lines, lines, end_idx + 1, #lines)

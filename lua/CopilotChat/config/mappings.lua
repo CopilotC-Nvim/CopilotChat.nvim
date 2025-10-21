@@ -307,10 +307,10 @@ return {
       end
 
       local lines = {}
-      local config, prompt = copilot.resolve_prompt(message.content)
-      local system_prompt = config.system_prompt
 
       async.run(function()
+        local config, prompt = copilot.resolve_prompt(message.content)
+        local system_prompt = config.system_prompt
         local resolved_resources = copilot.resolve_functions(prompt, config)
         local selected_tools = copilot.resolve_tools(prompt, config)
         local selected_model = copilot.resolve_model(prompt, config)
