@@ -14,7 +14,7 @@
 ---@field blend number?
 
 ---@class CopilotChat.config.Shared
----@field system_prompt nil|string|fun(source: CopilotChat.source):string
+---@field system_prompt nil|string
 ---@field model string?
 ---@field tools string|table<string>|nil
 ---@field resources string|table<string>|nil
