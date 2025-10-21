@@ -10,46 +10,6 @@ local WORD_NO_INPUT = '([^%s]+)'
 local WORD_WITH_INPUT_QUOTED = WORD .. ':`([^`]+)`'
 local WORD_WITH_INPUT_UNQUOTED = WORD .. ':?([^%s`]*)'
 
---- List available models.
---- @return CopilotChat.client.Model[]
-local function list_models()
-  local models = client:models()
-  local result = vim.tbl_keys(models)
-
-  table.sort(result, function(a, b)
-    a = models[a]
-    b = models[b]
-    if a.provider ~= b.provider then
-      return a.provider < b.provider
-    end
-    return a.id < b.id
-  end)
-
-  return vim.tbl_map(function(id)
-    return models[id]
-  end, result)
-end
-
---- List available prompts.
----@return table<string, CopilotChat.config.prompts.Prompt>
-local function list_prompts()
-  local config = require('CopilotChat.config')
-  local prompts_to_use = {}
-
-  for name, prompt in pairs(config.prompts) do
-    local val = prompt
-    if type(prompt) == 'string' then
-      val = {
-        prompt = prompt,
-      }
-    end
-
-    prompts_to_use[name] = val
-  end
-
-  return prompts_to_use
-end
-
 --- Find custom instructions in the current working directory.
 ---@param cwd string
 ---@return table
@@ -67,6 +27,26 @@ local function find_custom_instructions(cwd)
 end
 
 local M = {}
+
+--- List available prompts.
+---@return table<string, CopilotChat.config.prompts.Prompt>
+function M.list_prompts()
+  local config = require('CopilotChat.config')
+  local prompts_to_use = {}
+
+  for name, prompt in pairs(config.prompts) do
+    local val = prompt
+    if type(prompt) == 'string' then
+      val = {
+        prompt = prompt,
+      }
+    end
+
+    prompts_to_use[name] = val
+  end
+
+  return prompts_to_use
+end
 
 --- Resolve enabled tools from the prompt.
 ---@param prompt string?
@@ -299,7 +279,7 @@ function M.resolve_prompt(prompt, config)
     end
   end
 
-  local prompts_to_use = list_prompts()
+  local prompts_to_use = M.list_prompts()
   local depth = 0
   local MAX_DEPTH = 10
 
@@ -370,10 +350,7 @@ end
 ---@async
 function M.resolve_model(prompt, config)
   config, prompt = M.resolve_prompt(prompt, config)
-
-  local models = vim.tbl_map(function(model)
-    return model.id
-  end, list_models())
+  local models = vim.tbl_keys(client:models())
 
   local selected_model = config.model or ''
   prompt = prompt:gsub('%$' .. WORD, function(match)

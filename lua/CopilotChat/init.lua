@@ -2,7 +2,7 @@ local async = require('plenary.async')
 local log = require('plenary.log')
 local client = require('CopilotChat.client')
 local constants = require('CopilotChat.constants')
-local prompts = require('CopilotChat.prompt')
+local prompts = require('CopilotChat.prompts')
 local select = require('CopilotChat.select')
 local utils = require('CopilotChat.utils')
 local curl = require('CopilotChat.utils.curl')
@@ -143,45 +143,6 @@ local function store_sticky(prompt)
     end
   end
   state.sticky = sticky
-end
-
---- List available models.
---- @return CopilotChat.client.Model[]
-local function list_models()
-  local models = client:models()
-  local result = vim.tbl_keys(models)
-
-  table.sort(result, function(a, b)
-    a = models[a]
-    b = models[b]
-    if a.provider ~= b.provider then
-      return a.provider < b.provider
-    end
-    return a.id < b.id
-  end)
-
-  return vim.tbl_map(function(id)
-    return models[id]
-  end, result)
-end
-
---- List available prompts.
----@return table<string, CopilotChat.config.prompts.Prompt>
-local function list_prompts()
-  local prompts_to_use = {}
-
-  for name, prompt in pairs(M.config.prompts) do
-    local val = prompt
-    if type(prompt) == 'string' then
-      val = {
-        prompt = prompt,
-      }
-    end
-
-    prompts_to_use[name] = val
-  end
-
-  return prompts_to_use
 end
 
 --- Finish writing to chat buffer.
@@ -413,7 +374,22 @@ end
 --- Select default Copilot GPT model.
 function M.select_model()
   async.run(function()
-    local models = list_models()
+    local models = client:models()
+    local result = vim.tbl_keys(models)
+
+    table.sort(result, function(a, b)
+      a = models[a]
+      b = models[b]
+      if a.provider ~= b.provider then
+        return a.provider < b.provider
+      end
+      return a.id < b.id
+    end)
+
+    models = vim.tbl_map(function(id)
+      return models[id]
+    end, result)
+
     local choices = vim.tbl_map(function(model)
       return {
         id = model.id,
@@ -467,7 +443,7 @@ end
 --- Select a prompt template to use.
 ---@param config CopilotChat.config.Shared?
 function M.select_prompt(config)
-  local prompts = list_prompts()
+  local prompts = prompts.list_prompts()
   local keys = vim.tbl_keys(prompts)
   table.sort(keys)
 
@@ -859,7 +835,7 @@ function M.setup(config)
     end)
   end
 
-  for name, prompt in pairs(list_prompts()) do
+  for name, prompt in pairs(prompts.list_prompts()) do
     if prompt.prompt then
       vim.api.nvim_create_user_command('CopilotChat' .. name, function(args)
         local input = prompt.prompt
