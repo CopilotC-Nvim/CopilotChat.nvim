@@ -27,6 +27,7 @@ Table of Contents                              *CopilotChat-table-of-contents*
 5. API Reference                                   |CopilotChat-api-reference|
   - Core                                                    |CopilotChat-core|
   - Chat Window                                      |CopilotChat-chat-window|
+  - Prompt parser                                  |CopilotChat-prompt-parser|
   - Example Usage                                  |CopilotChat-example-usage|
 6. Development                                       |CopilotChat-development|
   - Setup                                                  |CopilotChat-setup|
@@ -473,9 +474,6 @@ CORE                                                        *CopilotChat-core*
     -- Basic Chat Functions
     chat.ask(prompt, config)      -- Ask a question with optional config
     chat.response()               -- Get the last response text
-    chat.resolve_prompt()         -- Resolve prompt references
-    chat.resolve_tools()          -- Resolve tools that are available for automatic use by LLM
-    chat.resolve_model()          -- Resolve model from prompt (WARN: async, requires plenary.async.run)
     
     -- Window Management
     chat.open(config)             -- Open chat window with optional config
@@ -531,6 +529,17 @@ You can also access the chat window UI methods through the `chat.chat` object:
     
     -- Advanced Features
     window:overlay(opts)         -- Show overlay with specified options
+<
+
+
+PROMPT PARSER                                      *CopilotChat-prompt-parser*
+
+>lua
+    local parser = require("CopilotChat.prompts")
+    
+    parser.resolve_prompt()         -- Resolve prompt references
+    parser.resolve_tools()          -- Resolve tools that are available for automatic use by LLM
+    parser.resolve_model()          -- Resolve model from prompt (WARN: async, requires plenary.async.run)
 <
 
 
