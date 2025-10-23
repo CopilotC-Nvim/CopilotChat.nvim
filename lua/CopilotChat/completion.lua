@@ -131,7 +131,7 @@ end
 --- Trigger the completion for the chat window.
 ---@param without_input boolean?
 function M.complete(without_input)
-  local source = require('CopilotChat').get_source()
+  local source = require('CopilotChat').chat:get_source()
   local info = M.info()
   local bufnr = vim.api.nvim_get_current_buf()
   local line = vim.api.nvim_get_current_line()

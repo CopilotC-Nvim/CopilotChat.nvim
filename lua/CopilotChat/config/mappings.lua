@@ -9,7 +9,7 @@ local files = require('CopilotChat.utils.files')
 
 --- Prepare a buffer for applying a diff
 ---@param filename string?
----@param source CopilotChat.source
+---@param source CopilotChat.ui.chat.Source
 ---@return integer
 local function prepare_diff_buffer(filename, source)
   if not filename then
@@ -47,7 +47,7 @@ end
 ---@class CopilotChat.config.mapping
 ---@field normal string?
 ---@field insert string?
----@field callback fun(source: CopilotChat.source)
+---@field callback fun(source: CopilotChat.ui.chat.Source)
 
 ---@class CopilotChat.config.mapping.yank_diff : CopilotChat.config.mapping
 ---@field register string?
@@ -57,7 +57,6 @@ end
 ---@field close CopilotChat.config.mapping|false|nil
 ---@field reset CopilotChat.config.mapping|false|nil
 ---@field submit_prompt CopilotChat.config.mapping|false|nil
----@field toggle_sticky CopilotChat.config.mapping|false|nil
 ---@field accept_diff CopilotChat.config.mapping|false|nil
 ---@field jump_to_diff CopilotChat.config.mapping|false|nil
 ---@field quickfix_diffs CopilotChat.config.mapping|false|nil
@@ -100,37 +99,6 @@ return {
       end
 
       copilot.ask(message.content)
-    end,
-  },
-
-  toggle_sticky = {
-    normal = 'grr',
-    callback = function()
-      local message = copilot.chat:get_message(constants.ROLE.USER)
-      local section = message and message.section
-      if not section then
-        return
-      end
-
-      local cursor = vim.api.nvim_win_get_cursor(copilot.chat.winnr)
-      if cursor[1] < section.start_line or cursor[1] > section.end_line then
-        return
-      end
-
-      local current_line = vim.trim(vim.api.nvim_get_current_line())
-      if current_line == '' then
-        return
-      end
-
-      local cur_line = cursor[1]
-      vim.api.nvim_buf_set_lines(copilot.chat.bufnr, cur_line - 1, cur_line, false, {})
-
-      if vim.startswith(current_line, '> ') then
-        return
-      end
-
-      copilot.chat:add_sticky(current_line)
-      vim.api.nvim_win_set_cursor(copilot.chat.winnr, cursor)
     end,
   },
 

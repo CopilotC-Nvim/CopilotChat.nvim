@@ -408,10 +408,6 @@ chat.toggle(config)           -- Toggle chat window visibility with optional con
 chat.reset()                  -- Reset the chat
 chat.stop()                   -- Stop current output
 
--- Source Management
-chat.get_source()             -- Get the current source buffer and window
-chat.set_source(winnr)        -- Set the source window
-
 -- Prompt & Model Management
 chat.select_prompt(config)    -- Open prompt selector with optional config
 chat.select_model()           -- Open model selector
@@ -441,13 +437,16 @@ window:get_message(role, cursor)               -- Get chat message by role, eith
 window:add_message({ role, content }, replace) -- Add or replace a message in chat
 window:remove_message(role, cursor)            -- Remove chat message by role, either last or closest to cursor
 window:get_block(role, cursor)                 -- Get code block by role, either last or closest to cursor
-window:add_sticky(sticky)                      -- Add sticky prompt to chat message
 
 -- Content Management
 window:append(text)          -- Append text to chat window
 window:clear()               -- Clear chat window content
 window:start()               -- Start writing to chat window
 window:finish()              -- Finish writing to chat window
+
+-- Source Management
+window.get_source()          -- Get the current source buffer and window
+window.set_source(winnr)     -- Set the source window
 
 -- Navigation
 window:follow()              -- Move cursor to end of chat content

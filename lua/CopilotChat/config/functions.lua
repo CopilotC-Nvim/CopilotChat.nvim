@@ -45,7 +45,7 @@ end
 ---@field schema table?
 ---@field group string?
 ---@field uri string?
----@field resolve fun(input: table, source: CopilotChat.source):CopilotChat.client.Resource[]
+---@field resolve fun(input: table, source: CopilotChat.ui.chat.Source):CopilotChat.client.Resource[]
 
 ---@type table<string, CopilotChat.config.functions.Function>
 return {

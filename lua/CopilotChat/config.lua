@@ -23,7 +23,7 @@
 ---@field language string?
 ---@field temperature number?
 ---@field headless boolean?
----@field callback nil|fun(response: CopilotChat.client.Message, source: CopilotChat.source)
+---@field callback nil|fun(response: CopilotChat.client.Message, source: CopilotChat.ui.chat.Source)
 ---@field remember_as_sticky boolean?
 ---@field window CopilotChat.config.Window?
 ---@field show_help boolean?
