@@ -1,10 +1,8 @@
 local async = require('plenary.async')
-local copilot = require('CopilotChat')
 local client = require('CopilotChat.client')
 local constants = require('CopilotChat.constants')
 local select = require('CopilotChat.select')
 local utils = require('CopilotChat.utils')
-local diff = require('CopilotChat.utils.diff')
 local files = require('CopilotChat.utils.files')
 
 --- Prepare a buffer for applying a diff
@@ -77,7 +75,7 @@ return {
     normal = 'q',
     insert = '<C-c>',
     callback = function()
-      copilot.close()
+      require('CopilotChat').close()
     end,
   },
 
@@ -85,7 +83,7 @@ return {
     normal = '<C-l>',
     insert = '<C-l>',
     callback = function()
-      copilot.reset()
+      require('CopilotChat').reset()
     end,
   },
 
@@ -93,6 +91,7 @@ return {
     normal = '<CR>',
     insert = '<C-s>',
     callback = function()
+      local copilot = require('CopilotChat')
       local message = copilot.chat:get_message(constants.ROLE.USER, true)
       if not message then
         return
@@ -106,7 +105,10 @@ return {
     normal = '<C-y>',
     insert = '<C-y>',
     callback = function(source)
-      local block = copilot.chat:get_block(constants.ROLE.ASSISTANT, true)
+      local chat = require('CopilotChat').chat
+      local diff = require('CopilotChat.utils.diff')
+
+      local block = chat:get_block(constants.ROLE.ASSISTANT, true)
       if not block then
         return
       end
@@ -127,7 +129,10 @@ return {
   jump_to_diff = {
     normal = 'gj',
     callback = function(source)
-      local block = copilot.chat:get_block(constants.ROLE.ASSISTANT, true)
+      local chat = require('CopilotChat').chat
+      local diff = require('CopilotChat.utils.diff')
+
+      local block = chat:get_block(constants.ROLE.ASSISTANT, true)
       if not block then
         return
       end
@@ -147,19 +152,24 @@ return {
     normal = 'gy',
     register = '"', -- Default register to use for yanking
     callback = function()
-      local block = copilot.chat:get_block(constants.ROLE.ASSISTANT, true)
+      local config = require('CopilotChat.config')
+      local chat = require('CopilotChat').chat
+      local block = chat:get_block(constants.ROLE.ASSISTANT, true)
       if not block then
         return
       end
 
-      vim.fn.setreg(copilot.config.mappings.yank_diff.register, block.content)
+      vim.fn.setreg(config.mappings.yank_diff.register, block.content)
     end,
   },
 
   show_diff = {
     normal = 'gd',
     callback = function(source)
-      local block = copilot.chat:get_block(constants.ROLE.ASSISTANT, true)
+      local chat = require('CopilotChat').chat
+      local diff = require('CopilotChat.utils.diff')
+
+      local block = chat:get_block(constants.ROLE.ASSISTANT, true)
       if not block then
         return
       end
@@ -168,7 +178,7 @@ return {
       local bufnr = prepare_diff_buffer(path, source)
 
       -- Collect all blocks for the same filename
-      local message = copilot.chat:get_message(constants.ROLE.ASSISTANT, true)
+      local message = chat:get_message(constants.ROLE.ASSISTANT, true)
       local blocks = {}
       if message and message.section and message.section.blocks then
         for _, b in ipairs(message.section.blocks) do
@@ -196,26 +206,27 @@ return {
           vim.cmd('diffthis')
         end)
 
-        vim.api.nvim_win_call(copilot.chat.winnr, function()
+        vim.api.nvim_win_call(chat.winnr, function()
           vim.cmd('diffthis')
         end)
       end
 
       opts.on_hide = function()
-        vim.api.nvim_win_call(copilot.chat.winnr, function()
+        vim.api.nvim_win_call(chat.winnr, function()
           vim.cmd('diffoff')
         end)
       end
 
-      copilot.chat:overlay(opts)
+      chat:overlay(opts)
     end,
   },
 
   quickfix_diffs = {
     normal = 'gqd',
     callback = function()
+      local chat = require('CopilotChat').chat
       local items = {}
-      local messages = copilot.chat:get_messages()
+      local messages = chat:get_messages()
       for _, message in ipairs(messages) do
         if message.section then
           for _, block in ipairs(message.section.blocks) do
@@ -225,7 +236,7 @@ return {
             end
 
             table.insert(items, {
-              bufnr = copilot.chat.bufnr,
+              bufnr = chat.bufnr,
               lnum = block.start_line,
               end_lnum = block.end_line,
               text = text,
@@ -242,8 +253,9 @@ return {
   quickfix_answers = {
     normal = 'gqa',
     callback = function()
+      local chat = require('CopilotChat').chat
       local items = {}
-      local messages = copilot.chat:get_messages()
+      local messages = chat:get_messages()
       for i, message in ipairs(messages) do
         if message.section and message.role == constants.ROLE.ASSISTANT then
           local prev_message = messages[i - 1]
@@ -253,7 +265,7 @@ return {
           end
 
           table.insert(items, {
-            bufnr = copilot.chat.bufnr,
+            bufnr = chat.bufnr,
             lnum = message.section.start_line,
             end_lnum = message.section.end_line,
             text = text,
@@ -269,7 +281,10 @@ return {
   show_info = {
     normal = 'gc',
     callback = function(source)
-      local message = copilot.chat:get_message(constants.ROLE.USER, true)
+      local chat = require('CopilotChat').chat
+      local prompts = require('CopilotChat.prompts')
+
+      local message = chat:get_message(constants.ROLE.USER, true)
       if not message then
         return
       end
@@ -277,11 +292,11 @@ return {
       local lines = {}
 
       async.run(function()
-        local config, prompt = copilot.resolve_prompt(message.content)
+        local config, prompt = prompts.resolve_prompt(message.content)
         local system_prompt = config.system_prompt
-        local resolved_resources = copilot.resolve_functions(prompt, config)
-        local selected_tools = copilot.resolve_tools(prompt, config)
-        local selected_model = copilot.resolve_model(prompt, config)
+        local resolved_resources = prompts.resolve_functions(prompt, config)
+        local selected_tools = prompts.resolve_tools(prompt, config)
+        local selected_model = prompts.resolve_model(prompt, config)
         local infos = client:info()
 
         selected_tools = vim.tbl_map(function(tool)
@@ -289,8 +304,8 @@ return {
         end, selected_tools)
 
         utils.schedule_main()
-        table.insert(lines, '**Logs**: `' .. copilot.config.log_path .. '`')
-        table.insert(lines, '**History**: `' .. copilot.config.history_path .. '`')
+        table.insert(lines, '**Logs**: `' .. config.log_path .. '`')
+        table.insert(lines, '**History**: `' .. config.history_path .. '`')
         table.insert(lines, '')
 
         for provider, infolines in pairs(infos) do
@@ -368,7 +383,7 @@ return {
           table.insert(lines, '')
         end
 
-        copilot.chat:overlay({
+        chat:overlay({
           text = vim.trim(table.concat(lines, '\n')) .. '\n',
         })
       end)
@@ -378,6 +393,9 @@ return {
   show_help = {
     normal = 'gh',
     callback = function()
+      local config = require('CopilotChat.config')
+      local chat = require('CopilotChat').chat
+
       local chat_help = '**`Special tokens`**\n'
       chat_help = chat_help .. '`@<function>` to share function\n'
       chat_help = chat_help .. '`#<function>` to add resource\n'
@@ -387,22 +405,22 @@ return {
       chat_help = chat_help .. '`> <text>` to make a sticky prompt (copied to next prompt)\n'
 
       chat_help = chat_help .. '\n**`Mappings`**\n'
-      local chat_keys = vim.tbl_keys(copilot.config.mappings)
+      local chat_keys = vim.tbl_keys(config.mappings)
       table.sort(chat_keys, function(a, b)
-        a = copilot.config.mappings[a]
+        a = config.mappings[a]
         a = a and (a.normal or a.insert) or ''
-        b = copilot.config.mappings[b]
+        b = config.mappings[b]
         b = b and (b.normal or b.insert) or ''
         return a < b
       end)
       for _, name in ipairs(chat_keys) do
-        local info = utils.key_to_info(name, copilot.config.mappings[name], '`')
+        local info = utils.key_to_info(name, config.mappings[name], '`')
         if info ~= '' then
           chat_help = chat_help .. info .. '\n'
         end
       end
 
-      copilot.chat:overlay({
+      chat:overlay({
         text = chat_help,
       })
     end,
