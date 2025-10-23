@@ -397,9 +397,6 @@ local chat = require("CopilotChat")
 -- Basic Chat Functions
 chat.ask(prompt, config)      -- Ask a question with optional config
 chat.response()               -- Get the last response text
-chat.resolve_prompt()         -- Resolve prompt references
-chat.resolve_tools()          -- Resolve tools that are available for automatic use by LLM
-chat.resolve_model()          -- Resolve model from prompt (WARN: async, requires plenary.async.run)
 
 -- Window Management
 chat.open(config)             -- Open chat window with optional config
@@ -454,6 +451,16 @@ window:focus()               -- Focus the chat window
 
 -- Advanced Features
 window:overlay(opts)         -- Show overlay with specified options
+```
+
+## Prompt parser
+
+```lua
+local parser = require("CopilotChat.prompts")
+
+parser.resolve_prompt()         -- Resolve prompt references
+parser.resolve_tools()          -- Resolve tools that are available for automatic use by LLM
+parser.resolve_model()          -- Resolve model from prompt (WARN: async, requires plenary.async.run)
 ```
 
 ## Example Usage

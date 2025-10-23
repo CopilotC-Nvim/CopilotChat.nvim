@@ -230,41 +230,6 @@ local function update_source()
   M.chat:set_source(use_prev_window and vim.fn.win_getid(vim.fn.winnr('#')) or vim.api.nvim_get_current_win())
 end
 
---- Resolve enabled tools from the prompt.
----@param prompt string?
----@param config CopilotChat.config.Shared?
----@return table<CopilotChat.client.Tool>, string
-function M.resolve_tools(prompt, config)
-  return prompts.resolve_tools(prompt, config)
-end
-
---- Call and resolve function calls from the prompt.
----@param prompt string?
----@param config CopilotChat.config.Shared?
----@return table<CopilotChat.client.Resource>, table<string>, table<string>, string
----@async
-function M.resolve_functions(prompt, config)
-  return prompts.resolve_functions(prompt, config)
-end
-
---- Resolve the final prompt and config from prompt template.
----@param prompt string?
----@param config CopilotChat.config.Shared?
----@return CopilotChat.config.prompts.Prompt, string
----@async
-function M.resolve_prompt(prompt, config)
-  return prompts.resolve_prompt(prompt, config)
-end
-
---- Resolve the model from the prompt.
----@param prompt string?
----@param config CopilotChat.config.Shared?
----@return string, string
----@async
-function M.resolve_model(prompt, config)
-  return prompts.resolve_model(prompt, config)
-end
-
 --- Open the chat window.
 ---@param config CopilotChat.config.Shared?
 function M.open(config)
@@ -449,11 +414,11 @@ function M.ask(prompt, config)
     end
 
     async.run(handle_error(config, function()
-      config, prompt = M.resolve_prompt(prompt, config)
+      config, prompt = prompts.resolve_prompt(prompt, config)
       local system_prompt = config.system_prompt or ''
-      local selected_tools, prompt = M.resolve_tools(prompt, config)
-      local resolved_resources, resolved_tools, resolved_stickies, prompt = M.resolve_functions(prompt, config)
-      local selected_model, prompt = M.resolve_model(prompt, config)
+      local selected_tools, prompt = prompts.resolve_tools(prompt, config)
+      local resolved_resources, resolved_tools, resolved_stickies, prompt = prompts.resolve_functions(prompt, config)
+      local selected_model, prompt = prompts.resolve_model(prompt, config)
 
       -- Remove sticky prefix
       prompt = table.concat(
