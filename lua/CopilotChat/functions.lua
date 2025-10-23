@@ -199,7 +199,7 @@ end
 
 --- Get input from the user based on the schema
 ---@param schema table?
----@param source CopilotChat.source
+---@param source CopilotChat.ui.chat.Source
 ---@return string?
 function M.enter_input(schema, source)
   if not schema or not schema.properties then
