@@ -404,6 +404,7 @@ function M.ask(prompt, config)
   -- Resolve prompt after window is opened
   prompt = process_sticky(prompt, config)
   prompt = vim.trim(prompt)
+  prompt = table.concat(M.chat:get_sticky(), '\n') .. '\n\n' .. prompt
 
   -- After opening window we need to schedule to next cycle so everything properly resolves
   schedule(function()
@@ -420,15 +421,7 @@ function M.ask(prompt, config)
       local resolved_resources, resolved_tools, resolved_stickies, prompt = prompts.resolve_functions(prompt, config)
       local selected_model, prompt = prompts.resolve_model(prompt, config)
 
-      -- Remove sticky prefix
-      prompt = table.concat(
-        vim.tbl_map(function(l)
-          return l:gsub('^>%s+', '')
-        end, vim.split(prompt, '\n')),
-        '\n'
-      )
-
-      -- Add resolved stickies to chat
+      -- Store resolved stickies to chat
       local current_sticky = M.chat:get_sticky()
       for _, sticky in ipairs(resolved_stickies) do
         table.insert(current_sticky, sticky)
