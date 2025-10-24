@@ -30,35 +30,18 @@ local M = setmetatable({}, {
   end,
 })
 
---- @class CopilotChat.source
---- @field bufnr number?
---- @field winnr number?
---- @field cwd fun():string
-
---- @class CopilotChat.state
---- @field source CopilotChat.source
---- @field sticky string[]
-local state = {
-  source = {
-    bufnr = nil,
-    winnr = nil,
-    cwd = function()
-      return '.'
-    end,
-  },
-
-  sticky = {},
-}
-
---- Insert sticky values from config into prompt
+--- Process sticky values from prompt and config
+--- Extracts stickies from prompt, adds config-based stickies, stores them, returns clean prompt
 ---@param prompt string
 ---@param config CopilotChat.config.Shared
-local function insert_sticky(prompt, config)
+---@return string clean_prompt The prompt without sticky prefixes
+local function process_sticky(prompt, config)
   local existing_prompt = M.chat:get_message(constants.ROLE.USER)
   local combined_prompt = (existing_prompt and existing_prompt.content or '') .. '\n' .. (prompt or '')
   local lines = vim.split(prompt or '', '\n')
   local stickies = orderedmap()
 
+  -- Extract existing stickies from combined prompt
   local sticky_indices = {}
   local in_code_block = false
   for _, line in ipairs(vim.split(combined_prompt, '\n')) do
@@ -69,6 +52,8 @@ local function insert_sticky(prompt, config)
       stickies:set(vim.trim(line:sub(3)), true)
     end
   end
+
+  -- Find sticky lines in new prompt to remove them
   for i, line in ipairs(lines) do
     if vim.startswith(line, '> ') then
       table.insert(sticky_indices, i)
@@ -80,6 +65,7 @@ local function insert_sticky(prompt, config)
 
   lines = vim.split(vim.trim(table.concat(lines, '\n')), '\n')
 
+  -- Add config-based stickies
   if config.remember_as_sticky and config.model and config.model ~= M.config.model then
     stickies:set('$' .. config.model, true)
   end
@@ -111,38 +97,17 @@ local function insert_sticky(prompt, config)
     end
   end
 
-  -- Insert stickies at start of prompt
-  local prompt_lines = {}
+  -- Store stickies
+  local sticky_array = {}
   for _, sticky in ipairs(stickies:keys()) do
     if sticky ~= '' then
-      table.insert(prompt_lines, '> ' .. sticky)
+      table.insert(sticky_array, sticky)
     end
   end
-  if #prompt_lines > 0 then
-    table.insert(prompt_lines, '')
-  end
-  for _, line in ipairs(lines) do
-    table.insert(prompt_lines, line)
-  end
-  if #lines == 0 then
-    table.insert(prompt_lines, '')
-  end
+  M.chat:set_sticky(sticky_array)
 
-  return table.concat(prompt_lines, '\n')
-end
-
-local function store_sticky(prompt)
-  local sticky = {}
-  local in_code_block = false
-  for _, line in ipairs(vim.split(prompt, '\n')) do
-    if line:match('^```') then
-      in_code_block = not in_code_block
-    end
-    if vim.startswith(line, '> ') and not in_code_block then
-      table.insert(sticky, line:sub(3))
-    end
-  end
-  state.sticky = sticky
+  -- Return clean prompt
+  return table.concat(lines, '\n')
 end
 
 --- Finish writing to chat buffer.
@@ -155,15 +120,16 @@ local function finish(start_of_chat)
         table.insert(sticky, sticky_line)
       end
     end
-    state.sticky = sticky
+    M.chat:set_sticky(sticky)
   end
 
   local prompt_content = ''
   local assistant_message = M.chat:get_message(constants.ROLE.ASSISTANT)
   local tool_calls = assistant_message and assistant_message.tool_calls or {}
 
-  if not utils.empty(state.sticky) then
-    for _, sticky in ipairs(state.sticky) do
+  local current_sticky = M.chat:get_sticky()
+  if not utils.empty(current_sticky) then
+    for _, sticky in ipairs(current_sticky) do
       prompt_content = prompt_content .. '> ' .. sticky .. '\n'
     end
     prompt_content = prompt_content .. '\n'
@@ -231,7 +197,7 @@ local function map_key(name, bufnr, fn)
 
   if not fn then
     fn = function()
-      key.callback(state.source)
+      key.callback(M.chat:get_source())
     end
   end
 
@@ -261,75 +227,7 @@ end
 --- Updates the source buffer based on previous or current window.
 local function update_source()
   local use_prev_window = M.chat:focused()
-  M.set_source(use_prev_window and vim.fn.win_getid(vim.fn.winnr('#')) or vim.api.nvim_get_current_win())
-end
-
---- Resolve enabled tools from the prompt.
----@param prompt string?
----@param config CopilotChat.config.Shared?
----@return table<CopilotChat.client.Tool>, string
-function M.resolve_tools(prompt, config)
-  return prompts.resolve_tools(prompt, config)
-end
-
---- Call and resolve function calls from the prompt.
----@param prompt string?
----@param config CopilotChat.config.Shared?
----@return table<CopilotChat.client.Resource>, table<string>, table<string>, string
----@async
-function M.resolve_functions(prompt, config)
-  return prompts.resolve_functions(prompt, config)
-end
-
---- Resolve the final prompt and config from prompt template.
----@param prompt string?
----@param config CopilotChat.config.Shared?
----@return CopilotChat.config.prompts.Prompt, string
----@async
-function M.resolve_prompt(prompt, config)
-  return prompts.resolve_prompt(prompt, config)
-end
-
---- Resolve the model from the prompt.
----@param prompt string?
----@param config CopilotChat.config.Shared?
----@return string, string
----@async
-function M.resolve_model(prompt, config)
-  return prompts.resolve_model(prompt, config)
-end
-
---- Get the current source buffer and window.
-function M.get_source()
-  return state.source
-end
-
---- Sets the source to the given window.
----@param source_winnr number
----@return boolean if the source was set
-function M.set_source(source_winnr)
-  local source_bufnr = vim.api.nvim_win_get_buf(source_winnr)
-
-  -- Check if the window is valid to use as a source
-  if source_winnr ~= M.chat.winnr and source_bufnr ~= M.chat.bufnr and vim.fn.win_gettype(source_winnr) == '' then
-    state.source = {
-      bufnr = source_bufnr,
-      winnr = source_winnr,
-      cwd = function()
-        local ok, dir = pcall(function()
-          return vim.w[source_winnr].cchat_cwd
-        end)
-        if not ok or not dir or dir == '' then
-          return '.'
-        end
-        return dir
-      end,
-    }
-
-    return true
-  end
-
-  return false
+  M.chat:set_source(use_prev_window and vim.fn.win_getid(vim.fn.winnr('#')) or vim.api.nvim_get_current_win())
 end
 
 --- Open the chat window.
@@ -343,11 +241,11 @@ function M.open(config)
   -- Add sticky values from provided config when opening the chat
   local message = M.chat:get_message(constants.ROLE.USER)
   if message then
-    local prompt = insert_sticky(message.content, config)
-    if prompt then
+    local clean_prompt = process_sticky(message.content, config)
+    if clean_prompt and clean_prompt ~= '' then
       M.chat:add_message({
         role = constants.ROLE.USER,
-        content = '\n' .. prompt,
+        content = '\n> ' .. table.concat(M.chat:get_sticky(), '\n> ') .. '\n\n' .. clean_prompt,
       }, true)
     end
   end
@@ -358,7 +256,7 @@ end
 
 --- Close the chat window.
 function M.close()
-  M.chat:close(state.source.bufnr)
+  M.chat:close()
 end
 
 --- Toggle the chat window.
@@ -504,37 +402,31 @@ function M.ask(prompt, config)
   end
 
   -- Resolve prompt after window is opened
-  prompt = insert_sticky(prompt, config)
+  prompt = process_sticky(prompt, config)
   prompt = vim.trim(prompt)
+  prompt = table.concat(M.chat:get_sticky(), '\n') .. '\n\n' .. prompt
 
   -- After opening window we need to schedule to next cycle so everything properly resolves
   schedule(function()
     if not config.headless then
       -- Prepare chat
-      store_sticky(prompt)
       M.chat:start()
       M.chat:append('\n')
     end
 
     async.run(handle_error(config, function()
-      config, prompt = M.resolve_prompt(prompt, config)
+      config, prompt = prompts.resolve_prompt(prompt, config)
       local system_prompt = config.system_prompt or ''
-      local selected_tools, prompt = M.resolve_tools(prompt, config)
-      local resolved_resources, resolved_tools, resolved_stickies, prompt = M.resolve_functions(prompt, config)
-      local selected_model, prompt = M.resolve_model(prompt, config)
+      local selected_tools, prompt = prompts.resolve_tools(prompt, config)
+      local resolved_resources, resolved_tools, resolved_stickies, prompt = prompts.resolve_functions(prompt, config)
+      local selected_model, prompt = prompts.resolve_model(prompt, config)
 
-      -- Remove sticky prefix
-      prompt = table.concat(
-        vim.tbl_map(function(l)
-          return l:gsub('^>%s+', '')
-        end, vim.split(prompt, '\n')),
-        '\n'
-      )
-
-      -- Add resolved stickies to state
+      -- Store resolved stickies to chat
+      local current_sticky = M.chat:get_sticky()
       for _, sticky in ipairs(resolved_stickies) do
-        table.insert(state.sticky, sticky)
+        table.insert(current_sticky, sticky)
       end
+      M.chat:set_sticky(current_sticky)
 
       prompt = vim.trim(prompt)
 
@@ -627,7 +519,7 @@ function M.ask(prompt, config)
       -- Call the callback function
       if config.callback then
         utils.schedule_main()
-        config.callback(response, state.source)
+        config.callback(response, M.chat:get_source())
       end
 
       if not config.headless then
@@ -656,7 +548,7 @@ function M.stop(reset)
   if reset then
     M.chat:clear()
     vim.diagnostic.reset(vim.api.nvim_create_namespace('copilot-chat-diagnostics'))
-    select.set(state.source.bufnr)
+    select.set(M.chat:get_source().bufnr)
   end
 
   if stopped or reset then
@@ -797,7 +689,7 @@ function M.setup(config)
 
   -- Initialize chat
   if M.chat then
-    M.chat:close(state.source.bufnr)
+    M.chat:close()
     M.chat:delete()
   else
     M.chat = require('CopilotChat.ui.chat')(M.config, function(bufnr)
@@ -815,7 +707,7 @@ function M.setup(config)
           end
 
           vim.schedule(function()
-            select.highlight(state.source.bufnr, not (M.config.highlight_selection and M.chat:focused()))
+            select.highlight(M.chat:get_source().bufnr, not (M.config.highlight_selection and M.chat:focused()))
           end)
         end,
       })

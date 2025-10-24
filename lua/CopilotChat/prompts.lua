@@ -93,7 +93,7 @@ function M.resolve_functions(prompt, config)
   config, prompt = M.resolve_prompt(prompt, config)
 
   local chat = require('CopilotChat').chat
-  local source = require('CopilotChat').get_source()
+  local source = chat:get_source()
 
   local tools = {}
   for _, tool in ipairs(functions.parse_tools(config.functions)) do
@@ -269,7 +269,7 @@ end
 ---@async
 function M.resolve_prompt(prompt, config)
   local chat = require('CopilotChat').chat
-  local source = require('CopilotChat').get_source()
+  local source = chat:get_source()
 
   if prompt == nil then
     utils.schedule_main()

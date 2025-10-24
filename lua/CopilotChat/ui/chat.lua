@@ -106,6 +106,11 @@ end
 ---@field id string?
 ---@field section CopilotChat.ui.chat.Section?
 
+--- @class CopilotChat.ui.chat.Source
+--- @field bufnr number?
+--- @field winnr number?
+--- @field cwd fun():string
+
 ---@class CopilotChat.ui.chat.Chat : CopilotChat.ui.overlay.Overlay
 ---@field winnr number?
 ---@field config CopilotChat.config.Shared
@@ -118,6 +123,8 @@ end
 ---@field private spinner CopilotChat.ui.spinner.Spinner
 ---@field private chat_overlay CopilotChat.ui.overlay.Overlay
 ---@field private last_changedtick number?
+---@field private source CopilotChat.ui.chat.Source
+---@field private sticky table<string>
 local Chat = class(function(self, config, on_buf_create)
   Overlay.init(self, 'copilot-chat', utils.key_to_info('show_help', config.mappings.show_help), on_buf_create)
 
@@ -126,6 +133,16 @@ local Chat = class(function(self, config, on_buf_create)
   self.token_count = nil
   self.token_max_count = nil
   self.messages = orderedmap()
+
+  self.source = {
+    bufnr = nil,
+    winnr = nil,
+    cwd = function()
+      return '.'
+    end,
+  }
+
+  self.sticky = {}
 
   self.layout = nil
   self.headers = {}
@@ -269,53 +286,21 @@ function Chat:get_message(role, cursor)
   end
 end
 
---- Add a sticky line to the prompt in the chat window.
----@param sticky string
-function Chat:add_sticky(sticky)
-  if not self:visible() then
-    return
-  end
+--- Get the current sticky array.
+---@return table<string>
+function Chat:get_sticky()
+  return self.sticky
+end
 
-  local prompt = self:get_message(constants.ROLE.USER)
-  if not prompt or not prompt.section then
-    return
-  end
+--- Set the sticky array.
+---@param sticky table<string>
+function Chat:set_sticky(sticky)
+  self.sticky = sticky
+end
 
-  local lines = vim.split(prompt.content, '\n')
-  local insert_line = 1
-  local first_one = true
-  local found = false
-
-  for i = insert_line, #lines do
-    local line = lines[i]
-    if line and line ~= '' then
-      if vim.startswith(line, '> ') then
-        if line:sub(3) == sticky then
-          found = true
-          break
-        end
-
-        first_one = false
-      else
-        break
-      end
-    elseif i >= 2 then
-      break
-    end
-
-    insert_line = insert_line + 1
-  end
-
-  if found then
-    return
-  end
-
-  insert_line = prompt.section.start_line + insert_line - 1
-  local to_insert = first_one and { '> ' .. sticky, '' } or { '> ' .. sticky }
-  local modifiable = vim.bo[self.bufnr].modifiable
-  vim.bo[self.bufnr].modifiable = true
-  vim.api.nvim_buf_set_lines(self.bufnr, insert_line - 1, insert_line - 1, false, to_insert)
-  vim.bo[self.bufnr].modifiable = modifiable
+--- Clear the sticky array.
+function Chat:clear_sticky()
+  self.sticky = {}
 end
 
 ---@class CopilotChat.ui.Chat.show_overlay
@@ -430,8 +415,7 @@ function Chat:open(config)
 end
 
 --- Close the chat window.
----@param bufnr number?
-function Chat:close(bufnr)
+function Chat:close()
   if not self:visible() then
     return
   end
@@ -441,8 +425,8 @@ function Chat:close(bufnr)
   end
 
   if self.layout == 'replace' then
-    if bufnr then
-      self:restore(self.winnr, bufnr)
+    if self.source.bufnr then
+      self:restore(self.winnr, self.source.bufnr)
     end
   else
     vim.api.nvim_win_close(self.winnr, true)
@@ -917,6 +901,39 @@ function Chat:render()
       end
     end
   end
+end
+
+--- Get the current source buffer and window.
+function Chat:get_source()
+  return self.source
+end
+
+--- Sets the source to the given window.
+---@param source_winnr number
+---@return boolean if the source was set
+function Chat:set_source(source_winnr)
+  local source_bufnr = vim.api.nvim_win_get_buf(source_winnr)
+
+  -- Check if the window is valid to use as a source
+  if source_winnr ~= self.winnr and source_bufnr ~= self.bufnr and vim.fn.win_gettype(source_winnr) == '' then
+    self.source = {
+      bufnr = source_bufnr,
+      winnr = source_winnr,
+      cwd = function()
+        local ok, dir = pcall(function()
+          return vim.w[source_winnr].cchat_cwd
+        end)
+        if not ok or not dir or dir == '' then
+          return '.'
+        end
+        return dir
+      end,
+    }
+
+    return true
+  end
+
+  return false
 end
 
 return Chat
