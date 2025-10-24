@@ -423,10 +423,12 @@ M.copilot = {
         out.tools = vim.tbl_map(function(tool)
           return {
             type = 'function',
-            name = tool.name,
-            description = tool.description,
-            parameters = tool.schema,
-            strict = true,
+            ['function'] = {
+              name = tool.name,
+              description = tool.description,
+              parameters = tool.schema,
+              strict = true,
+            },
           }
         end, opts.tools)
       end
