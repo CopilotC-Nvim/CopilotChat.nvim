@@ -158,7 +158,7 @@ When you use `@copilot`, the LLM can call functions like `bash`, `edit`, `file`,
 >
 > ```lua
 > vim.g.copilot_no_tab_map = true
-> vim.keymap.set('i', '<S-Tab>', 'copilot#Accept("\\<S-Tab>")', { expr = true, replace_keycodes = false })
+> vim.keymap.set('i', '<S-Tab>', require('copilot.suggestion').accept, { expr = true, replace_keycodes = false })
 > ```
 >
 > You can also customize CopilotChat keymaps in your config.
