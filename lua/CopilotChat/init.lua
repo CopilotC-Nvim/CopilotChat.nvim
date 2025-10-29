@@ -242,10 +242,18 @@ function M.open(config)
   local message = M.chat:get_message(constants.ROLE.USER)
   if message then
     local clean_prompt = process_sticky(message.content, config)
+    local stickies = M.chat:get_sticky()
+    local content = ''
+    if not vim.tbl_isempty(stickies) then
+      content = '\n> ' .. table.concat(stickies, '\n> ') .. '\n\n'
+    end
     if clean_prompt and clean_prompt ~= '' then
+      content = content .. clean_prompt
+    end
+    if content ~= '' then
       M.chat:add_message({
         role = constants.ROLE.USER,
-        content = '\n> ' .. table.concat(M.chat:get_sticky(), '\n> ') .. '\n\n' .. clean_prompt,
+        content = content,
       }, true)
     end
   end
