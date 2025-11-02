@@ -75,22 +75,33 @@ return {
     normal = 'q',
     insert = '<C-c>',
     callback = function()
-      require('CopilotChat').close()
+      local function get_project_name()
+        local cwd = vim.fn.getcwd()
+        return cwd:match('([^/]+)$')
+      end
+      local chat = require('CopilotChat')
+      print('Saving chat session...' .. get_project_name())
+      chat.save(get_project_name())
+      chat.close()
     end,
   },
 
-  reset = {
-    normal = '<C-l>',
-    insert = '<C-l>',
-    callback = function()
-      require('CopilotChat').reset()
-    end,
-  },
+  -- reset = {
+  --   normal = '<C-l>',
+  --   insert = '<C-l>',
+  --   callback = function()
+  --     require('CopilotChat').reset()
+  --   end,
+  -- },
 
   submit_prompt = {
     normal = '<CR>',
     insert = '<C-s>',
     callback = function()
+      local function get_project_name()
+        local cwd = vim.fn.getcwd()
+        return cwd:match('([^/]+)$')
+      end
       local copilot = require('CopilotChat')
       local message = copilot.chat:get_message(constants.ROLE.USER, true)
       if not message then
