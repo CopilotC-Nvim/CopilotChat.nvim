@@ -150,7 +150,7 @@ return {
                 local name = vim.api.nvim_buf_get_name(buf)
                 if name and name ~= '' then
                   local display_name = vim.fn.fnamemodify(name, ':~:.')
-                  table.insert(opts, { display = display_name, value = name })
+                  table.insert(opts, { display = display_name, value = tostring(buf) })
                 end
               end
             end
