@@ -473,6 +473,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/8666134?v=4",
       "profile": "https://github.com/towoe",
       "contributions": ["code"]
+    },
+    {
+      "login": "garcia5",
+      "name": "Alexander Garcia",
+      "avatar_url": "https://avatars.githubusercontent.com/u/21695295?v=4",
+      "profile": "https://github.com/garcia5",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,

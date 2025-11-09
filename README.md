@@ -626,6 +626,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://ruicsh.github.io"><img src="https://avatars.githubusercontent.com/u/8294038?v=4?s=100" width="100px;" alt="Rui Costa"/><br /><sub><b>Rui Costa</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=ruicsh" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/ctchen222"><img src="https://avatars.githubusercontent.com/u/49014608?v=4?s=100" width="100px;" alt="CTCHEN"/><br /><sub><b>CTCHEN</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=ctchen222" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/towoe"><img src="https://avatars.githubusercontent.com/u/8666134?v=4?s=100" width="100px;" alt="Tobias Wölfel"/><br /><sub><b>Tobias Wölfel</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=towoe" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/garcia5"><img src="https://avatars.githubusercontent.com/u/21695295?v=4?s=100" width="100px;" alt="Alexander Garcia"/><br /><sub><b>Alexander Garcia</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=garcia5" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
