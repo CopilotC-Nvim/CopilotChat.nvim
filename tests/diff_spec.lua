@@ -229,4 +229,79 @@ describe('CopilotChat.utils.diff', function()
     assert.is_true(applied)
     assert.are.same({ 'newstart', 'context' }, result)
   end)
+
+  it('may confuse similar variable names', function()
+    local diff_text = [[
+--- a/foo.txt
++++ b/foo.txt
+@@ -1,2 +1,2 @@
+-local x = 1
++local x = 10
+]]
+    local original = {
+      'local x = 1',
+      'local y = 2',
+      'local x = 3',
+      'local z = 4',
+    }
+    local result, applied = diff.apply_unified_diff(diff_text, table.concat(original, '\n'))
+    assert.is_true(applied)
+    assert.are.same({
+      'local x = 10',
+      'local y = 2',
+      'local x = 3',
+      'local z = 4',
+    }, result)
+  end)
+
+  it('may match wrong substring with partial matches', function()
+    local diff_text = [[
+--- a/foo.txt
++++ b/foo.txt
+@@ -1,2 +1,2 @@
+-old_value
++new_value
+]]
+    local original = {
+      'value',
+      'old_value',
+      'very_old_value',
+    }
+    local result, applied = diff.apply_unified_diff(diff_text, table.concat(original, '\n'))
+    assert.is_false(applied) -- not applied cleanly, but adjusted
+    assert.are.same({
+      'value',
+      'new_value',
+      'very_old_value',
+    }, result)
+  end)
+
+  it('may apply to wrong instance of identical boilerplate code', function()
+    local diff_text = [[
+--- a/foo.txt
++++ b/foo.txt
+@@ -1,3 +1,3 @@
+ return {
+-  status = "old"
++  status = "new"
+]]
+    local original = {
+      'return {',
+      '  status = "old"',
+      '}',
+      'return {',
+      '  status = "old"',
+      '}',
+    }
+    local result, applied = diff.apply_unified_diff(diff_text, table.concat(original, '\n'))
+    assert.is_true(applied)
+    assert.are.same({
+      'return {',
+      '  status = "new"',
+      '}',
+      'return {',
+      '  status = "old"',
+      '}',
+    }, result)
+  end)
 end)

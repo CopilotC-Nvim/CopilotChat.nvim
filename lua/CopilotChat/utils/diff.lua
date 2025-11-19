@@ -40,55 +40,81 @@ local function parse_hunks(diff_text)
   return hunks
 end
 
---- Apply a single hunk to content, with fallback/context logic
+--- Try to match old_snippet in lines starting at approximate start_line
+---@param lines table
+---@param old_snippet table
+---@param approx_start number
+---@param search_range number
+---@return number? matched_start
+local function find_best_match(lines, old_snippet, approx_start, search_range)
+  local best_idx, best_score = nil, -1
+  local old_len = #old_snippet
+
+  if old_len == 0 then
+    return approx_start
+  end
+
+  local min_start = math.max(1, approx_start - search_range)
+  local max_start = math.min(#lines - old_len + 1, approx_start + search_range)
+
+  for start_idx = min_start, max_start do
+    local score = 0
+    for i = 1, old_len do
+      if vim.trim(lines[start_idx + i - 1] or '') == vim.trim(old_snippet[i] or '') then
+        score = score + 1
+      end
+    end
+
+    if score > best_score then
+      best_score = score
+      best_idx = start_idx
+    end
+
+    if score == old_len then
+      return best_idx
+    end
+  end
+
+  if best_score >= math.ceil(old_len * 0.8) then
+    return best_idx
+  end
+
+  return nil
+end
+
+--- Apply a single hunk to content
 ---@param hunk table
 ---@param content string
 ---@return string patched_content, boolean applied_cleanly
 local function apply_hunk(hunk, content)
-  local dmp = require('CopilotChat.vendor.diff_match_patch')
-  local patch = dmp.patch_make(table.concat(hunk.old_snippet, '\n'), table.concat(hunk.new_snippet, '\n'))
-
-  -- First try: direct application
-  local patched, results = dmp.patch_apply(patch, content)
-  if not vim.tbl_contains(results, false) then
-    return patched, true
-  end
-
-  -- Fallback: direct replacement
   local lines = vim.split(content, '\n')
-  local insert_idx = hunk.start_old or 1
-  if not hunk.start_old then
-    -- No starting point, try to find best match
-    local match_idx, best_score = nil, -1
-    local context_lines = vim.tbl_filter(function(line)
-      return line and line ~= ''
-    end, hunk.old_snippet)
-    local context_len = #context_lines
-    if context_len > 0 then
-      for i = 1, #lines - context_len + 1 do
-        local score = 0
-        for j = 1, context_len do
-          if vim.trim(lines[i + j - 1] or '') == vim.trim(context_lines[j] or '') then
-            score = score + 1
-          end
-        end
-        if score > best_score then
-          best_score = score
-          match_idx = i
-        end
-      end
+  local start_idx = hunk.start_old
+
+  -- If we have a start line hint, try to find best match within +/- 2 lines
+  if start_idx and start_idx > 0 and start_idx <= #lines then
+    local match_idx = find_best_match(lines, hunk.old_snippet, start_idx, 2)
+    if match_idx then
+      start_idx = match_idx
     end
-    if best_score > 0 and match_idx then
-      insert_idx = match_idx
+  else
+    -- No valid start line, search for best match in whole content
+    local match_idx = find_best_match(lines, hunk.old_snippet, 1, #lines)
+    if match_idx then
+      start_idx = match_idx
+    else
+      start_idx = 1
     end
   end
 
-  local start_idx = insert_idx
-  local end_idx = insert_idx + #hunk.old_snippet
+  -- Replace old lines with new lines
+  local end_idx = start_idx + #hunk.old_snippet - 1
   local new_lines = vim.list_slice(lines, 1, start_idx - 1)
   vim.list_extend(new_lines, hunk.new_snippet)
   vim.list_extend(new_lines, lines, end_idx + 1, #lines)
-  return table.concat(new_lines, '\n'), false
+
+  -- Check if we matched exactly at the hinted position
+  local applied_cleanly = find_best_match(lines, hunk.old_snippet, hunk.start_old or start_idx, 0) == start_idx
+  return table.concat(new_lines, '\n'), applied_cleanly
 end
 
 --- Apply unified diff to a table of lines and return new lines
@@ -104,16 +130,25 @@ function M.apply_unified_diff(diff_text, original_content)
     new_content = patched
     applied = applied or ok
   end
-  local original_lines = vim.split(original_content, '\n', { trimempty = true })
+
   local new_lines = vim.split(new_content, '\n', { trimempty = true })
+  local hunks = vim.diff(
+    original_content,
+    new_content,
+    { algorithm = 'myers', ctxlen = 10, interhunkctxlen = 10, ignore_whitespace_change = true, result_type = 'indices' }
+  )
+  if not hunks or #hunks == 0 then
+    return new_lines, applied, nil, nil
+  end
   local first, last
-  local max_len = math.max(#original_lines, #new_lines)
-  for i = 1, max_len do
-    if original_lines[i] ~= new_lines[i] then
-      if not first then
-        first = i
-      end
-      last = i
+  for _, hunk in ipairs(hunks) do
+    local hunk_start = hunk[1]
+    local hunk_end = hunk[1] + hunk[2] - 1
+    if not first or hunk_start < first then
+      first = hunk_start
+    end
+    if not last or hunk_end > last then
+      last = hunk_end
     end
   end
   return new_lines, applied, first, last
@@ -129,7 +164,7 @@ function M.get_diff(block, lines)
     return block.content, content
   end
 
-  local patched_lines = vim.split(block.content, '\n')
+  local patched_lines = vim.split(block.content, '\n', { trimempty = true })
   local start_idx = block.header.start_line
   local end_idx = block.header.end_line
   local original_lines = lines
