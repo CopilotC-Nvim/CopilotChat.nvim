@@ -612,4 +612,432 @@ describe('CopilotChat.utils.diff', function()
     -- Fuzzy matching should handle reordered context
     assert.is_not_nil(result)
   end)
+
+  it('adds max_retry_time and cumulative retry logic', function()
+    local diff_text = [[
+--- original.py
++++ modified.py
+@@ -24,6 +24,7 @@
+     import time
+ 
+     retry_statuses = {HTTPStatus.TOO_MANY_REQUESTS, 502, 503, 504}
++    max_retry_time = 120  # Maximum cumulative retry time in seconds
+     retry_exceptions = (
+         httpx.ReadTimeout,
+         httpx.ConnectTimeout,
+@@ -34,6 +35,7 @@
+     def deco(fn):
+         def wrapped(*args, **kwargs):
+             last_exc = None
++            total_retry_time = 0  # Track cumulative retry time
+             for attempt in range(retries):
+                 try:
+                     resp = fn(*args, **kwargs)
+@@ -43,6 +45,9 @@
+                     delay = min(max_backoff, backoff * (2**attempt)) * (
+                         1 + random.random() * 0.25
+                     )
++                    if total_retry_time + delay > max_retry_time:
++                        raise TimeoutError("Exceeded maximum retry time of 120 seconds")
++                    total_retry_time += delay
+                     time.sleep(delay)
+                     continue
+ 
+@@ -59,6 +64,9 @@
+                         delay = min(max_backoff, backoff * (2**attempt)) * (
+                             1 + random.random() * 0.25
+                         )
++                    if total_retry_time + delay > max_retry_time:
++                        raise TimeoutError("Exceeded maximum retry time of 120 seconds")
++                    total_retry_time += delay
+                     time.sleep(delay)
+                     continue
+]]
+    local original = [[
+import base64
+import json
+import logging
+import os
+import random
+from datetime import datetime, time
+from http import HTTPStatus
+
+import geojson
+import httpx
+from cachetools import TTLCache, cached
+from geopy.distance import geodesic
+from shapely.geometry import MultiPolygon, Polygon, shape
+
+logger = logging.getLogger(__name__)
+
+httpx_client = httpx.Client(
+    timeout=10.0,
+    limits=httpx.Limits(max_keepalive_connections=20, max_connections=100),
+)
+
+
+def retry_request(retries=10, backoff=1, max_backoff=40.0):
+    import time
+
+    retry_statuses = {HTTPStatus.TOO_MANY_REQUESTS, 502, 503, 504}
+    retry_exceptions = (
+        httpx.ReadTimeout,
+        httpx.ConnectTimeout,
+        httpx.NetworkError,  # includes transient connection errors
+        httpx.RemoteProtocolError,
+    )
+
+    def deco(fn):
+        def wrapped(*args, **kwargs):
+            last_exc = None
+            for attempt in range(retries):
+                try:
+                    resp = fn(*args, **kwargs)
+                except retry_exceptions as exc:
+                    last_exc = exc
+                    # backoff and retry
+                    delay = min(max_backoff, backoff * (2**attempt)) * (
+                        1 + random.random() * 0.25
+                    )
+                    time.sleep(delay)
+                    continue
+
+                # Retry on selected HTTP status
+                if resp.status_code in retry_statuses:
+                    # honor Retry-After if present
+                    ra = resp.headers.get("Retry-After")
+                    if ra:
+                        try:
+                            delay = min(max_backoff, float(ra))
+                        except ValueError:
+                            delay = min(max_backoff, backoff * (2**attempt))
+                    else:
+                        delay = min(max_backoff, backoff * (2**attempt)) * (
+                            1 + random.random() * 0.25
+                        )
+                    time.sleep(delay)
+                    continue
+
+                return resp
+
+            if last_exc:
+                raise last_exc
+            return resp
+
+        return wrapped
+
+    return deco
+]]
+    local expected = [[
+import base64
+import json
+import logging
+import os
+import random
+from datetime import datetime, time
+from http import HTTPStatus
+
+import geojson
+import httpx
+from cachetools import TTLCache, cached
+from geopy.distance import geodesic
+from shapely.geometry import MultiPolygon, Polygon, shape
+
+logger = logging.getLogger(__name__)
+
+httpx_client = httpx.Client(
+    timeout=10.0,
+    limits=httpx.Limits(max_keepalive_connections=20, max_connections=100),
+)
+
+
+def retry_request(retries=10, backoff=1, max_backoff=40.0):
+    import time
+
+    retry_statuses = {HTTPStatus.TOO_MANY_REQUESTS, 502, 503, 504}
+    max_retry_time = 120  # Maximum cumulative retry time in seconds
+    retry_exceptions = (
+        httpx.ReadTimeout,
+        httpx.ConnectTimeout,
+        httpx.NetworkError,  # includes transient connection errors
+        httpx.RemoteProtocolError,
+    )
+
+    def deco(fn):
+        def wrapped(*args, **kwargs):
+            last_exc = None
+            total_retry_time = 0  # Track cumulative retry time
+            for attempt in range(retries):
+                try:
+                    resp = fn(*args, **kwargs)
+                except retry_exceptions as exc:
+                    last_exc = exc
+                    # backoff and retry
+                    delay = min(max_backoff, backoff * (2**attempt)) * (
+                        1 + random.random() * 0.25
+                    )
+                    if total_retry_time + delay > max_retry_time:
+                        raise TimeoutError("Exceeded maximum retry time of 120 seconds")
+                    total_retry_time += delay
+                    time.sleep(delay)
+                    continue
+
+                # Retry on selected HTTP status
+                if resp.status_code in retry_statuses:
+                    # honor Retry-After if present
+                    ra = resp.headers.get("Retry-After")
+                    if ra:
+                        try:
+                            delay = min(max_backoff, float(ra))
+                        except ValueError:
+                            delay = min(max_backoff, backoff * (2**attempt))
+                    else:
+                        delay = min(max_backoff, backoff * (2**attempt)) * (
+                            1 + random.random() * 0.25
+                        )
+                    if total_retry_time + delay > max_retry_time:
+                        raise TimeoutError("Exceeded maximum retry time of 120 seconds")
+                    total_retry_time += delay
+                    time.sleep(delay)
+                    continue
+
+                return resp
+
+            if last_exc:
+                raise last_exc
+            return resp
+
+        return wrapped
+
+    return deco
+]]
+    local result, applied = diff.apply_unified_diff(diff_text, original)
+    local expected_lines = vim.split(expected, '\n', { trimempty = true })
+    assert.are.same(expected_lines, result)
+  end)
+
+  -- Tests for offset tracking in sequential hunk application
+  it('correctly applies offset when first hunk adds lines', function()
+    local diff_text = [[
+--- a/test.txt
++++ b/test.txt
+@@ -1,2 +1,4 @@
+ line1
++added1
++added2
+ line2
+@@ -3,1 +5,1 @@
+ line3
+]]
+    local original = { 'line1', 'line2', 'line3' }
+    local original_content = table.concat(original, '\n')
+    local result, applied = diff.apply_unified_diff(diff_text, original_content)
+    assert.is_true(applied)
+    assert.are.same({ 'line1', 'added1', 'added2', 'line2', 'line3' }, result)
+  end)
+
+  it('correctly applies offset when first hunk removes lines', function()
+    local diff_text = [[
+--- a/test.txt
++++ b/test.txt
+@@ -1,3 +1,1 @@
+ line1
+-line2
+-line3
+@@ -4,1 +2,1 @@
+ line4
+]]
+    local original = { 'line1', 'line2', 'line3', 'line4' }
+    local original_content = table.concat(original, '\n')
+    local result, applied = diff.apply_unified_diff(diff_text, original_content)
+    assert.is_true(applied)
+    assert.are.same({ 'line1', 'line4' }, result)
+  end)
+
+  it('correctly tracks offset through multiple hunks with mixed add/remove', function()
+    local diff_text = [[
+--- a/test.txt
++++ b/test.txt
+@@ -1,1 +1,2 @@
+ a
++b
+@@ -2,1 +3,1 @@
+-c
++C
+@@ -3,1 +4,3 @@
+ d
++e
++f
+]]
+    local original = { 'a', 'c', 'd' }
+    local original_content = table.concat(original, '\n')
+    local result, applied = diff.apply_unified_diff(diff_text, original_content)
+    assert.is_true(applied)
+    assert.are.same({ 'a', 'b', 'C', 'd', 'e', 'f' }, result)
+  end)
+
+  it('handles offset when hunks are far apart', function()
+    local diff_text = [[
+--- a/test.txt
++++ b/test.txt
+@@ -2,1 +2,2 @@
+ line2
++inserted
+@@ -10,1 +11,1 @@
+-line10
++LINE10
+]]
+    local original = {
+      'line1',
+      'line2',
+      'line3',
+      'line4',
+      'line5',
+      'line6',
+      'line7',
+      'line8',
+      'line9',
+      'line10',
+    }
+    local original_content = table.concat(original, '\n')
+    local result, applied = diff.apply_unified_diff(diff_text, original_content)
+    assert.is_true(applied)
+    local expected = {
+      'line1',
+      'line2',
+      'inserted',
+      'line3',
+      'line4',
+      'line5',
+      'line6',
+      'line7',
+      'line8',
+      'line9',
+      'LINE10',
+    }
+    assert.are.same(expected, result)
+  end)
+
+  it('applies three consecutive hunks with positive offset accumulation', function()
+    local diff_text = [[
+--- a/test.txt
++++ b/test.txt
+@@ -1,1 +1,2 @@
+ a
++b
+@@ -2,1 +3,2 @@
+ c
++d
+@@ -3,1 +5,2 @@
+ e
++f
+]]
+    local original = { 'a', 'c', 'e' }
+    local original_content = table.concat(original, '\n')
+    local result, applied = diff.apply_unified_diff(diff_text, original_content)
+    assert.is_true(applied)
+    assert.are.same({ 'a', 'b', 'c', 'd', 'e', 'f' }, result)
+  end)
+
+  it('applies three consecutive hunks with negative offset accumulation', function()
+    local diff_text = [[
+--- a/test.txt
++++ b/test.txt
+@@ -1,2 +1,1 @@
+-x
+ a
+@@ -3,2 +2,1 @@
+-y
+ b
+@@ -5,2 +3,1 @@
+-z
+ c
+]]
+    local original = { 'x', 'a', 'y', 'b', 'z', 'c' }
+    local original_content = table.concat(original, '\n')
+    local result, applied = diff.apply_unified_diff(diff_text, original_content)
+    assert.is_true(applied)
+    assert.are.same({ 'a', 'b', 'c' }, result)
+  end)
+
+  it('handles zero-offset hunks (replacements without size change)', function()
+    local diff_text = [[
+--- a/test.txt
++++ b/test.txt
+@@ -1,1 +1,1 @@
+-old1
++new1
+@@ -2,1 +2,1 @@
+-old2
++new2
+@@ -3,1 +3,1 @@
+-old3
++new3
+]]
+    local original = { 'old1', 'old2', 'old3' }
+    local original_content = table.concat(original, '\n')
+    local result, applied = diff.apply_unified_diff(diff_text, original_content)
+    assert.is_true(applied)
+    assert.are.same({ 'new1', 'new2', 'new3' }, result)
+  end)
+
+  it('applies offset correctly when first hunk is pure insertion (len_old=0)', function()
+    local diff_text = [[
+--- a/test.txt
++++ b/test.txt
+@@ -0,0 +1,2 @@
++inserted1
++inserted2
+@@ -1,1 +3,1 @@
+ original
+]]
+    local original = { 'original' }
+    local original_content = table.concat(original, '\n')
+    local result, applied = diff.apply_unified_diff(diff_text, original_content)
+    assert.is_true(applied)
+    assert.are.same({ 'inserted1', 'inserted2', 'original' }, result)
+  end)
+
+  it('handles complex offset scenario with interleaved additions and deletions', function()
+    local diff_text = [[
+--- a/test.txt
++++ b/test.txt
+@@ -1,2 +1,1 @@
+-delete1
+ keep1
+@@ -3,1 +2,3 @@
+ keep2
++add1
++add2
+@@ -4,2 +5,1 @@
+-delete2
+ keep3
+]]
+    local original = { 'delete1', 'keep1', 'keep2', 'delete2', 'keep3' }
+    local original_content = table.concat(original, '\n')
+    local result, applied = diff.apply_unified_diff(diff_text, original_content)
+    assert.is_true(applied)
+    assert.are.same({ 'keep1', 'keep2', 'add1', 'add2', 'keep3' }, result)
+  end)
+
+  it('offset tracking works with hunks that have context lines', function()
+    local diff_text = [[
+--- a/test.txt
++++ b/test.txt
+@@ -1,3 +1,4 @@
+ ctx1
+ line1
++inserted
+ ctx2
+@@ -5,2 +6,2 @@
+ ctx3
+-line2
++LINE2
+]]
+    local original = { 'ctx1', 'line1', 'ctx2', 'ctx3', 'line2' }
+    local original_content = table.concat(original, '\n')
+    local result, applied = diff.apply_unified_diff(diff_text, original_content)
+    assert.is_true(applied)
+    assert.are.same({ 'ctx1', 'line1', 'inserted', 'ctx2', 'ctx3', 'LINE2' }, result)
+  end)
 end)

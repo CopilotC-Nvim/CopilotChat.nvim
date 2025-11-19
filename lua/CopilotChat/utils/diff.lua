@@ -143,10 +143,21 @@ function M.apply_unified_diff(diff_text, original_content)
   local hunks = parse_hunks(diff_text)
   local new_content = original_content
   local applied = false
+  local offset = 0 -- Track cumulative line offset from previous hunks
+
   for _, hunk in ipairs(hunks) do
-    local patched, ok = apply_hunk(hunk, new_content)
+    -- Adjust hunk start position based on accumulated offset
+    local adjusted_hunk = vim.deepcopy(hunk)
+    if adjusted_hunk.start_old then
+      adjusted_hunk.start_old = hunk.start_old + offset
+    end
+
+    local patched, ok = apply_hunk(adjusted_hunk, new_content)
     new_content = patched
     applied = applied or ok
+
+    -- Update offset: (new lines added) - (old lines removed)
+    offset = offset + (#hunk.new_snippet - #hunk.old_snippet)
   end
 
   local new_lines = vim.split(new_content, '\n', { trimempty = true })
