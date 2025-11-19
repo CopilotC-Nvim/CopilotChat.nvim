@@ -16,9 +16,9 @@ local function parse_hunks(diff_text)
       local start_old, len_old, start_new, len_new = line:match('@@%s%-(%d+),?(%d*)%s%+(%d+),?(%d*)%s@@')
       current_hunk = {
         start_old = tonumber(start_old),
-        len_old = tonumber(len_old) or 1,
+        len_old = len_old == '' and 1 or tonumber(len_old),
         start_new = tonumber(start_new),
-        len_new = tonumber(len_new) or 1,
+        len_new = len_new == '' and 1 or tonumber(len_new),
         old_snippet = {},
         new_snippet = {},
       }
@@ -90,6 +90,24 @@ local function apply_hunk(hunk, content)
   local lines = vim.split(content, '\n')
   local start_idx = hunk.start_old
 
+  -- Handle insertions (len_old == 0)
+  if hunk.len_old == 0 then
+    -- For insertions, start_old indicates where to insert
+    -- start_old = 0 means insert at beginning
+    -- start_old = n means insert after line n
+    if start_idx == 0 then
+      start_idx = 1
+    else
+      start_idx = start_idx + 1
+    end
+    local new_lines = vim.list_slice(lines, 1, start_idx - 1)
+    vim.list_extend(new_lines, hunk.new_snippet)
+    vim.list_extend(new_lines, lines, start_idx, #lines)
+    -- Insertions are always applied cleanly if we reach this point
+    return table.concat(new_lines, '\n'), true
+  end
+
+  -- Handle replacements and deletions (len_old > 0)
   -- If we have a start line hint, try to find best match within +/- 2 lines
   if start_idx and start_idx > 0 and start_idx <= #lines then
     local match_idx = find_best_match(lines, hunk.old_snippet, start_idx, 2)
