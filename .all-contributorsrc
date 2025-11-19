@@ -480,6 +480,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/21695295?v=4",
       "profile": "https://github.com/garcia5",
       "contributions": ["code"]
+    },
+    {
+      "login": "kharandziuk",
+      "name": "Max Kharandziuk",
+      "avatar_url": "https://avatars.githubusercontent.com/u/3404755?v=4",
+      "profile": "https://github.com/kharandziuk",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
