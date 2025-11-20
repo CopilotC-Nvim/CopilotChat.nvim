@@ -734,7 +734,7 @@ function Chat:parse()
     message.content = vim.trim(table.concat(message.content, '\n'))
     if message.section then
       for _, block in ipairs(message.section.blocks) do
-        block.content = vim.trim(table.concat(block.content, '\n'))
+        block.content = table.concat(block.content, '\n')
       end
     end
 
