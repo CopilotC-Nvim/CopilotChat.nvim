@@ -396,7 +396,6 @@ local chat = require("CopilotChat")
 
 -- Basic Chat Functions
 chat.ask(prompt, config)      -- Ask a question with optional config
-chat.response()               -- Get the last response text
 
 -- Window Management
 chat.open(config)             -- Open chat window with optional config
