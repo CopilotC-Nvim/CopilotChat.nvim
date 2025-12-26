@@ -39,6 +39,7 @@ local function match_block_header(header)
   end
 
   local patterns = {
+    '^(%w+)%s+path=(.-)%s+start_line=(%d+)%s+end_line=(%d+)$',
     '^(%w+)%s+path=(%S+)%s+start_line=(%d+)%s+end_line=(%d+)$',
     '^(%w+)$',
   }
