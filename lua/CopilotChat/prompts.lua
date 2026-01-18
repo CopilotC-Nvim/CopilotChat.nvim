@@ -12,16 +12,22 @@ local WORD_WITH_INPUT_UNQUOTED = WORD .. ':?([^%s`]*)'
 
 --- Find custom instructions in the current working directory.
 ---@param cwd string
+---@param config CopilotChat.config.Config
 ---@return table
-local function find_custom_instructions(cwd)
+local function find_custom_instructions(cwd, config)
   local out = {}
-  local copilot_instructions_path = vim.fs.joinpath(cwd, '.github', 'copilot-instructions.md')
-  local copilot_instructions = files.read_file(copilot_instructions_path)
-  if copilot_instructions then
-    table.insert(out, {
-      filename = copilot_instructions_path,
-      content = vim.trim(copilot_instructions),
-    })
+  local files_to_check = {}
+  for _, relpath in ipairs(config.instruction_files or {}) do
+    table.insert(files_to_check, vim.fs.joinpath(cwd, relpath))
+  end
+  for _, path in ipairs(files_to_check) do
+    local content = files.read_file(path)
+    if content then
+      table.insert(out, {
+        filename = path,
+        content = vim.trim(content),
+      })
+    end
   end
   return out
 end
@@ -314,7 +320,7 @@ function M.resolve_prompt(prompt, config)
     end
 
     local custom_instructions = vim.trim(require('CopilotChat.instructions.custom_instructions'))
-    for _, instruction in ipairs(find_custom_instructions(source.cwd())) do
+    for _, instruction in ipairs(find_custom_instructions(source.cwd(), config)) do
       config.system_prompt = vim.trim(config.system_prompt)
         .. '\n'
         .. custom_instructions:gsub('{FILENAME}', instruction.filename):gsub('{CONTENT}', instruction.content)

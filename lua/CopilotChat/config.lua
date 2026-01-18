@@ -43,6 +43,7 @@
 ---@field log_level 'trace'|'debug'|'info'|'warn'|'error'|'fatal'?
 ---@field proxy string?
 ---@field allow_insecure boolean?
+---@field instruction_files table<int, string>?
 ---@field selection 'visual'|'unnamed'|nil
 ---@field chat_autocomplete boolean?
 ---@field log_path string?
@@ -104,6 +105,12 @@ return {
   log_level = 'info', -- Log level to use, 'trace', 'debug', 'info', 'warn', 'error', 'fatal'
   proxy = nil, -- [protocol://]host[:port] Use this proxy
   allow_insecure = false, -- Allow insecure server connections
+
+  -- Instruction files to look for in current working directory
+  instruction_files = {
+    '.github/copilot-instructions.md',
+    'AGENTS.MD',
+  },
 
   selection = 'visual', -- Selection source
   chat_autocomplete = true, -- Enable chat autocompletion (when disabled, requires manual `mappings.complete` trigger)
