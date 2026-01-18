@@ -109,7 +109,7 @@ return {
   -- Instruction files to look for in current working directory
   instruction_files = {
     '.github/copilot-instructions.md',
-    'AGENTS.MD',
+    'AGENTS.md',
   },
 
   selection = 'visual', -- Selection source
