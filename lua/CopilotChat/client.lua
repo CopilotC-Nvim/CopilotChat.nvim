@@ -306,6 +306,35 @@ function Client:ask(opts)
   opts = opts or {}
   local job_id = utils.uuid()
 
+  -- handle auto model selection
+  if opts.model == 'auto' then
+    notify.publish(notify.STATUS, 'Auto-selecting model...')
+    local provider_name = 'copilot'
+    local headers = self:authenticate(provider_name)
+    local token = headers['Authorization'] and headers['Authorization']:gsub('^Bearer%s+', '')
+
+    local url = 'https://api.individual.githubcopilot.com/models/session'
+    local response, err = curl.post(url, {
+      headers = {
+        ['Authorization'] = 'Bearer ' .. token,
+        ['editor-version'] = 'vscode/1.109.0-insider',
+        ['user-agent'] = 'GitHubCopilotChat/0.38.0',
+        ['x-github-api-version'] = '2025-10-01',
+      },
+      body = { auto_mode = { model_hints = { 'auto' } } },
+      json_response = true,
+      json_request = true,
+    })
+
+    if not err and response and response.status == 200 and response.body.selected_model then
+      log.info('Auto mode selected: ' .. response.body.selected_model)
+      opts.model = response.body.selected_model
+    else
+      log.warn('Auto mode failed, falling back to gpt-4o. Error: ' .. tostring(err or (response and response.status)))
+      opts.model = 'gpt-4o'
+    end
+  end
+
   log.debug('Model:', opts.model)
   log.debug('Tools:', #opts.tools)
   log.debug('Resources:', #opts.resources)
