@@ -771,12 +771,22 @@ function Chat:render()
       local header_value = self.headers[message.role]
       local header_line = message.section.start_line - 2
 
+      local virt_text = {
+        { ' ' .. header_value .. ' ', 'CopilotChatHeader' },
+      }
+
+      local model_info = ''
+      if message.model then
+        model_info = '(' .. message.model .. ')'
+        table.insert(virt_text, { model_info, 'CopilotChatHeader' })
+      end
+
+      local text_len = #header_value + 2 + #model_info
+      table.insert(virt_text, { string.rep(self.separator, vim.go.columns - text_len - 1), 'CopilotChatSeparator' })
+
       vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, header_line, 0, {
         conceal = '',
-        virt_text = {
-          { ' ' .. header_value .. ' ', 'CopilotChatHeader' },
-          { string.rep(self.separator, vim.go.columns - #header_value - 1), 'CopilotChatSeparator' },
-        },
+        virt_text = virt_text,
         virt_text_pos = 'overlay',
         priority = 2000, -- High priority to override other plugins if enabled
         strict = false,

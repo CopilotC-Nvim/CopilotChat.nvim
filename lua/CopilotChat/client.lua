@@ -624,6 +624,7 @@ function Client:ask(opts)
       content = response_text,
       reasoning = response_reasoning,
       tool_calls = #tool_calls:values() > 0 and tool_calls:values() or nil,
+      model = opts.model,
     },
     token_count = token_count,
     token_max_count = max_tokens,
