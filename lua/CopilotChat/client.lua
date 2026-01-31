@@ -327,7 +327,6 @@ function Client:ask(opts)
     })
 
     if not err and response and response.status == 200 and response.body.selected_model then
-      log.info('Auto mode selected: ' .. response.body.selected_model)
       opts.model = response.body.selected_model
     else
       log.warn('Auto mode failed, falling back to gpt-4o. Error: ' .. tostring(err or (response and response.status)))
