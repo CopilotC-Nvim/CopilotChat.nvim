@@ -63,6 +63,7 @@ local class = require('CopilotChat.utils.class')
 local files = require('CopilotChat.utils.files')
 local orderedmap = require('CopilotChat.utils.orderedmap')
 local stringbuffer = require('CopilotChat.utils.stringbuffer')
+local model = require('fidget.notification.model')
 
 --- Constants
 local RESOURCE_SHORT_FORMAT = '# %s\n```%s start_line=% end_line=%s\n%s\n```'
@@ -299,28 +300,6 @@ function Client:ask(opts)
   opts = opts or {}
   local job_id = utils.uuid()
 
-  -- handle auto model selection
-  if opts.model == 'auto' then
-    notify.publish(notify.STATUS, 'Auto-selecting model...')
-    local provider_name = 'copilot'
-    local provider = self:get_providers():get(provider_name)
-
-    if provider and provider.route_model then
-      local headers = self:authenticate(provider_name)
-      local selected_model, err = provider.route_model(headers, { 'auto' })
-
-      if selected_model then
-        opts.model = selected_model
-      else
-        log.warn('Auto mode failed, falling back to gpt-4o. Error: ' .. tostring(err))
-        opts.model = 'gpt-4o'
-      end
-    else
-      log.warn('Auto mode not supported, falling back to gpt-4o')
-      opts.model = 'gpt-4o'
-    end
-  end
-
   log.debug('Model:', opts.model)
   log.debug('Tools:', #opts.tools)
   log.debug('Resources:', #opts.resources)
@@ -339,6 +318,24 @@ function Client:ask(opts)
   local provider = self:get_providers():get(provider_name)
   if not provider then
     error('Provider not found: ' .. provider_name)
+  end
+
+  if provider.route_model then
+    if not opts.headless then
+      notify.publish(notify.STATUS, 'Routing model...')
+    end
+
+    local headers = self:authenticate(provider_name)
+    local resolved_model = provider.route_model(headers, opts)
+
+    if resolved_model and resolved_model ~= opts.model then
+      opts.model = resolved_model
+
+      model_config = models[opts.model]
+      if not model_config then
+        error('Routed model not found: ' .. opts.model)
+      end
+    end
   end
 
   local options = {
