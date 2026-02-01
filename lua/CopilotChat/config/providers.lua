@@ -504,6 +504,7 @@ end
 ---@field get_headers nil|fun():table<string, string>,number?
 ---@field get_info nil|fun(headers:table):string[]
 ---@field get_models nil|fun(headers:table):table<CopilotChat.client.Model>
+---@field select_model nil|fun(headers:table, hints:table?):string?,string?
 ---@field prepare_input nil|fun(inputs:table<CopilotChat.client.Message>, opts:CopilotChat.config.providers.Options):table
 ---@field prepare_output nil|fun(output:table, opts:CopilotChat.config.providers.Options):CopilotChat.config.providers.Output
 ---@field get_url nil|fun(opts:CopilotChat.config.providers.Options):string
@@ -512,6 +513,40 @@ end
 local M = {}
 
 M.copilot = {
+  select_model = function(headers, hints)
+    hints = hints or { 'auto' }
+    local token = headers['Authorization'] and headers['Authorization']:gsub('^Bearer%s+', '')
+    if not token then
+      return nil, 'No authorization token available'
+    end
+
+    local url = 'https://api.individual.githubcopilot.com/models/session'
+    local response, err = curl.post(url, {
+      headers = {
+        ['Authorization'] = 'Bearer ' .. token,
+        ['editor-version'] = 'vscode/1.109.0-insider',
+        ['user-agent'] = 'GitHubCopilotChat/0.38.0',
+        ['x-github-api-version'] = '2025-10-01',
+      },
+      body = { auto_mode = { model_hints = hints } },
+      json_response = true,
+      json_request = true,
+    })
+
+    if err then
+      return nil, 'Auto selection request failed: ' .. tostring(err)
+    end
+
+    if not response or response.status ~= 200 then
+      return nil, 'Auto selection returned status: ' .. tostring(response and response.status or 'unknown')
+    end
+
+    if not response.body or not response.body.selected_model then
+      return nil, 'No model selected in response'
+    end
+
+    return response.body.selected_model, nil
+  end,
   get_headers = function()
     local response, err = curl.get('https://api.github.com/copilot_internal/v2/token', {
       json_response = true,
