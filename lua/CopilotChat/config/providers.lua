@@ -638,6 +638,14 @@ M.copilot = {
       end
     end
 
+    -- auto model selector
+    table.insert(models, {
+      id = 'auto',
+      name = 'Auto (Copilot)',
+      description = 'Auto selects the best model for your request.',
+      provider = 'copilot',
+      capabilities = { limits = {} },
+    })
     return models
   end,
 

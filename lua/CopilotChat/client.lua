@@ -257,13 +257,6 @@ function Client:models()
     end
   end
 
-  out['auto'] = {
-    id = 'auto',
-    name = 'Auto selects the best model for your request based on capacity and performance. Auto is given a 10% discount.',
-    provider = 'copilot',
-    description = 'Auto selects the best model for your request based on capacity and performance. Auto is given a 10% discount.',
-  }
-
   log.debug('Fetched models:', #vim.tbl_keys(out))
   return out
 end
