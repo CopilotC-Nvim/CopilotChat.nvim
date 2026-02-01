@@ -312,9 +312,9 @@ function Client:ask(opts)
     local provider_name = 'copilot'
     local provider = self:get_providers():get(provider_name)
 
-    if provider and provider.select_model then
+    if provider and provider.route_model then
       local headers = self:authenticate(provider_name)
-      local selected_model, err = provider.select_model(headers, { 'auto' })
+      local selected_model, err = provider.route_model(headers, { 'auto' })
 
       if selected_model then
         opts.model = selected_model

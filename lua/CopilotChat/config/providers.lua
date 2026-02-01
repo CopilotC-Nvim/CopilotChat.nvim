@@ -513,7 +513,7 @@ end
 local M = {}
 
 M.copilot = {
-  select_model = function(headers, hints)
+  route_model = function(headers, hints)
     hints = hints or { 'auto' }
     local token = headers['Authorization'] and headers['Authorization']:gsub('^Bearer%s+', '')
     if not token then
