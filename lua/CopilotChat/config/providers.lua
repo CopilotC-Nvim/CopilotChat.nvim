@@ -513,40 +513,6 @@ end
 local M = {}
 
 M.copilot = {
-  route_model = function(headers, hints)
-    hints = hints or { 'auto' }
-    local token = headers['Authorization'] and headers['Authorization']:gsub('^Bearer%s+', '')
-    if not token then
-      return nil, 'No authorization token available'
-    end
-
-    local url = 'https://api.individual.githubcopilot.com/models/session'
-    local response, err = curl.post(url, {
-      headers = {
-        ['Authorization'] = 'Bearer ' .. token,
-        ['editor-version'] = 'vscode/1.109.0-insider',
-        ['user-agent'] = 'GitHubCopilotChat/0.38.0',
-        ['x-github-api-version'] = '2025-10-01',
-      },
-      body = { auto_mode = { model_hints = hints } },
-      json_response = true,
-      json_request = true,
-    })
-
-    if err then
-      return nil, 'Auto selection request failed: ' .. tostring(err)
-    end
-
-    if not response or response.status ~= 200 then
-      return nil, 'Auto selection returned status: ' .. tostring(response and response.status or 'unknown')
-    end
-
-    if not response.body or not response.body.selected_model then
-      return nil, 'No model selected in response'
-    end
-
-    return response.body.selected_model, nil
-  end,
   get_headers = function()
     local response, err = curl.get('https://api.github.com/copilot_internal/v2/token', {
       json_response = true,
@@ -673,6 +639,41 @@ M.copilot = {
     end
 
     return models
+  end,
+
+  route_model = function(headers, hints)
+    hints = hints or { 'auto' }
+    local token = headers['Authorization'] and headers['Authorization']:gsub('^Bearer%s+', '')
+    if not token then
+      return nil, 'No authorization token available'
+    end
+
+    local url = 'https://api.individual.githubcopilot.com/models/session'
+    local response, err = curl.post(url, {
+      headers = {
+        ['Authorization'] = 'Bearer ' .. token,
+        ['editor-version'] = 'vscode/1.109.0-insider',
+        ['user-agent'] = 'GitHubCopilotChat/0.38.0',
+        ['x-github-api-version'] = '2025-10-01',
+      },
+      body = { auto_mode = { model_hints = hints } },
+      json_response = true,
+      json_request = true,
+    })
+
+    if err then
+      return nil, 'Auto selection request failed: ' .. tostring(err)
+    end
+
+    if not response or response.status ~= 200 then
+      return nil, 'Auto selection returned status: ' .. tostring(response and response.status or 'unknown')
+    end
+
+    if not response.body or not response.body.selected_model then
+      return nil, 'No model selected in response'
+    end
+
+    return response.body.selected_model, nil
   end,
 
   prepare_input = function(inputs, opts)
