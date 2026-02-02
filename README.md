@@ -619,6 +619,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/towoe"><img src="https://avatars.githubusercontent.com/u/8666134?v=4?s=100" width="100px;" alt="Tobias Wölfel"/><br /><sub><b>Tobias Wölfel</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=towoe" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/garcia5"><img src="https://avatars.githubusercontent.com/u/21695295?v=4?s=100" width="100px;" alt="Alexander Garcia"/><br /><sub><b>Alexander Garcia</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=garcia5" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/kharandziuk"><img src="https://avatars.githubusercontent.com/u/3404755?v=4?s=100" width="100px;" alt="Max Kharandziuk"/><br /><sub><b>Max Kharandziuk</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=kharandziuk" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/pxwg"><img src="https://avatars.githubusercontent.com/u/149765160?v=4?s=100" width="100px;" alt="Xinyu Xiang"/><br /><sub><b>Xinyu Xiang</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=pxwg" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
