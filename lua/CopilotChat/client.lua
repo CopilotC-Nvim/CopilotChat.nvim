@@ -511,6 +511,11 @@ function Client:ask(opts)
   end
 
   local headers = self:authenticate(provider_name)
+
+  if provider.prepare_headers then
+    headers = provider.prepare_headers(headers, opts)
+  end
+
   local request = provider.prepare_input(generate_ask_request(opts.system_prompt, history, generated_messages), options)
   local is_stream = request.stream
 
