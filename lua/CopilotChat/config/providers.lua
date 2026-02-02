@@ -641,10 +641,21 @@ M.copilot = {
   end,
 
   prepare_input = function(inputs, opts)
+    local request
     if opts.model.use_responses then
-      return prepare_responses_input(inputs, opts)
+      request = prepare_responses_input(inputs, opts)
+    else
+      request = prepare_chat_input(inputs, opts)
     end
-    return prepare_chat_input(inputs, opts)
+
+    if inputs and #inputs > 0 then
+      local last_msg = inputs[#inputs]
+      if last_msg.role == constants.ROLE.TOOL then
+        return request, { ['x-initiator'] = 'agent' }
+      end
+    end
+
+    return request
   end,
 
   prepare_output = function(output, opts)
