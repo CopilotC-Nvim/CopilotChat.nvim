@@ -197,7 +197,7 @@ local function get_github_models_token(tag)
 end
 
 --- Prepare input for Responses API
----@param inputs table<CopilotChat.client.Message>
+---@param inputs CopilotChat.client.Message[]
 ---@param opts CopilotChat.config.providers.Options
 ---@return table
 local function prepare_responses_input(inputs, opts)
@@ -257,7 +257,7 @@ local function prepare_responses_input(inputs, opts)
 end
 
 --- Prepare input for Chat Completions API
----@param inputs table<CopilotChat.client.Message>
+---@param inputs CopilotChat.client.Message[]
 ---@param opts CopilotChat.config.providers.Options
 ---@return table
 local function prepare_chat_input(inputs, opts)
@@ -353,6 +353,7 @@ local function prepare_responses_output(output)
   local finish_reason = nil
   local total_tokens = nil
   local tool_calls = {}
+  local model = nil
 
   -- Handle errors
   local error_msg = output.error or (output.response and output.response.error)
@@ -366,6 +367,7 @@ local function prepare_responses_output(output)
       finish_reason = 'error: ' .. tostring(error_msg),
       total_tokens = nil,
       tool_calls = {},
+      model = nil,
     }
   end
 
@@ -398,6 +400,9 @@ local function prepare_responses_output(output)
         if response.usage then
           total_tokens = response.usage.total_tokens
         end
+        if response.model then
+          model = response.model
+        end
         finish_reason = 'stop'
       end
     elseif output.type == 'response.failed' then
@@ -429,6 +434,9 @@ local function prepare_responses_output(output)
     if response.usage then
       total_tokens = response.usage.total_tokens
     end
+    if response.model then
+      model = response.model
+    end
     finish_reason = response.status == 'completed' and 'stop' or nil
   end
 
@@ -438,6 +446,7 @@ local function prepare_responses_output(output)
     finish_reason = finish_reason,
     total_tokens = total_tokens,
     tool_calls = tool_calls,
+    model = model,
   }
 end
 
@@ -477,6 +486,7 @@ local function prepare_chat_output(output)
   local reasoning = message and (message.reasoning or message.reasoning_content)
   local usage = choice.usage and choice.usage.total_tokens or output.usage and output.usage.total_tokens
   local finish_reason = choice.finish_reason or choice.done_reason or output.finish_reason or output.done_reason
+  local model = choice.model or output.model
 
   return {
     content = content,
@@ -484,6 +494,7 @@ local function prepare_chat_output(output)
     finish_reason = finish_reason,
     total_tokens = usage,
     tool_calls = tool_calls,
+    model = model,
   }
 end
 
@@ -498,14 +509,15 @@ end
 ---@field finish_reason string?
 ---@field total_tokens number?
 ---@field tool_calls table<CopilotChat.client.ToolCall>
+---@field model string?
 
 ---@class CopilotChat.config.providers.Provider
 ---@field disabled nil|boolean
 ---@field get_headers nil|fun():table<string, string>,number?
 ---@field get_info nil|fun(headers:table):string[]
 ---@field get_models nil|fun(headers:table):table<CopilotChat.client.Model>
----@field select_model nil|fun(headers:table, hints:table?):string?,string?
----@field prepare_input nil|fun(inputs:table<CopilotChat.client.Message>, opts:CopilotChat.config.providers.Options):table
+---@field resolve_model nil|fun(headers:table, model: string):string
+---@field prepare_input nil|fun(inputs:CopilotChat.client.Message[], opts:CopilotChat.config.providers.Options):table,table?
 ---@field prepare_output nil|fun(output:table, opts:CopilotChat.config.providers.Options):CopilotChat.config.providers.Output
 ---@field get_url nil|fun(opts:CopilotChat.config.providers.Options):string
 
@@ -530,6 +542,7 @@ M.copilot = {
       ['Editor-Version'] = EDITOR_VERSION,
       ['Editor-Plugin-Version'] = 'CopilotChat.nvim/*',
       ['Copilot-Integration-Id'] = 'vscode-chat',
+      ['x-github-api-version'] = '2025-10-01',
     },
       response.body.expires_at
   end,
@@ -638,59 +651,31 @@ M.copilot = {
       end
     end
 
-    -- auto model selector
+    -- Auto model selector
     table.insert(models, {
       id = 'auto',
       name = 'Auto (Copilot)',
       description = 'Auto selects the best model for your request.',
-      provider = 'copilot',
-      capabilities = { limits = {} },
     })
+
     return models
   end,
 
-  route_model = function(headers, opts)
-    local model_id = opts.model
-    if model_id ~= 'auto' then
-      return model_id
+  resolve_model = function(headers, model)
+    if model ~= 'auto' then
+      return model
     end
 
-    local token = headers['Authorization']
-    if not token then
-      log.warn('No authorization token available for auto model resolution')
-      return 'gpt-4.1' -- Fallback model
-    end
-
-    local url = 'https://api.individual.githubcopilot.com/models/session'
+    local url = 'https://api.githubcopilot.com/models/session'
     local response, err = curl.post(url, {
-      headers = {
-        ['Authorization'] = token,
-        ['editor-version'] = 'vscode/1.109.0-insider',
-        ['user-agent'] = 'GitHubCopilotChat/0.38.0',
-        ['x-github-api-version'] = '2025-10-01',
-      },
+      headers = headers,
       body = { auto_mode = { model_hints = { 'auto' } } },
       json_response = true,
       json_request = true,
     })
 
     if err then
-      log.warn('Auto selection request failed: ' .. tostring(err) .. '. Falling back to gpt-4.1.')
-      return 'gpt-4.1'
-    end
-
-    if not response or response.status ~= 200 then
-      log.warn(
-        'Auto selection returned status: '
-          .. tostring(response and response.status or 'unknown')
-          .. '. Falling back to gpt-4.1.'
-      )
-      return 'gpt-4.1'
-    end
-
-    if not response.body or not response.body.selected_model then
-      log.warn('No model selected in response. Falling back to gpt-4.1.')
-      return 'gpt-4.1'
+      error(err)
     end
 
     return response.body.selected_model
