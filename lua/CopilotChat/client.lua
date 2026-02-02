@@ -512,11 +512,13 @@ function Client:ask(opts)
 
   local headers = self:authenticate(provider_name)
 
-  if provider.prepare_headers then
-    headers = provider.prepare_headers(headers, opts)
+  local request, extra_headers =
+    provider.prepare_input(generate_ask_request(opts.system_prompt, history, generated_messages), options)
+
+  if extra_headers then
+    headers = vim.tbl_extend('force', headers, extra_headers)
   end
 
-  local request = provider.prepare_input(generate_ask_request(opts.system_prompt, history, generated_messages), options)
   local is_stream = request.stream
 
   local args = {

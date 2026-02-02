@@ -502,7 +502,6 @@ end
 ---@class CopilotChat.config.providers.Provider
 ---@field disabled nil|boolean
 ---@field get_headers nil|fun():table<string, string>,number?
----@field prepare_headers nil|fun(headers:table, opts:CopilotChat.client.AskOptions):table<string, string>
 ---@field get_info nil|fun(headers:table):string[]
 ---@field get_models nil|fun(headers:table):table<CopilotChat.client.Model>
 ---@field prepare_input nil|fun(inputs:table<CopilotChat.client.Message>, opts:CopilotChat.config.providers.Options):table
@@ -532,19 +531,6 @@ M.copilot = {
       ['Copilot-Integration-Id'] = 'vscode-chat',
     },
       response.body.expires_at
-  end,
-
-  prepare_headers = function(headers, opts)
-    local history = vim.deepcopy(opts.history)
-    if history and #history > 0 then
-      local last_msg = history[#history]
-      if last_msg.role == constants.ROLE.TOOL then
-        return vim.tbl_extend('force', headers, {
-          ['x-initiator'] = 'agent',
-        })
-      end
-    end
-    return headers
   end,
 
   get_info = function()
@@ -655,10 +641,21 @@ M.copilot = {
   end,
 
   prepare_input = function(inputs, opts)
+    local request
     if opts.model.use_responses then
-      return prepare_responses_input(inputs, opts)
+      request = prepare_responses_input(inputs, opts)
+    else
+      request = prepare_chat_input(inputs, opts)
     end
-    return prepare_chat_input(inputs, opts)
+
+    if inputs and #inputs > 0 then
+      local last_msg = inputs[#inputs]
+      if last_msg.role == constants.ROLE.TOOL then
+        return request, { ['x-initiator'] = 'agent' }
+      end
+    end
+
+    return request
   end,
 
   prepare_output = function(output, opts)
