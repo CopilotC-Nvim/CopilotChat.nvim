@@ -771,6 +771,9 @@ function Chat:render()
       -- Overlay section header with nice display
       local header_value = self.headers[message.role]
       local header_line = message.section.start_line - 2
+      if message.model then
+        header_value = header_value .. ' (' .. message.model .. ')'
+      end
 
       vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, header_line, 0, {
         conceal = '',

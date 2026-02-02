@@ -319,6 +319,16 @@ function Client:ask(opts)
     error('Provider not found: ' .. provider_name)
   end
 
+  if provider.resolve_model then
+    local headers = self:authenticate(provider_name)
+    local resolved_model = provider.resolve_model(headers, opts.model)
+    opts.model = resolved_model
+    model_config = models[opts.model]
+    if not model_config then
+      error('Resolved model not found: ' .. opts.model)
+    end
+  end
+
   local options = {
     model = vim.tbl_extend('force', model_config, {
       id = opts.model:gsub(':' .. provider_name .. '$', ''),
@@ -389,6 +399,7 @@ function Client:ask(opts)
   local errored = nil
   local finished = false
   local token_count = 0
+  local out_model = nil
   local response_content_buffer = stringbuffer()
   local response_reasoning_buffer = stringbuffer()
 
@@ -449,6 +460,10 @@ function Client:ask(opts)
 
     if out.reasoning then
       response_reasoning_buffer:put(out.reasoning)
+    end
+
+    if out.model then
+      out_model = out.model
     end
 
     if opts.on_progress then
@@ -589,6 +604,7 @@ function Client:ask(opts)
       content = response_text,
       reasoning = response_reasoning,
       tool_calls = #tool_calls:values() > 0 and tool_calls:values() or nil,
+      model = out_model,
     },
     token_count = token_count,
     token_max_count = max_tokens,
