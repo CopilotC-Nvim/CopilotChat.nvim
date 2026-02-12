@@ -343,7 +343,7 @@ function M.resolve_prompt(prompt, config)
 
     config.system_prompt = config.system_prompt:gsub('{OS_NAME}', vim.uv.os_uname().sysname)
     config.system_prompt = config.system_prompt:gsub('{LANGUAGE}', config.language)
-    config.system_prompt = config.system_prompt:gsub('{DIR}', source.cwd())
+    config.system_prompt = config.system_prompt:gsub('{DIR}', function() return source.cwd() end)
   end
 
   return config, prompt
