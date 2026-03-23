@@ -196,6 +196,22 @@ local function get_github_models_token(tag)
   return github_device_flow(tag, '178c6fc778ccc68e1d6a', 'read:user copilot')
 end
 
+--- Resolve the Copilot API base URL from token endpoint response.
+--- Falls back to the default api.githubcopilot.com if no business endpoint is found.
+---@param token_body table The decoded JSON body from the token endpoint
+---@return string base_url The base URL (no trailing slash)
+local function resolve_copilot_base_url(token_body)
+  -- The token response may include an `endpoints` table with an `api` field
+  -- pointing to the correct base URL for business/enterprise accounts,
+  -- e.g. https://api.business.githubcopilot.com
+  if token_body and token_body.endpoints and token_body.endpoints.api then
+    local url = token_body.endpoints.api
+    -- Strip trailing slash if present
+    return url:gsub('/$', '')
+  end
+  return 'https://api.githubcopilot.com'
+end
+
 --- Prepare input for Responses API
 ---@param inputs CopilotChat.client.Message[]
 ---@param opts CopilotChat.config.providers.Options
@@ -537,12 +553,19 @@ M.copilot = {
       error(err)
     end
 
+    -- Resolve the base URL from the token response so that business/enterprise
+    -- accounts using *.business.githubcopilot.com are handled automatically.
+    local base_url = resolve_copilot_base_url(response.body)
+
     return {
       ['Authorization'] = 'Bearer ' .. response.body.token,
       ['Editor-Version'] = EDITOR_VERSION,
       ['Editor-Plugin-Version'] = 'CopilotChat.nvim/*',
       ['Copilot-Integration-Id'] = 'vscode-chat',
       ['x-github-api-version'] = '2025-10-01',
+      -- Store the resolved base URL in a custom header so that get_models,
+      -- resolve_model, and get_url can read it without making another request.
+      ['x-copilot-base-url'] = base_url,
     },
       response.body.expires_at
   end,
@@ -598,9 +621,16 @@ M.copilot = {
   end,
 
   get_models = function(headers)
-    local response, err = curl.get('https://api.githubcopilot.com/models', {
+    -- Use the resolved base URL carried in the custom header, falling back to
+    -- the default if it is absent (e.g. during tests or manual calls).
+    local base_url = headers['x-copilot-base-url'] or 'https://api.githubcopilot.com'
+
+    -- Build request headers without our internal routing header.
+    local request_headers = vim.tbl_extend('force', headers, { ['x-copilot-base-url'] = nil })
+
+    local response, err = curl.get(base_url .. '/models', {
       json_response = true,
-      headers = headers,
+      headers = request_headers,
     })
 
     if err then
@@ -628,6 +658,9 @@ M.copilot = {
           policy = not model['policy'] or model['policy']['state'] == 'enabled',
           version = model.version,
           use_responses = use_responses,
+          -- Carry the base URL into the model so get_url and resolve_model
+          -- can use it without needing access to the headers again.
+          base_url = base_url,
         }
       end)
       :totable()
@@ -643,8 +676,8 @@ M.copilot = {
 
     for _, model in ipairs(models) do
       if not model.policy then
-        pcall(curl.post, 'https://api.githubcopilot.com/models/' .. model.id .. '/policy', {
-          headers = headers,
+        pcall(curl.post, base_url .. '/models/' .. model.id .. '/policy', {
+          headers = request_headers,
           json_request = true,
           body = { state = 'enabled' },
         })
@@ -656,6 +689,7 @@ M.copilot = {
       id = 'auto',
       name = 'Auto (Copilot)',
       description = 'Auto selects the best model for your request.',
+      base_url = base_url,
     })
 
     return models
@@ -666,9 +700,12 @@ M.copilot = {
       return model
     end
 
-    local url = 'https://api.githubcopilot.com/models/session'
+    local base_url = headers['x-copilot-base-url'] or 'https://api.githubcopilot.com'
+    local request_headers = vim.tbl_extend('force', headers, { ['x-copilot-base-url'] = nil })
+
+    local url = base_url .. '/models/session'
     local response, err = curl.post(url, {
-      headers = headers,
+      headers = request_headers,
       body = { auto_mode = { model_hints = { 'auto' } } },
       json_response = true,
       json_request = true,
@@ -707,10 +744,14 @@ M.copilot = {
   end,
 
   get_url = function(opts)
+    -- Use the base URL stored on the model (populated by get_models), falling
+    -- back to the default for backwards compatibility.
+    local base_url = (opts and opts.model and opts.model.base_url) or 'https://api.githubcopilot.com'
+
     if opts and opts.model and opts.model.use_responses then
-      return 'https://api.githubcopilot.com/responses'
+      return base_url .. '/responses'
     end
-    return 'https://api.githubcopilot.com/chat/completions'
+    return base_url .. '/chat/completions'
   end,
 }
 
