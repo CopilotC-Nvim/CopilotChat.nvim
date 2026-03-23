@@ -508,6 +508,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/89159592?v=4",
       "profile": "http://card.calumhub.xyz",
       "contributions": ["code"]
+    },
+    {
+      "login": "sirjls",
+      "name": "sirjls",
+      "avatar_url": "https://avatars.githubusercontent.com/u/270346599?v=4",
+      "profile": "https://github.com/sirjls",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
