@@ -624,6 +624,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/junqizhang"><img src="https://avatars.githubusercontent.com/u/22600124?v=4?s=100" width="100px;" alt="junqizhang"/><br /><sub><b>junqizhang</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=junqizhang" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://card.calumhub.xyz"><img src="https://avatars.githubusercontent.com/u/89159592?v=4?s=100" width="100px;" alt="Calum Lynch"/><br /><sub><b>Calum Lynch</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=Tlunch" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/sirjls"><img src="https://avatars.githubusercontent.com/u/270346599?v=4?s=100" width="100px;" alt="sirjls"/><br /><sub><b>sirjls</b></sub></a><br /><a href="https://github.com/CopilotC-Nvim/CopilotChat.nvim/commits?author=sirjls" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
