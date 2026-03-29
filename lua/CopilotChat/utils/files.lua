@@ -9,23 +9,11 @@ M.scan_args = {
 }
 
 local function filter_files(files, max_count)
-  local filetype = require('plenary.filetype')
-
+  -- Filter out empty entries
   files = vim.tbl_filter(function(file)
-    if file == nil or file == '' then
-      return false
-    end
-
-    local ft = filetype.detect(file, {
-      fs_access = false,
-    })
-
-    if ft == '' or not ft then
-      return false
-    end
-
-    return true
+    return file ~= nil and file ~= ''
   end, files)
+
   if max_count and max_count > 0 then
     files = vim.list_slice(files, 1, max_count)
   end
@@ -268,7 +256,13 @@ function M.filetype(filename)
   })
 
   if ft == '' or not ft and not vim.in_fast_event() then
-    return vim.filetype.match({ filename = filename })
+    ft = vim.filetype.match({ filename = filename })
+  end
+
+  -- If filetype still not detected, default to 'text'
+  -- Let content validation handle whether it's actually readable
+  if not ft or ft == '' then
+    return 'text'
   end
 
   return ft

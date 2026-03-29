@@ -27,6 +27,10 @@ function M.get_file(filename)
     if not content or content == '' then
       return nil
     end
+    -- Simple binary detection: reject files with null bytes
+    if content:find('\0') then
+      return nil
+    end
     data = {
       content = content,
       _modified = modified,
