@@ -161,7 +161,7 @@ local Chat = class(function(self, config, on_buf_create)
     function(bufnr)
       vim.keymap.set('n', config.mappings.close.normal, function()
         self.chat_overlay:restore(self.winnr, self.bufnr)
-      end)
+      end, { buffer = bufnr })
 
       vim.api.nvim_create_autocmd({ 'BufHidden', 'BufDelete' }, {
         buffer = bufnr,

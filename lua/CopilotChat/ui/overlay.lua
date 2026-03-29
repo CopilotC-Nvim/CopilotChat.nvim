@@ -116,6 +116,10 @@ function Overlay:restore(winnr, bufnr)
     self.on_hide(self.bufnr)
   end
 
+  if not vim.api.nvim_win_is_valid(winnr) then
+    return
+  end
+
   vim.api.nvim_win_set_buf(winnr, bufnr)
 
   if self.cursor then
