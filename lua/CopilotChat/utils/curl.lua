@@ -48,7 +48,10 @@ M.get = async.wrap(function(url, opts, callback)
 
   args.callback = function(response)
     log.debug('GET response:', response)
-    if response and not vim.startswith(tostring(response.status), '20') then
+    -- HTTP status codes: 1xx (informational), 2xx (success)
+    -- Status 100 (Continue) is common with streaming responses
+    local status_str = tostring(response.status)
+    if response and not vim.startswith(status_str, '1') and not vim.startswith(status_str, '20') then
       callback(response, response.body)
       return
     end
@@ -96,7 +99,10 @@ M.post = async.wrap(function(url, opts, callback)
         log.debug('Failed to remove temp file:', temp_file_path, err)
       end
     end
-    if response and not vim.startswith(tostring(response.status), '20') then
+    -- HTTP status codes: 1xx (informational), 2xx (success)
+    -- Status 100 (Continue) is common with streaming responses
+    local status_str = tostring(response.status)
+    if response and not vim.startswith(status_str, '1') and not vim.startswith(status_str, '20') then
       callback(response, response.body)
       return
     end
