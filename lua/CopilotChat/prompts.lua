@@ -3,6 +3,7 @@ local constants = require('CopilotChat.constants')
 local functions = require('CopilotChat.functions')
 local notify = require('CopilotChat.notify')
 local files = require('CopilotChat.utils.files')
+local orderedmap = require('CopilotChat.utils.orderedmap')
 local utils = require('CopilotChat.utils')
 
 local WORD = '([^%s:]+)'
@@ -66,7 +67,7 @@ function M.resolve_tools(prompt, config)
     tools[tool.name] = tool
   end
 
-  local enabled_tools = {}
+  local enabled_tools = orderedmap()
   local tool_matches = utils.to_table(config.tools)
 
   -- Check for @tool pattern to find enabled tools
@@ -82,12 +83,12 @@ function M.resolve_tools(prompt, config)
   for _, match in ipairs(tool_matches) do
     for name, tool in pairs(config.functions) do
       if name == match or tool.group == match then
-        table.insert(enabled_tools, tools[name])
+        enabled_tools:set(name, tools[name])
       end
     end
   end
 
-  return enabled_tools, prompt
+  return enabled_tools:values(), prompt
 end
 
 --- Call and resolve function calls from the prompt.
