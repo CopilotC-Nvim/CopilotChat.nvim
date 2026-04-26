@@ -138,7 +138,7 @@ end
 --- Apply unified diff to a table of lines and return new lines
 ---@param diff_text string
 ---@param original_content string
----@return table<string>, boolean, integer, integer
+---@return string[], boolean, integer?, integer?
 function M.apply_unified_diff(diff_text, original_content)
   local hunks = parse_hunks(diff_text)
   local new_content = original_content

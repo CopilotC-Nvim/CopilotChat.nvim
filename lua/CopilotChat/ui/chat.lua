@@ -108,8 +108,8 @@ end
 ---@field section CopilotChat.ui.chat.Section?
 
 --- @class CopilotChat.ui.chat.Source
---- @field bufnr number?
---- @field winnr number?
+--- @field bufnr integer?
+--- @field winnr integer?
 --- @field cwd fun():string
 
 ---@class CopilotChat.ui.chat.Chat : CopilotChat.ui.overlay.Overlay

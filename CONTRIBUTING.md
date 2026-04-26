@@ -124,4 +124,3 @@ Go to the CopilotChat.nvim in your GitHub account, select your branch, and click
 
 - [health.lua](/lua/CopilotChat/health.lua): `:checkhealth` integration.
   Verifies commands, libraries, and Treesitter parsers.
-

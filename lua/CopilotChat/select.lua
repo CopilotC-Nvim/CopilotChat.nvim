@@ -1,10 +1,10 @@
 ---@class CopilotChat.select.Selection
 ---@field content string
----@field start_line number
----@field end_line number
+---@field start_line integer
+---@field end_line integer
 ---@field filename string
 ---@field filetype string
----@field bufnr number
+---@field bufnr integer
 
 local log = require('plenary.log')
 local utils = require('CopilotChat.utils')
@@ -51,7 +51,7 @@ function M.marks()
 end
 
 --- Highlight selection in target buffer or clear it
----@param bufnr number
+---@param bufnr integer
 ---@param clear boolean?
 function M.highlight(bufnr, clear)
   local selection_ns = vim.api.nvim_create_namespace('copilot-chat-selection')
@@ -76,7 +76,7 @@ function M.highlight(bufnr, clear)
 end
 
 --- Get the selection from the target buffer
----@param bufnr number
+---@param bufnr integer
 ---@return CopilotChat.select.Selection?
 function M.get(bufnr)
   if not utils.buf_valid(bufnr) then
@@ -113,10 +113,10 @@ function M.get(bufnr)
 end
 
 --- Sets the selection to specific lines in buffer or clears it
----@param bufnr number
----@param winnr number?
----@param start_line number?
----@param end_line number?
+---@param bufnr integer
+---@param winnr integer?
+---@param start_line integer?
+---@param end_line integer?
 function M.set(bufnr, winnr, start_line, end_line)
   if not utils.buf_valid(bufnr) then
     return
