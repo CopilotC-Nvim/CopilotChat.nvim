@@ -610,7 +610,7 @@ function Chat:create()
     end
   end)
 
-  vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertLeave' }, {
+  vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertEnter', 'InsertLeave' }, {
     buffer = bufnr,
     callback = function()
       utils.debounce('chat-parse-' .. bufnr, function()
