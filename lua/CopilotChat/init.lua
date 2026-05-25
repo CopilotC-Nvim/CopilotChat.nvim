@@ -359,6 +359,9 @@ function M.select_model()
           out = '* ' .. out
         end
 
+        if item.multiplier ~= nil then
+          table.insert(indicators, 'x' .. tostring(item.multiplier))
+        end
         if item.provider then
           table.insert(indicators, item.provider)
         end
@@ -370,11 +373,6 @@ function M.select_model()
         end
         if item.reasoning then
           table.insert(indicators, 'reasoning')
-        end
-        if item.multiplier ~= nil then
-          table.insert(indicators, 'x' .. tostring(item.multiplier))
-        else
-          table.insert(indicators, 'x not specified')
         end
 
         if #indicators > 0 then

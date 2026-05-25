@@ -631,7 +631,6 @@ M.copilot = {
       headers = request_headers,
     })
 
-    log.info('Copilot /models response: ' .. vim.inspect(response and response.body))
     if err then
       error(err)
     end
