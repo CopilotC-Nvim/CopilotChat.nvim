@@ -343,6 +343,7 @@ function M.select_model()
         streaming = model.streaming,
         tools = model.tools,
         reasoning = model.reasoning,
+        multiplier = model.multiplier,
         selected = model.id == M.config.model,
       }
     end, models)
@@ -369,6 +370,9 @@ function M.select_model()
         end
         if item.reasoning then
           table.insert(indicators, 'reasoning')
+        end
+        if item.multiplier ~= nil then
+          table.insert(indicators, 'x' .. tostring(item.multiplier))
         end
 
         if #indicators > 0 then
@@ -883,3 +887,4 @@ function M.setup(config)
 end
 
 return M
+
