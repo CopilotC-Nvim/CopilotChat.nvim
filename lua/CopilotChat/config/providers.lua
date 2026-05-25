@@ -655,6 +655,7 @@ M.copilot = {
           tools = model.capabilities.supports.tool_calls,
           policy = not model['policy'] or model['policy']['state'] == 'enabled',
           version = model.version,
+          multiplier = model.billing and model.billing.multiplier or nil,
           use_responses = use_responses,
           -- Carry the base URL into the model so get_url and resolve_model
           -- can use it without needing access to the headers again.

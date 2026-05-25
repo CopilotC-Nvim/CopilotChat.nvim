@@ -343,6 +343,7 @@ function M.select_model()
         streaming = model.streaming,
         tools = model.tools,
         reasoning = model.reasoning,
+        multiplier = model.multiplier,
         selected = model.id == M.config.model,
       }
     end, models)
@@ -358,6 +359,9 @@ function M.select_model()
           out = '* ' .. out
         end
 
+        if item.multiplier ~= nil then
+          table.insert(indicators, 'x' .. tostring(item.multiplier))
+        end
         if item.provider then
           table.insert(indicators, item.provider)
         end
