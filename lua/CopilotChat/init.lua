@@ -373,6 +373,8 @@ function M.select_model()
         end
         if item.multiplier ~= nil then
           table.insert(indicators, 'x' .. tostring(item.multiplier))
+        else
+          table.insert(indicators, 'x not specified')
         end
 
         if #indicators > 0 then
