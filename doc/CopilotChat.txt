@@ -1,5 +1,5 @@
 *CopilotChat.txt*
-                                   For NVIM v0.8.0    Last change: 2026 May 25
+                                  For NVIM v0.8.0    Last change: 2026 June 01
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
