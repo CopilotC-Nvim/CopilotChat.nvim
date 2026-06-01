@@ -240,7 +240,7 @@ Most users only need to configure a few options:
 
 ```lua
 {
-  model = 'gpt-4.1',           -- AI model to use
+  model = 'gpt-5-mini',        -- AI model to use
   temperature = 0.1,           -- Lower = focused, higher = creative
   trusted_tools = nil,         -- Require approval for all tool calls
   window = {
@@ -311,7 +311,7 @@ Types of copilot highlights:
 - `CopilotChatResource` - Resource highlight in chat buffer (e.g. `#file`, `#gitdiff`)
 - `CopilotChatTool` - Tool call highlight in chat buffer (e.g. `@copilot`)
 - `CopilotChatPrompt` - Prompt highlight in chat buffer (e.g. `/Explain`, `/Review`)
-- `CopilotChatModel` - Model highlight in chat buffer (e.g. `$gpt-4.1`)
+- `CopilotChatModel` - Model highlight in chat buffer (e.g. `$gpt-5-mini`)
 - `CopilotChatUri` - URI highlight in chat buffer (e.g. `##https://...`)
 - `CopilotChatAnnotation` - Annotation highlight in chat buffer (file headers, tool call headers, tool call body)
 - `CopilotChatAnnotationHeader` - Annotation header highlight in chat buffer
@@ -418,7 +418,7 @@ Add custom AI providers:
     my_provider = {
       get_url = function(opts) return 'https://api.example.com/chat' end,
       get_headers = function() return { ['Authorization'] = 'Bearer ' .. api_key } end,
-      get_models = function() return { { id = 'gpt-4.1', name = 'GPT-4.1 model' } } end,
+      get_models = function() return { { id = 'gpt-5-mini', name = 'GPT-5 mini model' } } end,
       prepare_input = require('CopilotChat.config.providers').copilot.prepare_input,
       prepare_output = require('CopilotChat.config.providers').copilot.prepare_output,
     }
@@ -554,7 +554,7 @@ require('CopilotChat').load('my_debugging_session')
 
 -- Use custom sticky and model
 require('CopilotChat').ask('How can I optimize this?', {
-  model = 'gpt-4.1',
+  model = 'gpt-5-mini',
   sticky = { '#buffer', '#gitdiff:staged' },
 })
 
