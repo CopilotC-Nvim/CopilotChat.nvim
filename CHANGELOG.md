@@ -1,5 +1,61 @@
 # Changelog
 
+## [5.0.0](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.7.4...v5.0.0) (2026-06-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* **chat:** The prompt resolution functions have been moved to `require('CopilotChat.prompts')`
+* get_source, and set_source methods moved to require('CopilotChat').chat
+* **prompt:** Passing function to system_prompt is no longer supported
+* **functions:** Removes `buffers`, `diagnostics`, `register`, and `quickfix` resources. Use `buffer`, `selection`, or `clipboard` instead.
+
+### Features
+
+* add .emmyrc.json for LuaJIT runtime and workspace config ([#1505](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1505)) ([d4c9ebe](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/d4c9ebef6e3a0df268cdf3f70e958fb7b7bb000b))
+* **config:** support multiple custom instruction files ([#1510](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1510)) ([90ebb50](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/90ebb5072a380c705d8c33427c8685754ef83807))
+* **copilot:** optimize copilot quota usage for tool calling ([1225fe8](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/1225fe849d17d4a7893b12a400c608a2554149f4))
+* **copilot:** Support "Auto" model mode (Smart Model Selection) similar to VS Code  ([#1518](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1518)) ([4d5dc1c](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/4d5dc1c3a68841c7cba088db351f38954f9a11d0))
+* **prompt:** support custom Copilot instructions file ([b06fd11](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/b06fd119d66559a3ff29bae2fabb70dea01fafc8))
+* **provider:** Support OpenAI Responses API ([#1463](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1463)) ([746a697](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/746a6971d15eec41a4e22bfdb88cd9f0f135442d)), closes [#1442](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1442)
+* support dynamic `*.business.githubcopilot.com` base URL resolution ([#1536](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1536)) ([c5aa167](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/c5aa16708694c6f56c89362d3dfcec8aec585783))
+* **trusted-tools:** auto-execute trusted tool calls ([#1556](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1556)) ([1af80ec](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/1af80ec73e3f7eabd4e9bd9595646acf46a0b192)), closes [#1534](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1534)
+
+
+### Bug Fixes
+
+* **chat:** insert stickies passed to `open()` ([#1476](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1476)) ([8769d22](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/8769d22bde355f7160f3649c3ca66e195b6fcddc)), closes [#1475](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1475)
+* **chat:** reinsert stickies before prompt processing ([#1472](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1472)) ([94dfc01](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/94dfc019f86659d3aeee54d5f1999f4c93a35aa6)), closes [#1471](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1471)
+* **chat:** render the chat ui on `InsertEnter` ([#1570](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1570)) ([702c6e4](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/702c6e4091fcb8590e36d79e31248066f36557cc))
+* **client:** ensure tool call keys are strings ([#1553](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1553)) ([ed28b01](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/ed28b01dd333bd69741c7df23e01cbe0bce2b557))
+* **config:** correct AGENTS.md filename casing ([#1511](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1511)) ([07dcc18](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/07dcc188bc488b2dafa9324bd42088640bee3d19))
+* **config:** include hidden files in file enum glob ([#1548](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1548)) ([969c220](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/969c220c76ad8cbf65463849fca67d390067d7f3)), closes [#1516](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1516)
+* **core:** resolve various bugs and improve robustness ([#1547](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1547)) ([4759ecd](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/4759ecdd307d36503f30920411121b664188ef4c)), closes [#1515](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1515) [#1455](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1455)
+* **diff:** implement offset tracking for sequential hunk application ([#1493](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1493)) ([9140021](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/91400214254f9e6d601db7495ec2f41e67052dad))
+* **functions:** insert explicit selected buffers ([#1477](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1477)) ([2ef8c89](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/2ef8c894d74b85bf9d7207369f721064aeb9fb40))
+* **init:** simplify lazy initialization logic ([#1549](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1549)) ([8b58670](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/8b58670b69eb85f764b653081b42c9ed147583a1))
+* **mappings:** use get_messages for quickfix answers ([#1466](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1466)) ([db4b51e](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/db4b51e1bb6a96b94496a6050f300f67258be872)), closes [#1465](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1465)
+* **mappings:** use resource name if available in preview header ([#1459](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1459)) ([5801bfe](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/5801bfeaae4146f3127cb6c0bcbac721a172b85d))
+* **prompts:** avoid %20 being treated as special sequence when relacing dirname ([#1525](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1525)) ([b7313ea](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/b7313ea5be03405cb988f69491becc8c8b5d98ac))
+* **prompts:** use ordered map for enabled tools ([#1551](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1551)) ([4f643c7](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/4f643c7ecd395e06c3648c706fff8121e195eaa1)), closes [#1550](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1550)
+* **prompt:** use correct variable in select_prompt ([#1555](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1555)) ([bcfbbc2](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/bcfbbc2ff60246cb1abfabe7e58a7f03efc26a9b)), closes [#1554](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1554)
+* **provider,client:** improve tool call merging and filtering ([#1552](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1552)) ([1372a57](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/1372a57cf387533f5ba64986c551ade9b4213443))
+* **providers:** Correctly handle tool calls and responses API output ([#1501](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1501)) ([02c5cf3](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/02c5cf3a6e030ec81795f16ab5e4f3a8861736db)), closes [#1499](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1499)
+* **providers:** no top_p n and temperature for -codex gpt models ([e73cb24](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/e73cb24a65da405675b5d9097388ee8c0b9e04ed))
+* support file paths with spaces in block headers ([#1504](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1504)) ([5c5e6c2](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/5c5e6c2f0b81c1ae69f0d80ede010839993019e8))
+* **ui:** preserve block content formatting when parsing chat messages ([#1495](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1495)) ([b6ff587](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/b6ff587b7e203dbe282ba370929fbbc4d52f13c3))
+* **ui:** prevent errors when restoring invalid window ([#1539](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1539)) ([d4d63a2](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/d4d63a2542f41ec9cc5baca4799f244554ee8cfd)), closes [#1535](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1535)
+* use gpt-5-mini as default model ([#1568](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1568)) ([84a3968](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/84a3968442c00257251bad7d593d84faace95fb1))
+* **utils:** handle 1xx HTTP status codes in curl utils ([#1540](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1540)) ([ca9a428](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/ca9a42863b0963e14f4830a2193d297716ce5ed3)), closes [#1508](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1508)
+* **utils:** properly pass cwd as argument to system wrapper ([#1458](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1458)) ([92f2699](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/92f269971c33a6e2f405da8b14f01cd109b9a3a3))
+
+
+### Code Refactoring
+
+* **chat:** move prompt resolution helpers to prompts module ([#1470](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1470)) ([cb8fb0f](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/cb8fb0f888c5352bc96a2f0320e60bfb4ba478d8))
+* **functions:** unify buffer/selection/diagnostics resources ([#1456](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1456)) ([cf4f7a5](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/cf4f7a58a0e65be6ccbdbc83142e189f96cd9fb5))
+* move source/sticky logic to chat window ([#1469](https://github.com/CopilotC-Nvim/CopilotChat.nvim/issues/1469)) ([1ff0bb3](https://github.com/CopilotC-Nvim/CopilotChat.nvim/commit/1ff0bb3b28d92e916d7c63a9189415ea2aaa24de))
+
 ## [4.7.4](https://github.com/CopilotC-Nvim/CopilotChat.nvim/compare/v4.7.3...v4.7.4) (2025-10-01)
 
 
