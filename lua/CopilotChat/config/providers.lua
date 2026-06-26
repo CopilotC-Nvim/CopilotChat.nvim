@@ -530,7 +530,7 @@ end
 ---@field get_headers nil|fun():table<string, string>,number?
 ---@field get_info nil|fun(headers:table):string[]
 ---@field get_models nil|fun(headers:table):table<CopilotChat.client.Model>
----@field resolve_model nil|fun(headers:table, model: string):string
+---@field resolve_model nil|fun(headers:table, model: string):string, table<string, string>?
 ---@field prepare_input nil|fun(inputs:CopilotChat.client.Message[], opts:CopilotChat.config.providers.Options):table,table?
 ---@field prepare_output nil|fun(output:table, opts:CopilotChat.config.providers.Options):CopilotChat.config.providers.Output
 ---@field get_url nil|fun(opts:CopilotChat.config.providers.Options):string
@@ -714,7 +714,7 @@ M.copilot = {
       error(err)
     end
 
-    return response.body.selected_model
+    return response.body.selected_model, { ['Copilot-Session-Token'] = response.body.session_token }
   end,
 
   prepare_input = function(inputs, opts)
