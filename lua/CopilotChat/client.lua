@@ -323,10 +323,11 @@ function Client:ask(opts)
     local headers = self:authenticate(provider_name)
     local resolved_model = provider.resolve_model(headers, opts.model)
     opts.model = resolved_model
-    model_config = models[opts.model]
-    if not model_config then
-      error('Resolved model not found: ' .. opts.model)
-    end
+    -- The resolved model may not be present in the models cache when
+    -- model_picker_enabled is false for all API models (e.g. restricted accounts).
+    -- Fall back to the original config (e.g. from the 'auto' entry) so the
+    -- request can still be sent with the correct model id.
+    model_config = models[opts.model] or model_config
   end
 
   local options = {
