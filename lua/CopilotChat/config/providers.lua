@@ -635,11 +635,18 @@ M.copilot = {
       error(err)
     end
 
+    -- Get all chat models, preferring those with model_picker_enabled.
+    -- Fall back to all chat models if none are picker-enabled (e.g. restricted accounts).
+    local all_chat_data = vim.tbl_filter(function(model)
+      return model.capabilities and model.capabilities.type == 'chat'
+    end, response.body.data)
+
+    local picker_enabled_data = vim.tbl_filter(function(model)
+      return model.model_picker_enabled
+    end, all_chat_data)
+
     local models = vim
-      .iter(response.body.data)
-      :filter(function(model)
-        return model.capabilities.type == 'chat' and model.model_picker_enabled
-      end)
+      .iter(#picker_enabled_data > 0 and picker_enabled_data or all_chat_data)
       :map(function(model)
         local supported_endpoints = model.supported_endpoints or {}
         -- Pre-compute whether this model uses the Responses API
