@@ -335,6 +335,16 @@ function M.select_model()
       return models[id]
     end, result)
 
+    models = vim.tbl_filter(function(model)
+      if model.picker == nil then
+        return true
+      end
+      if model.id == 'auto' or vim.startswith(model.id, 'auto:') then
+        return true
+      end
+      return model.picker
+    end, models)
+
     local choices = vim.tbl_map(function(model)
       return {
         id = model.id,

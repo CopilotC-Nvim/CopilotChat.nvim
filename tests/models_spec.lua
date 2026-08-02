@@ -61,21 +61,28 @@ describe('CopilotChat copilot provider models', function()
     assert.is_not_nil(by_id.auto)
   end)
 
-  it('sets picker=true for picker-enabled models', function()
+  it('includes both picker-enabled and picker-disabled chat models', function()
     curl.get = function()
-      return { body = { data = { model('gpt-5.4-mini', true, { '/responses' }) } } }
+      return {
+        body = {
+          data = {
+            model('gpt-5.4-mini', true, { '/responses' }),
+            model('gpt-5.4-restricted', false, { '/chat/completions' }),
+          },
+        },
+      }
     end
 
     local models = providers.copilot.get_models({})
-    local mapped
+    local by_id = {}
     for _, item in ipairs(models) do
-      if item.id == 'gpt-5.4-mini' then
-        mapped = item
-      end
+      by_id[item.id] = item
     end
 
-    assert.is_true(mapped.picker)
-    assert.is_true(mapped.use_responses)
+    assert.is_true(by_id['gpt-5.4-mini'].picker)
+    assert.is_true(by_id['gpt-5.4-mini'].use_responses)
+    assert.is_false(by_id['gpt-5.4-restricted'].picker)
+    assert.is_false(by_id['gpt-5.4-restricted'].use_responses)
   end)
 
   it('returns the selected model and session token for auto', function()
