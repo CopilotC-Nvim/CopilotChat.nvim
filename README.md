@@ -451,8 +451,9 @@ Add custom AI providers:
   -- Optional: Get available models
   get_models?(headers: table): table<CopilotChat.Provider.model>,
 
-  -- Optional: Resolve a user-facing model id to a provider model id
-  resolve_model?(headers: table, model: string): string,
+  -- Optional: Resolve a user-facing model id to a provider model id.
+  -- Second return value is optional extra request headers (e.g. Copilot-Session-Token).
+  resolve_model?(headers: table, model: string): string, table?,
 }
 ```
 

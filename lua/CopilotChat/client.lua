@@ -319,15 +319,16 @@ function Client:ask(opts)
     error('Provider not found: ' .. provider_name)
   end
 
+  local resolve_headers = nil
   if provider.resolve_model then
     local headers = self:authenticate(provider_name)
-    local resolved_model = provider.resolve_model(headers, opts.model)
+    local resolved_model, model_headers = provider.resolve_model(headers, opts.model)
     opts.model = resolved_model
-    -- The resolved model may not be present in the models cache when
-    -- model_picker_enabled is false for all API models (e.g. restricted accounts).
-    -- Fall back to the original config (e.g. from the 'auto' entry) so the
-    -- request can still be sent with the correct model id.
-    model_config = models[opts.model] or model_config
+    resolve_headers = model_headers
+    -- Resolved auto models may be absent from the picker UI but still present
+    -- in the models cache (picker=false). Prefer full metadata for the resolved
+    -- id; fall back to the originally selected config only if missing.
+    model_config = models[opts.model] or models[opts.model .. ':' .. provider_name] or model_config
   end
 
   local options = {
@@ -537,11 +538,17 @@ function Client:ask(opts)
     self.current_job = job_id
   end
 
-  local headers = self:authenticate(provider_name)
+  -- Clone auth headers so per-request headers (e.g. session token) do not leak
+  -- into the provider cache. Strip the internal base-url routing header.
+  local headers = vim.tbl_extend('force', {}, self:authenticate(provider_name))
+  headers['x-copilot-base-url'] = nil
 
   local request, extra_headers =
     provider.prepare_input(generate_ask_request(opts.system_prompt, history, generated_messages), options)
 
+  if resolve_headers then
+    headers = vim.tbl_extend('force', headers, resolve_headers)
+  end
   if extra_headers then
     headers = vim.tbl_extend('force', headers, extra_headers)
   end
