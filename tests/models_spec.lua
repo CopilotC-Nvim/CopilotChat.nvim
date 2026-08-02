@@ -1,28 +1,21 @@
 describe('CopilotChat copilot provider models', function()
-  local curl_mock
-  local providers
-
-  local function reload_providers()
-    package.loaded['CopilotChat.utils.curl'] = curl_mock
-    package.loaded['CopilotChat.config.providers'] = nil
-    providers = require('CopilotChat.config.providers')
-  end
+  local curl = require('CopilotChat.utils.curl')
+  local providers = require('CopilotChat.config.providers')
+  local original_get = curl.get
+  local original_post = curl.post
 
   before_each(function()
-    curl_mock = {
-      get = function()
-        return { body = { data = {} } }
-      end,
-      post = function()
-        return { body = {} }
-      end,
-    }
-    reload_providers()
+    curl.get = function()
+      return { body = { data = {} } }
+    end
+    curl.post = function()
+      return { body = {} }
+    end
   end)
 
   after_each(function()
-    package.loaded['CopilotChat.utils.curl'] = nil
-    package.loaded['CopilotChat.config.providers'] = nil
+    curl.get = original_get
+    curl.post = original_post
   end)
 
   local function model(id, picker, supported_endpoints)
@@ -42,7 +35,7 @@ describe('CopilotChat copilot provider models', function()
   end
 
   it('includes picker-disabled chat models with full metadata and auto', function()
-    curl_mock.get = function()
+    curl.get = function()
       return {
         body = {
           data = {
@@ -69,7 +62,7 @@ describe('CopilotChat copilot provider models', function()
   end)
 
   it('sets picker=true for picker-enabled models', function()
-    curl_mock.get = function()
+    curl.get = function()
       return { body = { data = { model('gpt-5.4-mini', true, { '/responses' }) } } }
     end
 
@@ -86,7 +79,7 @@ describe('CopilotChat copilot provider models', function()
   end)
 
   it('returns the selected model and session token for auto', function()
-    curl_mock.post = function()
+    curl.post = function()
       return { body = { selected_model = 'gpt-5.4-mini', session_token = 'session-token' } }
     end
 

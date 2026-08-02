@@ -530,7 +530,7 @@ end
 ---@field get_headers nil|fun():table<string, string>,number?
 ---@field get_info nil|fun(headers:table):string[]
 ---@field get_models nil|fun(headers:table):table<CopilotChat.client.Model>
----@field resolve_model nil|fun(headers:table, model: string):string
+---@field resolve_model nil|fun(headers:table, model: string):string,table?
 ---@field prepare_input nil|fun(inputs:CopilotChat.client.Message[], opts:CopilotChat.config.providers.Options):table,table?
 ---@field prepare_output nil|fun(output:table, opts:CopilotChat.config.providers.Options):CopilotChat.config.providers.Output
 ---@field get_url nil|fun(opts:CopilotChat.config.providers.Options):string
@@ -664,6 +664,7 @@ M.copilot = {
           version = model.version,
           multiplier = model.billing and model.billing.multiplier or nil,
           use_responses = use_responses,
+          picker = model.model_picker_enabled,
           -- Carry the base URL into the model so get_url and resolve_model
           -- can use it without needing access to the headers again.
           base_url = base_url,
@@ -721,7 +722,12 @@ M.copilot = {
       error(err)
     end
 
-    return response.body.selected_model
+    local response_headers = nil
+    if response.body.session_token then
+      response_headers = { ['Copilot-Session-Token'] = response.body.session_token }
+    end
+
+    return response.body.selected_model, response_headers
   end,
 
   prepare_input = function(inputs, opts)
