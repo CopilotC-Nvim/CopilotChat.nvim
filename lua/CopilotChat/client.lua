@@ -52,6 +52,7 @@
 ---@field streaming boolean?
 ---@field tools boolean?
 ---@field reasoning boolean?
+---@field picker boolean?
 
 local log = require('plenary.log')
 local constants = require('CopilotChat.constants')
@@ -317,6 +318,17 @@ function Client:ask(opts)
   local provider = self:get_providers():get(provider_name)
   if not provider then
     error('Provider not found: ' .. provider_name)
+  end
+
+  -- On restricted accounts every model has model_picker_enabled=false, meaning
+  -- the model cannot be called directly without a session token. Fall back to
+  -- auto mode so resolve_model obtains a session token via /models/session.
+  if model_config.picker == false and opts.model ~= 'auto' then
+    local auto_config = models['auto'] or models['auto:' .. provider_name]
+    if auto_config then
+      opts.model = 'auto'
+      model_config = auto_config
+    end
   end
 
   local resolve_headers = nil

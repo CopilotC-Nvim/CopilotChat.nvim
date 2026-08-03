@@ -102,4 +102,38 @@ describe('CopilotChat copilot provider models', function()
     assert.equals('gpt-5.4-mini', selected)
     assert.is_nil(headers)
   end)
+
+  it('provides auto fallback when all models are picker-disabled', function()
+    -- Restricted accounts have model_picker_enabled=false for every model.
+    -- The default config model (e.g. gpt-5-mini) is found in the cache but
+    -- cannot be called directly; the client must fall back to auto mode,
+    -- which resolves via /models/session and returns a session token.
+    curl.get = function()
+      return {
+        body = {
+          data = {
+            model('gpt-5-mini', false, { '/chat/completions' }),
+          },
+        },
+      }
+    end
+    curl.post = function()
+      return { body = { selected_model = 'gpt-5-mini', session_token = 'restricted-session-token' } }
+    end
+
+    local models = providers.copilot.get_models({})
+    local by_id = {}
+    for _, item in ipairs(models) do
+      by_id[item.id] = item
+    end
+
+    -- Every chat model is picker-disabled, but auto is still available
+    assert.is_false(by_id['gpt-5-mini'].picker)
+    assert.is_not_nil(by_id.auto)
+
+    -- Auto resolution returns a session token that authorizes the request
+    local selected, headers = providers.copilot.resolve_model({}, 'auto')
+    assert.equals('gpt-5-mini', selected)
+    assert.same({ ['Copilot-Session-Token'] = 'restricted-session-token' }, headers)
+  end)
 end)
