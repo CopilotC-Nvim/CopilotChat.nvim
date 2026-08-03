@@ -320,14 +320,30 @@ function Client:ask(opts)
     error('Provider not found: ' .. provider_name)
   end
 
-  -- On restricted accounts every model has model_picker_enabled=false, meaning
-  -- the model cannot be called directly without a session token. Fall back to
-  -- auto mode so resolve_model obtains a session token via /models/session.
+  -- On restricted accounts the selected model may have model_picker_enabled=false,
+  -- meaning it cannot be called directly. Fall back to a picker-enabled model
+  -- from the same provider; if none exist, fall back to auto mode (which obtains
+  -- a session token via /models/session).
   if model_config.picker == false and opts.model ~= 'auto' then
-    local auto_config = models['auto'] or models['auto:' .. provider_name]
-    if auto_config then
-      opts.model = 'auto'
-      model_config = auto_config
+    local fallback = nil
+    for id, cfg in pairs(models) do
+      if cfg.provider == provider_name and cfg.picker ~= false and id ~= 'auto' and not id:match('^auto:') then
+        fallback = id
+        break
+      end
+    end
+
+    if fallback then
+      log.warn('Model ' .. opts.model .. ' is not directly usable on this account, falling back to ' .. fallback)
+      opts.model = fallback
+      model_config = models[fallback]
+    else
+      local auto_config = models['auto'] or models['auto:' .. provider_name]
+      if auto_config then
+        log.warn('Model ' .. opts.model .. ' is not directly usable on this account, falling back to auto')
+        opts.model = 'auto'
+        model_config = auto_config
+      end
     end
   end
 

@@ -710,7 +710,13 @@ M.copilot = {
     })
 
     if err then
-      error(err)
+      local status = response and response.status or 'unknown'
+      local body = response and response.body or err
+      error('Failed to resolve auto model (' .. tostring(status) .. '): ' .. tostring(body))
+    end
+
+    if not response or not response.body or not response.body.selected_model then
+      error('Auto model resolution returned no selected_model')
     end
 
     local response_headers = nil

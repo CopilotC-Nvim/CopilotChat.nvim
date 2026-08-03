@@ -136,4 +136,26 @@ describe('CopilotChat copilot provider models', function()
     assert.equals('gpt-5-mini', selected)
     assert.same({ ['Copilot-Session-Token'] = 'restricted-session-token' }, headers)
   end)
+
+  it('returns a descriptive error when auto session endpoint fails', function()
+    -- The real async curl.post returns (response, err); the mock must match.
+    curl.post = function()
+      return { status = 403, body = '{"error":"forbidden"}' }, '{"error":"forbidden"}'
+    end
+
+    local ok, err = pcall(providers.copilot.resolve_model, {}, 'auto')
+    assert.is_false(ok)
+    assert.truthy(string.find(err, '403'))
+    assert.truthy(string.find(err, 'forbidden'))
+  end)
+
+  it('returns a descriptive error when auto returns no selected_model', function()
+    curl.post = function()
+      return { body = {} }
+    end
+
+    local ok, err = pcall(providers.copilot.resolve_model, {}, 'auto')
+    assert.is_false(ok)
+    assert.truthy(string.find(err, 'no selected_model'))
+  end)
 end)
