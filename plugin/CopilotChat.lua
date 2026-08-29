@@ -43,7 +43,9 @@ vim.api.nvim_create_autocmd('FileType', {
     local bufnr = vim.api.nvim_get_current_buf()
     vim.schedule(function()
       -- nvim_get_option_value workaround
-      if bufnr ~= vim.api.nvim_get_current_buf() then return end
+      if bufnr ~= vim.api.nvim_get_current_buf() then
+        return
+      end
 
       vim.cmd.syntax('match CopilotChatResource "#\\S\\+"')
       vim.cmd.syntax('match CopilotChatTool "@\\S\\+"')
