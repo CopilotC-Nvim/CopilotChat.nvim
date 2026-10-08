@@ -11,6 +11,16 @@ local orderedmap = require('CopilotChat.utils.orderedmap')
 
 local BLOCK_OUTPUT_FORMAT = '```%s\n%s\n```'
 
+local EFFORT_NAMES = {
+  none = 'None',
+  minimal = 'Minimal',
+  low = 'Low',
+  medium = 'Medium',
+  high = 'High',
+  xhigh = 'Extra High',
+  max = 'Max',
+}
+
 ---@class CopilotChat
 ---@field config CopilotChat.config.Config
 ---@field chat CopilotChat.ui.chat.Chat
@@ -269,6 +279,39 @@ local function update_source()
   M.chat:set_source(use_prev_window and vim.fn.win_getid(vim.fn.winnr('#')) or vim.api.nvim_get_current_win())
 end
 
+--- Resolve which entry of the fetched model list matches the currently stored selection.
+--- The selection is stored as a single id in `M.config.model` (for example `gpt-5.4:high`,
+--- where the suffix is the reasoning effort).
+---@param models table<string, CopilotChat.client.Model>
+---@return string? id The id of the matching entry in `models`, or nil if none matches
+local function resolve_selected_id(models)
+  local current = M.config.model
+  if not current or current == '' then
+    return nil
+  end
+
+  -- Exact match (model or model:effort variant)
+  if models[current] then
+    return current
+  end
+
+  -- Id that got a provider suffix because of a collision between providers
+  for id, model in pairs(models) do
+    if model.provider and current .. ':' .. model.provider == id then
+      return id
+    end
+  end
+
+  -- Bare request model (no effort selected) that is only exposed through its base entry
+  for id, model in pairs(models) do
+    if not model.reasoning_effort and model.request_model == current then
+      return id
+    end
+  end
+
+  return nil
+end
+
 --- Open the chat window.
 ---@param config CopilotChat.config.Shared?
 function M.open(config)
@@ -320,6 +363,7 @@ end
 function M.select_model()
   async.run(function()
     local models = client:models()
+    local selected_id = resolve_selected_id(models)
     local result = vim.tbl_keys(models)
 
     table.sort(result, function(a, b)
@@ -333,7 +377,7 @@ function M.select_model()
       end
 
       if a.provider ~= b.provider then
-        return a.provider < b.provider
+        return (a.provider or '') < (b.provider or '')
       end
 
       local a_model = a.request_model or a.id
@@ -351,24 +395,22 @@ function M.select_model()
       return a.id < b.id
     end)
 
-    models = vim.tbl_map(function(id)
-      return models[id]
-    end, result)
-
-    models = vim.tbl_filter(function(model)
-      if model.picker == nil then
-        return true
+    local sorted = {}
+    for _, id in ipairs(result) do
+      local model = models[id]
+      local keep = model.picker == nil
+        or model.id == 'auto'
+        or vim.startswith(model.id, 'auto:')
+        or model.picker
+      if keep then
+        table.insert(sorted, model)
       end
-      if model.id == 'auto' or vim.startswith(model.id, 'auto:') then
-        return true
-      end
-      return model.picker
-    end, models)
+    end
 
     local choices = {}
     local model_index = 0
 
-    for _, model in ipairs(models) do
+    for _, model in ipairs(sorted) do
       if not model.reasoning_effort_index then
         model_index = model_index + 1
       end
@@ -384,7 +426,7 @@ function M.select_model()
         reasoning_effort_index = model.reasoning_effort_index,
         multiplier = model.multiplier,
         model_index = model_index,
-        selected = model.id == M.config.model,
+        selected = selected_id ~= nil and model.id == selected_id,
       })
     end
 
@@ -393,27 +435,17 @@ function M.select_model()
       prompt = 'Select a model and reasoning effort> ',
       format_item = function(item)
         if item.reasoning_effort_index then
-          local effort_names = {
-            none = 'None',
-            minimal = 'Minimal',
-            low = 'Low',
-            medium = 'Medium',
-            high = 'High',
-            xhigh = 'Extra High',
-            max = 'Max',
-          }
-
-          local effort_name = effort_names[item.reasoning_effort]
-            or item.reasoning_effort:gsub('^%l', string.upper)
+          local effort_name = EFFORT_NAMES[item.reasoning_effort]
+            or (item.reasoning_effort:gsub('^%l', string.upper))
           local effort_index = item.reasoning_effort_index
           local suffix = effort_index <= 26 and string.char(96 + effort_index) or '.' .. tostring(effort_index)
-          local out = string.format('    %d%s. %s', item.model_index, suffix, effort_name)
+          local out = string.format('%d%s. %s', item.model_index, suffix, effort_name)
 
           if item.selected then
-            out = '    * ' .. out:sub(5)
+            return '    * ' .. out
           end
 
-          return out
+          return '      ' .. out
         end
 
         local indicators = {}
@@ -447,7 +479,10 @@ function M.select_model()
       end,
     }, function(choice)
       if choice then
+        -- The id already encodes the reasoning effort (`<model>:<effort>`),
+        -- so storing it keeps both choices and is used again by `client:ask()`.
         M.config.model = choice.id
+        log.info('Selected model: ' .. choice.id)
       end
     end)
   end)
