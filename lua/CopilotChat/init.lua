@@ -325,9 +325,29 @@ function M.select_model()
     table.sort(result, function(a, b)
       a = models[a]
       b = models[b]
+
+      local a_auto = a.id == 'auto' or vim.startswith(a.id, 'auto:')
+      local b_auto = b.id == 'auto' or vim.startswith(b.id, 'auto:')
+      if a_auto ~= b_auto then
+        return a_auto
+      end
+
       if a.provider ~= b.provider then
         return a.provider < b.provider
       end
+
+      local a_model = a.request_model or a.id
+      local b_model = b.request_model or b.id
+      if a_model ~= b_model then
+        return a_model < b_model
+      end
+
+      local a_effort = a.reasoning_effort_index or 0
+      local b_effort = b.reasoning_effort_index or 0
+      if a_effort ~= b_effort then
+        return a_effort < b_effort
+      end
+
       return a.id < b.id
     end)
 
@@ -345,25 +365,59 @@ function M.select_model()
       return model.picker
     end, models)
 
-    local choices = vim.tbl_map(function(model)
-      return {
+    local choices = {}
+    local model_index = 0
+
+    for _, model in ipairs(models) do
+      if not model.reasoning_effort_index then
+        model_index = model_index + 1
+      end
+
+      table.insert(choices, {
         id = model.id,
         name = model.name,
         provider = model.provider,
         streaming = model.streaming,
         tools = model.tools,
         reasoning = model.reasoning,
+        reasoning_effort = model.reasoning_effort,
+        reasoning_effort_index = model.reasoning_effort_index,
         multiplier = model.multiplier,
+        model_index = model_index,
         selected = model.id == M.config.model,
-      }
-    end, models)
+      })
+    end
 
     utils.schedule_main()
     vim.ui.select(choices, {
-      prompt = 'Select a model> ',
+      prompt = 'Select a model and reasoning effort> ',
       format_item = function(item)
+        if item.reasoning_effort_index then
+          local effort_names = {
+            none = 'None',
+            minimal = 'Minimal',
+            low = 'Low',
+            medium = 'Medium',
+            high = 'High',
+            xhigh = 'Extra High',
+            max = 'Max',
+          }
+
+          local effort_name = effort_names[item.reasoning_effort]
+            or item.reasoning_effort:gsub('^%l', string.upper)
+          local effort_index = item.reasoning_effort_index
+          local suffix = effort_index <= 26 and string.char(96 + effort_index) or '.' .. tostring(effort_index)
+          local out = string.format('    %d%s. %s', item.model_index, suffix, effort_name)
+
+          if item.selected then
+            out = '    * ' .. out:sub(5)
+          end
+
+          return out
+        end
+
         local indicators = {}
-        local out = item.name
+        local out = string.format('%d. %s', item.model_index, item.name)
 
         if item.selected then
           out = '* ' .. out
@@ -897,3 +951,4 @@ function M.setup(config)
 end
 
 return M
+
