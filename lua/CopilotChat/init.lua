@@ -11,6 +11,16 @@ local orderedmap = require('CopilotChat.utils.orderedmap')
 
 local BLOCK_OUTPUT_FORMAT = '```%s\n%s\n```'
 
+local EFFORT_NAMES = {
+  none = 'None',
+  minimal = 'Minimal',
+  low = 'Low',
+  medium = 'Medium',
+  high = 'High',
+  xhigh = 'Extra High',
+  max = 'Max',
+}
+
 ---@class CopilotChat
 ---@field config CopilotChat.config.Config
 ---@field chat CopilotChat.ui.chat.Chat
@@ -269,6 +279,295 @@ local function update_source()
   M.chat:set_source(use_prev_window and vim.fn.win_getid(vim.fn.winnr('#')) or vim.api.nvim_get_current_win())
 end
 
+--- Resolve which entry of the fetched model list matches the currently stored selection.
+--- The selection is stored as a single id in `M.config.model` (for example `gpt-5.4:high`,
+--- where the suffix is the reasoning effort).
+---@param models table<string, CopilotChat.client.Model>
+---@return string? id The id of the matching entry in `models`, or nil if none matches
+local function resolve_selected_id(models)
+  local current = M.config.model
+  if not current or current == '' then
+    return nil
+  end
+
+  -- Exact match (model or model:effort variant)
+  if models[current] then
+    return current
+  end
+
+  -- Id that got a provider suffix because of a collision between providers
+  for id, model in pairs(models) do
+    if model.provider and current .. ':' .. model.provider == id then
+      return id
+    end
+  end
+
+  -- Bare request model (no effort selected) that is only exposed through its base entry
+  for id, model in pairs(models) do
+    if not model.reasoning_effort and model.request_model == current then
+      return id
+    end
+  end
+
+  return nil
+end
+
+--- Get the letter (or numeric) suffix used to label a reasoning effort level.
+---@param index integer
+---@return string
+local function effort_suffix(index)
+  return index <= 26 and string.char(96 + index) or '.' .. tostring(index)
+end
+
+--- Get the human readable name of a reasoning effort level.
+---@param effort string
+---@return string
+local function effort_name(effort)
+  return EFFORT_NAMES[effort] or (effort:gsub('^%l', string.upper))
+end
+
+--- Check whether `vim.ui.select` is still the built-in implementation.
+--- The built-in implementation is based on `inputlist()` and can only select by flat list position.
+---@return boolean
+local function uses_default_select()
+  local info = debug.getinfo(vim.ui.select, 'S')
+  return info ~= nil and info.source:match('[/\\]vim[/\\]ui%.lua$') ~= nil
+end
+
+--- Select default Copilot GPT model.
+function M.select_model()
+  async.run(function()
+    local models = client:models()
+    local selected_id = resolve_selected_id(models)
+    local result = vim.tbl_keys(models)
+
+    table.sort(result, function(a, b)
+      a = models[a]
+      b = models[b]
+
+      local a_auto = a.id == 'auto' or vim.startswith(a.id, 'auto:')
+      local b_auto = b.id == 'auto' or vim.startswith(b.id, 'auto:')
+      if a_auto ~= b_auto then
+        return a_auto
+      end
+
+      if a.provider ~= b.provider then
+        return (a.provider or '') < (b.provider or '')
+      end
+
+      local a_model = a.request_model or a.id
+      local b_model = b.request_model or b.id
+      if a_model ~= b_model then
+        return a_model < b_model
+      end
+
+      local a_effort = a.reasoning_effort_index or 0
+      local b_effort = b.reasoning_effort_index or 0
+      if a_effort ~= b_effort then
+        return a_effort < b_effort
+      end
+
+      return a.id < b.id
+    end)
+
+    local sorted = {}
+    for _, id in ipairs(result) do
+      local model = models[id]
+      local keep = model.picker == nil or model.id == 'auto' or vim.startswith(model.id, 'auto:') or model.picker
+      if keep then
+        table.insert(sorted, model)
+      end
+    end
+
+    -- Build the choices. Every choice gets a `code` such as `3` (model) or `3b` (model + effort)
+    local choices = {}
+    local codes = {}
+    local model_index = 0
+
+    for _, model in ipairs(sorted) do
+      local code
+      if model.reasoning_effort_index then
+        code = tostring(model_index) .. effort_suffix(model.reasoning_effort_index)
+      else
+        model_index = model_index + 1
+        code = tostring(model_index)
+      end
+
+      local choice = {
+        id = model.id,
+        name = model.name,
+        provider = model.provider,
+        streaming = model.streaming,
+        tools = model.tools,
+        reasoning = model.reasoning,
+        reasoning_effort = model.reasoning_effort,
+        reasoning_effort_index = model.reasoning_effort_index,
+        multiplier = model.multiplier,
+        model_index = model_index,
+        code = code,
+        selected = selected_id ~= nil and model.id == selected_id,
+      }
+
+      table.insert(choices, choice)
+      codes[code:lower()] = choice
+    end
+
+    --- Build the model line (without code and selection marker)
+    ---@param item table
+    ---@return string
+    local function model_description(item)
+      local indicators = {}
+      if item.multiplier ~= nil then
+        table.insert(indicators, 'x' .. tostring(item.multiplier))
+      end
+      if item.provider then
+        table.insert(indicators, item.provider)
+      end
+      if item.streaming then
+        table.insert(indicators, 'streaming')
+      end
+      if item.tools then
+        table.insert(indicators, 'tools')
+      end
+      if item.reasoning then
+        table.insert(indicators, 'reasoning')
+      end
+
+      local out = item.name
+      if #indicators > 0 then
+        out = out .. ' [' .. table.concat(indicators, ', ') .. ']'
+      end
+      return out
+    end
+
+    --- Store the selected choice. The id already encodes the reasoning effort
+    --- (`<model>:<effort>`), so it is used as is by `client:ask()`.
+    ---@param choice table?
+    local function apply(choice)
+      if not choice then
+        return
+      end
+
+      M.config.model = choice.id
+      log.info('Selected model: ' .. choice.id)
+    end
+
+    utils.schedule_main()
+
+    if uses_default_select() then
+      -- The built-in vim.ui.select can only pick by flat list position, so codes such
+      -- as `10c` would be misinterpreted. Show the grouped list and read the code instead.
+      local lines = {}
+      local effort_parts = {}
+
+      local function flush_efforts()
+        if #effort_parts > 0 then
+          table.insert(lines, '      ' .. table.concat(effort_parts, ' - '))
+          effort_parts = {}
+        end
+      end
+
+      for _, item in ipairs(choices) do
+        if item.reasoning_effort_index then
+          local part = string.format('%s. %s', item.code, effort_name(item.reasoning_effort))
+          if item.selected then
+            part = '*' .. part
+          end
+          table.insert(effort_parts, part)
+        else
+          flush_efforts()
+          table.insert(
+            lines,
+            string.format('%s%s. %s', item.selected and '* ' or '  ', item.code, model_description(item))
+          )
+        end
+      end
+      flush_efforts()
+
+      vim.api.nvim_echo(
+        { { 'Select a model and reasoning effort:\n' .. table.concat(lines, '\n') .. '\n' } },
+        false,
+        {}
+      )
+
+      vim.ui.input({
+        prompt = 'Enter a code (e.g. 3 or 10c)> ',
+      }, function(input)
+        input = input and vim.trim(input):lower() or ''
+        if input == '' then
+          return
+        end
+
+        local choice = codes[input]
+        if not choice then
+          vim.notify('Unknown model selection: ' .. input, vim.log.levels.WARN)
+          return
+        end
+
+        apply(choice)
+      end)
+
+      return
+    end
+
+    -- Custom pickers (telescope, fzf-lua, snacks, ...) display the labels as is
+    vim.ui.select(choices, {
+      prompt = 'Select a model and reasoning effort> ',
+      format_item = function(item)
+        if item.reasoning_effort_index then
+          local out = string.format('%s. %s', item.code, effort_name(item.reasoning_effort))
+
+          if item.selected then
+            return '    * ' .. out
+          end
+
+          return '      ' .. out
+        end
+
+        local out = string.format('%s. %s', item.code, model_description(item))
+        if item.selected then
+          out = '* ' .. out
+        end
+
+        return out
+      end,
+    }, apply)
+  end)
+end
+
+--- Select a prompt template to use.
+---@param config CopilotChat.config.Shared?
+function M.select_prompt(config)
+  local prompt_list = prompts.list_prompts()
+  local keys = vim.tbl_keys(prompt_list)
+  table.sort(keys)
+
+  local choices = vim
+    .iter(keys)
+    :map(function(name)
+      return {
+        name = name,
+        description = prompt_list[name].description,
+        prompt = prompt_list[name].prompt,
+      }
+    end)
+    :filter(function(choice)
+      return choice.prompt
+    end)
+    :totable()
+
+  vim.ui.select(choices, {
+    prompt = 'Select prompt action> ',
+    format_item = function(item)
+      return string.format('%s: %s', item.name, item.description or item.prompt:gsub('\n', ' '))
+    end,
+  }, function(choice)
+    if choice then
+      M.ask(prompt_list[choice.name].prompt, vim.tbl_extend('force', prompt_list[choice.name], config or {}))
+    end
+  end)
+end
+
 --- Open the chat window.
 ---@param config CopilotChat.config.Shared?
 function M.open(config)
@@ -314,122 +613,6 @@ function M.toggle(config)
   else
     M.open(config)
   end
-end
-
---- Select default Copilot GPT model.
-function M.select_model()
-  async.run(function()
-    local models = client:models()
-    local result = vim.tbl_keys(models)
-
-    table.sort(result, function(a, b)
-      a = models[a]
-      b = models[b]
-      if a.provider ~= b.provider then
-        return a.provider < b.provider
-      end
-      return a.id < b.id
-    end)
-
-    models = vim.tbl_map(function(id)
-      return models[id]
-    end, result)
-
-    models = vim.tbl_filter(function(model)
-      if model.picker == nil then
-        return true
-      end
-      if model.id == 'auto' or vim.startswith(model.id, 'auto:') then
-        return true
-      end
-      return model.picker
-    end, models)
-
-    local choices = vim.tbl_map(function(model)
-      return {
-        id = model.id,
-        name = model.name,
-        provider = model.provider,
-        streaming = model.streaming,
-        tools = model.tools,
-        reasoning = model.reasoning,
-        multiplier = model.multiplier,
-        selected = model.id == M.config.model,
-      }
-    end, models)
-
-    utils.schedule_main()
-    vim.ui.select(choices, {
-      prompt = 'Select a model> ',
-      format_item = function(item)
-        local indicators = {}
-        local out = item.name
-
-        if item.selected then
-          out = '* ' .. out
-        end
-
-        if item.multiplier ~= nil then
-          table.insert(indicators, 'x' .. tostring(item.multiplier))
-        end
-        if item.provider then
-          table.insert(indicators, item.provider)
-        end
-        if item.streaming then
-          table.insert(indicators, 'streaming')
-        end
-        if item.tools then
-          table.insert(indicators, 'tools')
-        end
-        if item.reasoning then
-          table.insert(indicators, 'reasoning')
-        end
-
-        if #indicators > 0 then
-          out = out .. ' [' .. table.concat(indicators, ', ') .. ']'
-        end
-
-        return out
-      end,
-    }, function(choice)
-      if choice then
-        M.config.model = choice.id
-      end
-    end)
-  end)
-end
-
---- Select a prompt template to use.
----@param config CopilotChat.config.Shared?
-function M.select_prompt(config)
-  local prompt_list = prompts.list_prompts()
-  local keys = vim.tbl_keys(prompt_list)
-  table.sort(keys)
-
-  local choices = vim
-    .iter(keys)
-    :map(function(name)
-      return {
-        name = name,
-        description = prompt_list[name].description,
-        prompt = prompt_list[name].prompt,
-      }
-    end)
-    :filter(function(choice)
-      return choice.prompt
-    end)
-    :totable()
-
-  vim.ui.select(choices, {
-    prompt = 'Select prompt action> ',
-    format_item = function(item)
-      return string.format('%s: %s', item.name, item.description or item.prompt:gsub('\n', ' '))
-    end,
-  }, function(choice)
-    if choice then
-      M.ask(prompt_list[choice.name].prompt, vim.tbl_extend('force', prompt_list[choice.name], config or {}))
-    end
-  end)
 end
 
 --- Ask a question to the Copilot model.

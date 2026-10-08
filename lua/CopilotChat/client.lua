@@ -45,6 +45,7 @@
 ---@class CopilotChat.client.Model
 ---@field provider string?
 ---@field id string
+---@field request_model string?
 ---@field name string
 ---@field tokenizer string?
 ---@field max_input_tokens number?
@@ -52,6 +53,9 @@
 ---@field streaming boolean?
 ---@field tools boolean?
 ---@field reasoning boolean?
+---@field reasoning_efforts string[]?
+---@field reasoning_effort string?
+---@field reasoning_effort_index integer?
 ---@field picker boolean?
 
 local log = require('plenary.log')
@@ -327,7 +331,13 @@ function Client:ask(opts)
   if model_config.picker == false and opts.model ~= 'auto' then
     local fallback = nil
     for id, cfg in pairs(models) do
-      if cfg.provider == provider_name and cfg.picker ~= false and id ~= 'auto' and not id:match('^auto:') then
+      if
+        cfg.provider == provider_name
+        and cfg.picker ~= false
+        and not cfg.reasoning_effort
+        and id ~= 'auto'
+        and not id:match('^auto:')
+      then
         fallback = id
         break
       end
@@ -347,6 +357,13 @@ function Client:ask(opts)
     end
   end
 
+  local reasoning_effort = model_config.reasoning_effort
+  opts.model = model_config.request_model or opts.model:gsub(':' .. vim.pesc(provider_name) .. '$', '')
+
+  if opts.model == 'auto' then
+    reasoning_effort = nil
+  end
+
   local resolve_headers = nil
   if provider.resolve_model then
     local headers = self:authenticate(provider_name)
@@ -356,16 +373,22 @@ function Client:ask(opts)
     -- Resolved auto models may be absent from the picker UI but still present
     -- in the models cache (picker=false). Prefer full metadata for the resolved
     -- id; fall back to the originally selected config only if missing.
-    model_config = models[opts.model] or models[opts.model .. ':' .. provider_name] or model_config
+    local resolved_config = models[opts.model .. ':' .. provider_name] or models[opts.model]
+    if resolved_config and resolved_config.provider == provider_name then
+      model_config = resolved_config
+    end
   end
 
   local options = {
     model = vim.tbl_extend('force', model_config, {
-      id = opts.model:gsub(':' .. provider_name .. '$', ''),
+      id = opts.model,
     }),
     temperature = opts.temperature,
     tools = opts.tools,
   }
+  options.model.reasoning_effort = reasoning_effort
+
+  log.debug('Reasoning effort:', reasoning_effort)
 
   local max_tokens = model_config.max_input_tokens
   local tokenizer = model_config.tokenizer or 'o200k_base'

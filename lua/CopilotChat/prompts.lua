@@ -404,7 +404,7 @@ function M.resolve_model(prompt, config)
   local models = vim.tbl_keys(client:models())
 
   local selected_model = config.model or ''
-  prompt = prompt:gsub('%$' .. WORD, function(match)
+  prompt = prompt:gsub('%$' .. WORD_NO_INPUT, function(match)
     if vim.tbl_contains(models, match) then
       selected_model = match
       return ''

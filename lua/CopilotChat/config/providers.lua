@@ -258,6 +258,12 @@ local function prepare_responses_input(inputs, opts)
     out.instructions = instructions
   end
 
+  if opts.model.reasoning_effort then
+    out.reasoning = {
+      effort = opts.model.reasoning_effort,
+    }
+  end
+
   if opts.tools and opts.model.tools then
     out.tools = vim.tbl_map(function(tool)
       return {
@@ -312,6 +318,10 @@ local function prepare_chat_input(inputs, opts)
     stream = opts.model.streaming or false,
   }
 
+  if opts.model.reasoning_effort then
+    out.reasoning_effort = opts.model.reasoning_effort
+  end
+
   if opts.tools and opts.model.tools then
     out.tools = vim.tbl_map(function(tool)
       return {
@@ -337,6 +347,7 @@ local function prepare_chat_input(inputs, opts)
 
   return out
 end
+
 ---@param parts table Array of content parts
 ---@return string The concatenated text content
 local function extract_text_from_parts(parts)
@@ -624,7 +635,8 @@ M.copilot = {
     local base_url = headers['x-copilot-base-url'] or 'https://api.githubcopilot.com'
 
     -- Build request headers without our internal routing header.
-    local request_headers = vim.tbl_extend('force', headers, { ['x-copilot-base-url'] = nil })
+    local request_headers = vim.tbl_extend('force', {}, headers)
+    request_headers['x-copilot-base-url'] = nil
 
     local response, err = curl.get(base_url .. '/models', {
       json_response = true,
@@ -644,15 +656,29 @@ M.copilot = {
       :map(function(model)
         local supported_endpoints = model.supported_endpoints or {}
         local use_responses = vim.tbl_contains(supported_endpoints, '/responses')
+        local supports = model.capabilities.supports or {}
+        local limits = model.capabilities.limits or {}
+        local reasoning_efforts = {}
+
+        if type(supports.reasoning_effort) == 'table' then
+          for _, effort in ipairs(supports.reasoning_effort) do
+            if type(effort) == 'string' and effort ~= '' and not vim.tbl_contains(reasoning_efforts, effort) then
+              table.insert(reasoning_efforts, effort)
+            end
+          end
+        end
 
         return {
           id = model.id,
+          request_model = model.id,
           name = model.name,
           tokenizer = model.capabilities.tokenizer,
-          max_input_tokens = model.capabilities.limits.max_prompt_tokens,
-          max_output_tokens = model.capabilities.limits.max_output_tokens,
-          streaming = model.capabilities.supports.streaming,
-          tools = model.capabilities.supports.tool_calls,
+          max_input_tokens = limits.max_prompt_tokens,
+          max_output_tokens = limits.max_output_tokens,
+          streaming = supports.streaming,
+          tools = supports.tool_calls,
+          reasoning = #reasoning_efforts > 0 or supports.adaptive_thinking or supports.max_thinking_budget ~= nil,
+          reasoning_efforts = reasoning_efforts,
           policy = not model['policy'] or model['policy']['state'] == 'enabled',
           version = model.version,
           multiplier = model.billing and model.billing.multiplier or nil,
@@ -682,15 +708,41 @@ M.copilot = {
       end
     end
 
+    local model_ids = {}
+    for _, model in ipairs(models) do
+      model_ids[model.id] = true
+    end
+
+    local choices = {}
+    for _, model in ipairs(models) do
+      table.insert(choices, model)
+
+      if model.id ~= 'auto' then
+        for index, effort in ipairs(model.reasoning_efforts) do
+          local id = model.id .. ':' .. effort
+          if not model_ids[id] then
+            local variant = vim.deepcopy(model)
+            variant.id = id
+            variant.name = model.name .. ' (' .. effort .. ')'
+            variant.reasoning_effort = effort
+            variant.reasoning_effort_index = index
+            table.insert(choices, variant)
+            model_ids[id] = true
+          end
+        end
+      end
+    end
+
     -- Auto model selector
-    table.insert(models, {
+    table.insert(choices, {
       id = 'auto',
+      request_model = 'auto',
       name = 'Auto (Copilot)',
       description = 'Auto selects the best model for your request.',
       base_url = base_url,
     })
 
-    return models
+    return choices
   end,
 
   resolve_model = function(headers, model)
@@ -699,7 +751,8 @@ M.copilot = {
     end
 
     local base_url = headers['x-copilot-base-url'] or 'https://api.githubcopilot.com'
-    local request_headers = vim.tbl_extend('force', headers, { ['x-copilot-base-url'] = nil })
+    local request_headers = vim.tbl_extend('force', {}, headers)
+    request_headers['x-copilot-base-url'] = nil
 
     local url = base_url .. '/models/session'
     local response, err = curl.post(url, {
