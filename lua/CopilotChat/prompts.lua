@@ -416,4 +416,3 @@ function M.resolve_model(prompt, config)
 end
 
 return M
-

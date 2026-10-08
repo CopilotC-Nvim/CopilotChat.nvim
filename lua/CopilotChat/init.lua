@@ -484,7 +484,11 @@ function M.select_model()
       end
       flush_efforts()
 
-      vim.api.nvim_echo({ { 'Select a model and reasoning effort:\n' .. table.concat(lines, '\n') .. '\n' } }, false, {})
+      vim.api.nvim_echo(
+        { { 'Select a model and reasoning effort:\n' .. table.concat(lines, '\n') .. '\n' } },
+        false,
+        {}
+      )
 
       vim.ui.input({
         prompt = 'Enter a code (e.g. 3 or 10c)> ',
@@ -1076,4 +1080,3 @@ function M.setup(config)
 end
 
 return M
-
