@@ -258,7 +258,8 @@ describe('CopilotChat copilot provider models', function()
       return {
         status = 400,
         body = '{"error":{"message":"Invalid reasoning effort: invalid. Supported values: low, medium, high"}}',
-      }, '{"error":{"message":"Invalid reasoning effort: invalid. Supported values: low, medium, high"}}'
+      },
+        '{"error":{"message":"Invalid reasoning effort: invalid. Supported values: low, medium, high"}}'
     end
 
     local ok, err = pcall(function()
