@@ -45,6 +45,7 @@
 ---@class CopilotChat.client.Model
 ---@field provider string?
 ---@field id string
+---@field request_model string?
 ---@field name string
 ---@field tokenizer string?
 ---@field max_input_tokens number?
@@ -52,6 +53,9 @@
 ---@field streaming boolean?
 ---@field tools boolean?
 ---@field reasoning boolean?
+---@field reasoning_efforts string[]?
+---@field reasoning_effort string?
+---@field reasoning_effort_index integer?
 ---@field picker boolean?
 
 local log = require('plenary.log')
@@ -307,6 +311,37 @@ function Client:ask(opts)
 
   local models = self:models()
   local model_config = models[opts.model]
+  local reasoning_effort = nil
+
+  if not model_config then
+    -- Check if opts.model is in the format <model_id>:<effort>
+    local best_match = nil
+    local best_len = 0
+    local matched_effort = nil
+
+    for id, cfg in pairs(models) do
+      if not cfg.reasoning_effort then
+        local prefix = id .. ':'
+        if vim.startswith(opts.model, prefix) then
+          local effort = opts.model:sub(#prefix + 1)
+          if effort ~= '' and #id > best_len then
+            best_match = cfg
+            best_len = #id
+            matched_effort = effort
+          end
+        end
+      end
+    end
+
+    if best_match then
+      model_config = vim.deepcopy(best_match)
+      model_config.id = opts.model
+      model_config.request_model = best_match.request_model or best_match.id
+      model_config.reasoning_effort = matched_effort
+      reasoning_effort = matched_effort
+    end
+  end
+
   if not model_config then
     error('Model not found: ' .. opts.model)
   end
@@ -327,7 +362,13 @@ function Client:ask(opts)
   if model_config.picker == false and opts.model ~= 'auto' then
     local fallback = nil
     for id, cfg in pairs(models) do
-      if cfg.provider == provider_name and cfg.picker ~= false and id ~= 'auto' and not id:match('^auto:') then
+      if
+        cfg.provider == provider_name
+        and cfg.picker ~= false
+        and not cfg.reasoning_effort
+        and id ~= 'auto'
+        and not id:match('^auto:')
+      then
         fallback = id
         break
       end
@@ -347,6 +388,13 @@ function Client:ask(opts)
     end
   end
 
+  reasoning_effort = model_config.reasoning_effort
+  opts.model = model_config.request_model or opts.model:gsub(':' .. vim.pesc(provider_name) .. '$', '')
+
+  if opts.model == 'auto' then
+    reasoning_effort = nil
+  end
+
   local resolve_headers = nil
   if provider.resolve_model then
     local headers = self:authenticate(provider_name)
@@ -356,16 +404,22 @@ function Client:ask(opts)
     -- Resolved auto models may be absent from the picker UI but still present
     -- in the models cache (picker=false). Prefer full metadata for the resolved
     -- id; fall back to the originally selected config only if missing.
-    model_config = models[opts.model] or models[opts.model .. ':' .. provider_name] or model_config
+    local resolved_config = models[opts.model .. ':' .. provider_name] or models[opts.model]
+    if resolved_config and resolved_config.provider == provider_name then
+      model_config = resolved_config
+    end
   end
 
   local options = {
     model = vim.tbl_extend('force', model_config, {
-      id = opts.model:gsub(':' .. provider_name .. '$', ''),
+      id = opts.model,
     }),
     temperature = opts.temperature,
     tools = opts.tools,
   }
+  options.model.reasoning_effort = reasoning_effort
+
+  log.debug('Reasoning effort:', reasoning_effort)
 
   local max_tokens = model_config.max_input_tokens
   local tokenizer = model_config.tokenizer or 'o200k_base'
@@ -615,7 +669,8 @@ function Client:ask(opts)
             .. content.authorize_url
         end
       else
-        error_msg = 'Failed to get response: ' .. tostring(response.status) .. '\n' .. response.body
+        local body_str = type(response.body) == 'table' and vim.inspect(response.body) or tostring(response.body)
+        error_msg = 'Failed to get response: ' .. tostring(response.status) .. '\n' .. body_str
       end
     end
 

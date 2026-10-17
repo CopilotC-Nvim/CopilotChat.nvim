@@ -404,11 +404,24 @@ function M.resolve_model(prompt, config)
   local models = vim.tbl_keys(client:models())
 
   local selected_model = config.model or ''
-  prompt = prompt:gsub('%$' .. WORD, function(match)
+
+  prompt = prompt:gsub('%$' .. WORD_NO_INPUT, function(match)
     if vim.tbl_contains(models, match) then
       selected_model = match
       return ''
     end
+
+    -- Match <model_id>:<effort> where <model_id> is a known model
+    for _, model_id in ipairs(models) do
+      if vim.startswith(match, model_id .. ':') then
+        local effort = match:sub(#model_id + 2)
+        if effort ~= '' then
+          selected_model = match
+          return ''
+        end
+      end
+    end
+
     return '$' .. match
   end)
 

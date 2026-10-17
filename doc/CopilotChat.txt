@@ -1,5 +1,5 @@
 *CopilotChat.txt*
-                                For NVIM v0.8.0    Last change: 2026 August 30
+                               For NVIM v0.8.0    Last change: 2026 October 08
 
 ==============================================================================
 Table of Contents                              *CopilotChat-table-of-contents*
@@ -116,7 +116,7 @@ VIM-PLUG                                                *CopilotChat-vim-plug*
     Plug 'nvim-lua/plenary.nvim'
     Plug 'CopilotC-Nvim/CopilotChat.nvim'
     call plug#end()
-    
+
     lua << EOF
     require("CopilotChat").setup()
     EOF
@@ -205,20 +205,20 @@ All predefined functions belong to the `copilot` group.
 
   ---------------------------------------------------------------------------------
   Function    Manual   Description                Available Options
-              #...                                
+              #...
   ----------- -------- -------------------------- ---------------------------------
   bash        No       Executes a bash command    Tool-only (use @copilot)
-                       and returns output         
+                       and returns output
 
   buffer      Yes      Retrieves content from     active, visible, listed,
                        buffer(s) with diagnostics quickfix, buffer number, or
                                                   filename
 
   clipboard   Yes      Provides access to system  No options
-                       clipboard content          
+                       clipboard content
 
   edit        No       Applies a unified diff to  Tool-only (use @copilot)
-                       a file                     
+                       a file
 
   file        Yes      Reads content from a       Any file path (use <Tab> for
                        specified file path        completion)
@@ -227,17 +227,17 @@ All predefined functions belong to the `copilot` group.
                        information                commit SHA
 
   glob        Yes      Lists filenames matching a Any glob pattern (default: **/*)
-                       pattern in workspace       
+                       pattern in workspace
 
   grep        Yes      Searches for a pattern     Any search pattern
-                       across files in workspace  
+                       across files in workspace
 
   selection   Yes      Includes the current       No options
-                       visual selection with      
-                       diagnostics                
+                       visual selection with
+                       diagnostics
 
   url         Yes      Fetches content from a     Any HTTPS URL
-                       specified URL              
+                       specified URL
   ---------------------------------------------------------------------------------
 - **#<function>** - Embeds output directly in your message (e.g., `#buffer:listed`, `#file:src/main.lua`)
 - **@<function/group>** - Makes function(s) available for LLM to call when needed (e.g., `@copilot`, `@file`)
@@ -268,27 +268,27 @@ RESOURCE USAGE                                    *CopilotChat-resource-usage*
 
 >markdown
     # Current buffer
-    
+
     #buffer:active
-    
+
     # All open buffers (replaces old #buffers)
-    
+
     #buffer:listed
-    
+
     # All visible buffers
-    
+
     #buffer:visible
-    
+
     # Specific file
-    
+
     #file:src/main.lua
-    
+
     # Git changes
-    
+
     #gitdiff:staged
-    
+
     # URL content
-    
+
     #url:https://example.com/docs
 <
 
@@ -300,11 +300,11 @@ such as `bash`, `edit`, `file`, `glob`, `grep`, and `gitdiff`.
 
 >markdown
     # Give LLM access to workspace tools
-    
+
     @copilot What files are in this project?
-    
+
     # Sticky context with tools
-    
+
     > #buffer:listed
     > @copilot
     > Refactor the authentication code
@@ -354,13 +354,13 @@ WINDOW & APPEARANCE                          *CopilotChat-window-&-appearance*
         title = '🤖 AI Assistant',
         zindex = 100, -- Ensure window stays on top
       },
-    
+
       headers = {
         user = '👤 You',
         assistant = '🤖 Copilot',
         tool = '🔧 Tool',
       },
-    
+
       separator = '━━',
       auto_fold = true, -- Automatically folds non-assistant messages
     }
@@ -441,13 +441,13 @@ Use `trusted_tools` to control which tool calls are executed automatically:
 >lua
     {
       trusted_tools = nil, -- default: require approval for all tool calls
-    
+
       -- trust all functions in a group
       -- trusted_tools = 'copilot',
-    
+
       -- trust specific functions by name or groups by name
       -- trusted_tools = { 'file', 'glob', 'grep' },
-    
+
       -- trust every enabled tool call
       -- trusted_tools = true,
     }
@@ -530,25 +530,25 @@ Add custom AI providers:
     {
       -- Optional: Disable provider
       disabled?: boolean,
-    
+
       -- Optional: Extra info about the provider displayed in info panel
       get_info?(headers: table): string[]
-    
+
       -- Optional: Get extra request headers with optional expiration time
       get_headers?(): table<string,string>, number?,
-    
+
       -- Optional: Get API endpoint URL
       get_url?(opts: CopilotChat.Provider.options): string,
-    
+
       -- Optional: Prepare request input
       prepare_input?(inputs: table<CopilotChat.Provider.input>, opts: CopilotChat.Provider.options): table,
-    
+
       -- Optional: Prepare response output
       prepare_output?(output: table, opts: CopilotChat.Provider.options): CopilotChat.Provider.output,
-    
+
       -- Optional: Get available models
       get_models?(headers: table): table<CopilotChat.Provider.model>,
-    
+
       -- Optional: Resolve a user-facing model id to a provider model id.
       -- Second return value is optional extra request headers (e.g. Copilot-Session-Token).
       resolve_model?(headers: table, model: string): string, table?,
@@ -569,25 +569,25 @@ CORE                                                        *CopilotChat-core*
 
 >lua
     local chat = require('CopilotChat')
-    
+
     -- Basic Chat Functions
     chat.ask(prompt, config)      -- Ask a question with optional config
-    
+
     -- Window Management
     chat.open(config)             -- Open chat window with optional config
     chat.close()                  -- Close chat window
     chat.toggle(config)           -- Toggle chat window visibility with optional config
     chat.reset()                  -- Reset the chat
     chat.stop()                   -- Stop current output
-    
+
     -- Prompt & Model Management
     chat.select_prompt(config)    -- Open prompt selector with optional config
     chat.select_model()           -- Open model selector
-    
+
     -- History Management
     chat.load(name, history_path) -- Load chat history
     chat.save(name, history_path) -- Save chat history
-    
+
     -- Configuration
     chat.setup(config)            -- Update configuration
     chat.log_level(level)         -- Set log level (debug, info, etc.)
@@ -600,31 +600,31 @@ You can also access the chat window UI methods through the `chat.chat` object:
 
 >lua
     local window = require('CopilotChat').chat
-    
+
     -- Chat UI State
     window:visible()             -- Check if chat window is visible
     window:focused()             -- Check if chat window is focused
-    
+
     -- Message Management
     window:get_message(role, cursor)               -- Get chat message by role, either last or closest to cursor
     window:add_message({ role, content }, replace) -- Add or replace a message in chat
     window:remove_message(role, cursor)            -- Remove chat message by role, either last or closest to cursor
     window:get_block(role, cursor)                 -- Get code block by role, either last or closest to cursor
-    
+
     -- Content Management
     window:append(text)          -- Append text to chat window
     window:clear()               -- Clear chat window content
     window:start()               -- Start writing to chat window
     window:finish()              -- Finish writing to chat window
-    
+
     -- Source Management
     window:get_source()          -- Get the current source buffer and window
     window:set_source(winnr)     -- Set the source window
-    
+
     -- Navigation
     window:follow()              -- Move cursor to end of chat content
     window:focus()               -- Focus the chat window
-    
+
     -- Advanced Features
     window:overlay(opts)         -- Show overlay with specified options
 <
@@ -634,7 +634,7 @@ PROMPT PARSER                                      *CopilotChat-prompt-parser*
 
 >lua
     local parser = require('CopilotChat.prompts')
-    
+
     parser.resolve_prompt()         -- Resolve prompt references
     parser.resolve_tools()          -- Resolve tools shared with the model via @...
     parser.resolve_functions()      -- Resolve manual function/resource references via #...
@@ -652,17 +652,17 @@ EXAMPLE USAGE                                      *CopilotChat-example-usage*
         vim.notify('Got response: ' .. vim.trim(response.content):sub(1, 50) .. '...')
       end,
     })
-    
+
     -- Save and load chat history
     require('CopilotChat').save('my_debugging_session')
     require('CopilotChat').load('my_debugging_session')
-    
+
     -- Use custom sticky and model
     require('CopilotChat').ask('How can I optimize this?', {
       model = 'gpt-5-mini',
       sticky = { '#buffer', '#gitdiff:staged' },
     })
-    
+
     -- Automatically trust a small read-only tool set
     require('CopilotChat').setup({
       trusted_tools = { 'file', 'glob', 'grep' },

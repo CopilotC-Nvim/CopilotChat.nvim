@@ -61,7 +61,7 @@ return {
 
   system_prompt = require('CopilotChat.config.prompts').COPILOT_INSTRUCTIONS.system_prompt, -- System prompt to use (can be specified manually in prompt via /).
 
-  model = 'gpt-5-mini', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $).
+  model = 'gpt-5-mini', -- Default model to use, see ':CopilotChatModels' for available models (can be specified manually in prompt via $). Reasoning effort can be specified with colon syntax (e.g. 'gpt-5.4:high').
   tools = nil, -- Default tool or array of tools (or groups) to share with LLM (can be specified manually in prompt via @).
   resources = 'selection', -- Default resources to share with LLM (can be specified manually in prompt via #).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
