@@ -311,6 +311,37 @@ function Client:ask(opts)
 
   local models = self:models()
   local model_config = models[opts.model]
+  local reasoning_effort = nil
+
+  if not model_config then
+    -- Check if opts.model is in the format <model_id>:<effort>
+    local best_match = nil
+    local best_len = 0
+    local matched_effort = nil
+
+    for id, cfg in pairs(models) do
+      if not cfg.reasoning_effort then
+        local prefix = id .. ':'
+        if vim.startswith(opts.model, prefix) then
+          local effort = opts.model:sub(#prefix + 1)
+          if effort ~= '' and #id > best_len then
+            best_match = cfg
+            best_len = #id
+            matched_effort = effort
+          end
+        end
+      end
+    end
+
+    if best_match then
+      model_config = vim.deepcopy(best_match)
+      model_config.id = opts.model
+      model_config.request_model = best_match.request_model or best_match.id
+      model_config.reasoning_effort = matched_effort
+      reasoning_effort = matched_effort
+    end
+  end
+
   if not model_config then
     error('Model not found: ' .. opts.model)
   end
@@ -357,7 +388,7 @@ function Client:ask(opts)
     end
   end
 
-  local reasoning_effort = model_config.reasoning_effort
+  reasoning_effort = model_config.reasoning_effort
   opts.model = model_config.request_model or opts.model:gsub(':' .. vim.pesc(provider_name) .. '$', '')
 
   if opts.model == 'auto' then
@@ -638,7 +669,8 @@ function Client:ask(opts)
             .. content.authorize_url
         end
       else
-        error_msg = 'Failed to get response: ' .. tostring(response.status) .. '\n' .. response.body
+        local body_str = type(response.body) == 'table' and vim.inspect(response.body) or tostring(response.body)
+        error_msg = 'Failed to get response: ' .. tostring(response.status) .. '\n' .. body_str
       end
     end
 
