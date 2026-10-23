@@ -73,7 +73,7 @@ local CACHE_TTL = 300 -- 5 minutes
 --- Get a cached value or fill it if not present
 --- @param cache table: The cache table to use
 --- @param key string: The key to look up in the cache
---- @param filler function: A function that returns the value to cache if not present
+--- @param filler function: Returns the value to cache, or nil on failure
 local function get_cached(cache, key, filler)
   local now = math.floor(os.time())
   if cache and cache[key] and cache[key .. '_expires_at'] > now then
@@ -81,6 +81,11 @@ local function get_cached(cache, key, filler)
   end
 
   local value = filler()
+  if value == nil then
+    -- Keep stale data on failure and retry on the next call.
+    return cache[key] or {}
+  end
+
   cache[key] = value
   cache[key .. '_expires_at'] = now + CACHE_TTL
   return value
@@ -238,16 +243,16 @@ function Client:models()
         local ok, headers = pcall(self.authenticate, self, provider_name)
         if not ok then
           log.warn('Failed to authenticate with ' .. provider_name .. ': ' .. headers)
-          return {}
+          return nil
         end
 
         local ok, models = pcall(provider.get_models, headers)
         if not ok then
           log.warn('Failed to fetch models from ' .. provider_name .. ': ' .. models)
-          return {}
+          return nil
         end
 
-        return models or {}
+        return models
       end))
     do
       model.provider = provider_name
