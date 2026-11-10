@@ -55,6 +55,7 @@
 ---@field picker boolean?
 
 local log = require('plenary.log')
+local Condvar = require('plenary.async.control').Condvar
 local constants = require('CopilotChat.constants')
 local notify = require('CopilotChat.utils.notify')
 local tiktoken = require('CopilotChat.tiktoken')
@@ -69,6 +70,7 @@ local stringbuffer = require('CopilotChat.utils.stringbuffer')
 local RESOURCE_SHORT_FORMAT = '# %s\n```%s start_line=%s end_line=%s\n%s\n```'
 local RESOURCE_LONG_FORMAT = '# %s\n```%s path=%s start_line=%s end_line=%s\n%s\n```'
 local CACHE_TTL = 300 -- 5 minutes
+local CACHE_RETRY_DELAY = 60 -- 1 minute
 
 --- Get a cached value or fill it if not present
 --- @param cache table: The cache table to use
@@ -80,15 +82,40 @@ local function get_cached(cache, key, filler)
     return cache[key]
   end
 
-  local value = filler()
-  if value == nil then
-    -- Keep stale data on failure and retry on the next call.
+  local pending = cache[key .. '_pending']
+  if pending then
+    pending:wait()
+    if pending.failed then
+      error(pending.error)
+    end
     return cache[key] or {}
   end
 
-  cache[key] = value
-  cache[key .. '_expires_at'] = now + CACHE_TTL
-  return value
+  if (cache[key .. '_retry_at'] or 0) > now then
+    return cache[key] or {}
+  end
+
+  pending = Condvar.new()
+  cache[key .. '_pending'] = pending
+  local ok, value = pcall(filler)
+  if ok and value ~= nil then
+    cache[key] = value
+    cache[key .. '_expires_at'] = os.time() + CACHE_TTL
+    cache[key .. '_retry_at'] = nil
+  else
+    -- Keep stale data, but do not hammer the provider while it is failing.
+    cache[key .. '_retry_at'] = os.time() + CACHE_RETRY_DELAY
+    if not ok then
+      pending.failed = true
+      pending.error = value
+    end
+  end
+  cache[key .. '_pending'] = nil
+  pending:notify_all()
+  if not ok then
+    error(value)
+  end
+  return cache[key] or {}
 end
 
 --- Generate resource block with line numbers, truncating if necessary
