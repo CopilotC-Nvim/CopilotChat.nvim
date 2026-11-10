@@ -55,6 +55,7 @@
 ---@field picker boolean?
 
 local log = require('plenary.log')
+local Condvar = require('plenary.async.control').Condvar
 local constants = require('CopilotChat.constants')
 local notify = require('CopilotChat.utils.notify')
 local tiktoken = require('CopilotChat.tiktoken')
@@ -69,21 +70,52 @@ local stringbuffer = require('CopilotChat.utils.stringbuffer')
 local RESOURCE_SHORT_FORMAT = '# %s\n```%s start_line=%s end_line=%s\n%s\n```'
 local RESOURCE_LONG_FORMAT = '# %s\n```%s path=%s start_line=%s end_line=%s\n%s\n```'
 local CACHE_TTL = 300 -- 5 minutes
+local CACHE_RETRY_DELAY = 60 -- 1 minute
 
 --- Get a cached value or fill it if not present
 --- @param cache table: The cache table to use
 --- @param key string: The key to look up in the cache
---- @param filler function: A function that returns the value to cache if not present
+--- @param filler function: Returns the value to cache, or nil on failure
 local function get_cached(cache, key, filler)
   local now = math.floor(os.time())
   if cache and cache[key] and cache[key .. '_expires_at'] > now then
     return cache[key]
   end
 
-  local value = filler()
-  cache[key] = value
-  cache[key .. '_expires_at'] = now + CACHE_TTL
-  return value
+  local pending = cache[key .. '_pending']
+  if pending then
+    pending:wait()
+    if pending.failed then
+      error(pending.error)
+    end
+    return cache[key] or {}
+  end
+
+  if (cache[key .. '_retry_at'] or 0) > now then
+    return cache[key] or {}
+  end
+
+  pending = Condvar.new()
+  cache[key .. '_pending'] = pending
+  local ok, value = pcall(filler)
+  if ok and value ~= nil then
+    cache[key] = value
+    cache[key .. '_expires_at'] = os.time() + CACHE_TTL
+    cache[key .. '_retry_at'] = nil
+  else
+    -- Keep stale data, but do not hammer the provider while it is failing.
+    cache[key .. '_retry_at'] = os.time() + CACHE_RETRY_DELAY
+    if not ok then
+      pending.failed = true
+      pending.error = value
+    end
+  end
+  cache[key .. '_pending'] = nil
+  pending:notify_all()
+  if not ok then
+    error(value)
+  end
+  return cache[key] or {}
 end
 
 --- Generate resource block with line numbers, truncating if necessary
@@ -238,16 +270,16 @@ function Client:models()
         local ok, headers = pcall(self.authenticate, self, provider_name)
         if not ok then
           log.warn('Failed to authenticate with ' .. provider_name .. ': ' .. headers)
-          return {}
+          return nil
         end
 
         local ok, models = pcall(provider.get_models, headers)
         if not ok then
           log.warn('Failed to fetch models from ' .. provider_name .. ': ' .. models)
-          return {}
+          return nil
         end
 
-        return models or {}
+        return models
       end))
     do
       model.provider = provider_name

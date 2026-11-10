@@ -138,8 +138,8 @@ function M.complete(without_input)
   local win = vim.api.nvim_get_current_win()
   local row, col = unpack(vim.api.nvim_win_get_cursor(win))
 
-  local prefix, cmp_start = unpack(vim.fn.matchstrpos(line:sub(1, col), info.pattern))
-  if not prefix then
+  local prefix, cmp_start = unpack(vim.fn.matchstrpos(line:sub(1, col), info.pattern .. '$'))
+  if prefix == '' then
     return
   end
 
